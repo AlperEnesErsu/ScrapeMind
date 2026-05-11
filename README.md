@@ -113,7 +113,7 @@ ScrapeMind, scraping yaparken:
 
 | İsim | Rol |
 |---|---|
-| Alperen | Proje sahibi / Backend |
+| Alper Enes Ersü | Proje sahibi / Backend |
 | _eklenecek_ | _eklenecek_ |
 
 ## 🤝 Katkı
