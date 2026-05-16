@@ -1,0 +1,22 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('OAuth Accounts') }}</h6>
+{% if accounts %}
+<ul class="list-group">
+  {% for acc in accounts %}
+  <li class="list-group-item d-flex justify-content-between align-items-center">
+    <span>
+      {% if acc.provider == 'google' %}<i class="bi bi-google text-danger me-2"></i>
+      {% elif acc.provider == 'microsoft' %}<i class="bi bi-microsoft text-primary me-2"></i>
+      {% else %}<i class="bi bi-link-45deg me-2"></i>
+      {% endif %}
+      <strong>{{ acc.provider|capitalize }}</strong>
+      <span class="text-muted ms-2">{{ acc.email or acc.provider_user_id }}</span>
+    </span>
+    <span class="badge bg-success">{{ _('Connected') }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="text-muted">{{ _('No OAuth accounts linked.') }}</p>
+{% endif %}
+<p class="form-text mt-3">{{ _('Linking and unlinking accounts will be available in Phase 2.') }}</p>

@@ -1,0 +1,15 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Personal Info') }}</h6>
+<form hx-post="{{ url_for('settings.submit_personal') }}" hx-target="#tab-content" hx-swap="innerHTML">
+  {{ form.csrf_token }}
+  <div class="mb-3">
+    <label class="form-label">{{ form.full_name.label.text }}</label>
+    {{ form.full_name(class="form-control", required=True) }}
+    {% for err in form.full_name.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.avatar_url.label.text }}</label>
+    {{ form.avatar_url(class="form-control", placeholder="https://...") }}
+  </div>
+  <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+</form>

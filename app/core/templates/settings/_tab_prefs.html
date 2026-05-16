@@ -1,0 +1,21 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Preferences') }}</h6>
+<form hx-post="{{ url_for('settings.submit_prefs') }}" hx-target="#tab-content" hx-swap="innerHTML">
+  {{ form.csrf_token }}
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">{{ form.locale.label.text }}</label>
+      {{ form.locale(class="form-select") }}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.timezone.label.text }}</label>
+      {{ form.timezone(class="form-select") }}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.theme.label.text }}</label>
+      {{ form.theme(class="form-select") }}
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary mt-3">{{ form.submit.label.text }}</button>
+  <p class="form-text mt-2">{{ _('Language and theme changes apply on next page load.') }}</p>
+</form>

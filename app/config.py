@@ -16,6 +16,7 @@ class BaseConfig:
 
     BABEL_DEFAULT_LOCALE = os.getenv("BABEL_DEFAULT_LOCALE", "tr")
     BABEL_DEFAULT_TIMEZONE = os.getenv("BABEL_DEFAULT_TIMEZONE", "Europe/Istanbul")
+    BABEL_TRANSLATION_DIRECTORIES = str(BASE_DIR / "translations")
     SUPPORTED_LOCALES = ["tr", "en"]
 
     WTF_CSRF_ENABLED = True
@@ -43,7 +44,11 @@ class DevelopmentConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
+    # Lazy-read so that just importing the module (e.g. during CI's lint/test
+    # phases where FLASK_ENV=testing and only TEST_DATABASE_URL is set) doesn't
+    # crash with KeyError. Production deployments must export DATABASE_URL —
+    # SQLAlchemy will surface a clear connection error if it's empty.
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "")
     SESSION_COOKIE_SECURE = True
 
 

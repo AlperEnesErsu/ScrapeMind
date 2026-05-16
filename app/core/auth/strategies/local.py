@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import structlog
 from passlib.context import CryptContext
@@ -43,7 +43,7 @@ class LocalAuthStrategy(AuthStrategy):
             user.failed_login_count = (user.failed_login_count or 0) + 1
             if user.failed_login_count >= FAILED_LOGIN_LIMIT:
                 user.is_locked = True
-                user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINUTES)
+                user.locked_until = datetime.now(UTC) + timedelta(minutes=LOCKOUT_MINUTES)
                 logger.warning("user_locked_brute_force", user_id=user.id)
             db.session.commit()
             return None
@@ -51,7 +51,7 @@ class LocalAuthStrategy(AuthStrategy):
         user.failed_login_count = 0
         user.is_locked = False
         user.locked_until = None
-        user.last_login_at = datetime.now(timezone.utc)
+        user.last_login_at = datetime.now(UTC)
         db.session.commit()
         return user
 
@@ -61,3 +61,9 @@ class LocalAuthStrategy(AuthStrategy):
     @staticmethod
     def hash_password(plain: str) -> str:
         return _pwd_ctx.hash(plain)
+
+    @staticmethod
+    def verify_password(plain: str, hashed: str) -> bool:
+        if not hashed:
+            return False
+        return _pwd_ctx.verify(plain, hashed)

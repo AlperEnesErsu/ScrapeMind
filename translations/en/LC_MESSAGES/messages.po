@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScrapeMind 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-16\n"
-"PO-Revision-Date: 2026-05-16\n"
+"POT-Creation-Date: 2026-05-16 00:00+0300\n"
+"PO-Revision-Date: 2026-05-16 00:00+0300\n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -131,6 +131,341 @@ msgstr "ScrapeMind modules will populate this dashboard in Phase 2."
 
 msgid "Role management — Faz 1"
 msgstr "Role management — Phase 1"
+
+# --- Menu i18n keys (sidebar label_key values) ---
+msgid "menu.dashboard"
+msgstr "Dashboard"
+
+msgid "menu.roles"
+msgstr "Roles"
+
+msgid "menu.menu_items"
+msgstr "Menu Items"
+
+msgid "menu.audit"
+msgstr "Audit Log"
+
+msgid "menu.profile"
+msgstr "Profile"
+
+msgid "menu.permissions"
+msgstr "Permissions"
+
+# --- RBAC ---
+msgid "New Role"
+msgstr "New Role"
+
+msgid "Edit Role"
+msgstr "Edit Role"
+
+msgid "Role Name"
+msgstr "Role Name"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Permissions"
+msgstr "Permissions"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "Edit"
+msgstr "Edit"
+
+msgid "Save"
+msgstr "Save"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Delete this role?"
+msgstr "Delete this role?"
+
+msgid "No roles yet."
+msgstr "No roles yet."
+
+msgid "No permissions defined yet."
+msgstr "No permissions defined yet."
+
+msgid "Permissions are defined by module manifests and synced on startup. They cannot be edited manually."
+msgstr "Permissions are defined by module manifests and synced on startup. They cannot be edited manually."
+
+msgid "Role created."
+msgstr "Role created."
+
+msgid "Role updated."
+msgstr "Role updated."
+
+msgid "Role deleted."
+msgstr "Role deleted."
+
+msgid "The admin role cannot be deleted."
+msgstr "The admin role cannot be deleted."
+
+# --- Menu CRUD ---
+msgid "New Menu Item"
+msgstr "New Menu Item"
+
+msgid "Edit Menu Item"
+msgstr "Edit Menu Item"
+
+msgid "Menu Items"
+msgstr "Menu Items"
+
+msgid "Code"
+msgstr "Code"
+
+msgid "Label Key"
+msgstr "Label Key"
+
+msgid "Icon (Bootstrap Icons class)"
+msgstr "Icon (Bootstrap Icons class)"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "Endpoint"
+msgstr "Endpoint"
+
+msgid "Endpoint / URL"
+msgstr "Endpoint / URL"
+
+msgid "Parent"
+msgstr "Parent"
+
+msgid "Module"
+msgstr "Module"
+
+msgid "Required Permission"
+msgstr "Required Permission"
+
+msgid "Order"
+msgstr "Order"
+
+msgid "Visible"
+msgstr "Visible"
+
+msgid "Toggle visibility"
+msgstr "Toggle visibility"
+
+msgid "core"
+msgstr "core"
+
+msgid "Critical core item"
+msgstr "Critical core item"
+
+msgid "Code is immutable after creation."
+msgstr "Code is immutable after creation."
+
+msgid "Use either Endpoint or URL."
+msgstr "Use either Endpoint or URL."
+
+msgid "Lowercase letters, digits and underscores only."
+msgstr "Lowercase letters, digits and underscores only."
+
+msgid "This code is already in use."
+msgstr "This code is already in use."
+
+msgid "Unknown endpoint."
+msgstr "Unknown endpoint."
+
+msgid "Parent would create a cycle."
+msgstr "Parent would create a cycle."
+
+msgid "Menu item created."
+msgstr "Menu item created."
+
+msgid "Menu item updated."
+msgstr "Menu item updated."
+
+msgid "Menu item deleted."
+msgstr "Menu item deleted."
+
+msgid "Visibility updated."
+msgstr "Visibility updated."
+
+msgid "Delete this menu item?"
+msgstr "Delete this menu item?"
+
+msgid "No menu items yet."
+msgstr "No menu items yet."
+
+msgid "This menu item is critical and cannot be deleted."
+msgstr "This menu item is critical and cannot be deleted."
+
+# --- Profile tabs ---
+msgid "Personal Info"
+msgstr "Personal Info"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Preferences"
+msgstr "Preferences"
+
+msgid "OAuth Accounts"
+msgstr "OAuth Accounts"
+
+msgid "Account"
+msgstr "Account"
+
+msgid "Full Name"
+msgstr "Full Name"
+
+msgid "Avatar URL"
+msgstr "Avatar URL"
+
+msgid "Current Password"
+msgstr "Current Password"
+
+msgid "New Password"
+msgstr "New Password"
+
+msgid "Confirm New Password"
+msgstr "Confirm New Password"
+
+msgid "Change Password"
+msgstr "Change Password"
+
+msgid "Minimum 8 characters."
+msgstr "Minimum 8 characters."
+
+msgid "Passwords do not match."
+msgstr "Passwords do not match."
+
+msgid "Required to confirm your identity."
+msgstr "Required to confirm your identity."
+
+msgid "Language"
+msgstr "Language"
+
+msgid "Timezone"
+msgstr "Timezone"
+
+msgid "Theme"
+msgstr "Theme"
+
+msgid "Light"
+msgstr "Light"
+
+msgid "Dark"
+msgstr "Dark"
+
+msgid "Language and theme changes apply on next page load."
+msgstr "Language and theme changes apply on next page load."
+
+msgid "Profile updated."
+msgstr "Profile updated."
+
+msgid "Email updated."
+msgstr "Email updated."
+
+msgid "Password changed."
+msgstr "Password changed."
+
+msgid "Preferences updated."
+msgstr "Preferences updated."
+
+msgid "Please correct the errors below."
+msgstr "Please correct the errors below."
+
+msgid "Current password is incorrect."
+msgstr "Current password is incorrect."
+
+msgid "Email already in use."
+msgstr "Email already in use."
+
+msgid "Local password not set for this account."
+msgstr "Local password not set for this account."
+
+msgid "Connected"
+msgstr "Connected"
+
+msgid "No OAuth accounts linked."
+msgstr "No OAuth accounts linked."
+
+msgid "Linking and unlinking accounts will be available in Phase 2."
+msgstr "Linking and unlinking accounts will be available in Phase 2."
+
+msgid "Username"
+msgstr "Username"
+
+msgid "User ID"
+msgstr "User ID"
+
+msgid "Account created"
+msgstr "Account created"
+
+msgid "Last login"
+msgstr "Last login"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Superuser"
+msgstr "Superuser"
+
+msgid "Active"
+msgstr "Active"
+
+msgid "Inactive"
+msgstr "Inactive"
+
+# --- Register / Password reset ---
+msgid "Create Account"
+msgstr "Create Account"
+
+msgid "Already have an account?"
+msgstr "Already have an account?"
+
+msgid "Don't have an account?"
+msgstr "Don't have an account?"
+
+msgid "Use letters, digits, dot, dash, underscore only."
+msgstr "Use letters, digits, dot, dash, underscore only."
+
+msgid "Confirm Password"
+msgstr "Confirm Password"
+
+msgid "Account created. You can sign in now."
+msgstr "Account created. You can sign in now."
+
+msgid "Username already in use."
+msgstr "Username already in use."
+
+msgid "Forgot Password"
+msgstr "Forgot Password"
+
+msgid "Enter your email and we will send you a reset link."
+msgstr "Enter your email and we will send you a reset link."
+
+msgid "Back to Sign In"
+msgstr "Back to Sign In"
+
+msgid "If that email exists, a reset link has been sent."
+msgstr "If that email exists, a reset link has been sent."
+
+msgid "Dev mode: reset link → %(url)s"
+msgstr "Dev mode: reset link → %(url)s"
+
+msgid "Reset Password"
+msgstr "Reset Password"
+
+msgid "Reset link is invalid or expired."
+msgstr "Reset link is invalid or expired."
+
+msgid "Password reset. You can sign in now."
+msgstr "Password reset. You can sign in now."
+
+msgid "Send Reset Link"
+msgstr "Send Reset Link"
 
 msgid "Menu management — Faz 1"
 msgstr "Menu management — Phase 1"

@@ -23,5 +23,5 @@
     {% endfor %}
   </tbody>
 </table>
-{% include 'core/_pagination.html' with context %}
+{% with pagination = logs %}{% include 'core/_pagination.html' %}{% endwith %}
 {% endblock %}
