@@ -20,5 +20,9 @@ class Role(BaseModel):
     name = db.Column(db.String(64), unique=True, nullable=False)
     description = db.Column(db.String(255), nullable=True)
 
-    permissions = db.relationship("Permission", secondary=role_permissions, back_populates="roles", lazy="select")
-    menu_items = db.relationship("MenuItem", secondary=role_menus, back_populates="roles", lazy="select")
+    permissions = db.relationship(
+        "Permission", secondary=role_permissions, back_populates="roles", lazy="select"
+    )
+    menu_items = db.relationship(
+        "MenuItem", secondary=role_menus, back_populates="roles", lazy="select"
+    )

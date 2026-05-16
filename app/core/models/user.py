@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask_login import UserMixin
 
@@ -34,7 +34,7 @@ class User(UserMixin, BaseModel):
     settings = db.relationship("UserSettings", back_populates="user", uselist=False, lazy="select")
 
     def check_lock(self) -> None:
-        if self.locked_until and self.locked_until <= datetime.now(timezone.utc):
+        if self.locked_until and self.locked_until <= datetime.now(UTC):
             self.is_locked = False
             self.locked_until = None
             self.failed_login_count = 0
@@ -42,7 +42,7 @@ class User(UserMixin, BaseModel):
 
     @property
     def effective_is_locked(self) -> bool:
-        if self.locked_until and self.locked_until > datetime.now(timezone.utc):
+        if self.locked_until and self.locked_until > datetime.now(UTC):
             return True
         return self.is_locked and not self.locked_until
 

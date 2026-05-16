@@ -16,5 +16,9 @@ class MenuItem(db.Model):
     order_index = db.Column(db.Integer, nullable=False, default=0)
     is_visible = db.Column(db.Boolean, nullable=False, default=True)
 
-    children = db.relationship("MenuItem", backref=db.backref("parent", remote_side=[id]), lazy="select")
-    roles = db.relationship("Role", secondary="role_menus", back_populates="menu_items", lazy="select")
+    children = db.relationship(
+        "MenuItem", backref=db.backref("parent", remote_side=[id]), lazy="select"
+    )
+    roles = db.relationship(
+        "Role", secondary="role_menus", back_populates="menu_items", lazy="select"
+    )

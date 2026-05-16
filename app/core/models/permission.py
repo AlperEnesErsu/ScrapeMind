@@ -9,4 +9,6 @@ class Permission(BaseModel):
     label_key = db.Column(db.String(128), nullable=False)
     module_code = db.Column(db.String(64), db.ForeignKey("modules.code"), nullable=True)
 
-    roles = db.relationship("Role", secondary="role_permissions", back_populates="permissions", lazy="select")
+    roles = db.relationship(
+        "Role", secondary="role_permissions", back_populates="permissions", lazy="select"
+    )

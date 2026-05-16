@@ -13,4 +13,6 @@ class AuditLog(db.Model):
     ip_address = db.Column(db.String(45), nullable=True)
     user_agent = db.Column(db.Text, nullable=True)
     locale = db.Column(db.String(8), nullable=True)
-    created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), nullable=False, index=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True), server_default=db.func.now(), nullable=False, index=True
+    )
