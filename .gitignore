@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 venv/
 .env
+.env.local
 *.log
 logs/
 uploads/*
@@ -11,3 +12,11 @@ ssl/*.key
 instance/
 flask_session/
 models/
+
+# IDE / tooling
+.claude/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/

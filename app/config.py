@@ -16,6 +16,7 @@ class BaseConfig:
 
     BABEL_DEFAULT_LOCALE = os.getenv("BABEL_DEFAULT_LOCALE", "tr")
     BABEL_DEFAULT_TIMEZONE = os.getenv("BABEL_DEFAULT_TIMEZONE", "Europe/Istanbul")
+    BABEL_TRANSLATION_DIRECTORIES = str(BASE_DIR / "translations")
     SUPPORTED_LOCALES = ["tr", "en"]
 
     WTF_CSRF_ENABLED = True
