@@ -1,0 +1,23 @@
+version: "3.9"
+
+# Yerel geliştirme override'ı — myo_postgres17 container'ını paylaşır.
+# Kullanım: development.bat (otomatik) veya elle:
+#   docker-compose -f docker/docker-compose.local.yml up -d
+#
+# Önkoşul: myoChtBt dizininde `docker-compose up -d` çalışmış olmalı.
+# (myo_postgres17 + shared_redis ayakta olacak)
+#
+# İlk seferinde scrapemind DB'yi oluştur:
+#   docker exec myo_postgres17 psql -U postgres -c "CREATE DATABASE scrapemind;"
+
+services:
+  redis:
+    image: redis:7-alpine
+    # Zaten shared_redis çalışıyorsa bunu atlayabilirsin.
+    # myoChtBt override'ı Redis'i zaten ayağa kaldırıyorsa bu servis gereksiz —
+    # ama bağımsız çalışmak istersen diye bırakıldı.
+    container_name: scrapemind_redis_local
+    ports:
+      - "6380:6379"   # 6379 myo tarafından alınmışsa 6380 kullan
+    profiles:
+      - standalone    # sadece `--profile standalone` ile başlar, normalde atlanır

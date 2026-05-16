@@ -1,0 +1,45 @@
+<nav id="sidebar" class="d-flex flex-column flex-shrink-0 p-2 border-end"
+     style="width: var(--sidebar-width, 240px); min-height: calc(100vh - 56px); background: var(--sidebar-bg);">
+
+  <ul class="nav nav-pills flex-column mb-auto gap-1">
+    {% for node in menu_nodes %}
+      {% if node.children %}
+        <li class="nav-item">
+          <button class="nav-link w-100 text-start d-flex align-items-center gap-2 collapsed"
+                  data-bs-toggle="collapse" data-bs-target="#menu-{{ node.item.code }}"
+                  aria-expanded="{{ 'true' if node.is_active else 'false' }}">
+            <i class="bi {{ node.item.icon or 'bi-circle' }}"></i>
+            <span class="sidebar-label">{{ _(node.item.label_key) }}</span>
+            <i class="bi bi-chevron-down ms-auto sidebar-label small"></i>
+          </button>
+          <div class="collapse {{ 'show' if node.is_active else '' }}" id="menu-{{ node.item.code }}">
+            <ul class="nav nav-pills flex-column ms-3 gap-1 mt-1">
+              {% for child in node.children %}
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2 {{ 'active' if child.is_active else '' }}"
+                     href="{{ url_for(child.item.endpoint) if child.item.endpoint else (child.item.url or '#') }}">
+                    <i class="bi {{ child.item.icon or 'bi-dot' }}"></i>
+                    <span class="sidebar-label">{{ _(child.item.label_key) }}</span>
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </li>
+      {% else %}
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center gap-2 {{ 'active' if node.is_active else '' }}"
+             href="{{ url_for(node.item.endpoint) if node.item.endpoint else (node.item.url or '#') }}">
+            <i class="bi {{ node.item.icon or 'bi-circle' }}"></i>
+            <span class="sidebar-label">{{ _(node.item.label_key) }}</span>
+          </a>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+
+  <button class="btn btn-sm btn-outline-secondary mt-2 w-100" id="sidebar-collapse-btn" title="{{ _('Collapse') }}">
+    <i class="bi bi-chevron-double-left sidebar-label"></i>
+    <i class="bi bi-chevron-double-right sidebar-icon-only d-none"></i>
+  </button>
+</nav>

@@ -1,0 +1,142 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: ScrapeMind 0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-16\n"
+"PO-Revision-Date: 2026-05-16\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Sign In"
+msgstr "Sign In"
+
+msgid "Sign Out"
+msgstr "Sign Out"
+
+msgid "Username or Email"
+msgstr "Username or Email"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Remember me"
+msgstr "Remember me"
+
+msgid "Forgot password?"
+msgstr "Forgot password?"
+
+msgid "Continue with Google"
+msgstr "Continue with Google"
+
+msgid "Continue with Microsoft"
+msgstr "Continue with Microsoft"
+
+msgid "Invalid credentials or account locked."
+msgstr "Invalid credentials or account locked."
+
+msgid "OAuth login failed or registration disabled."
+msgstr "OAuth login failed or registration is disabled."
+
+msgid "Unknown OAuth provider."
+msgstr "Unknown OAuth provider."
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Profile"
+msgstr "Profile"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "System Settings"
+msgstr "System Settings"
+
+msgid "Toggle Theme"
+msgstr "Toggle Theme"
+
+msgid "Roles"
+msgstr "Roles"
+
+msgid "Menu Items"
+msgstr "Menu Items"
+
+msgid "Audit Log"
+msgstr "Audit Log"
+
+msgid "Time"
+msgstr "Time"
+
+msgid "User"
+msgstr "User"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "Entity"
+msgstr "Entity"
+
+msgid "IP"
+msgstr "IP"
+
+msgid "No entries yet."
+msgstr "No entries yet."
+
+msgid "Pagination"
+msgstr "Pagination"
+
+msgid "Search…"
+msgstr "Search…"
+
+msgid "Collapse"
+msgstr "Collapse"
+
+msgid "Go to Dashboard"
+msgstr "Go to Dashboard"
+
+msgid "You don't have permission to access this page."
+msgstr "You don't have permission to access this page."
+
+msgid "The page you're looking for doesn't exist."
+msgstr "The page you're looking for doesn't exist."
+
+msgid "Something went wrong on our end. Please try again later."
+msgstr "Something went wrong on our end. Please try again later."
+
+msgid "New Password"
+msgstr "New Password"
+
+msgid "Confirm Password"
+msgstr "Confirm Password"
+
+msgid "Reset Password"
+msgstr "Reset Password"
+
+msgid "Send Reset Link"
+msgstr "Send Reset Link"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Scrape Jobs"
+msgstr "Scrape Jobs"
+
+msgid "Active Users"
+msgstr "Active Users"
+
+msgid "ScrapeMind modules will populate this dashboard in Faz 2."
+msgstr "ScrapeMind modules will populate this dashboard in Phase 2."
+
+msgid "Role management — Faz 1"
+msgstr "Role management — Phase 1"
+
+msgid "Menu management — Faz 1"
+msgstr "Menu management — Phase 1"
+
+msgid "Profile & preferences — Faz 1"
+msgstr "Profile & preferences — Phase 1"
+
+msgid "System-wide settings — Faz 1"
+msgstr "System-wide settings — Phase 1"

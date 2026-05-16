@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: scrapemind
+          POSTGRES_PASSWORD: scrapemind
+          POSTGRES_DB: scrapemind_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      FLASK_APP: wsgi.py
+      FLASK_ENV: testing
+      SECRET_KEY: ci-secret
+      TEST_DATABASE_URL: postgresql://scrapemind:scrapemind@localhost:5432/scrapemind_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint — ruff
+        run: ruff check app/
+
+      - name: Lint — black
+        run: black --check app/
+
+      - name: Type check — mypy
+        run: mypy app/ --ignore-missing-imports
+
+      - name: Migration check (empty DB → upgrade)
+        run: flask db upgrade
+
+      - name: Tests
+        run: pytest --cov=app --cov-fail-under=70
+
+      - name: Translation consistency (TR == EN key sets)
+        run: |
+          python - <<'EOF'
+          import re, sys
+          def keys(path):
+              return set(re.findall(r'^msgid "(.+)"', open(path).read(), re.M))
+          tr = keys("translations/tr/LC_MESSAGES/messages.po")
+          en = keys("translations/en/LC_MESSAGES/messages.po")
+          diff = tr.symmetric_difference(en)
+          if diff:
+              print("Translation mismatch:", diff); sys.exit(1)
+          print("Translations OK")
+          EOF

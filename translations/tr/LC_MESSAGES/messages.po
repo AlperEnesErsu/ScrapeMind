@@ -1,0 +1,142 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: ScrapeMind 0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-16\n"
+"PO-Revision-Date: 2026-05-16\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Sign In"
+msgstr "Giriş Yap"
+
+msgid "Sign Out"
+msgstr "Çıkış Yap"
+
+msgid "Username or Email"
+msgstr "Kullanıcı Adı veya E-posta"
+
+msgid "Password"
+msgstr "Şifre"
+
+msgid "Remember me"
+msgstr "Beni hatırla"
+
+msgid "Forgot password?"
+msgstr "Şifremi unuttum"
+
+msgid "Continue with Google"
+msgstr "Google ile devam et"
+
+msgid "Continue with Microsoft"
+msgstr "Microsoft ile devam et"
+
+msgid "Invalid credentials or account locked."
+msgstr "Geçersiz kimlik bilgileri veya hesap kilitli."
+
+msgid "OAuth login failed or registration disabled."
+msgstr "OAuth girişi başarısız veya kayıt devre dışı."
+
+msgid "Unknown OAuth provider."
+msgstr "Bilinmeyen OAuth sağlayıcısı."
+
+msgid "Dashboard"
+msgstr "Kontrol Paneli"
+
+msgid "Profile"
+msgstr "Profil"
+
+msgid "Settings"
+msgstr "Ayarlar"
+
+msgid "System Settings"
+msgstr "Sistem Ayarları"
+
+msgid "Toggle Theme"
+msgstr "Tema Değiştir"
+
+msgid "Roles"
+msgstr "Roller"
+
+msgid "Menu Items"
+msgstr "Menü Öğeleri"
+
+msgid "Audit Log"
+msgstr "Denetim Günlüğü"
+
+msgid "Time"
+msgstr "Zaman"
+
+msgid "User"
+msgstr "Kullanıcı"
+
+msgid "Action"
+msgstr "İşlem"
+
+msgid "Entity"
+msgstr "Nesne"
+
+msgid "IP"
+msgstr "IP"
+
+msgid "No entries yet."
+msgstr "Henüz kayıt yok."
+
+msgid "Pagination"
+msgstr "Sayfalama"
+
+msgid "Search…"
+msgstr "Ara…"
+
+msgid "Collapse"
+msgstr "Daralt"
+
+msgid "Go to Dashboard"
+msgstr "Kontrol Paneline Git"
+
+msgid "You don't have permission to access this page."
+msgstr "Bu sayfaya erişim yetkiniz yok."
+
+msgid "The page you're looking for doesn't exist."
+msgstr "Aradığınız sayfa bulunamadı."
+
+msgid "Something went wrong on our end. Please try again later."
+msgstr "Sunucu tarafında bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+
+msgid "New Password"
+msgstr "Yeni Şifre"
+
+msgid "Confirm Password"
+msgstr "Şifreyi Onayla"
+
+msgid "Reset Password"
+msgstr "Şifreyi Sıfırla"
+
+msgid "Send Reset Link"
+msgstr "Sıfırlama Bağlantısı Gönder"
+
+msgid "Email"
+msgstr "E-posta"
+
+msgid "Scrape Jobs"
+msgstr "Scrape İşleri"
+
+msgid "Active Users"
+msgstr "Aktif Kullanıcılar"
+
+msgid "ScrapeMind modules will populate this dashboard in Faz 2."
+msgstr "ScrapeMind modülleri bu paneli Faz 2'de dolduracak."
+
+msgid "Role management — Faz 1"
+msgstr "Rol yönetimi — Faz 1"
+
+msgid "Menu management — Faz 1"
+msgstr "Menü yönetimi — Faz 1"
+
+msgid "Profile & preferences — Faz 1"
+msgstr "Profil ve tercihler — Faz 1"
+
+msgid "System-wide settings — Faz 1"
+msgstr "Sistem geneli ayarlar — Faz 1"
