@@ -44,7 +44,11 @@ class DevelopmentConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
+    # Lazy-read so that just importing the module (e.g. during CI's lint/test
+    # phases where FLASK_ENV=testing and only TEST_DATABASE_URL is set) doesn't
+    # crash with KeyError. Production deployments must export DATABASE_URL —
+    # SQLAlchemy will surface a clear connection error if it's empty.
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "")
     SESSION_COOKIE_SECURE = True
 
 
