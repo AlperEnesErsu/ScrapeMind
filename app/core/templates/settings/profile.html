@@ -1,6 +1,49 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('Profile') }}{% endblock %}
 {% block content %}
-<h4><i class="bi bi-person-circle me-2"></i>{{ _('Profile') }}</h4>
-<p class="text-muted">{{ _('Profile & preferences — Faz 1') }}</p>
+<h4 class="mb-3"><i class="bi bi-person-circle me-2"></i>{{ _('Profile') }}</h4>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="list-group" id="profile-tabs">
+      {% set tabs = [
+        ('personal', 'bi-person',           _('Personal Info')),
+        ('email',    'bi-envelope',         _('Email')),
+        ('password', 'bi-key',              _('Password')),
+        ('prefs',    'bi-sliders',          _('Preferences')),
+        ('oauth',    'bi-link-45deg',       _('OAuth Accounts')),
+        ('account',  'bi-info-circle',      _('Account')),
+      ] %}
+      {% for code, icon, label in tabs %}
+      <a href="#"
+         class="list-group-item list-group-item-action {% if code == active_tab %}active{% endif %}"
+         hx-get="{{ url_for('settings.profile_tab', tab=code) }}"
+         hx-target="#tab-content"
+         hx-swap="innerHTML"
+         hx-push-url="{{ url_for('settings.profile', tab=code) }}"
+         data-tab="{{ code }}">
+        <i class="bi {{ icon }} me-2"></i>{{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="card">
+      <div class="card-body" id="tab-content">
+        {% include 'settings/_tab_' + active_tab + '.html' %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Highlight clicked tab; htmx swaps content but doesn't manage sidebar state.
+  document.querySelectorAll('#profile-tabs a').forEach(a => {
+    a.addEventListener('click', e => {
+      document.querySelectorAll('#profile-tabs a').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+    });
+  });
+</script>
 {% endblock %}

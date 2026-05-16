@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}{% if item %}{{ _('Edit Menu Item') }}{% else %}{{ _('New Menu Item') }}{% endif %}{% endblock %}
+{% block content %}
+<h4 class="mb-3">
+  <i class="bi bi-list-nested me-2"></i>
+  {% if item %}{{ _('Edit Menu Item') }}: <code>{{ item.code }}</code>
+  {% else %}{{ _('New Menu Item') }}{% endif %}
+</h4>
+
+<form method="post" novalidate>
+  {{ form.csrf_token }}
+  <div class="row g-3">
+
+    <div class="col-md-4">
+      <label class="form-label">{{ form.code.label.text }}</label>
+      {% if item %}
+        {{ form.code(class="form-control", readonly=True) }}
+        <div class="form-text">{{ _('Code is immutable after creation.') }}</div>
+      {% else %}
+        {{ form.code(class="form-control", required=True) }}
+      {% endif %}
+      {% for err in form.code.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">{{ form.label_key.label.text }}</label>
+      {{ form.label_key(class="form-control", required=True, placeholder="menu.example") }}
+      {% for err in form.label_key.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">{{ form.icon.label.text }}</label>
+      {{ form.icon(class="form-control", placeholder="bi-bug") }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">{{ form.parent_id.label.text }}</label>
+      {{ form.parent_id(class="form-select") }}
+      {% for err in form.parent_id.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">{{ form.endpoint.label.text }}</label>
+      {{ form.endpoint(class="form-control", placeholder="dashboard.index") }}
+      {% for err in form.endpoint.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">{{ form.url.label.text }}</label>
+      {{ form.url(class="form-control", placeholder="https://...") }}
+      <div class="form-text">{{ _('Use either Endpoint or URL.') }}</div>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">{{ form.module_code.label.text }}</label>
+      {{ form.module_code(class="form-select") }}
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">{{ form.required_permission.label.text }}</label>
+      {{ form.required_permission(class="form-select") }}
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">{{ form.order_index.label.text }}</label>
+      {{ form.order_index(class="form-control") }}
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+      <div class="form-check">
+        {{ form.is_visible(class="form-check-input") }}
+        <label class="form-check-label" for="is_visible">{{ form.is_visible.label.text }}</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+    <a href="{{ url_for('menu.menu_list') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+  </div>
+</form>
+{% endblock %}

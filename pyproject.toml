@@ -10,10 +10,14 @@ requires-python = ">=3.11"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["."]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP"]
 ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "scripts", "tests"]
 
 [tool.black]
 line-length = 100
@@ -27,6 +31,7 @@ plugins = ["sqlalchemy.ext.mypy.plugin"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

@@ -8,12 +8,15 @@ logger = structlog.get_logger()
 
 
 def create_app() -> Flask:
+    import app.core.models  # noqa: F401 — registers all SQLAlchemy models before init
+
     app = Flask(__name__, template_folder="core/templates", static_folder="core/static")
     app.config.from_object(get_config())
 
     _init_extensions(app)
     _init_logging()
     _register_blueprints(app)
+    _register_context_processors(app)
     _register_error_handlers(app)
 
     # Plugin discovery runs AFTER extensions so db is ready.
@@ -21,19 +24,24 @@ def create_app() -> Flask:
     # During `flask db init/migrate` the tables don't exist yet; we skip silently.
     with app.app_context():
         from sqlalchemy import inspect as sa_inspect
+
         from app.modules import discover_and_sync_modules
 
         inspector = sa_inspect(db.engine)
         if inspector.has_table("modules"):
             discover_and_sync_modules()
         else:
-            logger.warning("plugin_discovery_skipped", reason="modules table not found — run flask db upgrade first")
+            logger.warning(
+                "plugin_discovery_skipped",
+                reason="modules table not found — run flask db upgrade first",
+            )
 
     return app
 
 
 def _init_extensions(app: Flask) -> None:
     db.init_app(app)
+
     migrate.init_app(app, db)
     login_manager.init_app(app)
     oauth.init_app(app)
@@ -45,6 +53,7 @@ def _init_extensions(app: Flask) -> None:
     login_manager.login_message_category = "warning"
 
     from app.core.i18n.utils import init_babel
+
     init_babel(app, babel)
 
 
@@ -58,9 +67,31 @@ def _init_logging() -> None:
     )
 
 
+def _register_context_processors(app: Flask) -> None:
+    from flask_login import current_user
+
+    @app.context_processor
+    def inject_menu() -> dict:
+        """Inject menu_nodes and current_user_permissions into templates."""
+        if current_user.is_authenticated:
+            from app.core.menu.builder import build_menu_for_user
+            from app.core.rbac.service import get_user_permissions
+
+            try:
+                nodes = build_menu_for_user(current_user)
+            except Exception:
+                nodes = []
+            try:
+                perms = get_user_permissions(current_user)
+            except Exception:
+                perms = frozenset()
+            return {"menu_nodes": nodes, "current_user_permissions": perms}
+        return {"menu_nodes": [], "current_user_permissions": frozenset()}
+
+
 def _register_blueprints(app: Flask) -> None:
-    from app.core.auth import auth_bp
     from app.core.audit.routes import audit_bp
+    from app.core.auth import auth_bp
     from app.core.menu.routes import menu_bp
     from app.core.rbac.routes import rbac_bp
     from app.core.settings.routes import settings_bp

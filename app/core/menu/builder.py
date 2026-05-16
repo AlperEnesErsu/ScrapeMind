@@ -24,9 +24,7 @@ class MenuNode:
 def build_menu_for_user(user: User) -> list[MenuNode]:
     user_perms = get_user_permissions(user) if not user.is_superuser else None
 
-    items = (
-        MenuItem.query.filter_by(is_visible=True).order_by(MenuItem.order_index).all()
-    )
+    items = MenuItem.query.filter_by(is_visible=True).order_by(MenuItem.order_index).all()
 
     filtered = [
         m

@@ -1,0 +1,27 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Account') }}</h6>
+<dl class="row mb-0">
+  <dt class="col-sm-4">{{ _('Username') }}</dt>
+  <dd class="col-sm-8"><code>{{ user.username }}</code></dd>
+
+  <dt class="col-sm-4">{{ _('User ID') }}</dt>
+  <dd class="col-sm-8">{{ user.id }}</dd>
+
+  <dt class="col-sm-4">{{ _('Account created') }}</dt>
+  <dd class="col-sm-8">{{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '—' }}</dd>
+
+  <dt class="col-sm-4">{{ _('Last login') }}</dt>
+  <dd class="col-sm-8">{{ user.last_login_at.strftime('%d.%m.%Y %H:%M') if user.last_login_at else '—' }}</dd>
+
+  <dt class="col-sm-4">{{ _('Roles') }}</dt>
+  <dd class="col-sm-8">
+    {% for r in user.roles %}<span class="badge bg-secondary me-1">{{ r.name }}</span>{% else %}—{% endfor %}
+  </dd>
+
+  <dt class="col-sm-4">{{ _('Status') }}</dt>
+  <dd class="col-sm-8">
+    {% if user.is_superuser %}<span class="badge bg-warning text-dark">{{ _('Superuser') }}</span>{% endif %}
+    {% if user.is_active %}<span class="badge bg-success">{{ _('Active') }}</span>
+    {% else %}<span class="badge bg-danger">{{ _('Inactive') }}</span>{% endif %}
+  </dd>
+</dl>
