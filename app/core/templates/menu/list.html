@@ -1,6 +1,83 @@
 {% extends 'base.html' %}
-{% block title %}{{ _('Menu') }}{% endblock %}
+{% block title %}{{ _('Menu Items') }}{% endblock %}
 {% block content %}
-<h4><i class="bi bi-list-nested me-2"></i>{{ _('Menu Items') }}</h4>
-<p class="text-muted">{{ _('Menu management — Faz 1') }}</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-list-nested me-2"></i>{{ _('Menu Items') }}</h4>
+  {% if current_user.is_superuser or 'menu.manage' in current_user_permissions %}
+  <a href="{{ url_for('menu.item_new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>{{ _('New Menu Item') }}
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>{{ _('Code') }}</th>
+          <th>{{ _('Label Key') }}</th>
+          <th>{{ _('Parent') }}</th>
+          <th>{{ _('Endpoint / URL') }}</th>
+          <th>{{ _('Required Permission') }}</th>
+          <th class="text-center">{{ _('Order') }}</th>
+          <th class="text-center">{{ _('Visible') }}</th>
+          <th class="text-end">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            {% if item.icon %}<i class="bi {{ item.icon }} me-1"></i>{% endif %}
+            <code>{{ item.code }}</code>
+            {% if is_critical(item) %}
+              <span class="badge bg-warning text-dark ms-1" title="{{ _('Critical core item') }}">{{ _('core') }}</span>
+            {% endif %}
+          </td>
+          <td class="small">{{ item.label_key }}</td>
+          <td class="small text-muted">
+            {% if item.parent %}<code>{{ item.parent.code }}</code>{% else %}—{% endif %}
+          </td>
+          <td class="small">
+            {% if item.endpoint %}<code>{{ item.endpoint }}</code>
+            {% elif item.url %}<span class="text-muted">{{ item.url }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="small"><code>{{ item.required_permission or '—' }}</code></td>
+          <td class="text-center">{{ item.order_index }}</td>
+          <td class="text-center">
+            <form method="post" action="{{ url_for('menu.item_toggle', item_id=item.id) }}" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-link p-0" title="{{ _('Toggle visibility') }}">
+                {% if item.is_visible %}
+                  <i class="bi bi-eye text-success"></i>
+                {% else %}
+                  <i class="bi bi-eye-slash text-muted"></i>
+                {% endif %}
+              </button>
+            </form>
+          </td>
+          <td class="text-end">
+            <a href="{{ url_for('menu.item_edit', item_id=item.id) }}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% if not is_critical(item) %}
+            <form method="post" action="{{ url_for('menu.item_delete', item_id=item.id) }}"
+                  class="d-inline" onsubmit="return confirm('{{ _('Delete this menu item?') }}');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">{{ _('No menu items yet.') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

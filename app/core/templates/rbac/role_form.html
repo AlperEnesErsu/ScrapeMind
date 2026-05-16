@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}{% if role %}{{ _('Edit Role') }}{% else %}{{ _('New Role') }}{% endif %}{% endblock %}
+{% block content %}
+<h4 class="mb-3">
+  <i class="bi bi-shield-lock me-2"></i>
+  {% if role %}{{ _('Edit Role') }}: <span class="text-muted">{{ role.name }}</span>
+  {% else %}{{ _('New Role') }}{% endif %}
+</h4>
+
+<form method="post" novalidate>
+  {{ form.csrf_token }}
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label" for="name">{{ form.name.label.text }}</label>
+      {{ form.name(class="form-control", required=True) }}
+      {% for err in form.name.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="col-md-8">
+      <label class="form-label" for="description">{{ form.description.label.text }}</label>
+      {{ form.description(class="form-control", rows=1) }}
+    </div>
+  </div>
+
+  <hr class="my-4">
+
+  <h6 class="text-muted mb-3">{{ _('Permissions') }}</h6>
+  {% if grouped_perms %}
+    <div class="row g-3">
+      {% for module, perms in grouped_perms.items() %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-header py-2 small fw-semibold text-uppercase text-muted">{{ module }}</div>
+          <div class="card-body">
+            {% for p in perms %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="permission_ids"
+                     value="{{ p.id }}" id="perm-{{ p.id }}"
+                     {% if p.id in selected_perm_ids %}checked{% endif %}>
+              <label class="form-check-label small" for="perm-{{ p.id }}">
+                <code>{{ p.code }}</code>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">{{ _('No permissions defined yet.') }}</p>
+  {% endif %}
+
+  <div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+    <a href="{{ url_for('rbac.role_list') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+  </div>
+</form>
+{% endblock %}
