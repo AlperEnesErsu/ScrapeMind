@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}404 — {{ _('Not Found') }}{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="display-1 text-secondary">404</h1>
+  <p class="lead">{{ _("The page you're looking for doesn't exist.") }}</p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+    <i class="bi bi-house me-1"></i>{{ _('Go to Dashboard') }}
+  </a>
+</div>
+{% endblock %}

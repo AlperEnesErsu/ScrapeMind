@@ -1,0 +1,87 @@
+"""Seed script — ilk admin kullanıcı, default roller, default menü.
+
+Kullanım:
+    python scripts/seed.py
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app import create_app
+from app.core.auth.strategies.local import LocalAuthStrategy
+from app.core.models.menu import MenuItem
+from app.core.models.permission import Permission
+from app.core.models.role import Role
+from app.core.models.settings import SystemSettings
+from app.core.models.user import User
+from app.extensions import db
+
+app = create_app()
+
+with app.app_context():
+    # --- Permissions ---
+    core_perms = [
+        ("roles.view", "perm.roles.view"),
+        ("roles.edit", "perm.roles.edit"),
+        ("menu.view", "perm.menu.view"),
+        ("audit.view", "perm.audit.view"),
+        ("dashboard.view", "perm.dashboard.view"),
+    ]
+    for code, label_key in core_perms:
+        if not Permission.query.filter_by(code=code).first():
+            db.session.add(Permission(code=code, label_key=label_key))
+
+    db.session.flush()
+
+    # --- Admin role ---
+    admin_role = Role.query.filter_by(name="admin").first()
+    if not admin_role:
+        admin_role = Role(name="admin", description="Full access")
+        db.session.add(admin_role)
+        db.session.flush()
+
+    admin_role.permissions = Permission.query.all()
+
+    # --- Admin user ---
+    if not User.query.filter_by(username="admin").first():
+        admin = User(
+            username="admin",
+            email="admin@scrapemind.local",
+            full_name="Admin",
+            is_superuser=True,
+            password_hash=LocalAuthStrategy.hash_password("admin1234"),
+        )
+        db.session.add(admin)
+        db.session.flush()
+        admin.roles.append(admin_role)
+
+    # --- System settings defaults ---
+    defaults = {
+        "oauth_auto_register": False,
+        "app_name": "ScrapeMind",
+    }
+    for key, value in defaults.items():
+        if not db.session.get(SystemSettings, key):
+            db.session.add(SystemSettings(key=key, value=value))
+
+    # --- Core menu items ---
+    core_menu = [
+        dict(code="dashboard_root", label_key="menu.dashboard", icon="bi-speedometer2",
+             endpoint="dashboard.index", order_index=10),
+        dict(code="admin_roles", label_key="menu.roles", icon="bi-shield-lock",
+             endpoint="rbac.role_list", required_permission="roles.view", order_index=50),
+        dict(code="admin_menu", label_key="menu.menu_items", icon="bi-list-nested",
+             endpoint="menu.menu_list", required_permission="menu.view", order_index=60),
+        dict(code="admin_audit", label_key="menu.audit", icon="bi-journal-text",
+             endpoint="audit.log_list", required_permission="audit.view", order_index=70),
+        dict(code="settings_profile", label_key="menu.profile", icon="bi-person-circle",
+             endpoint="settings.profile", order_index=90),
+    ]
+    for m in core_menu:
+        if not MenuItem.query.filter_by(code=m["code"]).first():
+            db.session.add(MenuItem(**m))
+
+    db.session.commit()
+    print("Seed tamamlandi. Admin: admin / admin1234")

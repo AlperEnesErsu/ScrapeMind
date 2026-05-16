@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Audit Log') }}{% endblock %}
+{% block content %}
+<h4><i class="bi bi-journal-text me-2"></i>{{ _('Audit Log') }}</h4>
+<table class="table table-sm table-hover">
+  <thead>
+    <tr>
+      <th>{{ _('Time') }}</th><th>{{ _('User') }}</th>
+      <th>{{ _('Action') }}</th><th>{{ _('Entity') }}</th><th>{{ _('IP') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for log in logs.items %}
+    <tr>
+      <td class="text-muted small">{{ log.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+      <td>{{ log.user_id or '—' }}</td>
+      <td><code>{{ log.action }}</code></td>
+      <td>{{ log.entity_type }}{% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>
+      <td class="text-muted small">{{ log.ip_address or '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="text-center text-muted">{{ _('No entries yet.') }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% include 'core/_pagination.html' with context %}
+{% endblock %}

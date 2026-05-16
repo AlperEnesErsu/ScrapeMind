@@ -1,0 +1,46 @@
+<nav class="navbar navbar-expand-lg sticky-top border-bottom" id="topbar" style="background: var(--topbar-bg);">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ url_for('dashboard.index') }}">
+      <i class="bi bi-brain"></i> ScrapeMind
+    </a>
+
+    <div class="d-flex align-items-center gap-3 ms-auto">
+      {# Global search — HTMX live #}
+      <form class="d-none d-md-flex" role="search">
+        <input class="form-control form-control-sm" type="search" placeholder="{{ _('Search…') }}"
+               hx-get="/search" hx-trigger="keyup changed delay:400ms" hx-target="#search-results">
+      </form>
+
+      {# Language picker #}}
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+          {{ g.locale | upper }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="?lang=tr">TR</a></li>
+          <li><a class="dropdown-item" href="?lang=en">EN</a></li>
+        </ul>
+      </div>
+
+      {# User dropdown #}}
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1" data-bs-toggle="dropdown">
+          <i class="bi bi-person-circle"></i>
+          {{ current_user.full_name or current_user.username }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="{{ url_for('settings.profile') }}"><i class="bi bi-person me-2"></i>{{ _('Profile') }}</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('settings.system') }}"><i class="bi bi-gear me-2"></i>{{ _('Settings') }}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <button class="dropdown-item" id="theme-toggle">
+              <i class="bi bi-moon-stars me-2"></i>{{ _('Toggle Theme') }}
+            </button>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>{{ _('Sign Out') }}</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>

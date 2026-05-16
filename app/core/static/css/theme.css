@@ -1,0 +1,87 @@
+/* Light theme (default) */
+:root {
+  --bg: #f8f9fa;
+  --text: #212529;
+  --sidebar-bg: #ffffff;
+  --sidebar-width: 240px;
+  --topbar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --border-color: #dee2e6;
+  --nav-link-active-bg: #0d6efd;
+  --nav-link-hover-bg: #e9ecef;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --text: #e0e0e0;
+  --sidebar-bg: #242424;
+  --topbar-bg: #242424;
+  --card-bg: #2d2d2d;
+  --border-color: #404040;
+  --nav-link-hover-bg: #333333;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Sidebar */
+#sidebar {
+  transition: width 0.2s ease;
+}
+
+#sidebar.collapsed {
+  width: 56px !important;
+}
+
+#sidebar.collapsed .sidebar-label {
+  display: none;
+}
+
+#sidebar.collapsed .sidebar-icon-only {
+  display: inline !important;
+}
+
+#sidebar .nav-link {
+  color: var(--text);
+  border-radius: 6px;
+}
+
+#sidebar .nav-link:hover {
+  background: var(--nav-link-hover-bg);
+}
+
+#sidebar .nav-link.active {
+  background: var(--nav-link-active-bg);
+  color: #fff;
+}
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+/* Topbar */
+#topbar {
+  border-color: var(--border-color) !important;
+}
+
+/* Mobile sidebar — off-canvas below 768px */
+@media (max-width: 767.98px) {
+  #sidebar {
+    position: fixed;
+    z-index: 1050;
+    top: 56px;
+    left: -240px;
+    height: calc(100vh - 56px);
+    transition: left 0.25s ease;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+  }
+
+  #sidebar.mobile-open {
+    left: 0;
+  }
+}

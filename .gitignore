@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+venv/
+.env
+*.log
+logs/
+uploads/*
+!uploads/.gitkeep
+ssl/*.pem
+ssl/*.key
+instance/
+flask_session/
+models/
