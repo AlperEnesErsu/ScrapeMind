@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScrapeMind 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-16\n"
-"PO-Revision-Date: 2026-05-16\n"
+"POT-Creation-Date: 2026-05-16 00:00+0300\n"
+"PO-Revision-Date: 2026-05-16 00:00+0300\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -132,8 +132,343 @@ msgstr "ScrapeMind modülleri bu paneli Faz 2'de dolduracak."
 msgid "Role management — Faz 1"
 msgstr "Rol yönetimi — Faz 1"
 
+# --- Menu i18n keys (sidebar label_key değerleri) ---
+msgid "menu.dashboard"
+msgstr "Dashboard"
+
+msgid "menu.roles"
+msgstr "Roller"
+
+msgid "menu.menu_items"
+msgstr "Menü Öğeleri"
+
+msgid "menu.audit"
+msgstr "Denetim Kaydı"
+
+msgid "menu.profile"
+msgstr "Profil"
+
+msgid "menu.permissions"
+msgstr "İzinler"
+
 msgid "Menu management — Faz 1"
 msgstr "Menü yönetimi — Faz 1"
+
+# --- RBAC ---
+msgid "New Role"
+msgstr "Yeni Rol"
+
+msgid "Edit Role"
+msgstr "Rolü Düzenle"
+
+msgid "Role Name"
+msgstr "Rol Adı"
+
+msgid "Description"
+msgstr "Açıklama"
+
+msgid "Permissions"
+msgstr "İzinler"
+
+msgid "Name"
+msgstr "Ad"
+
+msgid "Actions"
+msgstr "İşlemler"
+
+msgid "Edit"
+msgstr "Düzenle"
+
+msgid "Save"
+msgstr "Kaydet"
+
+msgid "Cancel"
+msgstr "İptal"
+
+msgid "Delete this role?"
+msgstr "Bu rolü silmek istiyor musunuz?"
+
+msgid "No roles yet."
+msgstr "Henüz rol yok."
+
+msgid "No permissions defined yet."
+msgstr "Henüz tanımlı izin yok."
+
+msgid "Permissions are defined by module manifests and synced on startup. They cannot be edited manually."
+msgstr "İzinler modül manifest'lerinde tanımlanır ve başlangıçta senkronize edilir. Elle düzenlenemez."
+
+msgid "Role created."
+msgstr "Rol oluşturuldu."
+
+msgid "Role updated."
+msgstr "Rol güncellendi."
+
+msgid "Role deleted."
+msgstr "Rol silindi."
+
+msgid "The admin role cannot be deleted."
+msgstr "Admin rolü silinemez."
+
+# --- Menu CRUD ---
+msgid "New Menu Item"
+msgstr "Yeni Menü Öğesi"
+
+msgid "Edit Menu Item"
+msgstr "Menü Öğesini Düzenle"
+
+msgid "Menu Items"
+msgstr "Menü Öğeleri"
+
+msgid "Code"
+msgstr "Kod"
+
+msgid "Label Key"
+msgstr "Etiket Anahtarı"
+
+msgid "Icon (Bootstrap Icons class)"
+msgstr "İkon (Bootstrap Icons sınıfı)"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "Endpoint"
+msgstr "Endpoint"
+
+msgid "Endpoint / URL"
+msgstr "Endpoint / URL"
+
+msgid "Parent"
+msgstr "Üst Öğe"
+
+msgid "Module"
+msgstr "Modül"
+
+msgid "Required Permission"
+msgstr "Gerekli İzin"
+
+msgid "Order"
+msgstr "Sıra"
+
+msgid "Visible"
+msgstr "Görünür"
+
+msgid "Toggle visibility"
+msgstr "Görünürlüğü değiştir"
+
+msgid "core"
+msgstr "çekirdek"
+
+msgid "Critical core item"
+msgstr "Kritik çekirdek öğe"
+
+msgid "Code is immutable after creation."
+msgstr "Kod oluşturulduktan sonra değiştirilemez."
+
+msgid "Use either Endpoint or URL."
+msgstr "Endpoint veya URL'den birini kullanın."
+
+msgid "Lowercase letters, digits and underscores only."
+msgstr "Yalnızca küçük harf, rakam ve alt çizgi."
+
+msgid "This code is already in use."
+msgstr "Bu kod zaten kullanımda."
+
+msgid "Unknown endpoint."
+msgstr "Bilinmeyen endpoint."
+
+msgid "Parent would create a cycle."
+msgstr "Bu üst öğe döngü oluşturur."
+
+msgid "Menu item created."
+msgstr "Menü öğesi oluşturuldu."
+
+msgid "Menu item updated."
+msgstr "Menü öğesi güncellendi."
+
+msgid "Menu item deleted."
+msgstr "Menü öğesi silindi."
+
+msgid "Visibility updated."
+msgstr "Görünürlük güncellendi."
+
+msgid "Delete this menu item?"
+msgstr "Bu menü öğesini silmek istiyor musunuz?"
+
+msgid "No menu items yet."
+msgstr "Henüz menü öğesi yok."
+
+msgid "This menu item is critical and cannot be deleted."
+msgstr "Bu menü öğesi kritik ve silinemez."
+
+# --- Profile tabs ---
+msgid "Personal Info"
+msgstr "Kişisel Bilgi"
+
+msgid "Email"
+msgstr "E-posta"
+
+msgid "Password"
+msgstr "Şifre"
+
+msgid "Preferences"
+msgstr "Tercihler"
+
+msgid "OAuth Accounts"
+msgstr "OAuth Hesapları"
+
+msgid "Account"
+msgstr "Hesap"
+
+msgid "Full Name"
+msgstr "Ad Soyad"
+
+msgid "Avatar URL"
+msgstr "Profil Resmi URL"
+
+msgid "Current Password"
+msgstr "Mevcut Şifre"
+
+msgid "New Password"
+msgstr "Yeni Şifre"
+
+msgid "Confirm New Password"
+msgstr "Yeni Şifre (Onay)"
+
+msgid "Change Password"
+msgstr "Şifre Değiştir"
+
+msgid "Minimum 8 characters."
+msgstr "En az 8 karakter."
+
+msgid "Passwords do not match."
+msgstr "Şifreler eşleşmiyor."
+
+msgid "Required to confirm your identity."
+msgstr "Kimliğinizi doğrulamak için gereklidir."
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Timezone"
+msgstr "Saat Dilimi"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "Light"
+msgstr "Açık"
+
+msgid "Dark"
+msgstr "Koyu"
+
+msgid "Language and theme changes apply on next page load."
+msgstr "Dil ve tema değişiklikleri sonraki sayfa yüklenişinde uygulanır."
+
+msgid "Profile updated."
+msgstr "Profil güncellendi."
+
+msgid "Email updated."
+msgstr "E-posta güncellendi."
+
+msgid "Password changed."
+msgstr "Şifre değiştirildi."
+
+msgid "Preferences updated."
+msgstr "Tercihler güncellendi."
+
+msgid "Please correct the errors below."
+msgstr "Aşağıdaki hataları düzeltin."
+
+msgid "Current password is incorrect."
+msgstr "Mevcut şifre yanlış."
+
+msgid "Email already in use."
+msgstr "Bu e-posta zaten kullanımda."
+
+msgid "Local password not set for this account."
+msgstr "Bu hesap için yerel şifre tanımlı değil."
+
+msgid "Connected"
+msgstr "Bağlı"
+
+msgid "No OAuth accounts linked."
+msgstr "Bağlı OAuth hesabı yok."
+
+msgid "Linking and unlinking accounts will be available in Phase 2."
+msgstr "Hesap bağlama/koparma Faz 2'de gelecek."
+
+msgid "Username"
+msgstr "Kullanıcı Adı"
+
+msgid "User ID"
+msgstr "Kullanıcı ID"
+
+msgid "Account created"
+msgstr "Hesap oluşturulma"
+
+msgid "Last login"
+msgstr "Son giriş"
+
+msgid "Status"
+msgstr "Durum"
+
+msgid "Superuser"
+msgstr "Süper Yönetici"
+
+msgid "Active"
+msgstr "Aktif"
+
+msgid "Inactive"
+msgstr "Pasif"
+
+# --- Register / Password reset ---
+msgid "Create Account"
+msgstr "Hesap Oluştur"
+
+msgid "Already have an account?"
+msgstr "Zaten hesabın var mı?"
+
+msgid "Don't have an account?"
+msgstr "Hesabın yok mu?"
+
+msgid "Use letters, digits, dot, dash, underscore only."
+msgstr "Yalnızca harf, rakam, nokta, tire, alt çizgi."
+
+msgid "Confirm Password"
+msgstr "Şifre (Onay)"
+
+msgid "Account created. You can sign in now."
+msgstr "Hesap oluşturuldu. Şimdi giriş yapabilirsin."
+
+msgid "Username already in use."
+msgstr "Bu kullanıcı adı zaten kullanımda."
+
+msgid "Forgot Password"
+msgstr "Şifremi Unuttum"
+
+msgid "Enter your email and we will send you a reset link."
+msgstr "E-posta adresini gir, sana sıfırlama bağlantısı gönderelim."
+
+msgid "Back to Sign In"
+msgstr "Giriş sayfasına dön"
+
+msgid "If that email exists, a reset link has been sent."
+msgstr "Bu e-posta kayıtlıysa bir sıfırlama bağlantısı gönderildi."
+
+msgid "Dev mode: reset link → %(url)s"
+msgstr "Geliştirme modu: sıfırlama bağlantısı → %(url)s"
+
+msgid "Reset Password"
+msgstr "Şifreyi Sıfırla"
+
+msgid "Reset link is invalid or expired."
+msgstr "Sıfırlama bağlantısı geçersiz veya süresi dolmuş."
+
+msgid "Password reset. You can sign in now."
+msgstr "Şifre sıfırlandı. Şimdi giriş yapabilirsin."
+
+msgid "Send Reset Link"
+msgstr "Sıfırlama Bağlantısı Gönder"
 
 msgid "Profile & preferences — Faz 1"
 msgstr "Profil ve tercihler — Faz 1"

@@ -8,12 +8,15 @@ logger = structlog.get_logger()
 
 
 def create_app() -> Flask:
+    import app.core.models  # noqa: F401 — registers all SQLAlchemy models before init
+
     app = Flask(__name__, template_folder="core/templates", static_folder="core/static")
     app.config.from_object(get_config())
 
     _init_extensions(app)
     _init_logging()
     _register_blueprints(app)
+    _register_context_processors(app)
     _register_error_handlers(app)
 
     # Plugin discovery runs AFTER extensions so db is ready.
@@ -34,6 +37,7 @@ def create_app() -> Flask:
 
 def _init_extensions(app: Flask) -> None:
     db.init_app(app)
+
     migrate.init_app(app, db)
     login_manager.init_app(app)
     oauth.init_app(app)
@@ -56,6 +60,27 @@ def _init_logging() -> None:
             structlog.dev.ConsoleRenderer() if True else structlog.processors.JSONRenderer(),
         ]
     )
+
+
+def _register_context_processors(app: Flask) -> None:
+    from flask_login import current_user
+
+    @app.context_processor
+    def inject_menu() -> dict:
+        """Inject menu_nodes and current_user_permissions into templates."""
+        if current_user.is_authenticated:
+            from app.core.menu.builder import build_menu_for_user
+            from app.core.rbac.service import get_user_permissions
+            try:
+                nodes = build_menu_for_user(current_user)
+            except Exception:
+                nodes = []
+            try:
+                perms = get_user_permissions(current_user)
+            except Exception:
+                perms = frozenset()
+            return {"menu_nodes": nodes, "current_user_permissions": perms}
+        return {"menu_nodes": [], "current_user_permissions": frozenset()}
 
 
 def _register_blueprints(app: Flask) -> None:

@@ -61,3 +61,9 @@ class LocalAuthStrategy(AuthStrategy):
     @staticmethod
     def hash_password(plain: str) -> str:
         return _pwd_ctx.hash(plain)
+
+    @staticmethod
+    def verify_password(plain: str, hashed: str) -> bool:
+        if not hashed:
+            return False
+        return _pwd_ctx.verify(plain, hashed)

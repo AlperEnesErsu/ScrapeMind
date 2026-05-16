@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Create Account') }} — ScrapeMind{% endblock %}
+
+{% block auth_content %}
+<div class="row justify-content-center">
+  <div class="col-sm-10 col-md-7 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="card-title text-center mb-4">
+          <i class="bi bi-person-plus me-2"></i>{{ _('Create Account') }}
+        </h4>
+
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            {{ form.username.label(class='form-label') }}
+            {{ form.username(class='form-control' + (' is-invalid' if form.username.errors else '')) }}
+            {% for e in form.username.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.email.label(class='form-label') }}
+            {{ form.email(class='form-control' + (' is-invalid' if form.email.errors else ''), type='email') }}
+            {% for e in form.email.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.full_name.label(class='form-label') }}
+            {{ form.full_name(class='form-control' + (' is-invalid' if form.full_name.errors else '')) }}
+            {% for e in form.full_name.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.password.label(class='form-label') }}
+            {{ form.password(class='form-control' + (' is-invalid' if form.password.errors else ''), minlength=8) }}
+            {% for e in form.password.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            <div class="form-text">{{ _('Minimum 8 characters.') }}</div>
+          </div>
+
+          <div class="mb-3">
+            {{ form.password2.label(class='form-label') }}
+            {{ form.password2(class='form-control' + (' is-invalid' if form.password2.errors else '')) }}
+            {% for e in form.password2.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          </div>
+
+          {{ form.submit(class='btn btn-primary w-100') }}
+        </form>
+
+        <p class="text-center mt-3 small">
+          {{ _('Already have an account?') }}
+          <a href="{{ url_for('auth.login') }}">{{ _('Sign In') }}</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

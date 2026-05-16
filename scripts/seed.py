@@ -24,8 +24,10 @@ with app.app_context():
     # --- Permissions ---
     core_perms = [
         ("roles.view", "perm.roles.view"),
-        ("roles.edit", "perm.roles.edit"),
+        ("roles.manage", "perm.roles.manage"),
+        ("permissions.view", "perm.permissions.view"),
         ("menu.view", "perm.menu.view"),
+        ("menu.manage", "perm.menu.manage"),
         ("audit.view", "perm.audit.view"),
         ("dashboard.view", "perm.dashboard.view"),
     ]
@@ -43,6 +45,17 @@ with app.app_context():
         db.session.flush()
 
     admin_role.permissions = Permission.query.all()
+
+    # --- Default "user" role (assigned on self-register) ---
+    user_role = Role.query.filter_by(name="user").first()
+    if not user_role:
+        user_role = Role(name="user", description="Default role for self-registered users")
+        db.session.add(user_role)
+        db.session.flush()
+    # Give the default role just dashboard.view so newcomers can land somewhere.
+    dashboard_view = Permission.query.filter_by(code="dashboard.view").first()
+    if dashboard_view and dashboard_view not in user_role.permissions:
+        user_role.permissions = [dashboard_view]
 
     # --- Admin user ---
     if not User.query.filter_by(username="admin").first():
@@ -72,6 +85,8 @@ with app.app_context():
              endpoint="dashboard.index", order_index=10),
         dict(code="admin_roles", label_key="menu.roles", icon="bi-shield-lock",
              endpoint="rbac.role_list", required_permission="roles.view", order_index=50),
+        dict(code="admin_permissions", label_key="menu.permissions", icon="bi-key",
+             endpoint="rbac.permission_list", required_permission="permissions.view", order_index=55),
         dict(code="admin_menu", label_key="menu.menu_items", icon="bi-list-nested",
              endpoint="menu.menu_list", required_permission="menu.view", order_index=60),
         dict(code="admin_audit", label_key="menu.audit", icon="bi-journal-text",
