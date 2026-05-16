@@ -17,7 +17,6 @@ class SoftDeleteQuery(Query):
 
     def _filter_deleted(self, query):
         if not self._with_deleted:
-            from sqlalchemy import inspect
 
             mapper = self._entity_zero().mapper
             if hasattr(mapper.class_, "deleted_at"):
@@ -32,7 +31,6 @@ class SoftDeleteQuery(Query):
     def only_deleted(self):
         obj = self._clone()
         obj._with_deleted = True
-        from sqlalchemy import inspect
 
         mapper = self._entity_zero().mapper
         if hasattr(mapper.class_, "deleted_at"):

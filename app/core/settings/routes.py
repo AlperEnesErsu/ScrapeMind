@@ -103,7 +103,9 @@ def submit_personal():
         log_action("user.update_personal", entity_type="user", entity_id=current_user.id)
         ctx = _personal_ctx()
         return _render_tab("personal", flash_msg=_("Profile updated."), flash_kind="success", **ctx)
-    return _render_tab("personal", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger")
+    return _render_tab(
+        "personal", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
 
 
 @settings_bp.route("/profile/email", methods=["POST"])
@@ -117,7 +119,9 @@ def submit_email():
             ctx = _email_ctx()
             return _render_tab("email", flash_msg=_("Email updated."), flash_kind="success", **ctx)
         return _render_tab("email", form=form, flash_msg=_(err), flash_kind="danger")
-    return _render_tab("email", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger")
+    return _render_tab(
+        "email", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
 
 
 @settings_bp.route("/profile/password", methods=["POST"])
@@ -128,10 +132,16 @@ def submit_password():
         ok, err = change_password(current_user, form.current_password.data, form.new_password.data)
         if ok:
             log_action("user.change_password", entity_type="user", entity_id=current_user.id)
-            return _render_tab("password", form=PasswordChangeForm(),
-                               flash_msg=_("Password changed."), flash_kind="success")
+            return _render_tab(
+                "password",
+                form=PasswordChangeForm(),
+                flash_msg=_("Password changed."),
+                flash_kind="success",
+            )
         return _render_tab("password", form=form, flash_msg=_(err), flash_kind="danger")
-    return _render_tab("password", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger")
+    return _render_tab(
+        "password", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
 
 
 @settings_bp.route("/profile/prefs", methods=["POST"])
@@ -140,11 +150,23 @@ def submit_prefs():
     form = PreferencesForm()
     if form.validate_on_submit():
         update_preferences(current_user, form.locale.data, form.timezone.data, form.theme.data)
-        log_action("user.update_prefs", entity_type="user", entity_id=current_user.id,
-                   changes={"locale": form.locale.data, "timezone": form.timezone.data, "theme": form.theme.data})
+        log_action(
+            "user.update_prefs",
+            entity_type="user",
+            entity_id=current_user.id,
+            changes={
+                "locale": form.locale.data,
+                "timezone": form.timezone.data,
+                "theme": form.theme.data,
+            },
+        )
         ctx = _prefs_ctx()
-        return _render_tab("prefs", flash_msg=_("Preferences updated."), flash_kind="success", **ctx)
-    return _render_tab("prefs", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger")
+        return _render_tab(
+            "prefs", flash_msg=_("Preferences updated."), flash_kind="success", **ctx
+        )
+    return _render_tab(
+        "prefs", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
 
 
 @settings_bp.route("/system")

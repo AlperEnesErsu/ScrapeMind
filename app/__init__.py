@@ -24,13 +24,17 @@ def create_app() -> Flask:
     # During `flask db init/migrate` the tables don't exist yet; we skip silently.
     with app.app_context():
         from sqlalchemy import inspect as sa_inspect
+
         from app.modules import discover_and_sync_modules
 
         inspector = sa_inspect(db.engine)
         if inspector.has_table("modules"):
             discover_and_sync_modules()
         else:
-            logger.warning("plugin_discovery_skipped", reason="modules table not found — run flask db upgrade first")
+            logger.warning(
+                "plugin_discovery_skipped",
+                reason="modules table not found — run flask db upgrade first",
+            )
 
     return app
 
@@ -49,6 +53,7 @@ def _init_extensions(app: Flask) -> None:
     login_manager.login_message_category = "warning"
 
     from app.core.i18n.utils import init_babel
+
     init_babel(app, babel)
 
 
@@ -71,6 +76,7 @@ def _register_context_processors(app: Flask) -> None:
         if current_user.is_authenticated:
             from app.core.menu.builder import build_menu_for_user
             from app.core.rbac.service import get_user_permissions
+
             try:
                 nodes = build_menu_for_user(current_user)
             except Exception:
@@ -84,8 +90,8 @@ def _register_context_processors(app: Flask) -> None:
 
 
 def _register_blueprints(app: Flask) -> None:
-    from app.core.auth import auth_bp
     from app.core.audit.routes import audit_bp
+    from app.core.auth import auth_bp
     from app.core.menu.routes import menu_bp
     from app.core.rbac.routes import rbac_bp
     from app.core.settings.routes import settings_bp

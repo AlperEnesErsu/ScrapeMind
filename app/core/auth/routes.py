@@ -31,9 +31,7 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = _local.authenticate(
-            {"username": form.username.data, "password": form.password.data}
-        )
+        user = _local.authenticate({"username": form.username.data, "password": form.password.data})
         if user is None:
             flash(_("Invalid credentials or account locked."), "danger")
             return render_template("auth/login.html", form=form)
@@ -113,6 +111,7 @@ def reset_password_view(token: str):
 
 def current_app_is_debug() -> bool:
     from flask import current_app
+
     return bool(current_app.debug)
 
 

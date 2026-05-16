@@ -10,7 +10,9 @@ class RegisterForm(FlaskForm):
         validators=[
             DataRequired(),
             Length(min=3, max=64),
-            Regexp(r"^[a-zA-Z0-9_.-]+$", message=_l("Use letters, digits, dot, dash, underscore only.")),
+            Regexp(
+                r"^[a-zA-Z0-9_.-]+$", message=_l("Use letters, digits, dot, dash, underscore only.")
+            ),
         ],
     )
     email = StringField(_l("Email"), validators=[DataRequired(), Email(), Length(max=255)])

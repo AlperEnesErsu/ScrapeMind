@@ -51,7 +51,9 @@ def _validate_business(form: MenuItemForm, item_id: int | None) -> bool:
     if form.endpoint.data and not endpoint_exists(form.endpoint.data.strip()):
         form.endpoint.errors = [*form.endpoint.errors, _("Unknown endpoint.")]
         ok = False
-    parent_id = form.parent_id.data if form.parent_id.data and int(form.parent_id.data) != 0 else None
+    parent_id = (
+        form.parent_id.data if form.parent_id.data and int(form.parent_id.data) != 0 else None
+    )
     if parent_id and has_cycle(item_id, parent_id):
         form.parent_id.errors = [*form.parent_id.errors, _("Parent would create a cycle.")]
         ok = False
@@ -76,8 +78,12 @@ def item_new():
             form.code.errors = [*form.code.errors, _("This code is already in use.")]
         else:
             item = create_item(_form_data_dict(form))
-            log_action("menu.create", entity_type="menu_item", entity_id=item.id,
-                       changes={"code": item.code})
+            log_action(
+                "menu.create",
+                entity_type="menu_item",
+                entity_id=item.id,
+                changes={"code": item.code},
+            )
             flash(_("Menu item created."), "success")
             return redirect(url_for("menu.menu_list"))
     return render_template("menu/menu_form.html", form=form, item=None)
@@ -98,8 +104,9 @@ def item_edit(item_id: int):
         form.required_permission.data = item.required_permission or ""
     if form.validate_on_submit() and _validate_business(form, item_id=item.id):
         update_item(item, _form_data_dict(form))
-        log_action("menu.update", entity_type="menu_item", entity_id=item.id,
-                   changes={"code": item.code})
+        log_action(
+            "menu.update", entity_type="menu_item", entity_id=item.id, changes={"code": item.code}
+        )
         flash(_("Menu item updated."), "success")
         return redirect(url_for("menu.menu_list"))
     return render_template("menu/menu_form.html", form=form, item=item)
@@ -117,8 +124,9 @@ def item_delete(item_id: int):
         return redirect(url_for("menu.menu_list"))
     code = item.code
     hard_delete(item)
-    log_action("menu.delete", entity_type="menu_item", entity_id=item_id,
-               changes={"code": code})
+    log_action(
+        "menu.delete", entity_type="menu_item", entity_id=str(item_id), changes={"code": code}
+    )
     flash(_("Menu item deleted."), "success")
     return redirect(url_for("menu.menu_list"))
 
@@ -131,7 +139,8 @@ def item_toggle(item_id: int):
     if item is None:
         abort(404)
     new_state = toggle_visible(item)
-    log_action("menu.toggle", entity_type="menu_item", entity_id=item.id,
-               changes={"is_visible": new_state})
+    log_action(
+        "menu.toggle", entity_type="menu_item", entity_id=item.id, changes={"is_visible": new_state}
+    )
     flash(_("Visibility updated."), "success")
     return redirect(url_for("menu.menu_list"))

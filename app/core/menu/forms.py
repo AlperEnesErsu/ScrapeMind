@@ -10,7 +10,9 @@ class MenuItemForm(FlaskForm):
         validators=[
             DataRequired(),
             Length(min=2, max=64),
-            Regexp(r"^[a-z][a-z0-9_]*$", message=_l("Lowercase letters, digits and underscores only.")),
+            Regexp(
+                r"^[a-z][a-z0-9_]*$", message=_l("Lowercase letters, digits and underscores only.")
+            ),
         ],
     )
     label_key = StringField(_l("Label Key"), validators=[DataRequired(), Length(min=2, max=128)])
