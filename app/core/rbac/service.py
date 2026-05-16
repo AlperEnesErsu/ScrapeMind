@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.core.models.permission import Permission
 from app.core.models.role import Role
@@ -40,7 +40,9 @@ def list_permissions_by_module() -> dict[str, list[Permission]]:
 
 def create_role(name: str, description: str | None, permission_ids: list[int]) -> Role:
     role = Role(name=name.strip(), description=(description or "").strip() or None)
-    role.permissions = Permission.query.filter(Permission.id.in_(permission_ids)).all() if permission_ids else []
+    role.permissions = (
+        Permission.query.filter(Permission.id.in_(permission_ids)).all() if permission_ids else []
+    )
     db.session.add(role)
     db.session.commit()
     return role
@@ -49,11 +51,13 @@ def create_role(name: str, description: str | None, permission_ids: list[int]) -
 def update_role(role: Role, name: str, description: str | None, permission_ids: list[int]) -> Role:
     role.name = name.strip()
     role.description = (description or "").strip() or None
-    role.permissions = Permission.query.filter(Permission.id.in_(permission_ids)).all() if permission_ids else []
+    role.permissions = (
+        Permission.query.filter(Permission.id.in_(permission_ids)).all() if permission_ids else []
+    )
     db.session.commit()
     return role
 
 
 def soft_delete_role(role: Role) -> None:
-    role.deleted_at = datetime.now(timezone.utc)
+    role.deleted_at = datetime.now(UTC)
     db.session.commit()

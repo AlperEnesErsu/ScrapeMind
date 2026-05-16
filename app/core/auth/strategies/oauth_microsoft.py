@@ -1,4 +1,4 @@
-from flask import current_app, url_for
+from flask import url_for
 
 from app.core.auth.strategies.base import AuthStrategy
 from app.core.auth.strategies.oauth_base import resolve_oauth_user

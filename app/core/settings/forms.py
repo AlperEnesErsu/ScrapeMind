@@ -3,7 +3,6 @@ from flask_wtf import FlaskForm
 from wtforms import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
-
 SUPPORTED_LOCALES = [("tr", "Türkçe"), ("en", "English")]
 COMMON_TIMEZONES = [
     ("Europe/Istanbul", "Europe/Istanbul"),

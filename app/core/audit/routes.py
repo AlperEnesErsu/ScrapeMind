@@ -12,7 +12,5 @@ audit_bp = Blueprint("audit", __name__)
 @permission_required("audit.view")
 def log_list():
     page = request.args.get("page", 1, type=int)
-    logs = (
-        AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=50)
-    )
+    logs = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=50)
     return render_template("audit/list.html", logs=logs)

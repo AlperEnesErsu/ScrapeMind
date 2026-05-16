@@ -30,7 +30,9 @@ def update_personal_info(user: User, full_name: str, avatar_url: str | None) -> 
 
 def update_email(user: User, new_email: str, current_password: str) -> tuple[bool, str | None]:
     """Returns (success, error_msgid)."""
-    if user.password_hash and not LocalAuthStrategy.verify_password(current_password, user.password_hash):
+    if user.password_hash and not LocalAuthStrategy.verify_password(
+        current_password, user.password_hash
+    ):
         return False, "Current password is incorrect."
     new_email = new_email.strip().lower()
     if new_email == user.email:
@@ -42,7 +44,9 @@ def update_email(user: User, new_email: str, current_password: str) -> tuple[boo
     return True, None
 
 
-def change_password(user: User, current_password: str, new_password: str) -> tuple[bool, str | None]:
+def change_password(
+    user: User, current_password: str, new_password: str
+) -> tuple[bool, str | None]:
     if not user.password_hash:
         return False, "Local password not set for this account."
     if not LocalAuthStrategy.verify_password(current_password, user.password_hash):

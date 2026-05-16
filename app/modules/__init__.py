@@ -22,9 +22,9 @@ _MODULES_PKG = Path(__file__).parent
 
 def discover_and_sync_modules() -> None:
     """Scan app/modules/, import each manifest, upsert into DB (idempotent)."""
+    from app.core.models.menu import MenuItem
     from app.core.models.module import Module
     from app.core.models.permission import Permission
-    from app.core.models.menu import MenuItem
 
     for finder, name, ispkg in pkgutil.iter_modules([str(_MODULES_PKG)]):
         if name.startswith("_"):
@@ -41,7 +41,10 @@ def discover_and_sync_modules() -> None:
     logger.info("plugin_discovery_done")
 
 
-def _sync_module(Module, Permission, MenuItem, manifest: dict) -> None:
+def _sync_module(Module, Permission, MenuItem, manifest: dict) -> None:  # noqa: N803
+    # Model classes are passed in (rather than imported at module scope) so the
+    # discovery loop can be unit-tested with stand-ins. Capitalised names mirror
+    # the class identifiers; ruff's snake_case rule (N803) is suppressed here.
     code = manifest["code"]
 
     module = Module.query.get(code)
