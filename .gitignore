@@ -11,7 +11,10 @@ ssl/*.pem
 ssl/*.key
 instance/
 flask_session/
-models/
+# /models/ at project root was used for ad-hoc ML artifacts. The bare
+# `models/` pattern was global and silently swallowed app/core/models/ —
+# constrain it to the repo root.
+/models/
 
 # IDE / tooling
 .claude/
