@@ -20,4 +20,11 @@ limiter = Limiter(key_func=get_remote_address)
 def load_user(user_id: str):
     from app.core.models.user import User
 
-    return User.query.filter_by(id=int(user_id), deleted_at=None).first()
+    # Session is signed by Flask, so a tampered cookie won't get here — but
+    # an in-flight signing-key rotation or a hand-edited session can leave
+    # a non-numeric id. Treat anything unparseable as "no user".
+    try:
+        uid = int(user_id)
+    except (TypeError, ValueError):
+        return None
+    return User.query.filter_by(id=uid, deleted_at=None).first()

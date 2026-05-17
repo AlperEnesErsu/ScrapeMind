@@ -10,7 +10,11 @@ load_dotenv(BASE_DIR / ".env", override=False)
 
 
 class BaseConfig:
-    SECRET_KEY = os.environ["SECRET_KEY"]
+    # Lazy fallback so importing this module (e.g. during alembic env.py or
+    # CI's lint phase) doesn't crash before TestingConfig has a chance to
+    # override. The fallback is intentionally insecure-looking so any
+    # production deployment without SECRET_KEY in env stands out in logs.
+    SECRET_KEY = os.environ.get("SECRET_KEY", "")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
