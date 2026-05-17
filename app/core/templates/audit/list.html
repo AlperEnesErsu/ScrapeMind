@@ -1,27 +1,75 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('Audit Log') }}{% endblock %}
 {% block content %}
-<h4><i class="bi bi-journal-text me-2"></i>{{ _('Audit Log') }}</h4>
-<table class="table table-sm table-hover">
-  <thead>
-    <tr>
-      <th>{{ _('Time') }}</th><th>{{ _('User') }}</th>
-      <th>{{ _('Action') }}</th><th>{{ _('Entity') }}</th><th>{{ _('IP') }}</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for log in logs.items %}
-    <tr>
-      <td class="text-muted small">{{ log.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-      <td>{{ log.user_id or '—' }}</td>
-      <td><code>{{ log.action }}</code></td>
-      <td>{{ log.entity_type }}{% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>
-      <td class="text-muted small">{{ log.ip_address or '—' }}</td>
-    </tr>
-    {% else %}
-    <tr><td colspan="5" class="text-center text-muted">{{ _('No entries yet.') }}</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<h4 class="mb-3"><i class="bi bi-journal-text me-2"></i>{{ _('Audit Log') }}</h4>
+
+<form method="get" class="card card-body mb-3">
+  <div class="row g-2">
+    <div class="col-md-3">
+      <label class="form-label small">{{ _('User') }}</label>
+      <select name="user_id" class="form-select form-select-sm">
+        <option value="">{{ _('— Any —') }}</option>
+        {% for u in users %}
+          <option value="{{ u.id }}" {% if filters.user_id == u.id %}selected{% endif %}>{{ u.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small">{{ _('Action') }} <span class="text-muted">{{ _('(prefix)') }}</span></label>
+      <input list="actions-dl" type="text" name="action" value="{{ filters.action or '' }}" class="form-control form-control-sm">
+      <datalist id="actions-dl">
+        {% for a in actions %}<option value="{{ a }}">{% endfor %}
+      </datalist>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">{{ _('Entity') }}</label>
+      <select name="entity_type" class="form-select form-select-sm">
+        <option value="">{{ _('— Any —') }}</option>
+        {% for e in entity_types %}
+          <option value="{{ e }}" {% if filters.entity_type == e %}selected{% endif %}>{{ e }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">{{ _('From') }}</label>
+      <input type="date" name="date_from" value="{{ filters.date_from }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small">{{ _('To') }}</label>
+      <input type="date" name="date_to" value="{{ filters.date_to }}" class="form-control form-control-sm">
+    </div>
+  </div>
+  <div class="mt-3 d-flex gap-2">
+    <button class="btn btn-sm btn-primary" type="submit">{{ _('Apply') }}</button>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('audit.log_list') }}">{{ _('Reset') }}</a>
+    <span class="ms-auto small text-muted align-self-center">{{ logs.total }} {{ _('records') }}</span>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>{{ _('Time') }}</th><th>{{ _('User') }}</th>
+          <th>{{ _('Action') }}</th><th>{{ _('Entity') }}</th><th>{{ _('IP') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs.items %}
+        <tr>
+          <td class="text-muted small">{{ log.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+          <td>{{ log.user_id or '—' }}</td>
+          <td><code>{{ log.action }}</code></td>
+          <td>{{ log.entity_type }}{% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>
+          <td class="text-muted small">{{ log.ip_address or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted">{{ _('No entries match.') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% with pagination = logs %}{% include 'core/_pagination.html' %}{% endwith %}
 {% endblock %}

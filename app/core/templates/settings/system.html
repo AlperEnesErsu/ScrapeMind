@@ -1,6 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}{{ _('System Settings') }}{% endblock %}
 {% block content %}
-<h4><i class="bi bi-gear me-2"></i>{{ _('System Settings') }}</h4>
-<p class="text-muted">{{ _('System-wide settings — Faz 1') }}</p>
+<h4 class="mb-3"><i class="bi bi-gear me-2"></i>{{ _('System Settings') }}</h4>
+<p class="text-muted small">{{ _('These settings apply to the whole application.') }}</p>
+
+<form method="post" novalidate class="card card-body">
+  {{ form.csrf_token }}
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">{{ form.app_name.label.text }}</label>
+      {{ form.app_name(class="form-control", required=True) }}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.default_locale.label.text }}</label>
+      {{ form.default_locale(class="form-select") }}
+      <div class="form-text">{{ _('Used for anonymous visitors before they pick a language.') }}</div>
+    </div>
+
+    <div class="col-12"><hr class="my-1"></div>
+    <div class="col-md-6">
+      <div class="form-check form-switch">
+        {{ form.registration_open(class="form-check-input") }}
+        <label class="form-check-label" for="registration_open">{{ form.registration_open.label.text }}</label>
+      </div>
+      <div class="form-text">{{ _('Allow visitors to create accounts via /auth/register.') }}</div>
+    </div>
+    <div class="col-md-6">
+      <div class="form-check form-switch">
+        {{ form.oauth_auto_register(class="form-check-input") }}
+        <label class="form-check-label" for="oauth_auto_register">{{ form.oauth_auto_register.label.text }}</label>
+      </div>
+      <div class="form-text">{{ _('On unknown OAuth identity, create a new account automatically.') }}</div>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+  </div>
+</form>
 {% endblock %}

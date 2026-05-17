@@ -94,14 +94,18 @@ def _register_blueprints(app: Flask) -> None:
     from app.core.auth import auth_bp
     from app.core.menu.routes import menu_bp
     from app.core.rbac.routes import rbac_bp
+    from app.core.search.routes import search_bp
     from app.core.settings.routes import settings_bp
+    from app.core.users.routes import users_bp
     from app.modules.dashboard import dashboard_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(rbac_bp, url_prefix="/admin/rbac")
     app.register_blueprint(menu_bp, url_prefix="/admin/menu")
+    app.register_blueprint(users_bp, url_prefix="/admin/users")
     app.register_blueprint(settings_bp, url_prefix="/settings")
     app.register_blueprint(audit_bp, url_prefix="/admin/audit")
+    app.register_blueprint(search_bp, url_prefix="/")
     app.register_blueprint(dashboard_bp, url_prefix="/")
 
 

@@ -467,8 +467,197 @@ msgstr "Sıfırlama bağlantısı geçersiz veya süresi dolmuş."
 msgid "Password reset. You can sign in now."
 msgstr "Şifre sıfırlandı. Şimdi giriş yapabilirsin."
 
-msgid "Send Reset Link"
-msgstr "Sıfırlama Bağlantısı Gönder"
+# --- Users panel ---
+msgid "Users"
+msgstr "Kullanıcılar"
+
+msgid "Edit User"
+msgstr "Kullanıcıyı Düzenle"
+
+msgid "Search by username, email, name…"
+msgstr "Kullanıcı adı, e-posta veya isimle ara…"
+
+msgid "Active only"
+msgstr "Sadece aktif"
+
+msgid "Filter"
+msgstr "Filtrele"
+
+msgid "Reset"
+msgstr "Sıfırla"
+
+msgid "Locked"
+msgstr "Kilitli"
+
+msgid "Lock"
+msgstr "Kilitle"
+
+msgid "Unlock"
+msgstr "Kilidi Aç"
+
+msgid "Delete this user?"
+msgstr "Bu kullanıcıyı silmek istiyor musunuz?"
+
+msgid "No users yet."
+msgstr "Henüz kullanıcı yok."
+
+msgid "No roles defined."
+msgstr "Tanımlı rol yok."
+
+msgid "(immutable)"
+msgstr "(değiştirilemez)"
+
+msgid "Failed logins"
+msgstr "Başarısız giriş"
+
+msgid "User updated."
+msgstr "Kullanıcı güncellendi."
+
+msgid "User locked."
+msgstr "Kullanıcı kilitlendi."
+
+msgid "User unlocked."
+msgstr "Kullanıcının kilidi açıldı."
+
+msgid "User deleted."
+msgstr "Kullanıcı silindi."
+
+msgid "You cannot lock your own account."
+msgstr "Kendi hesabınızı kilitleyemezsiniz."
+
+msgid "You cannot delete your own account."
+msgstr "Kendi hesabınızı silemezsiniz."
+
+msgid "You cannot remove your own superuser flag."
+msgstr "Kendi süper kullanıcı bayrağınızı kaldıramazsınız."
+
+msgid "The admin user cannot be deleted."
+msgstr "Admin kullanıcısı silinemez."
+
+msgid "menu.users"
+msgstr "Kullanıcılar"
+
+# --- System settings ---
+msgid "System Settings"
+msgstr "Sistem Ayarları"
+
+msgid "These settings apply to the whole application."
+msgstr "Bu ayarlar tüm uygulamayı etkiler."
+
+msgid "Application Name"
+msgstr "Uygulama Adı"
+
+msgid "Default Language"
+msgstr "Varsayılan Dil"
+
+msgid "Used for anonymous visitors before they pick a language."
+msgstr "Dil seçimi yapmamış anonim ziyaretçiler için kullanılır."
+
+msgid "Auto-register OAuth users"
+msgstr "OAuth kullanıcılarını otomatik kayıt et"
+
+msgid "Public registration enabled"
+msgstr "Herkese açık kayıt etkin"
+
+msgid "Allow visitors to create accounts via /auth/register."
+msgstr "Ziyaretçilerin /auth/register ile hesap oluşturmasına izin ver."
+
+msgid "On unknown OAuth identity, create a new account automatically."
+msgstr "Bilinmeyen OAuth kimliğinde otomatik olarak yeni hesap oluştur."
+
+msgid "System settings saved."
+msgstr "Sistem ayarları kaydedildi."
+
+msgid "menu.system"
+msgstr "Sistem Ayarları"
+
+msgid "Settings"
+msgstr "Ayarlar"
+
+# --- Audit filters ---
+msgid "— Any —"
+msgstr "— Hepsi —"
+
+msgid "(prefix)"
+msgstr "(ön ek)"
+
+msgid "From"
+msgstr "Başlangıç"
+
+msgid "To"
+msgstr "Bitiş"
+
+msgid "Apply"
+msgstr "Uygula"
+
+msgid "records"
+msgstr "kayıt"
+
+msgid "No entries match."
+msgstr "Eşleşen kayıt yok."
+
+msgid "Entity"
+msgstr "Varlık"
+
+msgid "IP"
+msgstr "IP"
+
+msgid "Time"
+msgstr "Zaman"
+
+# --- Dashboard ---
+msgid "Dashboard"
+msgstr "Panel"
+
+msgid "Welcome, %(name)s"
+msgstr "Hoş geldin, %(name)s"
+
+msgid "Active Users"
+msgstr "Aktif Kullanıcı"
+
+msgid "Recent activity"
+msgstr "Son etkinlikler"
+
+msgid "No activity yet."
+msgstr "Henüz etkinlik yok."
+
+msgid "See full audit log"
+msgstr "Tüm denetim kaydını gör"
+
+msgid "Quick actions"
+msgstr "Hızlı işlemler"
+
+msgid "Manage users"
+msgstr "Kullanıcıları yönet"
+
+msgid "Manage roles"
+msgstr "Rolleri yönet"
+
+msgid "Manage menu"
+msgstr "Menüyü yönet"
+
+msgid "Scraping modules will populate this dashboard in Phase 2."
+msgstr "Scraping modülleri bu paneli Faz 2'de dolduracak."
+
+# --- Search ---
+msgid "Search…"
+msgstr "Ara…"
+
+msgid "No matches."
+msgstr "Eşleşme yok."
+
+msgid "Menu"
+msgstr "Menü"
+
+msgid "inactive"
+msgstr "pasif"
+
+# --- Topbar / sidebar ---
+msgid "Toggle Theme"
+msgstr "Temayı Değiştir"
+
+msgid "Collapse"
+msgstr "Daralt"
 
 msgid "Profile & preferences — Faz 1"
 msgstr "Profil ve tercihler — Faz 1"
