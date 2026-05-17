@@ -1,34 +1,36 @@
-/* Light theme (default) */
-:root {
-  --bg: #f8f9fa;
-  --text: #212529;
+/*
+ * Theme.
+ *
+ * Bootstrap 5.3 ships a native dark mode keyed on `data-bs-theme` — we set
+ * that on <html> in base.html. Bootstrap re-themes its own components
+ * (.table, .card, .dropdown-menu, .form-*, .text-muted, .badge, <code>, …)
+ * automatically.
+ *
+ * This file only defines the *extra* tokens our shell uses (sidebar, topbar)
+ * and a few tweaks where Bootstrap's defaults don't quite fit.
+ */
+
+:root,
+[data-bs-theme="light"] {
   --sidebar-bg: #ffffff;
   --sidebar-width: 240px;
   --topbar-bg: #ffffff;
-  --card-bg: #ffffff;
-  --border-color: #dee2e6;
-  --nav-link-active-bg: #0d6efd;
   --nav-link-hover-bg: #e9ecef;
+  --nav-link-active-bg: #0d6efd;
+  --nav-link-active-color: #ffffff;
 }
 
-/* Dark theme */
-[data-theme="dark"] {
-  --bg: #1a1a1a;
-  --text: #e0e0e0;
-  --sidebar-bg: #242424;
-  --topbar-bg: #242424;
-  --card-bg: #2d2d2d;
-  --border-color: #404040;
-  --nav-link-hover-bg: #333333;
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
+[data-bs-theme="dark"] {
+  --sidebar-bg: #1f2125;
+  --topbar-bg: #1f2125;
+  --nav-link-hover-bg: #2b2f36;
+  --nav-link-active-bg: #3d8bfd;
+  --nav-link-active-color: #ffffff;
 }
 
 /* Sidebar */
 #sidebar {
+  background: var(--sidebar-bg);
   transition: width 0.2s ease;
 }
 
@@ -45,7 +47,7 @@ body {
 }
 
 #sidebar .nav-link {
-  color: var(--text);
+  color: var(--bs-body-color);
   border-radius: 6px;
 }
 
@@ -55,18 +57,24 @@ body {
 
 #sidebar .nav-link.active {
   background: var(--nav-link-active-bg);
-  color: #fff;
-}
-
-/* Cards */
-.card {
-  background: var(--card-bg);
-  border-color: var(--border-color);
+  color: var(--nav-link-active-color);
 }
 
 /* Topbar */
 #topbar {
-  border-color: var(--border-color) !important;
+  background: var(--topbar-bg) !important;
+}
+
+/* Search results dropdown sits inside topbar; let Bootstrap's themed
+   dropdown-menu styles take over but keep our z-index above the page. */
+#search-results .dropdown-menu {
+  z-index: 1050;
+}
+
+/* Small contrast fix: dim form-text in dark mode (Bootstrap default is OK
+   but sits a bit too dark on our 1f2125 sidebar/topbar shade). */
+[data-bs-theme="dark"] .form-text {
+  color: #9ba1a8;
 }
 
 /* Mobile sidebar — off-canvas below 768px */
@@ -78,7 +86,7 @@ body {
     left: -240px;
     height: calc(100vh - 56px);
     transition: left 0.25s ease;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   }
 
   #sidebar.mobile-open {

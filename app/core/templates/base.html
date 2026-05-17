@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="{{ g.locale or 'tr' }}" data-theme="{{ current_user.settings.settings.get('theme', 'light') if current_user.is_authenticated and current_user.settings else 'light' }}">
+{% set _theme = current_user.settings.settings.get('theme', 'light') if current_user.is_authenticated and current_user.settings else 'light' %}
+<html lang="{{ g.locale or 'tr' }}" data-theme="{{ _theme }}" data-bs-theme="{{ _theme }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
