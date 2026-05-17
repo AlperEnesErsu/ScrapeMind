@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Users') }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-people me-2"></i>{{ _('Users') }}</h4>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-sm-6 col-md-4">
+    <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm"
+           placeholder="{{ _('Search by username, email, name…') }}">
+  </div>
+  <div class="col-auto d-flex align-items-center">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="only_active" value="1"
+             id="only_active" {% if only_active %}checked{% endif %}>
+      <label class="form-check-label small" for="only_active">{{ _('Active only') }}</label>
+    </div>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-sm btn-primary" type="submit">{{ _('Filter') }}</button>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('users.user_list') }}">{{ _('Reset') }}</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>{{ _('Username') }}</th>
+          <th>{{ _('Email') }}</th>
+          <th>{{ _('Full Name') }}</th>
+          <th>{{ _('Roles') }}</th>
+          <th class="text-center">{{ _('Status') }}</th>
+          <th>{{ _('Last login') }}</th>
+          <th class="text-end">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <strong>{{ u.username }}</strong>
+            {% if u.is_superuser %}<span class="badge bg-warning text-dark ms-1">{{ _('Superuser') }}</span>{% endif %}
+          </td>
+          <td class="small text-muted">{{ u.email }}</td>
+          <td>{{ u.full_name }}</td>
+          <td>
+            {% for r in u.roles %}<span class="badge bg-secondary me-1">{{ r.name }}</span>{% else %}<span class="text-muted">—</span>{% endfor %}
+          </td>
+          <td class="text-center">
+            {% if u.effective_is_locked %}
+              <span class="badge bg-danger">{{ _('Locked') }}</span>
+            {% elif u.is_active %}
+              <span class="badge bg-success">{{ _('Active') }}</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ _('Inactive') }}</span>
+            {% endif %}
+          </td>
+          <td class="small text-muted">{{ u.last_login_at.strftime('%d.%m.%Y %H:%M') if u.last_login_at else '—' }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('users.user_edit', user_id=u.id) }}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% if u.effective_is_locked %}
+              <form method="post" action="{{ url_for('users.user_unlock', user_id=u.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-success" title="{{ _('Unlock') }}"><i class="bi bi-unlock"></i></button>
+              </form>
+            {% elif u.username != 'admin' and u.id != current_user.id %}
+              <form method="post" action="{{ url_for('users.user_lock', user_id=u.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-warning" title="{{ _('Lock') }}"><i class="bi bi-lock"></i></button>
+              </form>
+            {% endif %}
+            {% if u.username != 'admin' and u.id != current_user.id %}
+              <form method="post" action="{{ url_for('users.user_delete', user_id=u.id) }}" class="d-inline"
+                    onsubmit="return confirm('{{ _('Delete this user?') }}');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">{{ _('No users yet.') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -7,11 +7,13 @@ from app.extensions import db
 
 CRITICAL_CODES = {
     "dashboard_root",
+    "admin_users",
     "admin_roles",
     "admin_permissions",
     "admin_menu",
     "admin_audit",
     "settings_profile",
+    "settings_system",
 }
 
 

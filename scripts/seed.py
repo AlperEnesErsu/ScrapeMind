@@ -30,6 +30,9 @@ with app.app_context():
         ("menu.manage", "perm.menu.manage"),
         ("audit.view", "perm.audit.view"),
         ("dashboard.view", "perm.dashboard.view"),
+        ("users.view", "perm.users.view"),
+        ("users.manage", "perm.users.manage"),
+        ("system.manage", "perm.system.manage"),
     ]
     for code, label_key in core_perms:
         if not Permission.query.filter_by(code=code).first():
@@ -83,6 +86,8 @@ with app.app_context():
     core_menu = [
         dict(code="dashboard_root", label_key="menu.dashboard", icon="bi-speedometer2",
              endpoint="dashboard.index", order_index=10),
+        dict(code="admin_users", label_key="menu.users", icon="bi-people",
+             endpoint="users.user_list", required_permission="users.view", order_index=40),
         dict(code="admin_roles", label_key="menu.roles", icon="bi-shield-lock",
              endpoint="rbac.role_list", required_permission="roles.view", order_index=50),
         dict(code="admin_permissions", label_key="menu.permissions", icon="bi-key",
@@ -93,6 +98,8 @@ with app.app_context():
              endpoint="audit.log_list", required_permission="audit.view", order_index=70),
         dict(code="settings_profile", label_key="menu.profile", icon="bi-person-circle",
              endpoint="settings.profile", order_index=90),
+        dict(code="settings_system", label_key="menu.system", icon="bi-gear",
+             endpoint="settings.system", required_permission="system.manage", order_index=95),
     ]
     for m in core_menu:
         if not MenuItem.query.filter_by(code=m["code"]).first():
