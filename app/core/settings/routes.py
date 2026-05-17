@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, jsonify, render_template, request
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
@@ -169,10 +169,52 @@ def submit_prefs():
     )
 
 
-@settings_bp.route("/system")
+@settings_bp.route("/system", methods=["GET", "POST"])
 @login_required
 def system():
-    return render_template("settings/system.html")
+    # Inline guard so we can keep one route URL while gating it on perm.
+    if not current_user.is_superuser:
+        from app.core.rbac.service import user_has_permission
+
+        if not user_has_permission(current_user, "system.manage"):
+            abort(403)
+
+    from app.core.settings.service import get_system_setting, set_system_setting
+    from app.core.settings.system_forms import SystemSettingsForm
+
+    form = SystemSettingsForm()
+    if request.method == "GET":
+        form.app_name.data = get_system_setting("app_name", "ScrapeMind")
+        form.default_locale.data = get_system_setting("default_locale", "tr")
+        form.oauth_auto_register.data = bool(get_system_setting("oauth_auto_register", False))
+        form.registration_open.data = bool(get_system_setting("registration_open", True))
+
+    if form.validate_on_submit():
+        set_system_setting("app_name", form.app_name.data.strip(), updated_by_id=current_user.id)
+        set_system_setting(
+            "default_locale", form.default_locale.data, updated_by_id=current_user.id
+        )
+        set_system_setting(
+            "oauth_auto_register", form.oauth_auto_register.data, updated_by_id=current_user.id
+        )
+        set_system_setting(
+            "registration_open", form.registration_open.data, updated_by_id=current_user.id
+        )
+        log_action(
+            "system_settings.update",
+            entity_type="system_settings",
+            entity_id=None,
+            changes={
+                "app_name": form.app_name.data,
+                "default_locale": form.default_locale.data,
+                "oauth_auto_register": form.oauth_auto_register.data,
+                "registration_open": form.registration_open.data,
+            },
+        )
+        flash(_("System settings saved."), "success")
+        return redirect(url_for("settings.system"))
+
+    return render_template("settings/system.html", form=form)
 
 
 @settings_bp.route("/theme", methods=["POST"])

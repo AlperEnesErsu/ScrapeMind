@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Edit User') }}: {{ user.username }}{% endblock %}
+{% block content %}
+<h4 class="mb-3">
+  <i class="bi bi-person-gear me-2"></i>{{ _('Edit User') }}:
+  <span class="text-muted">{{ user.username }}</span>
+</h4>
+
+<form method="post" novalidate>
+  {{ form.csrf_token }}
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">{{ form.full_name.label.text }}</label>
+      {{ form.full_name(class="form-control", required=True) }}
+      {% for err in form.full_name.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.email.label.text }}</label>
+      {{ form.email(class="form-control", type="email", required=True) }}
+      {% for err in form.email.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.avatar_url.label.text }}</label>
+      {{ form.avatar_url(class="form-control", placeholder="https://...") }}
+    </div>
+    <div class="col-md-6 d-flex align-items-end gap-4">
+      <div class="form-check">
+        {{ form.is_active(class="form-check-input") }}
+        <label class="form-check-label" for="is_active">{{ form.is_active.label.text }}</label>
+      </div>
+      <div class="form-check">
+        {{ form.is_superuser(class="form-check-input") }}
+        <label class="form-check-label" for="is_superuser">{{ form.is_superuser.label.text }}</label>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-4">
+  <h6 class="text-muted mb-3">{{ _('Roles') }}</h6>
+  <div class="row g-2">
+    {% for role in all_roles %}
+    <div class="col-sm-6 col-md-4">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="role_ids" value="{{ role.id }}"
+               id="role-{{ role.id }}" {% if role.id in selected_role_ids %}checked{% endif %}>
+        <label class="form-check-label" for="role-{{ role.id }}">
+          <strong>{{ role.name }}</strong>
+          {% if role.description %}<div class="small text-muted">{{ role.description }}</div>{% endif %}
+        </label>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-muted">{{ _('No roles defined.') }}</p>
+    {% endfor %}
+  </div>
+
+  <hr class="my-4">
+  <dl class="row small text-muted mb-3">
+    <dt class="col-sm-3">{{ _('Username') }}</dt>
+    <dd class="col-sm-9"><code>{{ user.username }}</code> {{ _('(immutable)') }}</dd>
+    <dt class="col-sm-3">{{ _('User ID') }}</dt>
+    <dd class="col-sm-9">{{ user.id }}</dd>
+    <dt class="col-sm-3">{{ _('Account created') }}</dt>
+    <dd class="col-sm-9">{{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else '—' }}</dd>
+    <dt class="col-sm-3">{{ _('Last login') }}</dt>
+    <dd class="col-sm-9">{{ user.last_login_at.strftime('%d.%m.%Y %H:%M') if user.last_login_at else '—' }}</dd>
+    <dt class="col-sm-3">{{ _('Failed logins') }}</dt>
+    <dd class="col-sm-9">{{ user.failed_login_count }}</dd>
+  </dl>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+    <a href="{{ url_for('users.user_list') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+  </div>
+</form>
+{% endblock %}

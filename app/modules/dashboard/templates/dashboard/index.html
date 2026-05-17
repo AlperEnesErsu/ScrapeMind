@@ -4,17 +4,18 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h4 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>{{ _('Dashboard') }}</h4>
+  <span class="text-muted small">{{ _('Welcome, %(name)s', name=current_user.full_name or current_user.username) }}</span>
 </div>
 
-<div class="row g-3">
+<div class="row g-3 mb-4">
   <div class="col-sm-6 col-xl-3">
     <div class="card text-bg-primary">
       <div class="card-body d-flex justify-content-between align-items-center">
         <div>
-          <div class="fs-2 fw-bold">—</div>
-          <div class="small">{{ _('Scrape Jobs') }}</div>
+          <div class="fs-2 fw-bold">{{ metrics.users_total }}</div>
+          <div class="small">{{ _('Users') }}</div>
         </div>
-        <i class="bi bi-bug fs-1 opacity-50"></i>
+        <i class="bi bi-people fs-1 opacity-50"></i>
       </div>
     </div>
   </div>
@@ -22,14 +23,107 @@
     <div class="card text-bg-success">
       <div class="card-body d-flex justify-content-between align-items-center">
         <div>
-          <div class="fs-2 fw-bold">—</div>
+          <div class="fs-2 fw-bold">{{ metrics.users_active }}</div>
           <div class="small">{{ _('Active Users') }}</div>
         </div>
-        <i class="bi bi-people fs-1 opacity-50"></i>
+        <i class="bi bi-person-check fs-1 opacity-50"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card text-bg-warning">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-2 fw-bold">{{ metrics.roles_total }}</div>
+          <div class="small">{{ _('Roles') }}</div>
+        </div>
+        <i class="bi bi-shield-lock fs-1 opacity-50"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card text-bg-secondary">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-2 fw-bold">{{ metrics.permissions_total }}</div>
+          <div class="small">{{ _('Permissions') }}</div>
+        </div>
+        <i class="bi bi-key fs-1 opacity-50"></i>
       </div>
     </div>
   </div>
 </div>
 
-<p class="text-muted mt-4 small">{{ _('ScrapeMind modules will populate this dashboard in Faz 2.') }}</p>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header py-2"><strong>{{ _('Recent activity') }}</strong></div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>{{ _('Time') }}</th><th>{{ _('User') }}</th>
+              <th>{{ _('Action') }}</th><th>{{ _('Entity') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in recent_logs %}
+            <tr>
+              <td class="small text-muted">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
+              <td class="small">{{ log.user_id or '—' }}</td>
+              <td class="small"><code>{{ log.action }}</code></td>
+              <td class="small">{{ log.entity_type }}{% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3 small">{{ _('No activity yet.') }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if recent_logs %}
+      <div class="card-footer py-2 small">
+        <a href="{{ url_for('audit.log_list') }}">{{ _('See full audit log') }} →</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="text-muted small">{{ _('Last login') }}</div>
+        {% if last_login_user %}
+          <div class="fw-semibold">{{ last_login_user.username }}</div>
+          <div class="small text-muted">{{ last_login_user.last_login_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        {% else %}
+          <div class="text-muted">—</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">{{ _('Quick actions') }}</h6>
+        <div class="d-grid gap-2">
+          {% if current_user.is_superuser or 'users.view' in current_user_permissions %}
+          <a href="{{ url_for('users.user_list') }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-people me-1"></i>{{ _('Manage users') }}
+          </a>
+          {% endif %}
+          {% if current_user.is_superuser or 'roles.view' in current_user_permissions %}
+          <a href="{{ url_for('rbac.role_list') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-shield-lock me-1"></i>{{ _('Manage roles') }}
+          </a>
+          {% endif %}
+          {% if current_user.is_superuser or 'menu.view' in current_user_permissions %}
+          <a href="{{ url_for('menu.menu_list') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-list-nested me-1"></i>{{ _('Manage menu') }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-muted small mt-4">{{ _('Scraping modules will populate this dashboard in Phase 2.') }}</p>
 {% endblock %}
