@@ -1,0 +1,39 @@
+{% if not q %}
+{% elif not users and not roles and not menu_items %}
+  <div class="dropdown-menu show small p-2"><span class="text-muted">{{ _('No matches.') }}</span></div>
+{% else %}
+<div class="dropdown-menu show p-0" style="min-width: 320px;">
+  {% if users %}
+    <h6 class="dropdown-header py-1 small text-uppercase">{{ _('Users') }}</h6>
+    {% for u in users %}
+      <a class="dropdown-item small d-flex justify-content-between"
+         href="{% if can_manage_users %}{{ url_for('users.user_edit', user_id=u.id) }}{% else %}#{% endif %}">
+        <span><i class="bi bi-person me-1"></i>{{ u.username }}
+          <span class="text-muted">— {{ u.full_name }}</span>
+        </span>
+        {% if not u.is_active %}<span class="badge bg-secondary">{{ _('inactive') }}</span>{% endif %}
+      </a>
+    {% endfor %}
+  {% endif %}
+  {% if roles %}
+    <h6 class="dropdown-header py-1 small text-uppercase">{{ _('Roles') }}</h6>
+    {% for r in roles %}
+      <a class="dropdown-item small"
+         href="{% if can_manage_roles %}{{ url_for('rbac.role_edit', role_id=r.id) }}{% else %}#{% endif %}">
+        <i class="bi bi-shield-lock me-1"></i>{{ r.name }}
+        {% if r.description %}<span class="text-muted">— {{ r.description }}</span>{% endif %}
+      </a>
+    {% endfor %}
+  {% endif %}
+  {% if menu_items %}
+    <h6 class="dropdown-header py-1 small text-uppercase">{{ _('Menu') }}</h6>
+    {% for m in menu_items %}
+      <a class="dropdown-item small"
+         href="{% if can_manage_menu %}{{ url_for('menu.item_edit', item_id=m.id) }}{% else %}#{% endif %}">
+        <i class="bi {{ m.icon or 'bi-dot' }} me-1"></i><code>{{ m.code }}</code>
+        <span class="text-muted">— {{ m.label_key }}</span>
+      </a>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endif %}

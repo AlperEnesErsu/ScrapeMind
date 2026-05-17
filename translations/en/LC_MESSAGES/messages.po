@@ -464,8 +464,197 @@ msgstr "Reset link is invalid or expired."
 msgid "Password reset. You can sign in now."
 msgstr "Password reset. You can sign in now."
 
-msgid "Send Reset Link"
-msgstr "Send Reset Link"
+# --- Users panel ---
+msgid "Users"
+msgstr "Users"
+
+msgid "Edit User"
+msgstr "Edit User"
+
+msgid "Search by username, email, name…"
+msgstr "Search by username, email, name…"
+
+msgid "Active only"
+msgstr "Active only"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "Reset"
+msgstr "Reset"
+
+msgid "Locked"
+msgstr "Locked"
+
+msgid "Lock"
+msgstr "Lock"
+
+msgid "Unlock"
+msgstr "Unlock"
+
+msgid "Delete this user?"
+msgstr "Delete this user?"
+
+msgid "No users yet."
+msgstr "No users yet."
+
+msgid "No roles defined."
+msgstr "No roles defined."
+
+msgid "(immutable)"
+msgstr "(immutable)"
+
+msgid "Failed logins"
+msgstr "Failed logins"
+
+msgid "User updated."
+msgstr "User updated."
+
+msgid "User locked."
+msgstr "User locked."
+
+msgid "User unlocked."
+msgstr "User unlocked."
+
+msgid "User deleted."
+msgstr "User deleted."
+
+msgid "You cannot lock your own account."
+msgstr "You cannot lock your own account."
+
+msgid "You cannot delete your own account."
+msgstr "You cannot delete your own account."
+
+msgid "You cannot remove your own superuser flag."
+msgstr "You cannot remove your own superuser flag."
+
+msgid "The admin user cannot be deleted."
+msgstr "The admin user cannot be deleted."
+
+msgid "menu.users"
+msgstr "Users"
+
+# --- System settings ---
+msgid "System Settings"
+msgstr "System Settings"
+
+msgid "These settings apply to the whole application."
+msgstr "These settings apply to the whole application."
+
+msgid "Application Name"
+msgstr "Application Name"
+
+msgid "Default Language"
+msgstr "Default Language"
+
+msgid "Used for anonymous visitors before they pick a language."
+msgstr "Used for anonymous visitors before they pick a language."
+
+msgid "Auto-register OAuth users"
+msgstr "Auto-register OAuth users"
+
+msgid "Public registration enabled"
+msgstr "Public registration enabled"
+
+msgid "Allow visitors to create accounts via /auth/register."
+msgstr "Allow visitors to create accounts via /auth/register."
+
+msgid "On unknown OAuth identity, create a new account automatically."
+msgstr "On unknown OAuth identity, create a new account automatically."
+
+msgid "System settings saved."
+msgstr "System settings saved."
+
+msgid "menu.system"
+msgstr "System Settings"
+
+msgid "Settings"
+msgstr "Settings"
+
+# --- Audit filters ---
+msgid "— Any —"
+msgstr "— Any —"
+
+msgid "(prefix)"
+msgstr "(prefix)"
+
+msgid "From"
+msgstr "From"
+
+msgid "To"
+msgstr "To"
+
+msgid "Apply"
+msgstr "Apply"
+
+msgid "records"
+msgstr "records"
+
+msgid "No entries match."
+msgstr "No entries match."
+
+msgid "Entity"
+msgstr "Entity"
+
+msgid "IP"
+msgstr "IP"
+
+msgid "Time"
+msgstr "Time"
+
+# --- Dashboard ---
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Welcome, %(name)s"
+msgstr "Welcome, %(name)s"
+
+msgid "Active Users"
+msgstr "Active Users"
+
+msgid "Recent activity"
+msgstr "Recent activity"
+
+msgid "No activity yet."
+msgstr "No activity yet."
+
+msgid "See full audit log"
+msgstr "See full audit log"
+
+msgid "Quick actions"
+msgstr "Quick actions"
+
+msgid "Manage users"
+msgstr "Manage users"
+
+msgid "Manage roles"
+msgstr "Manage roles"
+
+msgid "Manage menu"
+msgstr "Manage menu"
+
+msgid "Scraping modules will populate this dashboard in Phase 2."
+msgstr "Scraping modules will populate this dashboard in Phase 2."
+
+# --- Search ---
+msgid "Search…"
+msgstr "Search…"
+
+msgid "No matches."
+msgstr "No matches."
+
+msgid "Menu"
+msgstr "Menu"
+
+msgid "inactive"
+msgstr "inactive"
+
+# --- Topbar / sidebar ---
+msgid "Toggle Theme"
+msgstr "Toggle Theme"
+
+msgid "Collapse"
+msgstr "Collapse"
 
 msgid "Menu management — Faz 1"
 msgstr "Menu management — Phase 1"

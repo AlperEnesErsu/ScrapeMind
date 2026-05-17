@@ -6,10 +6,15 @@
 
     <div class="d-flex align-items-center gap-3 ms-auto">
       {# Global search — HTMX live #}
-      <form class="d-none d-md-flex" role="search">
-        <input class="form-control form-control-sm" type="search" placeholder="{{ _('Search…') }}"
-               hx-get="/search" hx-trigger="keyup changed delay:400ms" hx-target="#search-results">
-      </form>
+      <div class="position-relative d-none d-md-block">
+        <input class="form-control form-control-sm" type="search" name="q" placeholder="{{ _('Search…') }}"
+               hx-get="{{ url_for('search.quick_search') }}"
+               hx-trigger="keyup changed delay:300ms, search"
+               hx-target="#search-results"
+               hx-swap="innerHTML"
+               style="width: 240px;">
+        <div id="search-results" class="position-absolute end-0" style="z-index: 1050; top: 100%;"></div>
+      </div>
 
       {# Language picker #}}
       <div class="dropdown">
