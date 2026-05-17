@@ -14,7 +14,7 @@ def create_app() -> Flask:
     app.config.from_object(get_config())
 
     _init_extensions(app)
-    _init_logging()
+    _init_logging(app)
     _register_blueprints(app)
     _register_context_processors(app)
     _register_error_handlers(app)
@@ -57,12 +57,19 @@ def _init_extensions(app: Flask) -> None:
     init_babel(app, babel)
 
 
-def _init_logging() -> None:
+def _init_logging(app: Flask) -> None:
+    # Dev / testing: human-readable console renderer.
+    # Anywhere else (production, staging): JSON renderer for log aggregators.
+    renderer = (
+        structlog.dev.ConsoleRenderer()
+        if app.debug or app.testing
+        else structlog.processors.JSONRenderer()
+    )
     structlog.configure(
         processors=[
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
-            structlog.dev.ConsoleRenderer() if True else structlog.processors.JSONRenderer(),
+            renderer,
         ]
     )
 
@@ -77,13 +84,19 @@ def _register_context_processors(app: Flask) -> None:
             from app.core.menu.builder import build_menu_for_user
             from app.core.rbac.service import get_user_permissions
 
+            # We catch broadly here because this runs on every authenticated
+            # request — if the menu/perm layer is broken, we'd rather degrade
+            # to "no sidebar / no perms" than serve a 500. But always log the
+            # traceback so the breakage is visible.
             try:
                 nodes = build_menu_for_user(current_user)
             except Exception:
+                logger.exception("menu_build_failed", user_id=current_user.id)
                 nodes = []
             try:
                 perms = get_user_permissions(current_user)
             except Exception:
+                logger.exception("permission_load_failed", user_id=current_user.id)
                 perms = frozenset()
             return {"menu_nodes": nodes, "current_user_permissions": perms}
         return {"menu_nodes": [], "current_user_permissions": frozenset()}

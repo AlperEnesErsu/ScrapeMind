@@ -24,13 +24,16 @@ if (themeToggle) {
   themeToggle.addEventListener('click', () => {
     const html = document.documentElement;
     const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    const next = isDark ? 'light' : 'dark';
+    // Sync both attributes: our CSS variables and Bootstrap 5.3 native dark mode
+    html.setAttribute('data-theme', next);
+    html.setAttribute('data-bs-theme', next);
 
     // Persist via HTMX patch (Faz 1 profile settings endpoint)
     fetch('/settings/theme', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-      body: JSON.stringify({ theme: isDark ? 'light' : 'dark' }),
+      body: JSON.stringify({ theme: next }),
     }).catch(() => {}); // best-effort — page still works
   });
 }
