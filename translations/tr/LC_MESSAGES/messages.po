@@ -732,6 +732,97 @@ msgstr "Birincil yapmadan önce e-postayı doğrulayın."
 msgid "Cannot delete the primary email. Promote another first."
 msgstr "Birincil e-posta silinemez. Önce başka birini birincil yapın."
 
+# --- Academic identifiers / interests (Phase 2 correction) ---
+msgid "Login Email"
+msgstr "Giriş E-postası"
+
+msgid "Academic Identifiers"
+msgstr "Akademik Kimlikler"
+
+msgid "Research Interests"
+msgstr "Araştırma İlgi Alanları"
+
+msgid "Your historical and alternate academic identities. Useful when your name, affiliation, or institutional email has changed — old papers stay linked through these. This is separate from your login email."
+msgstr "Geçmişte kullandığın ve alternatif akademik kimliklerin. Soyisim, kurum veya kurumsal e-posta değişikliklerinde eski makaleler bu kimliklerle bağlı kalır. Giriş e-postandan bağımsızdır."
+
+msgid "No academic identifiers yet."
+msgstr "Henüz akademik kimlik yok."
+
+msgid "Add identifier"
+msgstr "Kimlik ekle"
+
+msgid "Type"
+msgstr "Tür"
+
+msgid "Value"
+msgstr "Değer"
+
+msgid "value (email / ORCID / etc.)"
+msgstr "değer (e-posta / ORCID / vb.)"
+
+msgid "Email type sends a verification link. Other types are stored as-is for now."
+msgstr "E-posta türü onay bağlantısı gönderir. Diğer türler şimdilik olduğu gibi kaydedilir."
+
+msgid "Remove this identifier?"
+msgstr "Bu kimliği kaldırmak istiyor musunuz?"
+
+msgid "This email is already your login email — no need to add it here."
+msgstr "Bu e-posta zaten giriş e-postanız — burada tekrar eklemenize gerek yok."
+
+msgid "This identifier is already registered."
+msgstr "Bu kimlik zaten kayıtlı."
+
+msgid "Value does not match the expected format."
+msgstr "Değer beklenen formata uymuyor."
+
+msgid "Value cannot be empty."
+msgstr "Değer boş olamaz."
+
+msgid "Identifier not found."
+msgstr "Kimlik bulunamadı."
+
+msgid "Identifier added."
+msgstr "Kimlik eklendi."
+
+msgid "Identifier added — a verification link has been sent."
+msgstr "Kimlik eklendi — bir onay bağlantısı gönderildi."
+
+msgid "Identifier removed."
+msgstr "Kimlik kaldırıldı."
+
+msgid "Keywords used to personalise your scraping feed. Pick what you actually follow — the scraper will lean on these when ranking new papers and news."
+msgstr "Akış kişiselleştirme için anahtar kelimeler. Gerçekten takip ettiklerini ekle — scraping motor yeni makale ve haberleri sıralarken bunları kullanır."
+
+msgid "Add a keyword"
+msgstr "Anahtar kelime ekle"
+
+msgid "Keyword"
+msgstr "Anahtar kelime"
+
+msgid "e.g. transformer architectures, graph neural networks"
+msgstr "örn. transformer mimarileri, graf sinir ağları"
+
+msgid "2–64 characters. Will be normalised to lowercase. Trends across users let us recommend related ones later."
+msgstr "2–64 karakter. Küçük harfe normalleştirilir. Kullanıcılar arası trend ile ileride benzer öneriler çıkarılır."
+
+msgid "No keywords yet — add one below to start shaping your feed."
+msgstr "Henüz anahtar kelime yok — aşağıdan ekleyerek akışını şekillendirmeye başla."
+
+msgid "Keyword too short."
+msgstr "Anahtar kelime çok kısa."
+
+msgid "You already follow this keyword."
+msgstr "Bu anahtar kelimeyi zaten takip ediyorsun."
+
+msgid "Keyword added."
+msgstr "Anahtar kelime eklendi."
+
+msgid "Keyword removed."
+msgstr "Anahtar kelime kaldırıldı."
+
+msgid "Keyword not found."
+msgstr "Anahtar kelime bulunamadı."
+
 msgid "Profile & preferences — Faz 1"
 msgstr "Profil ve tercihler — Faz 1"
 

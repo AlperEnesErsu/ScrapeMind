@@ -1,8 +1,18 @@
 """Academic identity data model.
 
-Phase 2 starts with multi-email support. The schema is generic so future
-identifier types (ORCID, Scopus, WoS, ResearchGate, GitHub, ROR) can be
-added by inserting one row into identifier_types — no migration needed.
+Two independent systems:
+
+  users.email  — auth-only. The login email. Single, immutable from this
+                 module's perspective. Editing it goes through the auth/
+                 settings flow as before.
+
+  user_identifiers — *historical* academic identities. Old institution
+                 emails (especially helpful when a researcher's name or
+                 affiliation has changed), ORCID, Scopus Author ID, WoS
+                 Researcher ID. Multiple per user, never tied to login.
+
+  user_keywords / keywords — research interest tags used to personalise
+                 the scraping feed.
 """
 
 from app.core.base_model import BaseModel
@@ -17,14 +27,13 @@ class IdentifierType(BaseModel):
     code = db.Column(db.String(50), unique=True, nullable=False, index=True)
     name = db.Column(db.String(100), nullable=False)
     validation_regex = db.Column(db.String(255), nullable=True)
-    is_unique_per_user = db.Column(db.Boolean, nullable=False, default=True)
     verification_method = db.Column(
         db.String(32), nullable=True
     )  # email_link | oauth | manual | None
 
 
 class UserIdentifier(BaseModel):
-    """Concrete identifier value for a user (one row per email/ORCID/etc.)."""
+    """A historical academic identity for a user. NEVER the login email."""
 
     __tablename__ = "user_identifiers"
 
@@ -33,7 +42,6 @@ class UserIdentifier(BaseModel):
         db.BigInteger, db.ForeignKey("identifier_types.id"), nullable=False
     )
     value = db.Column(db.String(255), nullable=False)
-    is_primary = db.Column(db.Boolean, nullable=False, default=False)
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
     verified_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
@@ -46,3 +54,25 @@ class UserIdentifier(BaseModel):
         # Same user can't list the same identifier twice.
         db.UniqueConstraint("user_id", "identifier_type_id", "value", name="uq_user_id_type_value"),
     )
+
+
+class Keyword(BaseModel):
+    """Global research-interest dictionary. One row per normalised term."""
+
+    __tablename__ = "keywords"
+
+    value = db.Column(db.String(64), unique=True, nullable=False, index=True)
+
+
+class UserKeyword(BaseModel):
+    """Junction: which keywords does each user follow."""
+
+    __tablename__ = "user_keywords"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    keyword_id = db.Column(db.BigInteger, db.ForeignKey("keywords.id"), nullable=False)
+
+    keyword = db.relationship("Keyword", lazy="joined")
+    user = db.relationship("User", backref=db.backref("keyword_links", lazy="select"))
+
+    __table_args__ = (db.UniqueConstraint("user_id", "keyword_id", name="uq_user_keyword"),)

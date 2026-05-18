@@ -729,6 +729,97 @@ msgstr "Verify the email before making it primary."
 msgid "Cannot delete the primary email. Promote another first."
 msgstr "Cannot delete the primary email. Promote another first."
 
+# --- Academic identifiers / interests (Phase 2 correction) ---
+msgid "Login Email"
+msgstr "Login Email"
+
+msgid "Academic Identifiers"
+msgstr "Academic Identifiers"
+
+msgid "Research Interests"
+msgstr "Research Interests"
+
+msgid "Your historical and alternate academic identities. Useful when your name, affiliation, or institutional email has changed — old papers stay linked through these. This is separate from your login email."
+msgstr "Your historical and alternate academic identities. Useful when your name, affiliation, or institutional email has changed — old papers stay linked through these. This is separate from your login email."
+
+msgid "No academic identifiers yet."
+msgstr "No academic identifiers yet."
+
+msgid "Add identifier"
+msgstr "Add identifier"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Value"
+msgstr "Value"
+
+msgid "value (email / ORCID / etc.)"
+msgstr "value (email / ORCID / etc.)"
+
+msgid "Email type sends a verification link. Other types are stored as-is for now."
+msgstr "Email type sends a verification link. Other types are stored as-is for now."
+
+msgid "Remove this identifier?"
+msgstr "Remove this identifier?"
+
+msgid "This email is already your login email — no need to add it here."
+msgstr "This email is already your login email — no need to add it here."
+
+msgid "This identifier is already registered."
+msgstr "This identifier is already registered."
+
+msgid "Value does not match the expected format."
+msgstr "Value does not match the expected format."
+
+msgid "Value cannot be empty."
+msgstr "Value cannot be empty."
+
+msgid "Identifier not found."
+msgstr "Identifier not found."
+
+msgid "Identifier added."
+msgstr "Identifier added."
+
+msgid "Identifier added — a verification link has been sent."
+msgstr "Identifier added — a verification link has been sent."
+
+msgid "Identifier removed."
+msgstr "Identifier removed."
+
+msgid "Keywords used to personalise your scraping feed. Pick what you actually follow — the scraper will lean on these when ranking new papers and news."
+msgstr "Keywords used to personalise your scraping feed. Pick what you actually follow — the scraper will lean on these when ranking new papers and news."
+
+msgid "Add a keyword"
+msgstr "Add a keyword"
+
+msgid "Keyword"
+msgstr "Keyword"
+
+msgid "e.g. transformer architectures, graph neural networks"
+msgstr "e.g. transformer architectures, graph neural networks"
+
+msgid "2–64 characters. Will be normalised to lowercase. Trends across users let us recommend related ones later."
+msgstr "2–64 characters. Will be normalised to lowercase. Trends across users let us recommend related ones later."
+
+msgid "No keywords yet — add one below to start shaping your feed."
+msgstr "No keywords yet — add one below to start shaping your feed."
+
+msgid "Keyword too short."
+msgstr "Keyword too short."
+
+msgid "You already follow this keyword."
+msgstr "You already follow this keyword."
+
+msgid "Keyword added."
+msgstr "Keyword added."
+
+msgid "Keyword removed."
+msgstr "Keyword removed."
+
+msgid "Keyword not found."
+msgstr "Keyword not found."
+
 msgid "Menu management — Faz 1"
 msgstr "Menu management — Phase 1"
 

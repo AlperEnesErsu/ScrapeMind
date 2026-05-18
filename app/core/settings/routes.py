@@ -20,7 +20,16 @@ from app.extensions import db
 
 settings_bp = Blueprint("settings", __name__)
 
-TABS = ["personal", "email", "emails", "password", "prefs", "oauth", "account"]
+TABS = [
+    "personal",
+    "email",
+    "identifiers",
+    "interests",
+    "password",
+    "prefs",
+    "oauth",
+    "account",
+]
 
 
 def _is_htmx() -> bool:
@@ -65,17 +74,37 @@ def _account_ctx():
     return {"user": current_user}
 
 
-def _emails_ctx():
-    from app.modules.academic.forms import AddEmailForm
-    from app.modules.academic.service import list_user_emails
+def _identifiers_ctx():
+    from app.core.models.module import Module  # noqa: F401 — registry side-effect
+    from app.modules.academic.forms import AddIdentifierForm
+    from app.modules.academic.models import IdentifierType
+    from app.modules.academic.service import list_user_identifiers
 
-    return {"form": AddEmailForm(), "emails": list_user_emails(current_user)}
+    form = AddIdentifierForm()
+    types = (
+        IdentifierType.query.filter(IdentifierType.deleted_at.is_(None))
+        .order_by(IdentifierType.name)
+        .all()
+    )
+    form.type_code.choices = [(t.code, t.name) for t in types] or [("email", "Email")]
+    return {
+        "form": form,
+        "identifiers": list_user_identifiers(current_user),
+    }
+
+
+def _interests_ctx():
+    from app.modules.academic.forms import AddKeywordForm
+    from app.modules.academic.service import list_user_keywords
+
+    return {"form": AddKeywordForm(), "keywords": list_user_keywords(current_user)}
 
 
 _CTX_BUILDERS = {
     "personal": _personal_ctx,
     "email": _email_ctx,
-    "emails": _emails_ctx,
+    "identifiers": _identifiers_ctx,
+    "interests": _interests_ctx,
     "password": _password_ctx,
     "prefs": _prefs_ctx,
     "oauth": _oauth_ctx,
@@ -152,97 +181,160 @@ def submit_password():
     )
 
 
-@settings_bp.route("/profile/emails/add", methods=["POST"])
+@settings_bp.route("/profile/identifiers/add", methods=["POST"])
 @login_required
-def submit_email_add():
-    from app.modules.academic.forms import AddEmailForm
-    from app.modules.academic.service import add_email, make_email_verify_token
+def submit_identifier_add():
+    from app.modules.academic.forms import AddIdentifierForm
+    from app.modules.academic.models import IdentifierType
+    from app.modules.academic.service import add_identifier, make_email_verify_token
 
-    form = AddEmailForm()
+    form = AddIdentifierForm()
+    types = IdentifierType.query.filter(IdentifierType.deleted_at.is_(None)).all()
+    form.type_code.choices = [(t.code, t.name) for t in types]
+
     if form.validate_on_submit():
-        ident, err = add_email(current_user, form.email.data)
+        ident, err = add_identifier(current_user, form.type_code.data, form.value.data)
         if err:
-            return _render_tab("emails", flash_msg=_(err), flash_kind="danger", **_emails_ctx())
-        token = make_email_verify_token(ident)
-        verify_url = url_for("auth.verify_email", token=token, _external=True)
+            return _render_tab(
+                "identifiers", flash_msg=_(err), flash_kind="danger", **_identifiers_ctx()
+            )
         log_action(
-            "user.email_added",
+            "user.identifier_added",
             entity_type="user_identifier",
             entity_id=str(ident.id),
-            changes={"email": ident.value},
+            changes={"type": form.type_code.data, "value": ident.value},
         )
-        # Dev-mode: surface the link in flash. SMTP swap-in in Phase 2 mid.
-        if current_app_is_debug():
+        # For email type, offer verification link (dev-mode shows it in flash).
+        if form.type_code.data == "email":
+            token = make_email_verify_token(ident)
+            verify_url = url_for("auth.verify_email", token=token, _external=True)
+            if current_app_is_debug():
+                return _render_tab(
+                    "identifiers",
+                    flash_msg=_("Dev mode: verification link → %(url)s", url=verify_url),
+                    flash_kind="info",
+                    **_identifiers_ctx(),
+                )
             return _render_tab(
-                "emails",
-                flash_msg=_("Dev mode: verification link → %(url)s", url=verify_url),
-                flash_kind="info",
-                **_emails_ctx(),
+                "identifiers",
+                flash_msg=_("Identifier added — a verification link has been sent."),
+                flash_kind="success",
+                **_identifiers_ctx(),
             )
         return _render_tab(
-            "emails",
-            flash_msg=_("A verification link has been sent."),
+            "identifiers",
+            flash_msg=_("Identifier added."),
             flash_kind="success",
-            **_emails_ctx(),
+            **_identifiers_ctx(),
         )
     return _render_tab(
-        "emails",
+        "identifiers",
         flash_msg=_("Please correct the errors below."),
         flash_kind="danger",
-        form=form,
-        emails=_emails_ctx()["emails"],
+        **_identifiers_ctx(),
     )
 
 
-@settings_bp.route("/profile/emails/<int:ident_id>/primary", methods=["POST"])
+@settings_bp.route("/profile/identifiers/<int:ident_id>/delete", methods=["POST"])
 @login_required
-def submit_email_primary(ident_id: int):
-    from app.modules.academic.service import set_primary_email
+def submit_identifier_delete(ident_id: int):
+    from app.modules.academic.service import delete_identifier
 
-    ok, err = set_primary_email(current_user, ident_id)
+    ok, err = delete_identifier(current_user, ident_id)
     if not ok:
-        return _render_tab("emails", flash_msg=_(err), flash_kind="danger", **_emails_ctx())
-    log_action("user.email_primary", entity_type="user_identifier", entity_id=str(ident_id))
+        return _render_tab(
+            "identifiers", flash_msg=_(err), flash_kind="danger", **_identifiers_ctx()
+        )
+    log_action("user.identifier_deleted", entity_type="user_identifier", entity_id=str(ident_id))
     return _render_tab(
-        "emails", flash_msg=_("Primary email updated."), flash_kind="success", **_emails_ctx()
+        "identifiers",
+        flash_msg=_("Identifier removed."),
+        flash_kind="success",
+        **_identifiers_ctx(),
     )
 
 
-@settings_bp.route("/profile/emails/<int:ident_id>/delete", methods=["POST"])
+@settings_bp.route("/profile/identifiers/<int:ident_id>/resend", methods=["POST"])
 @login_required
-def submit_email_delete(ident_id: int):
-    from app.modules.academic.service import delete_email
-
-    ok, err = delete_email(current_user, ident_id)
-    if not ok:
-        return _render_tab("emails", flash_msg=_(err), flash_kind="danger", **_emails_ctx())
-    log_action("user.email_deleted", entity_type="user_identifier", entity_id=str(ident_id))
-    return _render_tab(
-        "emails", flash_msg=_("Email removed."), flash_kind="success", **_emails_ctx()
-    )
-
-
-@settings_bp.route("/profile/emails/<int:ident_id>/resend", methods=["POST"])
-@login_required
-def submit_email_resend(ident_id: int):
+def submit_identifier_resend(ident_id: int):
     from app.modules.academic.models import UserIdentifier
     from app.modules.academic.service import make_email_verify_token
 
     ident = db.session.get(UserIdentifier, ident_id)
     if ident is None or ident.user_id != current_user.id or ident.is_verified:
         abort(404)
+    # Only email type uses email_link verification right now.
+    if ident.type.code != "email":
+        abort(404)
     token = make_email_verify_token(ident)
     verify_url = url_for("auth.verify_email", token=token, _external=True)
-    log_action("user.email_verify_resent", entity_type="user_identifier", entity_id=str(ident_id))
+    log_action(
+        "user.identifier_verify_resent",
+        entity_type="user_identifier",
+        entity_id=str(ident_id),
+    )
     if current_app_is_debug():
         return _render_tab(
-            "emails",
+            "identifiers",
             flash_msg=_("Dev mode: verification link → %(url)s", url=verify_url),
             flash_kind="info",
-            **_emails_ctx(),
+            **_identifiers_ctx(),
         )
     return _render_tab(
-        "emails", flash_msg=_("Verification link re-sent."), flash_kind="success", **_emails_ctx()
+        "identifiers",
+        flash_msg=_("Verification link re-sent."),
+        flash_kind="success",
+        **_identifiers_ctx(),
+    )
+
+
+@settings_bp.route("/profile/interests/add", methods=["POST"])
+@login_required
+def submit_keyword_add():
+    from app.modules.academic.forms import AddKeywordForm
+    from app.modules.academic.service import add_user_keyword
+
+    form = AddKeywordForm()
+    if form.validate_on_submit():
+        kw, err = add_user_keyword(current_user, form.value.data)
+        if err:
+            return _render_tab(
+                "interests", flash_msg=_(err), flash_kind="danger", **_interests_ctx()
+            )
+        log_action(
+            "user.keyword_added",
+            entity_type="keyword",
+            entity_id=str(kw.id),
+            changes={"value": kw.value},
+        )
+        return _render_tab(
+            "interests",
+            flash_msg=_("Keyword added."),
+            flash_kind="success",
+            **_interests_ctx(),
+        )
+    return _render_tab(
+        "interests",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+        **_interests_ctx(),
+    )
+
+
+@settings_bp.route("/profile/interests/<int:keyword_id>/delete", methods=["POST"])
+@login_required
+def submit_keyword_delete(keyword_id: int):
+    from app.modules.academic.service import remove_user_keyword
+
+    ok, err = remove_user_keyword(current_user, keyword_id)
+    if not ok:
+        return _render_tab("interests", flash_msg=_(err), flash_kind="danger", **_interests_ctx())
+    log_action("user.keyword_removed", entity_type="keyword", entity_id=str(keyword_id))
+    return _render_tab(
+        "interests",
+        flash_msg=_("Keyword removed."),
+        flash_kind="success",
+        **_interests_ctx(),
     )
 
 
