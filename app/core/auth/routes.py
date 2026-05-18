@@ -93,6 +93,27 @@ def forgot_password():
     return render_template("auth/forgot.html", form=form)
 
 
+@auth_bp.route("/verify-email/<token>")
+@limiter.limit("10 per minute")
+def verify_email(token: str):
+    from app.modules.academic.service import verify_email_token
+
+    ident = verify_email_token(token)
+    if ident is None:
+        flash(_("Verification link is invalid or expired."), "danger")
+    else:
+        log_action(
+            "user.email_verified",
+            entity_type="user_identifier",
+            entity_id=str(ident.id),
+            changes={"email": ident.value},
+        )
+        flash(_("Email verified."), "success")
+    if current_user.is_authenticated:
+        return redirect(url_for("settings.profile", tab="emails"))
+    return redirect(url_for("auth.login"))
+
+
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
 def reset_password_view(token: str):
