@@ -14,24 +14,14 @@ from app.core.settings.service import (
 
 @pytest.fixture
 def user(db):
-    from app.modules.academic.models import IdentifierType
-    from app.modules.academic.service import ensure_primary_email_row
-
+    db.session.execute(text("DELETE FROM user_keywords"))
+    db.session.execute(text("DELETE FROM keywords"))
     db.session.execute(text("DELETE FROM user_identifiers"))
     db.session.execute(text("DELETE FROM identifier_types"))
     db.session.execute(text("DELETE FROM user_settings"))
     db.session.execute(text("DELETE FROM oauth_accounts"))
     db.session.execute(text("DELETE FROM user_roles"))
     db.session.query(User).delete()
-    db.session.commit()
-    db.session.add(
-        IdentifierType(
-            code="email",
-            name="Email",
-            is_unique_per_user=False,
-            verification_method="email_link",
-        )
-    )
     db.session.commit()
     u = User(
         username="alice",
@@ -43,8 +33,9 @@ def user(db):
     )
     db.session.add(u)
     db.session.commit()
-    ensure_primary_email_row(u)
     yield u
+    db.session.execute(text("DELETE FROM user_keywords"))
+    db.session.execute(text("DELETE FROM keywords"))
     db.session.execute(text("DELETE FROM user_identifiers"))
     db.session.execute(text("DELETE FROM identifier_types"))
     db.session.execute(text("DELETE FROM user_settings"))

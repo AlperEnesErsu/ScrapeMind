@@ -29,11 +29,11 @@ def update_personal_info(user: User, full_name: str, avatar_url: str | None) -> 
 
 
 def update_email(user: User, new_email: str, current_password: str) -> tuple[bool, str | None]:
-    """Change the primary email.
+    """Change the login email on the users row.
 
-    Now goes through the academic.UserIdentifier table so the multi-email
-    model stays in sync. If the new address isn't already on the user, it
-    gets added and verified-in-one-step (user just typed their password).
+    Academic identifiers live in a separate table and are NOT touched here —
+    they're a researcher's historical identity (old institution emails, ORCID,
+    etc.), not auth credentials.
     """
     if user.password_hash and not LocalAuthStrategy.verify_password(
         current_password, user.password_hash
@@ -42,28 +42,11 @@ def update_email(user: User, new_email: str, current_password: str) -> tuple[boo
     new_email = new_email.strip().lower()
     if new_email == user.email:
         return True, None
-
-    # Imported here to avoid a circular import at module load: academic.service
-    # eventually depends on app.core.models which is reached through settings.
-    from app.modules.academic.models import UserIdentifier
-    from app.modules.academic.service import add_email, get_email_type, set_primary_email
-
-    et = get_email_type()
-    existing = UserIdentifier.query.filter_by(
-        user_id=user.id, identifier_type_id=et.id, value=new_email
-    ).first()
-    if existing is None:
-        # Password just re-confirmed identity — auto-verify in this flow.
-        existing, err = add_email(user, new_email, verified=True)
-        if err:
-            return False, err
-    elif not existing.is_verified:
-        existing.is_verified = True
-        from datetime import UTC, datetime
-
-        existing.verified_at = datetime.now(UTC)
-        db.session.commit()
-    return set_primary_email(user, existing.id)
+    if User.query.filter(User.email == new_email, User.id != user.id).first():
+        return False, "Email already in use."
+    user.email = new_email
+    db.session.commit()
+    return True, None
 
 
 def change_password(

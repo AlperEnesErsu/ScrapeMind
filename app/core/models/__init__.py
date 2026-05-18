@@ -11,7 +11,12 @@ from app.core.models.user import User
 # see them. PROJECT.md keeps core/ free of module-specific code, but model
 # *registration* is unavoidable at this layer until a plugin-aware Alembic
 # env.py is built (planned for late Phase 2).
-from app.modules.academic.models import IdentifierType, UserIdentifier  # noqa: E402
+from app.modules.academic.models import (  # noqa: E402
+    IdentifierType,
+    Keyword,
+    UserIdentifier,
+    UserKeyword,
+)
 
 __all__ = [
     "Module",
@@ -25,4 +30,6 @@ __all__ = [
     "AuditLog",
     "IdentifierType",
     "UserIdentifier",
+    "Keyword",
+    "UserKeyword",
 ]
