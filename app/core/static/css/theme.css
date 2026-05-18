@@ -77,6 +77,121 @@
   color: #9ba1a8;
 }
 
+/* --- UI polish --- */
+
+/* Section heading rhythm */
+main h4 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Card lift on hover for tables/lists */
+.card {
+  transition: box-shadow 0.15s ease;
+}
+
+/* Tighten data-tables and align badges nicely */
+.table > :not(caption) > * > * {
+  padding: 0.6rem 0.75rem;
+}
+
+/* Empty-state row inside tables */
+.table .text-muted.py-4 {
+  font-size: 0.875rem;
+}
+
+/* Status badges: unify radius and weight across all panels */
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Filter forms above tables: gentle separation */
+form.card.card-body {
+  border: 1px solid var(--bs-border-color-translucent);
+}
+
+/* Sidebar links: more breathing room */
+#sidebar .nav-link {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+}
+
+#sidebar .nav-link i {
+  width: 1.25em;
+  text-align: center;
+}
+
+/* Topbar brand: stronger presence */
+#topbar .navbar-brand {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+#topbar .navbar-brand i {
+  color: var(--bs-primary);
+}
+
+/* Auth pages: card a bit more elegant */
+body:not(:has(#sidebar)) main {
+  padding-top: 5vh;
+}
+
+body:not(:has(#sidebar)) .card.shadow-sm {
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-bs-theme="dark"] body:not(:has(#sidebar)) .card.shadow-sm {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dashboard metric cards: hover lift */
+main .card.text-bg-primary,
+main .card.text-bg-success,
+main .card.text-bg-warning,
+main .card.text-bg-secondary {
+  transition: transform 0.15s ease;
+}
+
+main .card.text-bg-primary:hover,
+main .card.text-bg-success:hover,
+main .card.text-bg-warning:hover,
+main .card.text-bg-secondary:hover {
+  transform: translateY(-2px);
+}
+
+/* Action buttons in row ends */
+td .btn-sm + .btn-sm,
+td form + .btn-sm,
+td form + form {
+  margin-left: 2px;
+}
+
+/* Code spans inside tables shouldn't break layout */
+table code {
+  word-break: break-all;
+}
+
+/* List-group rows with action buttons */
+.list-group-item .badge {
+  vertical-align: 0.05em;
+}
+
+/* Empty state used in tab partials */
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--bs-secondary-color);
+}
+
+.empty-state i {
+  font-size: 2rem;
+  opacity: 0.4;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
 /* Mobile sidebar — off-canvas below 768px */
 @media (max-width: 767.98px) {
   #sidebar {

@@ -4,7 +4,6 @@ import pytest
 from sqlalchemy import text
 
 from app.core.models.audit import AuditLog
-from app.extensions import db as _db
 
 
 @pytest.fixture
@@ -19,22 +18,47 @@ def logs(db):
     db.session.query(User).delete()
     db.session.commit()
 
-    u1 = User(username="auser1", email="a1@test", full_name="A1",
-              password_hash=LocalAuthStrategy.hash_password("x12345678"))
-    u2 = User(username="auser2", email="a2@test", full_name="A2",
-              password_hash=LocalAuthStrategy.hash_password("x12345678"))
+    u1 = User(
+        username="auser1",
+        email="a1@test",
+        full_name="A1",
+        password_hash=LocalAuthStrategy.hash_password("x12345678"),
+    )
+    u2 = User(
+        username="auser2",
+        email="a2@test",
+        full_name="A2",
+        password_hash=LocalAuthStrategy.hash_password("x12345678"),
+    )
     db.session.add_all([u1, u2])
     db.session.commit()
 
     now = datetime.now(UTC)
-    db.session.add_all([
-        AuditLog(action="user.create", entity_type="user", entity_id=str(u1.id), user_id=u1.id,
-                 created_at=now - timedelta(days=2)),
-        AuditLog(action="user.update", entity_type="user", entity_id=str(u1.id), user_id=u1.id,
-                 created_at=now - timedelta(days=1)),
-        AuditLog(action="role.create", entity_type="role", entity_id="2", user_id=u2.id,
-                 created_at=now - timedelta(hours=1)),
-    ])
+    db.session.add_all(
+        [
+            AuditLog(
+                action="user.create",
+                entity_type="user",
+                entity_id=str(u1.id),
+                user_id=u1.id,
+                created_at=now - timedelta(days=2),
+            ),
+            AuditLog(
+                action="user.update",
+                entity_type="user",
+                entity_id=str(u1.id),
+                user_id=u1.id,
+                created_at=now - timedelta(days=1),
+            ),
+            AuditLog(
+                action="role.create",
+                entity_type="role",
+                entity_id="2",
+                user_id=u2.id,
+                created_at=now - timedelta(hours=1),
+            ),
+        ]
+    )
     db.session.commit()
     yield {"u1": u1.id, "u2": u2.id}
     db.session.execute(text("DELETE FROM audit_logs"))
