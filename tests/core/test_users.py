@@ -35,7 +35,9 @@ def clean(db):
 
 def _mk_user(db, **over):
     defaults = dict(
-        username="alice", email="alice@example.com", full_name="Alice",
+        username="alice",
+        email="alice@example.com",
+        full_name="Alice",
         password_hash=LocalAuthStrategy.hash_password("x12345678"),
     )
     defaults.update(over)
@@ -62,16 +64,19 @@ def test_list_users_only_active(db, clean):
 def test_update_user_email_collision(db, clean):
     u1 = _mk_user(db, username="alice", email="a@ex.com", full_name="A")
     _mk_user(db, username="bob", email="b@ex.com", full_name="B")
-    ok, err = update_user(u1, full_name="A2", email="b@ex.com",
-                          is_active=True, is_superuser=False, avatar_url=None)
+    ok, err = update_user(
+        u1, full_name="A2", email="b@ex.com", is_active=True, is_superuser=False, avatar_url=None
+    )
     assert ok is False
     assert err == "Email already in use."
 
 
 def test_set_roles_replaces(db, clean):
     u = _mk_user(db)
-    r1 = Role(name="r1"); r2 = Role(name="r2")
-    db.session.add_all([r1, r2]); db.session.commit()
+    r1 = Role(name="r1")
+    r2 = Role(name="r2")
+    db.session.add_all([r1, r2])
+    db.session.commit()
     set_user_roles(u, [r1.id])
     assert {r.name for r in u.roles} == {"r1"}
     set_user_roles(u, [r2.id])

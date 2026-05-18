@@ -33,6 +33,8 @@ with app.app_context():
         ("users.view", "perm.users.view"),
         ("users.manage", "perm.users.manage"),
         ("system.manage", "perm.system.manage"),
+        ("identifiers.self", "perm.identifiers.self"),
+        ("identifiers.manage", "perm.identifiers.manage"),
     ]
     for code, label_key in core_perms:
         if not Permission.query.filter_by(code=code).first():
@@ -106,4 +108,11 @@ with app.app_context():
             db.session.add(MenuItem(**m))
 
     db.session.commit()
+
+    # --- Ensure every user has a primary email row (idempotent self-heal) ---
+    from app.modules.academic.service import ensure_primary_email_row
+
+    for u in User.query.filter(User.deleted_at.is_(None)).all():
+        ensure_primary_email_row(u)
+
     print("Seed tamamlandi. Admin: admin / admin1234")

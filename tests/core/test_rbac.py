@@ -15,6 +15,7 @@ from app.core.rbac.service import (
 @pytest.fixture
 def perms(db):
     from sqlalchemy import text
+
     db.session.execute(text("DELETE FROM role_permissions"))
     db.session.query(Role).delete()
     db.session.query(Permission).delete()

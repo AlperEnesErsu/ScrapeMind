@@ -6,6 +6,7 @@ def test_hash_and_verify():
     assert hashed != "secret123"
     # verify is done inside authenticate(); passlib ctx is tested here indirectly
     from passlib.context import CryptContext
+
     ctx = CryptContext(schemes=["argon2"], deprecated="auto")
     assert ctx.verify("secret123", hashed)
 
