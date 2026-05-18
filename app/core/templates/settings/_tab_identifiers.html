@@ -1,0 +1,72 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Academic Identifiers') }}</h6>
+
+<p class="small text-muted">
+  {{ _('Your historical and alternate academic identities. Useful when your name, affiliation, or institutional email has changed — old papers stay linked through these. This is separate from your login email.') }}
+</p>
+
+{% if identifiers %}
+<ul class="list-group mb-4">
+  {% for i in identifiers %}
+  <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="d-flex align-items-center gap-2">
+      {% if i.type.code == 'email' %}
+        <i class="bi {{ 'bi-envelope-check text-success' if i.is_verified else 'bi-envelope-exclamation text-warning' }}"></i>
+      {% else %}
+        <i class="bi bi-person-vcard text-info"></i>
+      {% endif %}
+      <span class="text-muted small">[{{ i.type.name }}]</span>
+      <strong>{{ i.value }}</strong>
+      {% if i.is_verified %}
+        <span class="badge rounded-pill text-bg-success-subtle text-success">{{ _('Verified') }}</span>
+      {% elif i.type.code == 'email' %}
+        <span class="badge rounded-pill text-bg-warning-subtle text-warning">{{ _('Unverified') }}</span>
+      {% endif %}
+    </span>
+    <span class="d-flex gap-1">
+      {% if i.type.code == 'email' and not i.is_verified %}
+        <form hx-post="{{ url_for('settings.submit_identifier_resend', ident_id=i.id) }}"
+              hx-target="#tab-content" hx-swap="innerHTML" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ _('Resend verification link') }}">
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
+        </form>
+      {% endif %}
+      <form hx-post="{{ url_for('settings.submit_identifier_delete', ident_id=i.id) }}"
+            hx-target="#tab-content" hx-swap="innerHTML"
+            hx-confirm="{{ _('Remove this identifier?') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remove') }}">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<div class="empty-state mb-3">
+  <i class="bi bi-person-vcard"></i>
+  <div>{{ _('No academic identifiers yet.') }}</div>
+</div>
+{% endif %}
+
+<form hx-post="{{ url_for('settings.submit_identifier_add') }}" hx-target="#tab-content" hx-swap="innerHTML">
+  {{ form.csrf_token }}
+  <label class="form-label">{{ _('Add identifier') }}</label>
+  <div class="row g-2">
+    <div class="col-md-3">
+      {{ form.type_code(class="form-select") }}
+    </div>
+    <div class="col-md-7">
+      {{ form.value(class="form-control", placeholder=_('value (email / ORCID / etc.)'), required=True) }}
+    </div>
+    <div class="col-md-2 d-grid">
+      <button type="submit" class="btn btn-primary">{{ _('Add') }}</button>
+    </div>
+  </div>
+  <div class="form-text">
+    {{ _('Email type sends a verification link. Other types are stored as-is for now.') }}
+  </div>
+</form>

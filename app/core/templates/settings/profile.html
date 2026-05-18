@@ -7,13 +7,14 @@
   <div class="col-md-3">
     <div class="list-group" id="profile-tabs">
       {% set tabs = [
-        ('personal', 'bi-person',           _('Personal Info')),
-        ('email',    'bi-envelope',         _('Primary Email')),
-        ('emails',   'bi-envelope-at',      _('Email Addresses')),
-        ('password', 'bi-key',              _('Password')),
-        ('prefs',    'bi-sliders',          _('Preferences')),
-        ('oauth',    'bi-link-45deg',       _('OAuth Accounts')),
-        ('account',  'bi-info-circle',      _('Account')),
+        ('personal',    'bi-person',          _('Personal Info')),
+        ('email',       'bi-envelope',        _('Login Email')),
+        ('identifiers', 'bi-person-vcard',    _('Academic Identifiers')),
+        ('interests',   'bi-tags',            _('Research Interests')),
+        ('password',    'bi-key',             _('Password')),
+        ('prefs',       'bi-sliders',         _('Preferences')),
+        ('oauth',       'bi-link-45deg',      _('OAuth Accounts')),
+        ('account',     'bi-info-circle',     _('Account')),
       ] %}
       {% for code, icon, label in tabs %}
       <a href="#"

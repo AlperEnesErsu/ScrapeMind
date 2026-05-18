@@ -22,6 +22,20 @@ app = create_app()
 
 with app.app_context():
     # --- Permissions ---
+    # --- Academic identifier types ---
+    from app.modules.academic.models import IdentifierType
+
+    if not IdentifierType.query.filter_by(code="email").first():
+        db.session.add(
+            IdentifierType(
+                code="email",
+                name="Email",
+                validation_regex=r"^[^@]+@[^@]+\.[^@]+$",
+                verification_method="email_link",
+            )
+        )
+    db.session.flush()
+
     core_perms = [
         ("roles.view", "perm.roles.view"),
         ("roles.manage", "perm.roles.manage"),
@@ -108,11 +122,4 @@ with app.app_context():
             db.session.add(MenuItem(**m))
 
     db.session.commit()
-
-    # --- Ensure every user has a primary email row (idempotent self-heal) ---
-    from app.modules.academic.service import ensure_primary_email_row
-
-    for u in User.query.filter(User.deleted_at.is_(None)).all():
-        ensure_primary_email_row(u)
-
     print("Seed tamamlandi. Admin: admin / admin1234")
