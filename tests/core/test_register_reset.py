@@ -1,3 +1,5 @@
+from datetime import UTC
+
 import pytest
 from sqlalchemy import text
 
@@ -39,8 +41,7 @@ def user_role(db):
 
 def test_register_user_happy(db, clean_users, user_role):
     user, err = register_user(
-        username="alice", email="ALICE@example.com",
-        full_name="Alice", password="secret12345"
+        username="alice", email="ALICE@example.com", full_name="Alice", password="secret12345"
     )
     assert err is None
     assert user is not None
@@ -51,26 +52,29 @@ def test_register_user_happy(db, clean_users, user_role):
 
 
 def test_register_duplicate_username(db, clean_users):
-    register_user(username="bob", email="bob@example.com",
-                  full_name="Bob", password="x12345678")
-    user, err = register_user(username="bob", email="bob2@example.com",
-                              full_name="Bob", password="x12345678")
+    register_user(username="bob", email="bob@example.com", full_name="Bob", password="x12345678")
+    user, err = register_user(
+        username="bob", email="bob2@example.com", full_name="Bob", password="x12345678"
+    )
     assert user is None
     assert err == "Username already in use."
 
 
 def test_register_duplicate_email(db, clean_users):
-    register_user(username="carol", email="carol@example.com",
-                  full_name="Carol", password="x12345678")
-    user, err = register_user(username="carol2", email="carol@example.com",
-                              full_name="Carol", password="x12345678")
+    register_user(
+        username="carol", email="carol@example.com", full_name="Carol", password="x12345678"
+    )
+    user, err = register_user(
+        username="carol2", email="carol@example.com", full_name="Carol", password="x12345678"
+    )
     assert user is None
     assert err == "Email already in use."
 
 
 def test_password_reset_token_roundtrip(db, clean_users, app):
-    user, _ = register_user(username="dave", email="dave@example.com",
-                            full_name="Dave", password="x12345678")
+    user, _ = register_user(
+        username="dave", email="dave@example.com", full_name="Dave", password="x12345678"
+    )
     token = make_password_reset_token(user)
     resolved = verify_password_reset_token(token)
     assert resolved is not None
@@ -82,8 +86,9 @@ def test_password_reset_invalid_token(db, clean_users, app):
 
 
 def test_password_reset_token_invalidated_on_email_change(db, clean_users, app):
-    user, _ = register_user(username="eve", email="eve@example.com",
-                            full_name="Eve", password="x12345678")
+    user, _ = register_user(
+        username="eve", email="eve@example.com", full_name="Eve", password="x12345678"
+    )
     token = make_password_reset_token(user)
     user.email = "eve2@example.com"
     db.session.commit()
@@ -91,12 +96,14 @@ def test_password_reset_token_invalidated_on_email_change(db, clean_users, app):
 
 
 def test_reset_password_clears_lockout(db, clean_users, app):
-    from datetime import datetime, timedelta, timezone
-    user, _ = register_user(username="frank", email="frank@example.com",
-                            full_name="Frank", password="x12345678")
+    from datetime import datetime, timedelta
+
+    user, _ = register_user(
+        username="frank", email="frank@example.com", full_name="Frank", password="x12345678"
+    )
     user.is_locked = True
     user.failed_login_count = 5
-    user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+    user.locked_until = datetime.now(UTC) + timedelta(minutes=15)
     db.session.commit()
     reset_password(user, "newPass12345")
     assert user.is_locked is False

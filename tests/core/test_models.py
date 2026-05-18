@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 
 def test_user_locked_until_auto_clears():
@@ -6,7 +6,7 @@ def test_user_locked_until_auto_clears():
 
     u = User()
     u.is_locked = True
-    u.locked_until = datetime.now(timezone.utc) - timedelta(seconds=1)  # expired
+    u.locked_until = datetime.now(UTC) - timedelta(seconds=1)  # expired
     assert u.effective_is_locked is False
 
 
@@ -15,7 +15,7 @@ def test_user_locked_still_active():
 
     u = User()
     u.is_locked = True
-    u.locked_until = datetime.now(timezone.utc) + timedelta(minutes=14)
+    u.locked_until = datetime.now(UTC) + timedelta(minutes=14)
     assert u.effective_is_locked is True
 
 

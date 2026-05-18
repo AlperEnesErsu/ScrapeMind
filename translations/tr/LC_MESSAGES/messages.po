@@ -659,6 +659,79 @@ msgstr "Temayı Değiştir"
 msgid "Collapse"
 msgstr "Daralt"
 
+# --- Multi-email (Phase 2) ---
+msgid "Email Addresses"
+msgstr "E-posta Adresleri"
+
+msgid "Primary Email"
+msgstr "Birincil E-posta"
+
+msgid "Primary"
+msgstr "Birincil"
+
+msgid "Verified"
+msgstr "Doğrulandı"
+
+msgid "Unverified"
+msgstr "Doğrulanmadı"
+
+msgid "Make primary"
+msgstr "Birincil yap"
+
+msgid "Resend verification link"
+msgstr "Onay bağlantısını tekrar gönder"
+
+msgid "Remove this email?"
+msgstr "Bu e-postayı kaldırmak istiyor musunuz?"
+
+msgid "Remove"
+msgstr "Kaldır"
+
+msgid "No email addresses on file."
+msgstr "Kayıtlı e-posta yok."
+
+msgid "Add"
+msgstr "Ekle"
+
+msgid "Add another email"
+msgstr "Başka bir e-posta ekle"
+
+msgid "A verification link will be issued. Verify before promoting to primary."
+msgstr "Bir onay bağlantısı oluşturulacak. Birincil yapmadan önce doğrulayın."
+
+msgid "You can keep multiple email addresses. One must be marked as primary — that's the address used for login and notifications."
+msgstr "Birden fazla e-posta adresi tutabilirsiniz. Biri birincil olarak işaretlenmiş olmalı — bu adres giriş ve bildirimler için kullanılır."
+
+msgid "Dev mode: verification link → %(url)s"
+msgstr "Geliştirme modu: onay bağlantısı → %(url)s"
+
+msgid "A verification link has been sent."
+msgstr "Bir onay bağlantısı gönderildi."
+
+msgid "Verification link re-sent."
+msgstr "Onay bağlantısı tekrar gönderildi."
+
+msgid "Verification link is invalid or expired."
+msgstr "Onay bağlantısı geçersiz veya süresi dolmuş."
+
+msgid "Email verified."
+msgstr "E-posta doğrulandı."
+
+msgid "Primary email updated."
+msgstr "Birincil e-posta güncellendi."
+
+msgid "Email removed."
+msgstr "E-posta kaldırıldı."
+
+msgid "Email not found."
+msgstr "E-posta bulunamadı."
+
+msgid "Verify the email before making it primary."
+msgstr "Birincil yapmadan önce e-postayı doğrulayın."
+
+msgid "Cannot delete the primary email. Promote another first."
+msgstr "Birincil e-posta silinemez. Önce başka birini birincil yapın."
+
 msgid "Profile & preferences — Faz 1"
 msgstr "Profil ve tercihler — Faz 1"
 

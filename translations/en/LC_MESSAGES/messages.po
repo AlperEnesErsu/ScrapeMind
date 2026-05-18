@@ -656,6 +656,79 @@ msgstr "Toggle Theme"
 msgid "Collapse"
 msgstr "Collapse"
 
+# --- Multi-email (Phase 2) ---
+msgid "Email Addresses"
+msgstr "Email Addresses"
+
+msgid "Primary Email"
+msgstr "Primary Email"
+
+msgid "Primary"
+msgstr "Primary"
+
+msgid "Verified"
+msgstr "Verified"
+
+msgid "Unverified"
+msgstr "Unverified"
+
+msgid "Make primary"
+msgstr "Make primary"
+
+msgid "Resend verification link"
+msgstr "Resend verification link"
+
+msgid "Remove this email?"
+msgstr "Remove this email?"
+
+msgid "Remove"
+msgstr "Remove"
+
+msgid "No email addresses on file."
+msgstr "No email addresses on file."
+
+msgid "Add"
+msgstr "Add"
+
+msgid "Add another email"
+msgstr "Add another email"
+
+msgid "A verification link will be issued. Verify before promoting to primary."
+msgstr "A verification link will be issued. Verify before promoting to primary."
+
+msgid "You can keep multiple email addresses. One must be marked as primary — that's the address used for login and notifications."
+msgstr "You can keep multiple email addresses. One must be marked as primary — that's the address used for login and notifications."
+
+msgid "Dev mode: verification link → %(url)s"
+msgstr "Dev mode: verification link → %(url)s"
+
+msgid "A verification link has been sent."
+msgstr "A verification link has been sent."
+
+msgid "Verification link re-sent."
+msgstr "Verification link re-sent."
+
+msgid "Verification link is invalid or expired."
+msgstr "Verification link is invalid or expired."
+
+msgid "Email verified."
+msgstr "Email verified."
+
+msgid "Primary email updated."
+msgstr "Primary email updated."
+
+msgid "Email removed."
+msgstr "Email removed."
+
+msgid "Email not found."
+msgstr "Email not found."
+
+msgid "Verify the email before making it primary."
+msgstr "Verify the email before making it primary."
+
+msgid "Cannot delete the primary email. Promote another first."
+msgstr "Cannot delete the primary email. Promote another first."
+
 msgid "Menu management — Faz 1"
 msgstr "Menu management — Phase 1"
 

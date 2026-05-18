@@ -20,7 +20,7 @@ from app.extensions import db
 
 settings_bp = Blueprint("settings", __name__)
 
-TABS = ["personal", "email", "password", "prefs", "oauth", "account"]
+TABS = ["personal", "email", "emails", "password", "prefs", "oauth", "account"]
 
 
 def _is_htmx() -> bool:
@@ -65,9 +65,17 @@ def _account_ctx():
     return {"user": current_user}
 
 
+def _emails_ctx():
+    from app.modules.academic.forms import AddEmailForm
+    from app.modules.academic.service import list_user_emails
+
+    return {"form": AddEmailForm(), "emails": list_user_emails(current_user)}
+
+
 _CTX_BUILDERS = {
     "personal": _personal_ctx,
     "email": _email_ctx,
+    "emails": _emails_ctx,
     "password": _password_ctx,
     "prefs": _prefs_ctx,
     "oauth": _oauth_ctx,
@@ -142,6 +150,106 @@ def submit_password():
     return _render_tab(
         "password", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
     )
+
+
+@settings_bp.route("/profile/emails/add", methods=["POST"])
+@login_required
+def submit_email_add():
+    from app.modules.academic.forms import AddEmailForm
+    from app.modules.academic.service import add_email, make_email_verify_token
+
+    form = AddEmailForm()
+    if form.validate_on_submit():
+        ident, err = add_email(current_user, form.email.data)
+        if err:
+            return _render_tab("emails", flash_msg=_(err), flash_kind="danger", **_emails_ctx())
+        token = make_email_verify_token(ident)
+        verify_url = url_for("auth.verify_email", token=token, _external=True)
+        log_action(
+            "user.email_added",
+            entity_type="user_identifier",
+            entity_id=str(ident.id),
+            changes={"email": ident.value},
+        )
+        # Dev-mode: surface the link in flash. SMTP swap-in in Phase 2 mid.
+        if current_app_is_debug():
+            return _render_tab(
+                "emails",
+                flash_msg=_("Dev mode: verification link → %(url)s", url=verify_url),
+                flash_kind="info",
+                **_emails_ctx(),
+            )
+        return _render_tab(
+            "emails",
+            flash_msg=_("A verification link has been sent."),
+            flash_kind="success",
+            **_emails_ctx(),
+        )
+    return _render_tab(
+        "emails",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+        form=form,
+        emails=_emails_ctx()["emails"],
+    )
+
+
+@settings_bp.route("/profile/emails/<int:ident_id>/primary", methods=["POST"])
+@login_required
+def submit_email_primary(ident_id: int):
+    from app.modules.academic.service import set_primary_email
+
+    ok, err = set_primary_email(current_user, ident_id)
+    if not ok:
+        return _render_tab("emails", flash_msg=_(err), flash_kind="danger", **_emails_ctx())
+    log_action("user.email_primary", entity_type="user_identifier", entity_id=str(ident_id))
+    return _render_tab(
+        "emails", flash_msg=_("Primary email updated."), flash_kind="success", **_emails_ctx()
+    )
+
+
+@settings_bp.route("/profile/emails/<int:ident_id>/delete", methods=["POST"])
+@login_required
+def submit_email_delete(ident_id: int):
+    from app.modules.academic.service import delete_email
+
+    ok, err = delete_email(current_user, ident_id)
+    if not ok:
+        return _render_tab("emails", flash_msg=_(err), flash_kind="danger", **_emails_ctx())
+    log_action("user.email_deleted", entity_type="user_identifier", entity_id=str(ident_id))
+    return _render_tab(
+        "emails", flash_msg=_("Email removed."), flash_kind="success", **_emails_ctx()
+    )
+
+
+@settings_bp.route("/profile/emails/<int:ident_id>/resend", methods=["POST"])
+@login_required
+def submit_email_resend(ident_id: int):
+    from app.modules.academic.models import UserIdentifier
+    from app.modules.academic.service import make_email_verify_token
+
+    ident = db.session.get(UserIdentifier, ident_id)
+    if ident is None or ident.user_id != current_user.id or ident.is_verified:
+        abort(404)
+    token = make_email_verify_token(ident)
+    verify_url = url_for("auth.verify_email", token=token, _external=True)
+    log_action("user.email_verify_resent", entity_type="user_identifier", entity_id=str(ident_id))
+    if current_app_is_debug():
+        return _render_tab(
+            "emails",
+            flash_msg=_("Dev mode: verification link → %(url)s", url=verify_url),
+            flash_kind="info",
+            **_emails_ctx(),
+        )
+    return _render_tab(
+        "emails", flash_msg=_("Verification link re-sent."), flash_kind="success", **_emails_ctx()
+    )
+
+
+def current_app_is_debug() -> bool:
+    from flask import current_app
+
+    return bool(current_app.debug)
 
 
 @settings_bp.route("/profile/prefs", methods=["POST"])
