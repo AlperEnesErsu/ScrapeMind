@@ -25,7 +25,7 @@
     </span>
     <span class="d-flex gap-1">
       {% if i.type.code == 'email' and not i.is_verified %}
-        <form hx-post="{{ url_for('settings.submit_identifier_resend', ident_id=i.id) }}"
+        <form hx-post="{{ url_for('academic.submit_identifier_resend', ident_id=i.id) }}"
               hx-target="#tab-content" hx-swap="innerHTML" class="d-inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ _('Resend verification link') }}">
@@ -33,7 +33,7 @@
           </button>
         </form>
       {% endif %}
-      <form hx-post="{{ url_for('settings.submit_identifier_delete', ident_id=i.id) }}"
+      <form hx-post="{{ url_for('academic.submit_identifier_delete', ident_id=i.id) }}"
             hx-target="#tab-content" hx-swap="innerHTML"
             hx-confirm="{{ _('Remove this identifier?') }}" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -52,7 +52,7 @@
 </div>
 {% endif %}
 
-<form hx-post="{{ url_for('settings.submit_identifier_add') }}" hx-target="#tab-content" hx-swap="innerHTML">
+<form hx-post="{{ url_for('academic.submit_identifier_add') }}" hx-target="#tab-content" hx-swap="innerHTML">
   {{ form.csrf_token }}
   <label class="form-label">{{ _('Add identifier') }}</label>
   <div class="row g-2">

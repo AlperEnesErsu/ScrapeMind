@@ -138,6 +138,33 @@ def list_user_keywords(user: User) -> list[Keyword]:
     return [r.keyword for r in rows]
 
 
+def add_user_keywords_bulk(
+    user: User, raw_input: str
+) -> tuple[list[Keyword], list[str]]:
+    """Virgül veya noktalı virgülle ayrılmış birden fazla anahtar kelimeyi ekler.
+
+    Returns:
+        added   — başarıyla eklenen Keyword nesneleri
+        skipped — zaten ekli veya çok kısa olduğu için atlanan ham değerler
+    """
+    import re as _re
+
+    # `;` veya `,` ile böl, boşlukları temizle, boşları at
+    terms = [t.strip() for t in _re.split(r"[;,]+", raw_input) if t.strip()]
+
+    added: list[Keyword] = []
+    skipped: list[str] = []
+
+    for term in terms:
+        kw, err = add_user_keyword(user, term)
+        if kw:
+            added.append(kw)
+        else:
+            skipped.append(term)
+
+    return added, skipped
+
+
 def add_user_keyword(user: User, raw_value: str) -> tuple[Keyword | None, str | None]:
     value = _normalise_keyword(raw_value)
     if not value or len(value) < 2:

@@ -2,7 +2,7 @@ import structlog
 from flask import Flask
 
 from app.config import get_config
-from app.extensions import babel, csrf, db, limiter, login_manager, migrate, oauth
+from app.extensions import babel, csrf, db, limiter, login_manager, mail, migrate, oauth
 
 logger = structlog.get_logger()
 
@@ -17,6 +17,7 @@ def create_app() -> Flask:
     _init_logging(app)
     _init_celery(app)
     _register_blueprints(app)
+    _register_session_guard(app)
     _register_context_processors(app)
     _register_error_handlers(app)
 
@@ -50,6 +51,7 @@ def _init_extensions(app: Flask) -> None:
     csrf.init_app(app)
     limiter.init_app(app)
 
+    mail.init_app(app)
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "warning"
 
@@ -80,6 +82,29 @@ def _init_logging(app: Flask) -> None:
             renderer,
         ]
     )
+
+
+def _register_session_guard(app: Flask) -> None:
+    """Her istekte session key geçerliliğini kontrol eder."""
+
+    @app.before_request
+    def _check_session():
+        from flask_login import current_user, logout_user
+
+        if not current_user.is_authenticated:
+            return
+        from app.core.sessions.service import get_current_key, touch_session
+
+        key = get_current_key()
+        if key is None:
+            # Eski oturum (session tracking öncesi) — geçerli say, key üret
+            return
+        record = touch_session(key)
+        if record is None:
+            # Oturum revoke edilmiş
+            logout_user()
+            from flask import redirect, url_for
+            return redirect(url_for("auth.login"))
 
 
 def _register_context_processors(app: Flask) -> None:
@@ -119,6 +144,7 @@ def _register_blueprints(app: Flask) -> None:
     from app.core.settings.routes import settings_bp
     from app.core.tasks_admin.routes import tasks_admin_bp
     from app.core.users.routes import users_bp
+    from app.modules.academic import academic_bp
     from app.modules.dashboard import dashboard_bp
     from app.modules.scrape.routes import scrape_bp
 
@@ -130,6 +156,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(settings_bp, url_prefix="/settings")
     app.register_blueprint(audit_bp, url_prefix="/admin/audit")
     app.register_blueprint(scrape_bp, url_prefix="/papers")
+    app.register_blueprint(academic_bp, url_prefix="/academic")
     app.register_blueprint(search_bp, url_prefix="/")
     app.register_blueprint(dashboard_bp, url_prefix="/")
 

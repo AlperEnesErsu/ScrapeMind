@@ -1,4 +1,4 @@
-msgid ""
+﻿msgid ""
 msgstr ""
 "Project-Id-Version: ScrapeMind 0.1\n"
 "Report-Msgid-Bugs-To: \n"
@@ -132,7 +132,121 @@ msgstr "ScrapeMind modülleri bu paneli Faz 2'de dolduracak."
 msgid "Role management — Faz 1"
 msgstr "Rol yönetimi — Faz 1"
 
+
+msgid "Active Sessions"
+msgstr "Aktif Oturumlar"
+
+msgid "These devices are currently signed in to your account."
+msgstr "Bu cihazlar su anda hesabiniza bagli."
+
+msgid "This device"
+msgstr "Bu cihaz"
+
+msgid "Last seen"
+msgstr "Son gorulme"
+
+msgid "Started"
+msgstr "Baslangic"
+
+msgid "Sign out this device?"
+msgstr "Bu cihazi oturumdan cikarmak istiyor musunuz?"
+
+msgid "Sign out"
+msgstr "Oturumu Kapat"
+
+msgid "Sign out all other devices?"
+msgstr "Diger tum cihazlari oturumdan cikarmak istiyor musunuz?"
+
+msgid "Sign out all other devices"
+msgstr "Diger tum cihazlari cikar"
+
+msgid "Device signed out."
+msgstr "Cihaz oturumu kapatildi."
+
+msgid "%(n)d other device(s) signed out."
+msgstr "%(n)d diger cihaz oturumu kapatildi."
+
+msgid "No active sessions found."
+msgstr "Aktif oturum bulunamadi."
+
+msgid "At least 8 characters"
+msgstr "En az 8 karakter"
+
+msgid "At least one uppercase letter"
+msgstr "En az 1 buyuk harf"
+
+msgid "At least one lowercase letter"
+msgstr "En az 1 kucuk harf"
+
+msgid "At least one digit"
+msgstr "En az 1 rakam"
+
+msgid "Password must be at least 8 characters."
+msgstr "Sifre en az 8 karakter olmalidir."
+
+msgid "Password must contain at least one uppercase letter."
+msgstr "Sifre en az 1 buyuk harf icermelidir."
+
+msgid "Password must contain at least one lowercase letter."
+msgstr "Sifre en az 1 kucuk harf icermelidir."
+
+msgid "Password must contain at least one digit."
+msgstr "Sifre en az 1 rakam icermelidir."
+
+msgid "Public registration is currently disabled."
+msgstr "Su anda acik kayit devre disi."
+
+msgid "Link another account"
+msgstr "Baska hesap bagla"
+
+msgid "Link Google"
+msgstr "Google Bagla"
+
+msgid "Link Microsoft"
+msgstr "Microsoft Bagla"
+
+msgid "Google linked"
+msgstr "Google Bagli"
+
+msgid "Microsoft linked"
+msgstr "Microsoft Bagli"
+
+msgid "Unlink"
+msgstr "Baglanti Kes"
+
+msgid "Unlink %(provider)s account?"
+msgstr "%(provider)s hesabinin baglantisini kesmek istiyor musunuz?"
+
+msgid "%(provider)s account linked successfully."
+msgstr "%(provider)s hesabi basariyla baglandi."
+
+msgid "%(provider)s account unlinked."
+msgstr "%(provider)s hesabinin baglantisi kesildi."
+
+msgid "This %(provider)s account is already linked."
+msgstr "Bu %(provider)s hesabi zaten bagli."
+
+msgid "This %(provider)s account is linked to another user."
+msgstr "Bu %(provider)s hesabi baska bir kullaniciya bagli."
+
+msgid "Cannot unlink — this is your only login method. Set a password first."
+msgstr "Baglanti kesilemiyor — tek giris yonteminiz bu. Once sifre tanimlayin."
+
+msgid "You have no password set. If you unlink all OAuth accounts you will lose access."
+msgstr "Sifreniz tanimli degil. Tum OAuth hesaplarini koparirsiniz erisimi kaybedersiniz."
+
+msgid "Account not found."
+msgstr "Hesap bulunamadi."
 # --- Menu i18n keys (sidebar label_key değerleri) ---
+msgid "menu.admin"
+msgstr "Sistem Yönetimi"
+
+msgid "menu.for_you"
+msgstr "Senin İçin"
+
+msgid "menu.admin_overview"
+msgstr "Genel Bakış"
+
 msgid "menu.dashboard"
 msgstr "Dashboard"
 
@@ -820,6 +934,21 @@ msgstr "Anahtar kelime eklendi."
 msgid "Keyword removed."
 msgstr "Anahtar kelime kaldırıldı."
 
+msgid "Keyword added."
+msgstr "Anahtar kelime eklendi."
+
+msgid "%(n)d keywords added."
+msgstr "%(n)d anahtar kelime eklendi."
+
+msgid "%(n)d added, %(s)d already following."
+msgstr "%(n)d eklendi, %(s)d zaten takip ediliyor."
+
+msgid "No valid keywords found."
+msgstr "Geçerli anahtar kelime bulunamadı."
+
+msgid "Separate multiple keywords with comma or semicolon. Each term is normalised to lowercase."
+msgstr "Birden fazla anahtar kelimeyi virgül veya noktalı virgülle ayırın. Her terim küçük harfe dönüştürülür."
+
 msgid "Keyword not found."
 msgstr "Anahtar kelime bulunamadı."
 
@@ -936,3 +1065,5 @@ msgstr "Profil ve tercihler — Faz 1"
 
 msgid "System-wide settings — Faz 1"
 msgstr "Sistem geneli ayarlar — Faz 1"
+
+

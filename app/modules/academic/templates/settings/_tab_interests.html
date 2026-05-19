@@ -10,7 +10,7 @@
     <span class="badge rounded-pill text-bg-primary-subtle text-primary me-2 mb-2 d-inline-flex align-items-center gap-2 fs-6 py-2 px-3">
       <i class="bi bi-tag"></i>
       <span>{{ kw.value }}</span>
-      <form hx-post="{{ url_for('settings.submit_keyword_delete', keyword_id=kw.id) }}"
+      <form hx-post="{{ url_for('academic.submit_keyword_delete', keyword_id=kw.id) }}"
             hx-target="#tab-content" hx-swap="innerHTML" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-primary"
@@ -27,14 +27,16 @@
   {% endfor %}
 </div>
 
-<form hx-post="{{ url_for('settings.submit_keyword_add') }}" hx-target="#tab-content" hx-swap="innerHTML">
+<form hx-post="{{ url_for('academic.submit_keyword_add') }}" hx-target="#tab-content" hx-swap="innerHTML">
   {{ form.csrf_token }}
   <label class="form-label">{{ _('Add a keyword') }}</label>
   <div class="input-group">
-    {{ form.value(class="form-control", placeholder=_('e.g. transformer architectures, graph neural networks'), required=True) }}
+    {{ form.value(class="form-control",
+               placeholder=_('e.g. Yapay Zeka ; Makine Öğrenmesi , Modelleme'),
+               required=True) }}
     <button type="submit" class="btn btn-primary">{{ _('Add') }}</button>
   </div>
   <div class="form-text">
-    {{ _('2–64 characters. Will be normalised to lowercase. Trends across users let us recommend related ones later.') }}
+    {{ _('Separate multiple keywords with comma or semicolon. Each term is normalised to lowercase.') }}
   </div>
 </form>

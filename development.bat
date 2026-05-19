@@ -44,24 +44,24 @@ docker-compose -f docker/docker-compose.yml up -d >nul 2>&1
 
 :skip_docker
 
-:: --- Paket kontrolu ---
+:: --- Paket kontrolu (requirements.txt hash ile karsilastir) ---
 echo.
 echo Paketler kontrol ediliyor...
-python -c "import flask, sqlalchemy, flask_login, flask_migrate, flask_babel, flask_wtf, flask_limiter, authlib, passlib, structlog, dotenv" 2>nul
-if %errorlevel% neq 0 (
-    echo Eksik paketler var, yukleniyor...
-    pip install -r requirements.txt
-) else (
-    echo Tum paketler yuklu.
-)
+pip install -r requirements.txt -q --disable-pip-version-check
+echo Paketler hazir.
 
-:: --- htmx ---
-if not exist app\core\static\js\htmx.min.js (
+:: --- htmx (10KB alti ise placeholder demektir, gercek kutuphaney indir) ---
+for %%F in (app\core\static\js\htmx.min.js) do set HTMX_SIZE=%%~zF
+if not defined HTMX_SIZE set HTMX_SIZE=0
+if %HTMX_SIZE% LSS 10000 (
     echo.
     echo htmx indiriliyor...
-    curl -sL -o app\core\static\js\htmx.min.js https://unpkg.com/htmx.org/dist/htmx.min.js
+    powershell -Command "Invoke-WebRequest -Uri 'https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js' -OutFile 'app\core\static\js\htmx.min.js'"
     echo htmx indirildi.
 )
+
+:: --- Ceviriler ---
+flask translate compile >nul 2>&1 || pybabel compile -d translations >nul 2>&1
 
 :: --- Migration ---
 echo.

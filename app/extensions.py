@@ -1,4 +1,5 @@
 from authlib.integrations.flask_client import OAuth
+from flask_mail import Mail
 from flask_babel import Babel
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -8,6 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 
 db = SQLAlchemy()
+mail = Mail()
 migrate = Migrate()
 login_manager = LoginManager()
 oauth = OAuth()

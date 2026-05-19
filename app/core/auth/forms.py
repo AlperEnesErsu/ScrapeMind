@@ -3,6 +3,8 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Regexp
 
+from app.core.auth.password_policy import wtf_validator as _pw_policy
+
 
 class RegisterForm(FlaskForm):
     username = StringField(
@@ -17,7 +19,7 @@ class RegisterForm(FlaskForm):
     )
     email = StringField(_l("Email"), validators=[DataRequired(), Email(), Length(max=255)])
     full_name = StringField(_l("Full Name"), validators=[DataRequired(), Length(min=2, max=128)])
-    password = PasswordField(_l("Password"), validators=[DataRequired(), Length(min=8)])
+    password = PasswordField(_l("Password"), validators=[DataRequired(), _pw_policy])
     password2 = PasswordField(
         _l("Confirm Password"),
         validators=[DataRequired(), EqualTo("password", message=_l("Passwords do not match."))],
@@ -38,7 +40,7 @@ class PasswordResetRequestForm(FlaskForm):
 
 
 class PasswordResetForm(FlaskForm):
-    password = PasswordField(_l("New Password"), validators=[DataRequired(), Length(min=8)])
+    password = PasswordField(_l("New Password"), validators=[DataRequired(), _pw_policy])
     password2 = PasswordField(
         _l("Confirm Password"),
         validators=[DataRequired(), EqualTo("password")],

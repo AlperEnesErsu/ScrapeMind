@@ -90,11 +90,13 @@ echo.
 echo [6/7] Seed verileri yukleniyor...
 python scripts\seed.py
 
-:: --- htmx ---
+:: --- htmx (boyut kontrolu ile) ---
 echo.
 echo [7/7] htmx kontrol ediliyor...
-if not exist app\core\static\js\htmx.min.js (
-    curl -sL -o app\core\static\js\htmx.min.js https://unpkg.com/htmx.org/dist/htmx.min.js
+for %%F in (app\core\static\js\htmx.min.js) do set HTMX_SIZE=%%~zF
+if not defined HTMX_SIZE set HTMX_SIZE=0
+if %HTMX_SIZE% LSS 10000 (
+    powershell -Command "Invoke-WebRequest -Uri 'https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js' -OutFile 'app\core\static\js\htmx.min.js'"
     echo       htmx indirildi.
 ) else (
     echo       htmx mevcut.

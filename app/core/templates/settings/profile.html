@@ -6,18 +6,10 @@
 <div class="row g-3">
   <div class="col-md-3">
     <div class="list-group" id="profile-tabs">
-      {% set tabs = [
-        ('personal',    'bi-person',          _('Personal Info')),
-        ('email',       'bi-envelope',        _('Login Email')),
-        ('identifiers', 'bi-person-vcard',    _('Academic Identifiers')),
-        ('interests',   'bi-tags',            _('Research Interests')),
-        ('password',    'bi-key',             _('Password')),
-        ('prefs',       'bi-sliders',         _('Preferences')),
-        ('oauth',       'bi-link-45deg',      _('OAuth Accounts')),
-        ('account',     'bi-info-circle',     _('Account')),
-      ] %}
+      {# profile_tabs is injected by settings.profile — core tabs + module-registered tabs #}
+      {% set tabs = profile_tabs %}
       {% for code, icon, label in tabs %}
-      <a href="#"
+      <a href="{{ url_for('settings.profile', tab=code) }}"
          class="list-group-item list-group-item-action {% if code == active_tab %}active{% endif %}"
          hx-get="{{ url_for('settings.profile_tab', tab=code) }}"
          hx-target="#tab-content"
