@@ -54,6 +54,7 @@ with app.app_context():
         ("system.manage", "perm.system.manage"),
         ("identifiers.self", "perm.identifiers.self"),
         ("identifiers.manage", "perm.identifiers.manage"),
+        ("tasks.view", "perm.tasks.view"),
     ]
     for code, label_key in core_perms:
         if not Permission.query.filter_by(code=code).first():
@@ -117,6 +118,8 @@ with app.app_context():
              endpoint="menu.menu_list", required_permission="menu.view", order_index=60),
         dict(code="admin_audit", label_key="menu.audit", icon="bi-journal-text",
              endpoint="audit.log_list", required_permission="audit.view", order_index=70),
+        dict(code="admin_tasks", label_key="menu.tasks", icon="bi-cpu",
+             endpoint="tasks_admin.overview", required_permission="tasks.view", order_index=75),
         dict(code="settings_profile", label_key="menu.profile", icon="bi-person-circle",
              endpoint="settings.profile", order_index=90),
         dict(code="settings_system", label_key="menu.system", icon="bi-gear",
