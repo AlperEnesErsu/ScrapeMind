@@ -43,5 +43,40 @@ services:
       redis:
         condition: service_healthy
 
+  # Celery worker — runs background tasks pulled from the Redis broker.
+  # Profile: `tasks` so it's only spun up when you explicitly ask
+  # (`docker compose --profile tasks up`). The web container stays
+  # cheap for everyday dev.
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://scrapemind:scrapemind@db:5432/scrapemind
+      REDIS_URL: redis://redis:6379/0
+    command: celery -A app.tasks worker --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles: ["tasks"]
+
+  # Celery beat scheduler — kicks periodic tasks into the broker.
+  beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://scrapemind:scrapemind@db:5432/scrapemind
+      REDIS_URL: redis://redis:6379/0
+    command: celery -A app.tasks beat --loglevel=info
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles: ["tasks"]
+
 volumes:
   pg_data:

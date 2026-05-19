@@ -833,6 +833,61 @@ msgstr "Kullanıcının akademik kimliklerinin ve araştırma ilgi alanlarının
 msgid "No keywords yet."
 msgstr "Henüz anahtar kelime yok."
 
+# --- Tasks admin (Phase 2 slice 2) ---
+msgid "Tasks"
+msgstr "Görevler"
+
+msgid "menu.tasks"
+msgstr "Görevler"
+
+msgid "Background Tasks"
+msgstr "Arka Plan Görevleri"
+
+msgid "worker(s) online"
+msgstr "çalışan worker"
+
+msgid "No workers online"
+msgstr "Çalışan worker yok"
+
+msgid "No Celery worker is connected. Start one with:"
+msgstr "Bağlı Celery worker yok. Şu komutla başlat:"
+
+msgid "Or via docker compose:"
+msgstr "Veya docker compose ile:"
+
+msgid "Workers"
+msgstr "Worker'lar"
+
+msgid "online"
+msgstr "çevrimiçi"
+
+msgid "No workers."
+msgstr "Worker yok."
+
+msgid "Active"
+msgstr "Aktif"
+
+msgid "Reserved"
+msgstr "Rezerve"
+
+msgid "Nothing active."
+msgstr "Aktif iş yok."
+
+msgid "Nothing reserved."
+msgstr "Rezerve iş yok."
+
+msgid "Registered tasks"
+msgstr "Kayıtlı görevler"
+
+msgid "No tasks registered (no worker?)."
+msgstr "Kayıtlı görev yok (worker mı eksik?)."
+
+msgid "Beat schedule"
+msgstr "Beat zamanlaması"
+
+msgid "No periodic tasks."
+msgstr "Periyodik görev yok."
+
 msgid "Profile & preferences — Faz 1"
 msgstr "Profil ve tercihler — Faz 1"
 

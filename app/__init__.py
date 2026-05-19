@@ -15,6 +15,7 @@ def create_app() -> Flask:
 
     _init_extensions(app)
     _init_logging(app)
+    _init_celery(app)
     _register_blueprints(app)
     _register_context_processors(app)
     _register_error_handlers(app)
@@ -55,6 +56,13 @@ def _init_extensions(app: Flask) -> None:
     from app.core.i18n.utils import init_babel
 
     init_babel(app, babel)
+
+
+def _init_celery(app: Flask) -> None:
+    """Bind the singleton Celery app to this Flask app (idempotent)."""
+    from app.tasks import init_celery
+
+    init_celery(app)
 
 
 def _init_logging(app: Flask) -> None:
@@ -109,6 +117,7 @@ def _register_blueprints(app: Flask) -> None:
     from app.core.rbac.routes import rbac_bp
     from app.core.search.routes import search_bp
     from app.core.settings.routes import settings_bp
+    from app.core.tasks_admin.routes import tasks_admin_bp
     from app.core.users.routes import users_bp
     from app.modules.dashboard import dashboard_bp
 
@@ -116,6 +125,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(rbac_bp, url_prefix="/admin/rbac")
     app.register_blueprint(menu_bp, url_prefix="/admin/menu")
     app.register_blueprint(users_bp, url_prefix="/admin/users")
+    app.register_blueprint(tasks_admin_bp, url_prefix="/admin/tasks")
     app.register_blueprint(settings_bp, url_prefix="/settings")
     app.register_blueprint(audit_bp, url_prefix="/admin/audit")
     app.register_blueprint(search_bp, url_prefix="/")
