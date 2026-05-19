@@ -120,6 +120,8 @@ with app.app_context():
              endpoint="audit.log_list", required_permission="audit.view", order_index=70),
         dict(code="admin_tasks", label_key="menu.tasks", icon="bi-cpu",
              endpoint="tasks_admin.overview", required_permission="tasks.view", order_index=75),
+        dict(code="scrape_feed", label_key="menu.feed", icon="bi-newspaper",
+             endpoint="scrape.feed", order_index=20),
         dict(code="settings_profile", label_key="menu.profile", icon="bi-person-circle",
              endpoint="settings.profile", order_index=90),
         dict(code="settings_system", label_key="menu.system", icon="bi-gear",

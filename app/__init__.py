@@ -120,6 +120,7 @@ def _register_blueprints(app: Flask) -> None:
     from app.core.tasks_admin.routes import tasks_admin_bp
     from app.core.users.routes import users_bp
     from app.modules.dashboard import dashboard_bp
+    from app.modules.scrape.routes import scrape_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(rbac_bp, url_prefix="/admin/rbac")
@@ -128,6 +129,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(tasks_admin_bp, url_prefix="/admin/tasks")
     app.register_blueprint(settings_bp, url_prefix="/settings")
     app.register_blueprint(audit_bp, url_prefix="/admin/audit")
+    app.register_blueprint(scrape_bp, url_prefix="/papers")
     app.register_blueprint(search_bp, url_prefix="/")
     app.register_blueprint(dashboard_bp, url_prefix="/")
 

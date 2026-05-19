@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Your feed') }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-newspaper me-2"></i>{{ _('Your feed') }}</h4>
+  <form method="post" action="{{ url_for('scrape.run_now') }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-sm btn-primary">
+      <i class="bi bi-arrow-clockwise me-1"></i>{{ _('Scrape now') }}
+    </button>
+  </form>
+</div>
+
+<p class="form-text mb-3">
+  {{ _('Latest papers matched against your research interests. Add or refine keywords on your profile to change what shows up here.') }}
+</p>
+
+{% if rows %}
+<div class="list-group">
+  {% for r in rows %}
+  <div class="list-group-item">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div class="flex-grow-1">
+        <h6 class="mb-1">
+          <form method="post" action="{{ url_for('scrape.open_paper', user_paper_id=r.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-link p-0 text-start text-decoration-none">
+              {{ r.paper.title }}
+            </button>
+          </form>
+        </h6>
+        <div class="small text-muted">
+          {% if r.paper.authors %}{{ r.paper.authors[:3] | join(', ') }}{% if r.paper.authors|length > 3 %} et al.{% endif %}{% endif %}
+          {% if r.paper.published_at %} · {{ r.paper.published_at.strftime('%d.%m.%Y') }}{% endif %}
+          · <code class="small">{{ r.paper.source }}:{{ r.paper.external_id }}</code>
+        </div>
+        {% if r.paper.abstract %}
+        <p class="small mb-1 mt-2 text-muted" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+          {{ r.paper.abstract }}
+        </p>
+        {% endif %}
+        <div class="mt-1">
+          {% if r.matched_keyword %}
+          <span class="badge rounded-pill text-bg-primary-subtle text-primary"><i class="bi bi-tag me-1"></i>{{ r.matched_keyword }}</span>
+          {% endif %}
+          {% for c in (r.paper.categories or [])[:3] %}
+          <span class="badge rounded-pill text-bg-secondary-subtle text-secondary">{{ c }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="text-end small text-muted text-nowrap">
+        {% if r.seen_at %}
+          <i class="bi bi-eye-fill text-success" title="{{ _('Seen') }}"></i>
+        {% else %}
+          <span class="badge rounded-pill text-bg-warning-subtle text-warning">{{ _('new') }}</span>
+        {% endif %}
+        {% if r.paper.pdf_url %}<br>
+          <a href="{{ r.paper.pdf_url }}" target="_blank" rel="noopener" class="small">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state py-5">
+  <i class="bi bi-newspaper"></i>
+  <div>{{ _('Nothing here yet.') }}</div>
+  <p class="small text-muted mt-2">
+    {{ _('Add some research interests in your profile, then hit "Scrape now".') }}
+  </p>
+  <a href="{{ url_for('settings.profile', tab='interests') }}" class="btn btn-sm btn-outline-primary mt-2">
+    <i class="bi bi-tags me-1"></i>{{ _('Add interests') }}
+  </a>
+</div>
+{% endif %}
+{% endblock %}
