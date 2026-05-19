@@ -820,6 +820,16 @@ msgstr "Keyword removed."
 msgid "Keyword not found."
 msgstr "Keyword not found."
 
+# --- Admin academic panel ---
+msgid "Academic profile"
+msgstr "Academic profile"
+
+msgid "Read-only view of the user's academic identifiers and research interests. They manage these from their own profile page."
+msgstr "Read-only view of the user's academic identifiers and research interests. They manage these from their own profile page."
+
+msgid "No keywords yet."
+msgstr "No keywords yet."
+
 msgid "Menu management — Faz 1"
 msgstr "Menu management — Phase 1"
 

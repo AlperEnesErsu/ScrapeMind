@@ -25,15 +25,20 @@ with app.app_context():
     # --- Academic identifier types ---
     from app.modules.academic.models import IdentifierType
 
-    if not IdentifierType.query.filter_by(code="email").first():
-        db.session.add(
-            IdentifierType(
-                code="email",
-                name="Email",
-                validation_regex=r"^[^@]+@[^@]+\.[^@]+$",
-                verification_method="email_link",
+    identifier_seeds = [
+        # code, name, regex, verification_method
+        ("email", "Email", r"^[^@]+@[^@]+\.[^@]+$", "email_link"),
+        ("orcid", "ORCID", r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$", "oauth"),
+        ("scopus_id", "Scopus Author ID", r"^\d{10,11}$", "manual"),
+        ("wos_id", "Web of Science Researcher ID", r"^[A-Z]-\d{4}-\d{4}$", "manual"),
+    ]
+    for code, name, regex, vmeth in identifier_seeds:
+        if not IdentifierType.query.filter_by(code=code).first():
+            db.session.add(
+                IdentifierType(
+                    code=code, name=name, validation_regex=regex, verification_method=vmeth
+                )
             )
-        )
     db.session.flush()
 
     core_perms = [

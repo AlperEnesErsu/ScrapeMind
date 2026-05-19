@@ -74,12 +74,20 @@ def user_edit(user_id: int):
             flash(_("User updated."), "success")
             return redirect(url_for("users.user_list"))
 
+    # Academic profile (read-only here — only the user themselves can edit)
+    from app.modules.academic.service import list_user_identifiers, list_user_keywords
+
+    identifiers = list_user_identifiers(user)
+    keywords = list_user_keywords(user)
+
     return render_template(
         "users/edit.html",
         form=form,
         user=user,
         all_roles=all_roles,
         selected_role_ids=selected_role_ids,
+        identifiers=identifiers,
+        keywords=keywords,
     )
 
 
