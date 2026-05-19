@@ -55,7 +55,7 @@ def init_celery(flask_app) -> Celery:
 
 # Side-effect: importing this module registers tasks via decorators.
 # Keep at the bottom to avoid circular imports.
-from app.tasks import core_tasks  # noqa: E402, F401
+from app.tasks import core_tasks, scrape_tasks  # noqa: E402, F401
 
 
 def _bootstrap_for_worker() -> None:

@@ -11,4 +11,11 @@ BEAT_SCHEDULE = {
         "task": "core.heartbeat",
         "schedule": crontab(minute="*"),  # every minute
     },
+    # Nightly fan-out: at 03:15 every day, queue a scrape task for every
+    # active user. Each per-user task picks up their keywords + identifiers
+    # at that moment.
+    "scrape-arxiv-nightly": {
+        "task": "scrape.run_for_all_users",
+        "schedule": crontab(hour=3, minute=15),
+    },
 }
