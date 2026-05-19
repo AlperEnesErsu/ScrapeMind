@@ -73,4 +73,62 @@
     <a href="{{ url_for('users.user_list') }}" class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
   </div>
 </form>
+
+<hr class="my-4">
+<h6 class="text-muted mb-3"><i class="bi bi-person-vcard me-2"></i>{{ _('Academic profile') }}</h6>
+<p class="form-text mb-3">
+  {{ _('Read-only view of the user\'s academic identifiers and research interests. They manage these from their own profile page.') }}
+</p>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header py-2 small fw-semibold text-uppercase text-muted">
+        {{ _('Academic Identifiers') }}
+      </div>
+      {% if identifiers %}
+      <ul class="list-group list-group-flush">
+        {% for i in identifiers %}
+        <li class="list-group-item d-flex justify-content-between align-items-center small">
+          <span>
+            <span class="text-muted me-2">[{{ i.type.name }}]</span>
+            <strong>{{ i.value }}</strong>
+          </span>
+          {% if i.is_verified %}
+            <span class="badge rounded-pill text-bg-success-subtle text-success">{{ _('Verified') }}</span>
+          {% elif i.type.code == 'email' %}
+            <span class="badge rounded-pill text-bg-warning-subtle text-warning">{{ _('Unverified') }}</span>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state py-3">
+        <i class="bi bi-person-vcard"></i>
+        <div class="small">{{ _('No academic identifiers yet.') }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header py-2 small fw-semibold text-uppercase text-muted">
+        {{ _('Research Interests') }}
+      </div>
+      <div class="card-body">
+        {% for kw in keywords %}
+          <span class="badge rounded-pill text-bg-primary-subtle text-primary me-1 mb-1 py-2 px-3 fs-6">
+            <i class="bi bi-tag me-1"></i>{{ kw.value }}
+          </span>
+        {% else %}
+          <div class="empty-state py-3">
+            <i class="bi bi-tags"></i>
+            <div class="small">{{ _('No keywords yet.') }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
