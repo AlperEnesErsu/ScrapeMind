@@ -105,31 +105,45 @@ with app.app_context():
             db.session.add(SystemSettings(key=key, value=value))
 
     # --- Core menu items ---
-    core_menu = [
-        dict(code="dashboard_root", label_key="menu.dashboard", icon="bi-speedometer2",
+    # Önce parent'lar, sonra children (flush ile ID üretilir)
+    top_level = [
+        dict(code="dashboard_root",  label_key="menu.dashboard", icon="bi-speedometer2",
              endpoint="dashboard.index", order_index=10),
-        dict(code="admin_users", label_key="menu.users", icon="bi-people",
-             endpoint="users.user_list", required_permission="users.view", order_index=40),
-        dict(code="admin_roles", label_key="menu.roles", icon="bi-shield-lock",
-             endpoint="rbac.role_list", required_permission="roles.view", order_index=50),
-        dict(code="admin_permissions", label_key="menu.permissions", icon="bi-key",
-             endpoint="rbac.permission_list", required_permission="permissions.view", order_index=55),
-        dict(code="admin_menu", label_key="menu.menu_items", icon="bi-list-nested",
-             endpoint="menu.menu_list", required_permission="menu.view", order_index=60),
-        dict(code="admin_audit", label_key="menu.audit", icon="bi-journal-text",
-             endpoint="audit.log_list", required_permission="audit.view", order_index=70),
-        dict(code="admin_tasks", label_key="menu.tasks", icon="bi-cpu",
-             endpoint="tasks_admin.overview", required_permission="tasks.view", order_index=75),
-        dict(code="scrape_feed", label_key="menu.feed", icon="bi-newspaper",
-             endpoint="scrape.feed", order_index=20),
-        dict(code="settings_profile", label_key="menu.profile", icon="bi-person-circle",
+        dict(code="scrape_feed",     label_key="menu.feed",      icon="bi-newspaper",
+             endpoint="scrape.feed",    order_index=20),
+        # Sistem Yönetimi grup başlığı (endpoint yok = sadece accordion)
+        dict(code="admin_group",     label_key="menu.admin",     icon="bi-shield-shaded",
+             order_index=80),
+        dict(code="settings_profile", label_key="menu.profile",  icon="bi-person-circle",
              endpoint="settings.profile", order_index=90),
-        dict(code="settings_system", label_key="menu.system", icon="bi-gear",
-             endpoint="settings.system", required_permission="system.manage", order_index=95),
     ]
-    for m in core_menu:
+    for m in top_level:
         if not MenuItem.query.filter_by(code=m["code"]).first():
             db.session.add(MenuItem(**m))
+    db.session.flush()
+
+    # Sistem Yönetimi grubunun altındaki öğeler
+    admin_group = MenuItem.query.filter_by(code="admin_group").first()
+    admin_children = [
+        dict(code="admin_users",       label_key="menu.users",        icon="bi-people",
+             endpoint="users.user_list",         required_permission="users.view",        order_index=10),
+        dict(code="admin_roles",       label_key="menu.roles",        icon="bi-shield-lock",
+             endpoint="rbac.role_list",           required_permission="roles.view",        order_index=20),
+        dict(code="admin_permissions", label_key="menu.permissions",  icon="bi-key",
+             endpoint="rbac.permission_list",     required_permission="permissions.view",  order_index=30),
+        dict(code="admin_menu",        label_key="menu.menu_items",   icon="bi-list-nested",
+             endpoint="menu.menu_list",           required_permission="menu.view",         order_index=40),
+        dict(code="admin_audit",       label_key="menu.audit",        icon="bi-journal-text",
+             endpoint="audit.log_list",           required_permission="audit.view",        order_index=50),
+        dict(code="admin_tasks",       label_key="menu.tasks",        icon="bi-cpu",
+             endpoint="tasks_admin.overview",     required_permission="tasks.view",        order_index=60),
+        dict(code="settings_system",   label_key="menu.system",       icon="bi-gear",
+             endpoint="settings.system",          required_permission="system.manage",     order_index=70),
+    ]
+    for m in admin_children:
+        if not MenuItem.query.filter_by(code=m["code"]).first():
+            item = MenuItem(parent_id=admin_group.id if admin_group else None, **m)
+            db.session.add(item)
 
     db.session.commit()
     print("Seed tamamlandi. Admin: admin / admin1234")

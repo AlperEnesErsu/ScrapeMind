@@ -1,4 +1,5 @@
 from app.core.models.audit import AuditLog
+from app.core.models.session import UserSession
 from app.core.models.menu import MenuItem
 from app.core.models.module import Module
 from app.core.models.oauth_account import OAuthAccount

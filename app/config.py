@@ -30,6 +30,15 @@ class BaseConfig:
 
     RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")
 
+    # Email (Flask-Mail)
+    MAIL_SERVER = os.getenv("MAIL_SERVER", "")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "noreply@example.com")
+    MAIL_SUPPRESS_SEND = not bool(os.getenv("MAIL_SERVER", ""))  # MAIL_SERVER yoksa gönderme
+
     # Celery (Phase 2). Broker + result backend share the same Redis instance.
     _REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", _REDIS_URL)

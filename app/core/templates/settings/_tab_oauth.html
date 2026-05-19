@@ -1,22 +1,71 @@
 {% include 'settings/_flash_partial.html' %}
 <h6 class="text-muted mb-3">{{ _('OAuth Accounts') }}</h6>
+
+{% set linked_providers = accounts | map(attribute='provider') | list %}
+
+{# ── Bağlı hesaplar ── #}
 {% if accounts %}
-<ul class="list-group">
+<ul class="list-group mb-4">
   {% for acc in accounts %}
-  <li class="list-group-item d-flex justify-content-between align-items-center">
-    <span>
-      {% if acc.provider == 'google' %}<i class="bi bi-google text-danger me-2"></i>
-      {% elif acc.provider == 'microsoft' %}<i class="bi bi-microsoft text-primary me-2"></i>
-      {% else %}<i class="bi bi-link-45deg me-2"></i>
+  <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="d-flex align-items-center gap-2">
+      {% if acc.provider == 'google' %}
+        <i class="bi bi-google text-danger fs-5"></i>
+      {% elif acc.provider == 'microsoft' %}
+        <i class="bi bi-microsoft text-primary fs-5"></i>
+      {% else %}
+        <i class="bi bi-link-45deg fs-5"></i>
       {% endif %}
-      <strong>{{ acc.provider|capitalize }}</strong>
-      <span class="text-muted ms-2">{{ acc.email or acc.provider_user_id }}</span>
+      <span>
+        <strong>{{ acc.provider | capitalize }}</strong>
+        <span class="text-muted ms-1 small">{{ acc.email or acc.provider_user_id }}</span>
+      </span>
     </span>
-    <span class="badge bg-success">{{ _('Connected') }}</span>
+    <form hx-post="{{ url_for('settings.oauth_unlink', provider=acc.provider) }}"
+          hx-target="#tab-content" hx-swap="innerHTML"
+          hx-confirm="{{ _('Unlink %(provider)s account?', provider=acc.provider|capitalize) }}"
+          class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-x-lg me-1"></i>{{ _('Unlink') }}
+      </button>
+    </form>
   </li>
   {% endfor %}
 </ul>
 {% else %}
-<p class="text-muted">{{ _('No OAuth accounts linked.') }}</p>
+<p class="text-muted mb-4">{{ _('No OAuth accounts linked.') }}</p>
 {% endif %}
-<p class="form-text mt-3">{{ _('Linking and unlinking accounts will be available in Phase 2.') }}</p>
+
+{# ── Bağlanabilecek sağlayıcılar ── #}
+<h6 class="text-muted mb-2 small">{{ _('Link another account') }}</h6>
+<div class="d-flex flex-wrap gap-2">
+  {% if 'google' not in linked_providers %}
+  <a href="{{ url_for('auth.oauth_link_redirect', provider='google') }}"
+     class="btn btn-sm btn-outline-danger">
+    <i class="bi bi-google me-1"></i>{{ _('Link Google') }}
+  </a>
+  {% else %}
+  <button class="btn btn-sm btn-outline-secondary" disabled>
+    <i class="bi bi-google me-1"></i>{{ _('Google linked') }}
+  </button>
+  {% endif %}
+
+  {% if 'microsoft' not in linked_providers %}
+  <a href="{{ url_for('auth.oauth_link_redirect', provider='microsoft') }}"
+     class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-microsoft me-1"></i>{{ _('Link Microsoft') }}
+  </a>
+  {% else %}
+  <button class="btn btn-sm btn-outline-secondary" disabled>
+    <i class="bi bi-microsoft me-1"></i>{{ _('Microsoft linked') }}
+  </button>
+  {% endif %}
+</div>
+
+{% if not current_user.password_hash %}
+<div class="alert alert-warning mt-3 small">
+  <i class="bi bi-exclamation-triangle me-1"></i>
+  {{ _('You have no password set. If you unlink all OAuth accounts you will lose access.') }}
+</div>
+{% endif %}

@@ -29,8 +29,10 @@ class EmailChangeForm(FlaskForm):
 
 
 class PasswordChangeForm(FlaskForm):
+    from app.core.auth.password_policy import wtf_validator as _pw  # noqa: PLC0415
+
     current_password = PasswordField(_l("Current Password"), validators=[DataRequired()])
-    new_password = PasswordField(_l("New Password"), validators=[DataRequired(), Length(min=8)])
+    new_password = PasswordField(_l("New Password"), validators=[DataRequired(), _pw])
     new_password2 = PasswordField(
         _l("Confirm New Password"),
         validators=[DataRequired(), EqualTo("new_password", message=_l("Passwords do not match."))],

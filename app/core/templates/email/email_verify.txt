@@ -1,0 +1,11 @@
+Email Doğrulama
+
+Merhaba {{ user.full_name or user.username }},
+
+{{ email }} adresini doğrulamak için:
+
+{{ verify_url }}
+
+Bu bağlantı 24 saat geçerlidir.
+
+ScrapeMind

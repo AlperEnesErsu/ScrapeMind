@@ -133,6 +133,15 @@ msgid "Role management — Faz 1"
 msgstr "Role management — Phase 1"
 
 # --- Menu i18n keys (sidebar label_key values) ---
+msgid "menu.admin"
+msgstr "System Management"
+
+msgid "menu.for_you"
+msgstr "For You"
+
+msgid "menu.admin_overview"
+msgstr "Overview"
+
 msgid "menu.dashboard"
 msgstr "Dashboard"
 
@@ -816,6 +825,21 @@ msgstr "Keyword added."
 
 msgid "Keyword removed."
 msgstr "Keyword removed."
+
+msgid "Keyword added."
+msgstr "Keyword added."
+
+msgid "%(n)d keywords added."
+msgstr "%(n)d keywords added."
+
+msgid "%(n)d added, %(s)d already following."
+msgstr "%(n)d added, %(s)d already following."
+
+msgid "No valid keywords found."
+msgstr "No valid keywords found."
+
+msgid "Separate multiple keywords with comma or semicolon. Each term is normalised to lowercase."
+msgstr "Separate multiple keywords with comma or semicolon. Each term is normalised to lowercase."
 
 msgid "Keyword not found."
 msgstr "Keyword not found."

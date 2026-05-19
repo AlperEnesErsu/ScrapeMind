@@ -11,5 +11,6 @@ class AddIdentifierForm(FlaskForm):
 
 
 class AddKeywordForm(FlaskForm):
-    value = StringField(_l("Keyword"), validators=[DataRequired(), Length(min=2, max=64)])
+    # max=512 — toplu giriş için (virgül/noktalı virgülle ayrılmış, her terim service'te 64'e kırpılır)
+    value = StringField(_l("Keyword(s)"), validators=[DataRequired(), Length(min=2, max=512)])
     submit = SubmitField(_l("Add"))

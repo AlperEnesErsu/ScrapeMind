@@ -1,0 +1,54 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Active Sessions') }}</h6>
+
+<p class="small text-muted mb-3">
+  {{ _('These devices are currently signed in to your account.') }}
+</p>
+
+<ul class="list-group mb-4">
+  {% for s in sessions %}
+  <li class="list-group-item d-flex justify-content-between align-items-start gap-2 flex-wrap">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        {% if s.session_key == current_session_key %}
+          <span class="badge text-bg-success">{{ _('This device') }}</span>
+        {% endif %}
+        <span class="small fw-semibold">{{ s.ip_address or '—' }}</span>
+      </div>
+      <div class="text-muted small text-truncate" style="max-width:340px;">
+        {{ s.user_agent or '—' }}
+      </div>
+      <div class="text-muted small mt-1">
+        {{ _('Last seen') }}: {{ s.last_seen_at.strftime('%d.%m.%Y %H:%M') }}
+        &nbsp;·&nbsp;
+        {{ _('Started') }}: {{ s.created_at.strftime('%d.%m.%Y %H:%M') }}
+      </div>
+    </div>
+    {% if s.session_key != current_session_key %}
+    <form hx-post="{{ url_for('settings.revoke_session', session_key=s.session_key) }}"
+          hx-target="#tab-content" hx-swap="innerHTML"
+          hx-confirm="{{ _('Sign out this device?') }}" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-box-arrow-right me-1"></i>{{ _('Sign out') }}
+      </button>
+    </form>
+    {% endif %}
+  </li>
+  {% else %}
+  <li class="list-group-item text-muted text-center small py-3">
+    {{ _('No active sessions found.') }}
+  </li>
+  {% endfor %}
+</ul>
+
+{% if sessions | length > 1 %}
+<form hx-post="{{ url_for('settings.revoke_all_sessions') }}"
+      hx-target="#tab-content" hx-swap="innerHTML"
+      hx-confirm="{{ _('Sign out all other devices?') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn btn-sm btn-outline-danger">
+    <i class="bi bi-shield-x me-1"></i>{{ _('Sign out all other devices') }}
+  </button>
+</form>
+{% endif %}
