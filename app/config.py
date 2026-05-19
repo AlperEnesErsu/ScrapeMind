@@ -30,6 +30,12 @@ class BaseConfig:
 
     RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")
 
+    # Celery (Phase 2). Broker + result backend share the same Redis instance.
+    _REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", _REDIS_URL)
+    CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", _REDIS_URL)
+    CELERY_TASK_ALWAYS_EAGER = False  # overridden in TestingConfig
+
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
@@ -63,6 +69,9 @@ class TestingConfig(BaseConfig):
     )
     WTF_CSRF_ENABLED = False
     SECRET_KEY = "test-secret-key"  # noqa: S105
+    # Run Celery tasks inline so tests don't need a worker process.
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
 
 
 _config_map = {

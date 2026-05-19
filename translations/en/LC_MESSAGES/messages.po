@@ -830,6 +830,61 @@ msgstr "Read-only view of the user's academic identifiers and research interests
 msgid "No keywords yet."
 msgstr "No keywords yet."
 
+# --- Tasks admin (Phase 2 slice 2) ---
+msgid "Tasks"
+msgstr "Tasks"
+
+msgid "menu.tasks"
+msgstr "Tasks"
+
+msgid "Background Tasks"
+msgstr "Background Tasks"
+
+msgid "worker(s) online"
+msgstr "worker(s) online"
+
+msgid "No workers online"
+msgstr "No workers online"
+
+msgid "No Celery worker is connected. Start one with:"
+msgstr "No Celery worker is connected. Start one with:"
+
+msgid "Or via docker compose:"
+msgstr "Or via docker compose:"
+
+msgid "Workers"
+msgstr "Workers"
+
+msgid "online"
+msgstr "online"
+
+msgid "No workers."
+msgstr "No workers."
+
+msgid "Active"
+msgstr "Active"
+
+msgid "Reserved"
+msgstr "Reserved"
+
+msgid "Nothing active."
+msgstr "Nothing active."
+
+msgid "Nothing reserved."
+msgstr "Nothing reserved."
+
+msgid "Registered tasks"
+msgstr "Registered tasks"
+
+msgid "No tasks registered (no worker?)."
+msgstr "No tasks registered (no worker?)."
+
+msgid "Beat schedule"
+msgstr "Beat schedule"
+
+msgid "No periodic tasks."
+msgstr "No periodic tasks."
+
 msgid "Menu management — Faz 1"
 msgstr "Menu management — Phase 1"
 
