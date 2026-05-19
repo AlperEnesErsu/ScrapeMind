@@ -823,6 +823,16 @@ msgstr "Anahtar kelime kaldırıldı."
 msgid "Keyword not found."
 msgstr "Anahtar kelime bulunamadı."
 
+# --- Admin academic panel ---
+msgid "Academic profile"
+msgstr "Akademik profil"
+
+msgid "Read-only view of the user's academic identifiers and research interests. They manage these from their own profile page."
+msgstr "Kullanıcının akademik kimliklerinin ve araştırma ilgi alanlarının salt-okunur görünümü. Kullanıcı bunları kendi profil sayfasından yönetir."
+
+msgid "No keywords yet."
+msgstr "Henüz anahtar kelime yok."
+
 msgid "Profile & preferences — Faz 1"
 msgstr "Profil ve tercihler — Faz 1"
 
