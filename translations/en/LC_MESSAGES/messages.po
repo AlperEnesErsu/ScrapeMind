@@ -885,6 +885,49 @@ msgstr "Beat schedule"
 msgid "No periodic tasks."
 msgstr "No periodic tasks."
 
+# --- Scrape / papers feed (Phase 2 slice 3) ---
+msgid "Your feed"
+msgstr "Your feed"
+
+msgid "menu.feed"
+msgstr "Feed"
+
+msgid "Scrape now"
+msgstr "Scrape now"
+
+msgid "Latest papers matched against your research interests. Add or refine keywords on your profile to change what shows up here."
+msgstr "Latest papers matched against your research interests. Add or refine keywords on your profile to change what shows up here."
+
+msgid "Scrape queued — papers will appear here once the worker finishes."
+msgstr "Scrape queued — papers will appear here once the worker finishes."
+
+msgid "Paper not found."
+msgstr "Paper not found."
+
+msgid "Nothing here yet."
+msgstr "Nothing here yet."
+
+msgid "Add some research interests in your profile, then hit \"Scrape now\"."
+msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
+
+msgid "Add interests"
+msgstr "Add interests"
+
+msgid "Seen"
+msgstr "Seen"
+
+msgid "new"
+msgstr "new"
+
+msgid "For you"
+msgstr "For you"
+
+msgid "All papers"
+msgstr "All papers"
+
+msgid "No personalised papers yet."
+msgstr "No personalised papers yet."
+
 msgid "Menu management — Faz 1"
 msgstr "Menu management — Phase 1"
 

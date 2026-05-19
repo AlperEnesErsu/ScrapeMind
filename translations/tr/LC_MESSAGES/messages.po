@@ -888,6 +888,49 @@ msgstr "Beat zamanlaması"
 msgid "No periodic tasks."
 msgstr "Periyodik görev yok."
 
+# --- Scrape / papers feed (Phase 2 slice 3) ---
+msgid "Your feed"
+msgstr "Akışın"
+
+msgid "menu.feed"
+msgstr "Akış"
+
+msgid "Scrape now"
+msgstr "Şimdi tara"
+
+msgid "Latest papers matched against your research interests. Add or refine keywords on your profile to change what shows up here."
+msgstr "Araştırma ilgi alanlarınla eşleşen en yeni makaleler. Profilinden anahtar kelime ekle veya güncelle, akış buna göre değişir."
+
+msgid "Scrape queued — papers will appear here once the worker finishes."
+msgstr "Tarama kuyruğa alındı — worker bitirdiğinde makaleler burada görünecek."
+
+msgid "Paper not found."
+msgstr "Makale bulunamadı."
+
+msgid "Nothing here yet."
+msgstr "Henüz bir şey yok."
+
+msgid "Add some research interests in your profile, then hit \"Scrape now\"."
+msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
+
+msgid "Add interests"
+msgstr "İlgi alanı ekle"
+
+msgid "Seen"
+msgstr "Görüldü"
+
+msgid "new"
+msgstr "yeni"
+
+msgid "For you"
+msgstr "Senin için"
+
+msgid "All papers"
+msgstr "Tüm makaleler"
+
+msgid "No personalised papers yet."
+msgstr "Henüz kişiselleştirilmiş makale yok."
+
 msgid "Profile & preferences — Faz 1"
 msgstr "Profil ve tercihler — Faz 1"
 

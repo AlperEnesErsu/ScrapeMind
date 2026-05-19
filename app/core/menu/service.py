@@ -7,6 +7,7 @@ from app.extensions import db
 
 CRITICAL_CODES = {
     "dashboard_root",
+    "scrape_feed",
     "admin_users",
     "admin_roles",
     "admin_permissions",
