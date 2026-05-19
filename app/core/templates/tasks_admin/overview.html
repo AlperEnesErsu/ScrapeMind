@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Tasks') }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-cpu me-2"></i>{{ _('Background Tasks') }}</h4>
+  <span class="text-muted small">
+    {% if workers %}
+      <i class="bi bi-circle-fill text-success me-1"></i>{{ workers|length }} {{ _('worker(s) online') }}
+    {% else %}
+      <i class="bi bi-circle-fill text-warning me-1"></i>{{ _('No workers online') }}
+    {% endif %}
+  </span>
+</div>
+
+{% if not workers %}
+<div class="alert alert-warning small">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  {{ _('No Celery worker is connected. Start one with:') }}
+  <code class="ms-2">celery -A app.tasks worker --loglevel=info</code>
+  <br>
+  {{ _('Or via docker compose:') }}
+  <code class="ms-2">docker compose -f docker/docker-compose.yml up worker beat</code>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header py-2 small text-uppercase text-muted">{{ _('Workers') }}</div>
+      <ul class="list-group list-group-flush small">
+        {% for w in workers %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <code class="text-truncate" style="max-width: 70%;" title="{{ w }}">{{ w }}</code>
+          {% if stats.get(w) %}
+            <span class="badge rounded-pill text-bg-success-subtle text-success">{{ _('online') }}</span>
+          {% endif %}
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted text-center">{{ _('No workers.') }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header py-2 small text-uppercase text-muted">
+        {{ _('Active') }} <span class="badge bg-secondary ms-1">{{ active.values()|map('length')|sum }}</span>
+      </div>
+      <ul class="list-group list-group-flush small">
+        {% for w, tasks in active.items() %}
+          {% for t in tasks %}
+          <li class="list-group-item">
+            <code>{{ t.name }}</code>
+            <div class="text-muted small">id: {{ t.id[:8] }}…</div>
+          </li>
+          {% endfor %}
+        {% endfor %}
+        {% if not active or active.values()|map('length')|sum == 0 %}
+        <li class="list-group-item text-muted text-center">{{ _('Nothing active.') }}</li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header py-2 small text-uppercase text-muted">
+        {{ _('Reserved') }} <span class="badge bg-secondary ms-1">{{ reserved.values()|map('length')|sum }}</span>
+      </div>
+      <ul class="list-group list-group-flush small">
+        {% for w, tasks in reserved.items() %}
+          {% for t in tasks %}
+          <li class="list-group-item"><code>{{ t.name }}</code></li>
+          {% endfor %}
+        {% endfor %}
+        {% if not reserved or reserved.values()|map('length')|sum == 0 %}
+        <li class="list-group-item text-muted text-center">{{ _('Nothing reserved.') }}</li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header py-2 small text-uppercase text-muted">{{ _('Registered tasks') }}</div>
+      <ul class="list-group list-group-flush small">
+        {% set seen = [] %}
+        {% for w, names in registered.items() %}
+          {% for n in names %}
+            {% if n not in seen %}
+              {% set _ = seen.append(n) %}
+              <li class="list-group-item"><code>{{ n }}</code></li>
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        {% if not seen %}
+        <li class="list-group-item text-muted text-center">{{ _('No tasks registered (no worker?).') }}</li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header py-2 small text-uppercase text-muted">{{ _('Beat schedule') }}</div>
+      <ul class="list-group list-group-flush small">
+        {% for entry_name, entry in beat_schedule.items() %}
+        <li class="list-group-item">
+          <strong>{{ entry_name }}</strong>
+          <div class="text-muted">→ <code>{{ entry.task }}</code></div>
+          <div class="text-muted">schedule: <code>{{ entry.schedule }}</code></div>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted text-center">{{ _('No periodic tasks.') }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

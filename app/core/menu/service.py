@@ -12,6 +12,7 @@ CRITICAL_CODES = {
     "admin_permissions",
     "admin_menu",
     "admin_audit",
+    "admin_tasks",
     "settings_profile",
     "settings_system",
 }
