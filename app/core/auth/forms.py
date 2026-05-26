@@ -59,6 +59,7 @@ class TotpCodeForm(FlaskForm):
 class EnableTotpForm(FlaskForm):
     """Used both during initial enable and during disable — we ask for the
     current TOTP code in both cases as a proof-of-possession."""
+
     code = StringField(
         _l("Authenticator Code"),
         validators=[DataRequired(), Length(min=6, max=6)],

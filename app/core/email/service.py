@@ -61,7 +61,9 @@ def send_password_reset(user, reset_url: str) -> tuple[bool, str | None]:
     return sent, None
 
 
-def send_email_verification(user, identifier_value: str, verify_url: str) -> tuple[bool, str | None]:
+def send_email_verification(
+    user, identifier_value: str, verify_url: str
+) -> tuple[bool, str | None]:
     """Akademik email doğrulama linki gönderir."""
     html = render_template(
         "email/email_verify.html",

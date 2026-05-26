@@ -8,7 +8,6 @@ honest in isolation: real pyotp verification, real argon2 hashing, no mocks.
 from types import SimpleNamespace
 
 import pyotp
-import pytest
 
 from app.core.auth.totp_service import (
     consume_recovery_code,
@@ -71,7 +70,6 @@ def test_consume_recovery_code_pops_on_success(db, app):
     only once, and the hash is removed from the row."""
     from sqlalchemy import text
 
-    from app.core.models.role import Role
     from app.core.models.user import User
 
     db.session.execute(text("DELETE FROM user_settings"))
