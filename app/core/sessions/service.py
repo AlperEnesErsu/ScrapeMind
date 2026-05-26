@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import request
 
@@ -28,7 +28,7 @@ def touch_session(key: str) -> UserSession | None:
     record = UserSession.query.filter_by(session_key=key).first()
     if record is None:
         return None
-    record.last_seen_at = datetime.now(timezone.utc)
+    record.last_seen_at = datetime.now(UTC)
     db.session.commit()
     return record
 
@@ -54,22 +54,23 @@ def delete_all_sessions(user: User, except_key: str | None = None) -> int:
 
 def list_sessions(user: User) -> list[UserSession]:
     return (
-        UserSession.query.filter_by(user_id=user.id)
-        .order_by(UserSession.last_seen_at.desc())
-        .all()
+        UserSession.query.filter_by(user_id=user.id).order_by(UserSession.last_seen_at.desc()).all()
     )
 
 
 def get_current_key() -> str | None:
     from flask import session
+
     return session.get(_SESSION_KEY_COOKIE)
 
 
 def set_current_key(key: str) -> None:
     from flask import session
+
     session[_SESSION_KEY_COOKIE] = key
 
 
 def clear_current_key() -> None:
     from flask import session
+
     session.pop(_SESSION_KEY_COOKIE, None)

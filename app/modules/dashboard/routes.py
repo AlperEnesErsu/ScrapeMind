@@ -32,12 +32,16 @@ def admin_overview():
     from app.core.models.user import User
 
     metrics = {
-        "users_total":       User.query.filter(User.deleted_at.is_(None)).count(),
-        "users_active":      User.query.filter(User.deleted_at.is_(None), User.is_active.is_(True)).count(),
-        "users_locked":      User.query.filter(User.deleted_at.is_(None), User.is_locked.is_(True)).count(),
-        "roles_total":       Role.query.filter(Role.deleted_at.is_(None)).count(),
+        "users_total": User.query.filter(User.deleted_at.is_(None)).count(),
+        "users_active": User.query.filter(
+            User.deleted_at.is_(None), User.is_active.is_(True)
+        ).count(),
+        "users_locked": User.query.filter(
+            User.deleted_at.is_(None), User.is_locked.is_(True)
+        ).count(),
+        "roles_total": Role.query.filter(Role.deleted_at.is_(None)).count(),
         "permissions_total": Permission.query.count(),
-        "menu_items_total":  MenuItem.query.count(),
+        "menu_items_total": MenuItem.query.count(),
     }
     recent_logs = AuditLog.query.order_by(AuditLog.created_at.desc()).limit(10).all()
     last_login_user = (
