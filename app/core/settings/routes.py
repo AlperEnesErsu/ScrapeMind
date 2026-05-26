@@ -39,6 +39,7 @@ def _render_tab(tab: str, **ctx):
 # Core tab context builders
 # ------------------------------------------------------------------ #
 
+
 def _personal_ctx():
     form = PersonalInfoForm(obj=current_user)
     return {"form": form}
@@ -74,6 +75,7 @@ def _account_ctx():
 
 def _sessions_ctx():
     from app.core.sessions.service import get_current_key, list_sessions
+
     return {
         "sessions": list_sessions(current_user),
         "current_session_key": get_current_key(),
@@ -82,12 +84,12 @@ def _sessions_ctx():
 
 _CORE_CTX_BUILDERS = {
     "personal": _personal_ctx,
-    "email":    _email_ctx,
+    "email": _email_ctx,
     "password": _password_ctx,
-    "prefs":    _prefs_ctx,
-    "oauth":    _oauth_ctx,
+    "prefs": _prefs_ctx,
+    "oauth": _oauth_ctx,
     "sessions": _sessions_ctx,
-    "account":  _account_ctx,
+    "account": _account_ctx,
 }
 
 
@@ -104,6 +106,7 @@ def _get_ctx(tab: str) -> dict:
 # ------------------------------------------------------------------ #
 # Routes
 # ------------------------------------------------------------------ #
+
 
 @settings_bp.route("/profile")
 @login_required
@@ -133,6 +136,7 @@ def profile_tab(tab: str):
 # Core tab POST handlers
 # ------------------------------------------------------------------ #
 
+
 @settings_bp.route("/profile/personal", methods=["POST"])
 @login_required
 def submit_personal():
@@ -140,8 +144,12 @@ def submit_personal():
     if form.validate_on_submit():
         update_personal_info(current_user, form.full_name.data, form.avatar_url.data)
         log_action("user.update_personal", entity_type="user", entity_id=current_user.id)
-        return _render_tab("personal", flash_msg=_("Profile updated."), flash_kind="success", **_personal_ctx())
-    return _render_tab("personal", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger")
+        return _render_tab(
+            "personal", flash_msg=_("Profile updated."), flash_kind="success", **_personal_ctx()
+        )
+    return _render_tab(
+        "personal", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
 
 
 @settings_bp.route("/profile/email", methods=["POST"])
@@ -152,9 +160,13 @@ def submit_email():
         ok, err = update_email(current_user, form.email.data, form.current_password.data)
         if ok:
             log_action("user.update_email", entity_type="user", entity_id=current_user.id)
-            return _render_tab("email", flash_msg=_("Email updated."), flash_kind="success", **_email_ctx())
+            return _render_tab(
+                "email", flash_msg=_("Email updated."), flash_kind="success", **_email_ctx()
+            )
         return _render_tab("email", form=form, flash_msg=_(err), flash_kind="danger")
-    return _render_tab("email", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger")
+    return _render_tab(
+        "email", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
 
 
 @settings_bp.route("/profile/password", methods=["POST"])
@@ -165,9 +177,16 @@ def submit_password():
         ok, err = change_password(current_user, form.current_password.data, form.new_password.data)
         if ok:
             log_action("user.change_password", entity_type="user", entity_id=current_user.id)
-            return _render_tab("password", form=PasswordChangeForm(), flash_msg=_("Password changed."), flash_kind="success")
+            return _render_tab(
+                "password",
+                form=PasswordChangeForm(),
+                flash_msg=_("Password changed."),
+                flash_kind="success",
+            )
         return _render_tab("password", form=form, flash_msg=_(err), flash_kind="danger")
-    return _render_tab("password", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger")
+    return _render_tab(
+        "password", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
 
 
 @settings_bp.route("/profile/prefs", methods=["POST"])
@@ -176,10 +195,22 @@ def submit_prefs():
     form = PreferencesForm()
     if form.validate_on_submit():
         update_preferences(current_user, form.locale.data, form.timezone.data, form.theme.data)
-        log_action("user.update_prefs", entity_type="user", entity_id=current_user.id,
-                   changes={"locale": form.locale.data, "timezone": form.timezone.data, "theme": form.theme.data})
-        return _render_tab("prefs", flash_msg=_("Preferences updated."), flash_kind="success", **_prefs_ctx())
-    return _render_tab("prefs", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger")
+        log_action(
+            "user.update_prefs",
+            entity_type="user",
+            entity_id=current_user.id,
+            changes={
+                "locale": form.locale.data,
+                "timezone": form.timezone.data,
+                "theme": form.theme.data,
+            },
+        )
+        return _render_tab(
+            "prefs", flash_msg=_("Preferences updated."), flash_kind="success", **_prefs_ctx()
+        )
+    return _render_tab(
+        "prefs", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
 
 
 @settings_bp.route("/profile/oauth/<provider>/unlink", methods=["POST"])
@@ -187,12 +218,11 @@ def submit_prefs():
 def oauth_unlink(provider: str):
     from app.core.models.oauth_account import OAuthAccount
 
-    account = OAuthAccount.query.filter_by(
-        user_id=current_user.id, provider=provider
-    ).first()
+    account = OAuthAccount.query.filter_by(user_id=current_user.id, provider=provider).first()
     if not account:
-        return _render_tab("oauth", flash_msg=_("Account not found."), flash_kind="danger",
-                           **_oauth_ctx())
+        return _render_tab(
+            "oauth", flash_msg=_("Account not found."), flash_kind="danger", **_oauth_ctx()
+        )
 
     # Kilitlenme koruması: şifre de yok ve başka OAuth da yok → çıkaramaz
     other_oauth = OAuthAccount.query.filter(
@@ -209,10 +239,13 @@ def oauth_unlink(provider: str):
 
     db.session.delete(account)
     db.session.commit()
-    log_action("user.oauth_unlinked", entity_type="oauth_account",
-               changes={"provider": provider})
-    return _render_tab("oauth", flash_msg=_("%(provider)s account unlinked.", provider=provider.capitalize()),
-                       flash_kind="success", **_oauth_ctx())
+    log_action("user.oauth_unlinked", entity_type="oauth_account", changes={"provider": provider})
+    return _render_tab(
+        "oauth",
+        flash_msg=_("%(provider)s account unlinked.", provider=provider.capitalize()),
+        flash_kind="success",
+        **_oauth_ctx(),
+    )
 
 
 @settings_bp.route("/profile/sessions/<session_key>/revoke", methods=["POST"])
@@ -220,14 +253,13 @@ def oauth_unlink(provider: str):
 def revoke_session(session_key: str):
     from app.core.sessions.service import UserSession, delete_session
 
-    record = UserSession.query.filter_by(
-        session_key=session_key, user_id=current_user.id
-    ).first()
+    record = UserSession.query.filter_by(session_key=session_key, user_id=current_user.id).first()
     if record:
         delete_session(session_key)
         log_action("user.session_revoked", entity_type="user_session", entity_id=str(record.id))
-    return _render_tab("sessions", flash_msg=_("Device signed out."), flash_kind="success",
-                       **_sessions_ctx())
+    return _render_tab(
+        "sessions", flash_msg=_("Device signed out."), flash_kind="success", **_sessions_ctx()
+    )
 
 
 @settings_bp.route("/profile/sessions/revoke-all", methods=["POST"])
@@ -237,10 +269,18 @@ def revoke_all_sessions():
 
     current_key = get_current_key()
     count = delete_all_sessions(current_user, except_key=current_key)
-    log_action("user.sessions_revoked_all", entity_type="user", entity_id=current_user.id,
-               changes={"count": count})
-    return _render_tab("sessions", flash_msg=_("%(n)d other device(s) signed out.", n=count),
-                       flash_kind="success", **_sessions_ctx())
+    log_action(
+        "user.sessions_revoked_all",
+        entity_type="user",
+        entity_id=current_user.id,
+        changes={"count": count},
+    )
+    return _render_tab(
+        "sessions",
+        flash_msg=_("%(n)d other device(s) signed out.", n=count),
+        flash_kind="success",
+        **_sessions_ctx(),
+    )
 
 
 @settings_bp.route("/system", methods=["GET", "POST"])
@@ -248,6 +288,7 @@ def revoke_all_sessions():
 def system():
     if not current_user.is_superuser:
         from app.core.rbac.service import user_has_permission
+
         if not user_has_permission(current_user, "system.manage"):
             abort(403)
 
@@ -263,9 +304,15 @@ def system():
 
     if form.validate_on_submit():
         set_system_setting("app_name", form.app_name.data.strip(), updated_by_id=current_user.id)
-        set_system_setting("default_locale", form.default_locale.data, updated_by_id=current_user.id)
-        set_system_setting("oauth_auto_register", form.oauth_auto_register.data, updated_by_id=current_user.id)
-        set_system_setting("registration_open", form.registration_open.data, updated_by_id=current_user.id)
+        set_system_setting(
+            "default_locale", form.default_locale.data, updated_by_id=current_user.id
+        )
+        set_system_setting(
+            "oauth_auto_register", form.oauth_auto_register.data, updated_by_id=current_user.id
+        )
+        set_system_setting(
+            "registration_open", form.registration_open.data, updated_by_id=current_user.id
+        )
         log_action("system_settings.update", entity_type="system_settings", entity_id=None)
         flash(_("System settings saved."), "success")
         return redirect(url_for("settings.system"))

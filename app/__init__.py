@@ -104,6 +104,7 @@ def _register_session_guard(app: Flask) -> None:
             # Oturum revoke edilmiş
             logout_user()
             from flask import redirect, url_for
+
             return redirect(url_for("auth.login"))
 
 
