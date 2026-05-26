@@ -1,1069 +1,1757 @@
-﻿msgid ""
+# Turkish translations for ScrapeMind.
+# Copyright (C) 2026 ScrapeMind contributors
+# This file is distributed under the same license as the ScrapeMind project.
+#
+msgid ""
 msgstr ""
-"Project-Id-Version: ScrapeMind 0.1\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-16 00:00+0300\n"
-"PO-Revision-Date: 2026-05-16 00:00+0300\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-05-26 12:01+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
+"Language-Team: tr <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-
-msgid "Sign In"
-msgstr "Giriş Yap"
-
-msgid "Sign Out"
-msgstr "Çıkış Yap"
-
-msgid "Username or Email"
-msgstr "Kullanıcı Adı veya E-posta"
-
-msgid "Password"
-msgstr "Şifre"
-
-msgid "Remember me"
-msgstr "Beni hatırla"
-
-msgid "Forgot password?"
-msgstr "Şifremi unuttum"
-
-msgid "Continue with Google"
-msgstr "Google ile devam et"
-
-msgid "Continue with Microsoft"
-msgstr "Microsoft ile devam et"
-
-msgid "Invalid credentials or account locked."
-msgstr "Geçersiz kimlik bilgileri veya hesap kilitli."
-
-msgid "OAuth login failed or registration disabled."
-msgstr "OAuth girişi başarısız veya kayıt devre dışı."
-
-msgid "Unknown OAuth provider."
-msgstr "Bilinmeyen OAuth sağlayıcısı."
-
-msgid "Dashboard"
-msgstr "Kontrol Paneli"
-
-msgid "Profile"
-msgstr "Profil"
-
-msgid "Settings"
-msgstr "Ayarlar"
-
-msgid "System Settings"
-msgstr "Sistem Ayarları"
-
-msgid "Toggle Theme"
-msgstr "Tema Değiştir"
-
-msgid "Roles"
-msgstr "Roller"
-
-msgid "Menu Items"
-msgstr "Menü Öğeleri"
-
-msgid "Audit Log"
-msgstr "Denetim Günlüğü"
-
-msgid "Time"
-msgstr "Zaman"
-
-msgid "User"
-msgstr "Kullanıcı"
-
-msgid "Action"
-msgstr "İşlem"
-
-msgid "Entity"
-msgstr "Nesne"
-
-msgid "IP"
-msgstr "IP"
-
-msgid "No entries yet."
-msgstr "Henüz kayıt yok."
-
-msgid "Pagination"
-msgstr "Sayfalama"
-
-msgid "Search…"
-msgstr "Ara…"
-
-msgid "Collapse"
-msgstr "Daralt"
-
-msgid "Go to Dashboard"
-msgstr "Kontrol Paneline Git"
-
-msgid "You don't have permission to access this page."
-msgstr "Bu sayfaya erişim yetkiniz yok."
-
-msgid "The page you're looking for doesn't exist."
-msgstr "Aradığınız sayfa bulunamadı."
-
-msgid "Something went wrong on our end. Please try again later."
-msgstr "Sunucu tarafında bir hata oluştu. Lütfen daha sonra tekrar deneyin."
-
-msgid "New Password"
-msgstr "Yeni Şifre"
-
-msgid "Confirm Password"
-msgstr "Şifreyi Onayla"
-
-msgid "Reset Password"
-msgstr "Şifreyi Sıfırla"
-
-msgid "Send Reset Link"
-msgstr "Sıfırlama Bağlantısı Gönder"
-
-msgid "Email"
-msgstr "E-posta"
-
-msgid "Scrape Jobs"
-msgstr "Scrape İşleri"
-
-msgid "Active Users"
-msgstr "Aktif Kullanıcılar"
-
-msgid "ScrapeMind modules will populate this dashboard in Faz 2."
-msgstr "ScrapeMind modülleri bu paneli Faz 2'de dolduracak."
-
-msgid "Role management — Faz 1"
-msgstr "Rol yönetimi — Faz 1"
-
-
-msgid "Active Sessions"
-msgstr "Aktif Oturumlar"
-
-msgid "These devices are currently signed in to your account."
-msgstr "Bu cihazlar su anda hesabiniza bagli."
-
-msgid "This device"
-msgstr "Bu cihaz"
-
-msgid "Last seen"
-msgstr "Son gorulme"
-
-msgid "Started"
-msgstr "Baslangic"
-
-msgid "Sign out this device?"
-msgstr "Bu cihazi oturumdan cikarmak istiyor musunuz?"
-
-msgid "Sign out"
-msgstr "Oturumu Kapat"
-
-msgid "Sign out all other devices?"
-msgstr "Diger tum cihazlari oturumdan cikarmak istiyor musunuz?"
-
-msgid "Sign out all other devices"
-msgstr "Diger tum cihazlari cikar"
-
-msgid "Device signed out."
-msgstr "Cihaz oturumu kapatildi."
-
-msgid "%(n)d other device(s) signed out."
-msgstr "%(n)d diger cihaz oturumu kapatildi."
-
-msgid "No active sessions found."
-msgstr "Aktif oturum bulunamadi."
-
-msgid "At least 8 characters"
-msgstr "En az 8 karakter"
-
-msgid "At least one uppercase letter"
-msgstr "En az 1 buyuk harf"
-
-msgid "At least one lowercase letter"
-msgstr "En az 1 kucuk harf"
-
-msgid "At least one digit"
-msgstr "En az 1 rakam"
-
-msgid "Password must be at least 8 characters."
-msgstr "Sifre en az 8 karakter olmalidir."
-
-msgid "Password must contain at least one uppercase letter."
-msgstr "Sifre en az 1 buyuk harf icermelidir."
-
-msgid "Password must contain at least one lowercase letter."
-msgstr "Sifre en az 1 kucuk harf icermelidir."
-
-msgid "Password must contain at least one digit."
-msgstr "Sifre en az 1 rakam icermelidir."
-
-msgid "Public registration is currently disabled."
-msgstr "Su anda acik kayit devre disi."
-
-msgid "Link another account"
-msgstr "Baska hesap bagla"
-
-msgid "Link Google"
-msgstr "Google Bagla"
-
-msgid "Link Microsoft"
-msgstr "Microsoft Bagla"
-
-msgid "Google linked"
-msgstr "Google Bagli"
-
-msgid "Microsoft linked"
-msgstr "Microsoft Bagli"
-
-msgid "Unlink"
-msgstr "Baglanti Kes"
-
-msgid "Unlink %(provider)s account?"
-msgstr "%(provider)s hesabinin baglantisini kesmek istiyor musunuz?"
-
-msgid "%(provider)s account linked successfully."
-msgstr "%(provider)s hesabi basariyla baglandi."
-
-msgid "%(provider)s account unlinked."
-msgstr "%(provider)s hesabinin baglantisi kesildi."
-
-msgid "This %(provider)s account is already linked."
-msgstr "Bu %(provider)s hesabi zaten bagli."
-
-msgid "This %(provider)s account is linked to another user."
-msgstr "Bu %(provider)s hesabi baska bir kullaniciya bagli."
-
-msgid "Cannot unlink — this is your only login method. Set a password first."
-msgstr "Baglanti kesilemiyor — tek giris yonteminiz bu. Once sifre tanimlayin."
-
-msgid "You have no password set. If you unlink all OAuth accounts you will lose access."
-msgstr "Sifreniz tanimli degil. Tum OAuth hesaplarini koparirsiniz erisimi kaybedersiniz."
-
-msgid "Account not found."
-msgstr "Hesap bulunamadi."
-# --- Menu i18n keys (sidebar label_key değerleri) ---
-msgid "menu.admin"
-msgstr "Sistem Yönetimi"
-
-msgid "menu.for_you"
-msgstr "Senin İçin"
-
-msgid "menu.admin_overview"
-msgstr "Genel Bakış"
-
-msgid "menu.dashboard"
-msgstr "Dashboard"
-
-msgid "menu.roles"
-msgstr "Roller"
-
-msgid "menu.menu_items"
-msgstr "Menü Öğeleri"
-
-msgid "menu.audit"
-msgstr "Denetim Kaydı"
-
-msgid "menu.profile"
-msgstr "Profil"
-
-msgid "menu.permissions"
-msgstr "İzinler"
-
-msgid "Menu management — Faz 1"
-msgstr "Menü yönetimi — Faz 1"
-
-# --- RBAC ---
-msgid "New Role"
-msgstr "Yeni Rol"
-
-msgid "Edit Role"
-msgstr "Rolü Düzenle"
-
-msgid "Role Name"
-msgstr "Rol Adı"
-
-msgid "Description"
-msgstr "Açıklama"
-
-msgid "Permissions"
-msgstr "İzinler"
-
-msgid "Name"
-msgstr "Ad"
-
-msgid "Actions"
-msgstr "İşlemler"
-
-msgid "Edit"
-msgstr "Düzenle"
-
-msgid "Save"
-msgstr "Kaydet"
-
-msgid "Cancel"
-msgstr "İptal"
-
-msgid "Delete this role?"
-msgstr "Bu rolü silmek istiyor musunuz?"
-
-msgid "No roles yet."
-msgstr "Henüz rol yok."
-
-msgid "No permissions defined yet."
-msgstr "Henüz tanımlı izin yok."
-
-msgid "Permissions are defined by module manifests and synced on startup. They cannot be edited manually."
-msgstr "İzinler modül manifest'lerinde tanımlanır ve başlangıçta senkronize edilir. Elle düzenlenemez."
-
-msgid "Role created."
-msgstr "Rol oluşturuldu."
-
-msgid "Role updated."
-msgstr "Rol güncellendi."
-
-msgid "Role deleted."
-msgstr "Rol silindi."
-
-msgid "The admin role cannot be deleted."
-msgstr "Admin rolü silinemez."
-
-# --- Menu CRUD ---
-msgid "New Menu Item"
-msgstr "Yeni Menü Öğesi"
-
-msgid "Edit Menu Item"
-msgstr "Menü Öğesini Düzenle"
-
-msgid "Menu Items"
-msgstr "Menü Öğeleri"
-
-msgid "Code"
-msgstr "Kod"
-
-msgid "Label Key"
-msgstr "Etiket Anahtarı"
-
-msgid "Icon (Bootstrap Icons class)"
-msgstr "İkon (Bootstrap Icons sınıfı)"
-
-msgid "URL"
-msgstr "URL"
-
-msgid "Endpoint"
-msgstr "Endpoint"
-
-msgid "Endpoint / URL"
-msgstr "Endpoint / URL"
-
-msgid "Parent"
-msgstr "Üst Öğe"
-
-msgid "Module"
-msgstr "Modül"
-
-msgid "Required Permission"
-msgstr "Gerekli İzin"
-
-msgid "Order"
-msgstr "Sıra"
-
-msgid "Visible"
-msgstr "Görünür"
-
-msgid "Toggle visibility"
-msgstr "Görünürlüğü değiştir"
-
-msgid "core"
-msgstr "çekirdek"
-
-msgid "Critical core item"
-msgstr "Kritik çekirdek öğe"
-
-msgid "Code is immutable after creation."
-msgstr "Kod oluşturulduktan sonra değiştirilemez."
-
-msgid "Use either Endpoint or URL."
-msgstr "Endpoint veya URL'den birini kullanın."
-
-msgid "Lowercase letters, digits and underscores only."
-msgstr "Yalnızca küçük harf, rakam ve alt çizgi."
-
-msgid "This code is already in use."
-msgstr "Bu kod zaten kullanımda."
-
-msgid "Unknown endpoint."
-msgstr "Bilinmeyen endpoint."
-
-msgid "Parent would create a cycle."
-msgstr "Bu üst öğe döngü oluşturur."
-
-msgid "Menu item created."
-msgstr "Menü öğesi oluşturuldu."
-
-msgid "Menu item updated."
-msgstr "Menü öğesi güncellendi."
-
-msgid "Menu item deleted."
-msgstr "Menü öğesi silindi."
-
-msgid "Visibility updated."
-msgstr "Görünürlük güncellendi."
-
-msgid "Delete this menu item?"
-msgstr "Bu menü öğesini silmek istiyor musunuz?"
-
-msgid "No menu items yet."
-msgstr "Henüz menü öğesi yok."
-
-msgid "This menu item is critical and cannot be deleted."
-msgstr "Bu menü öğesi kritik ve silinemez."
-
-# --- Profile tabs ---
-msgid "Personal Info"
-msgstr "Kişisel Bilgi"
-
-msgid "Email"
-msgstr "E-posta"
-
-msgid "Password"
-msgstr "Şifre"
-
-msgid "Preferences"
-msgstr "Tercihler"
-
-msgid "OAuth Accounts"
-msgstr "OAuth Hesapları"
-
-msgid "Account"
-msgstr "Hesap"
-
-msgid "Full Name"
-msgstr "Ad Soyad"
-
-msgid "Avatar URL"
-msgstr "Profil Resmi URL"
-
-msgid "Current Password"
-msgstr "Mevcut Şifre"
-
-msgid "New Password"
-msgstr "Yeni Şifre"
-
-msgid "Confirm New Password"
-msgstr "Yeni Şifre (Onay)"
-
-msgid "Change Password"
-msgstr "Şifre Değiştir"
-
-msgid "Minimum 8 characters."
-msgstr "En az 8 karakter."
-
-msgid "Passwords do not match."
-msgstr "Şifreler eşleşmiyor."
-
-msgid "Required to confirm your identity."
-msgstr "Kimliğinizi doğrulamak için gereklidir."
-
-msgid "Language"
-msgstr "Dil"
-
-msgid "Timezone"
-msgstr "Saat Dilimi"
-
-msgid "Theme"
-msgstr "Tema"
-
-msgid "Light"
-msgstr "Açık"
-
-msgid "Dark"
-msgstr "Koyu"
-
-msgid "Language and theme changes apply on next page load."
-msgstr "Dil ve tema değişiklikleri sonraki sayfa yüklenişinde uygulanır."
-
-msgid "Profile updated."
-msgstr "Profil güncellendi."
-
-msgid "Email updated."
-msgstr "E-posta güncellendi."
-
-msgid "Password changed."
-msgstr "Şifre değiştirildi."
-
-msgid "Preferences updated."
-msgstr "Tercihler güncellendi."
-
-msgid "Please correct the errors below."
-msgstr "Aşağıdaki hataları düzeltin."
-
-msgid "Current password is incorrect."
-msgstr "Mevcut şifre yanlış."
-
-msgid "Email already in use."
-msgstr "Bu e-posta zaten kullanımda."
-
-msgid "Local password not set for this account."
-msgstr "Bu hesap için yerel şifre tanımlı değil."
-
-msgid "Connected"
-msgstr "Bağlı"
-
-msgid "No OAuth accounts linked."
-msgstr "Bağlı OAuth hesabı yok."
-
-msgid "Linking and unlinking accounts will be available in Phase 2."
-msgstr "Hesap bağlama/koparma Faz 2'de gelecek."
-
-msgid "Username"
-msgstr "Kullanıcı Adı"
-
-msgid "User ID"
-msgstr "Kullanıcı ID"
-
-msgid "Account created"
-msgstr "Hesap oluşturulma"
-
-msgid "Last login"
-msgstr "Son giriş"
-
-msgid "Status"
-msgstr "Durum"
-
-msgid "Superuser"
-msgstr "Süper Yönetici"
-
-msgid "Active"
-msgstr "Aktif"
-
-msgid "Inactive"
-msgstr "Pasif"
-
-# --- Register / Password reset ---
-msgid "Create Account"
-msgstr "Hesap Oluştur"
-
-msgid "Already have an account?"
-msgstr "Zaten hesabın var mı?"
-
-msgid "Don't have an account?"
-msgstr "Hesabın yok mu?"
-
-msgid "Use letters, digits, dot, dash, underscore only."
-msgstr "Yalnızca harf, rakam, nokta, tire, alt çizgi."
-
-msgid "Confirm Password"
-msgstr "Şifre (Onay)"
-
-msgid "Account created. You can sign in now."
-msgstr "Hesap oluşturuldu. Şimdi giriş yapabilirsin."
-
-msgid "Username already in use."
-msgstr "Bu kullanıcı adı zaten kullanımda."
-
-msgid "Forgot Password"
-msgstr "Şifremi Unuttum"
-
-msgid "Enter your email and we will send you a reset link."
-msgstr "E-posta adresini gir, sana sıfırlama bağlantısı gönderelim."
-
-msgid "Back to Sign In"
-msgstr "Giriş sayfasına dön"
-
-msgid "If that email exists, a reset link has been sent."
-msgstr "Bu e-posta kayıtlıysa bir sıfırlama bağlantısı gönderildi."
-
-msgid "Dev mode: reset link → %(url)s"
-msgstr "Geliştirme modu: sıfırlama bağlantısı → %(url)s"
-
-msgid "Reset Password"
-msgstr "Şifreyi Sıfırla"
-
-msgid "Reset link is invalid or expired."
-msgstr "Sıfırlama bağlantısı geçersiz veya süresi dolmuş."
-
-msgid "Password reset. You can sign in now."
-msgstr "Şifre sıfırlandı. Şimdi giriş yapabilirsin."
-
-# --- Users panel ---
-msgid "Users"
-msgstr "Kullanıcılar"
-
-msgid "Edit User"
-msgstr "Kullanıcıyı Düzenle"
-
-msgid "Search by username, email, name…"
-msgstr "Kullanıcı adı, e-posta veya isimle ara…"
-
-msgid "Active only"
-msgstr "Sadece aktif"
-
-msgid "Filter"
-msgstr "Filtrele"
-
-msgid "Reset"
-msgstr "Sıfırla"
-
-msgid "Locked"
-msgstr "Kilitli"
-
-msgid "Lock"
-msgstr "Kilitle"
-
-msgid "Unlock"
-msgstr "Kilidi Aç"
-
-msgid "Delete this user?"
-msgstr "Bu kullanıcıyı silmek istiyor musunuz?"
-
-msgid "No users yet."
-msgstr "Henüz kullanıcı yok."
-
-msgid "No roles defined."
-msgstr "Tanımlı rol yok."
-
-msgid "(immutable)"
-msgstr "(değiştirilemez)"
-
-msgid "Failed logins"
-msgstr "Başarısız giriş"
-
-msgid "User updated."
-msgstr "Kullanıcı güncellendi."
-
-msgid "User locked."
-msgstr "Kullanıcı kilitlendi."
-
-msgid "User unlocked."
-msgstr "Kullanıcının kilidi açıldı."
-
-msgid "User deleted."
-msgstr "Kullanıcı silindi."
-
-msgid "You cannot lock your own account."
-msgstr "Kendi hesabınızı kilitleyemezsiniz."
-
-msgid "You cannot delete your own account."
-msgstr "Kendi hesabınızı silemezsiniz."
-
-msgid "You cannot remove your own superuser flag."
-msgstr "Kendi süper kullanıcı bayrağınızı kaldıramazsınız."
-
-msgid "The admin user cannot be deleted."
-msgstr "Admin kullanıcısı silinemez."
-
-msgid "menu.users"
-msgstr "Kullanıcılar"
-
-# --- System settings ---
-msgid "System Settings"
-msgstr "Sistem Ayarları"
-
-msgid "These settings apply to the whole application."
-msgstr "Bu ayarlar tüm uygulamayı etkiler."
-
-msgid "Application Name"
-msgstr "Uygulama Adı"
-
-msgid "Default Language"
-msgstr "Varsayılan Dil"
-
-msgid "Used for anonymous visitors before they pick a language."
-msgstr "Dil seçimi yapmamış anonim ziyaretçiler için kullanılır."
-
-msgid "Auto-register OAuth users"
-msgstr "OAuth kullanıcılarını otomatik kayıt et"
-
-msgid "Public registration enabled"
-msgstr "Herkese açık kayıt etkin"
-
-msgid "Allow visitors to create accounts via /auth/register."
-msgstr "Ziyaretçilerin /auth/register ile hesap oluşturmasına izin ver."
-
-msgid "On unknown OAuth identity, create a new account automatically."
-msgstr "Bilinmeyen OAuth kimliğinde otomatik olarak yeni hesap oluştur."
-
-msgid "System settings saved."
-msgstr "Sistem ayarları kaydedildi."
-
-msgid "menu.system"
-msgstr "Sistem Ayarları"
-
-msgid "Settings"
-msgstr "Ayarlar"
-
-# --- Audit filters ---
-msgid "— Any —"
-msgstr "— Hepsi —"
-
-msgid "(prefix)"
-msgstr "(ön ek)"
-
-msgid "From"
-msgstr "Başlangıç"
-
-msgid "To"
-msgstr "Bitiş"
-
-msgid "Apply"
-msgstr "Uygula"
-
-msgid "records"
-msgstr "kayıt"
-
-msgid "No entries match."
-msgstr "Eşleşen kayıt yok."
-
-msgid "Entity"
-msgstr "Varlık"
-
-msgid "IP"
-msgstr "IP"
-
-msgid "Time"
-msgstr "Zaman"
-
-# --- Dashboard ---
-msgid "Dashboard"
-msgstr "Panel"
-
-msgid "Welcome, %(name)s"
-msgstr "Hoş geldin, %(name)s"
-
-msgid "Active Users"
-msgstr "Aktif Kullanıcı"
-
-msgid "Recent activity"
-msgstr "Son etkinlikler"
-
-msgid "No activity yet."
-msgstr "Henüz etkinlik yok."
-
-msgid "See full audit log"
-msgstr "Tüm denetim kaydını gör"
-
-msgid "Quick actions"
-msgstr "Hızlı işlemler"
-
-msgid "Manage users"
-msgstr "Kullanıcıları yönet"
-
-msgid "Manage roles"
-msgstr "Rolleri yönet"
-
-msgid "Manage menu"
-msgstr "Menüyü yönet"
-
-msgid "Scraping modules will populate this dashboard in Phase 2."
-msgstr "Scraping modülleri bu paneli Faz 2'de dolduracak."
-
-# --- Search ---
-msgid "Search…"
-msgstr "Ara…"
-
-msgid "No matches."
-msgstr "Eşleşme yok."
-
-msgid "Menu"
-msgstr "Menü"
-
-msgid "inactive"
-msgstr "pasif"
-
-# --- Topbar / sidebar ---
-msgid "Toggle Theme"
-msgstr "Temayı Değiştir"
-
-msgid "Collapse"
-msgstr "Daralt"
-
-# --- Multi-email (Phase 2) ---
-msgid "Email Addresses"
-msgstr "E-posta Adresleri"
-
-msgid "Primary Email"
-msgstr "Birincil E-posta"
-
-msgid "Primary"
-msgstr "Birincil"
-
-msgid "Verified"
-msgstr "Doğrulandı"
-
-msgid "Unverified"
-msgstr "Doğrulanmadı"
-
-msgid "Make primary"
-msgstr "Birincil yap"
-
-msgid "Resend verification link"
-msgstr "Onay bağlantısını tekrar gönder"
-
-msgid "Remove this email?"
-msgstr "Bu e-postayı kaldırmak istiyor musunuz?"
-
-msgid "Remove"
-msgstr "Kaldır"
-
-msgid "No email addresses on file."
-msgstr "Kayıtlı e-posta yok."
-
-msgid "Add"
-msgstr "Ekle"
-
-msgid "Add another email"
-msgstr "Başka bir e-posta ekle"
-
-msgid "A verification link will be issued. Verify before promoting to primary."
-msgstr "Bir onay bağlantısı oluşturulacak. Birincil yapmadan önce doğrulayın."
-
-msgid "You can keep multiple email addresses. One must be marked as primary — that's the address used for login and notifications."
-msgstr "Birden fazla e-posta adresi tutabilirsiniz. Biri birincil olarak işaretlenmiş olmalı — bu adres giriş ve bildirimler için kullanılır."
-
-msgid "Dev mode: verification link → %(url)s"
-msgstr "Geliştirme modu: onay bağlantısı → %(url)s"
-
-msgid "A verification link has been sent."
-msgstr "Bir onay bağlantısı gönderildi."
-
-msgid "Verification link re-sent."
-msgstr "Onay bağlantısı tekrar gönderildi."
-
-msgid "Verification link is invalid or expired."
-msgstr "Onay bağlantısı geçersiz veya süresi dolmuş."
-
-msgid "Email verified."
-msgstr "E-posta doğrulandı."
-
-msgid "Primary email updated."
-msgstr "Birincil e-posta güncellendi."
-
-msgid "Email removed."
-msgstr "E-posta kaldırıldı."
-
-msgid "Email not found."
-msgstr "E-posta bulunamadı."
-
-msgid "Verify the email before making it primary."
-msgstr "Birincil yapmadan önce e-postayı doğrulayın."
-
-msgid "Cannot delete the primary email. Promote another first."
-msgstr "Birincil e-posta silinemez. Önce başka birini birincil yapın."
-
-# --- Academic identifiers / interests (Phase 2 correction) ---
+"Generated-By: Babel 2.18.0\n"
+
+# Tab labels declared in app/core/settings/tab_registry.py — passed through
+# gettext at render time (profile.html does {{ _(label) }}), so pybabel
+# can't pick them up statically. Keep these msgids manually in sync with
+# CORE_TABS until the tab registry switches to lazy_gettext().
 msgid "Login Email"
 msgstr "Giriş E-postası"
 
-msgid "Academic Identifiers"
-msgstr "Akademik Kimlikler"
+msgid "Security (2FA)"
+msgstr "Güvenlik (2FA)"
 
-msgid "Research Interests"
-msgstr "Araştırma İlgi Alanları"
+#: app/core/auth/forms.py:11 app/core/templates/settings/_tab_account.html:4
+#: app/core/templates/users/edit.html:59 app/core/templates/users/list.html:31
+msgid "Username"
+msgstr "Kullanıcı Adı"
 
-msgid "Your historical and alternate academic identities. Useful when your name, affiliation, or institutional email has changed — old papers stay linked through these. This is separate from your login email."
-msgstr "Geçmişte kullandığın ve alternatif akademik kimliklerin. Soyisim, kurum veya kurumsal e-posta değişikliklerinde eski makaleler bu kimliklerle bağlı kalır. Giriş e-postandan bağımsızdır."
+#: app/core/auth/forms.py:16
+msgid "Use letters, digits, dot, dash, underscore only."
+msgstr ""
 
-msgid "No academic identifiers yet."
-msgstr "Henüz akademik kimlik yok."
+#: app/core/auth/forms.py:20 app/core/auth/forms.py:38
+#: app/core/settings/forms.py:26 app/core/templates/settings/_tab_email.html:2
+#: app/core/templates/users/list.html:32 app/core/users/forms.py:9
+msgid "Email"
+msgstr "E-posta"
 
-msgid "Add identifier"
-msgstr "Kimlik ekle"
+#: app/core/auth/forms.py:21 app/core/settings/forms.py:20
+#: app/core/templates/users/list.html:33 app/core/users/forms.py:8
+msgid "Full Name"
+msgstr "Ad Soyad"
 
-msgid "Type"
-msgstr "Tür"
+#: app/core/auth/forms.py:22 app/core/auth/forms.py:32
+#: app/core/templates/settings/_tab_password.html:2
+msgid "Password"
+msgstr "Şifre"
 
-msgid "Value"
-msgstr "Değer"
+#: app/core/auth/forms.py:24 app/core/auth/forms.py:45
+#, fuzzy
+msgid "Confirm Password"
+msgstr "Şifremi Unuttum"
 
-msgid "value (email / ORCID / etc.)"
-msgstr "değer (e-posta / ORCID / vb.)"
+#: app/core/auth/forms.py:25 app/core/settings/forms.py:38
+#, fuzzy
+msgid "Passwords do not match."
+msgstr "Şifre değiştirildi."
 
-msgid "Email type sends a verification link. Other types are stored as-is for now."
-msgstr "E-posta türü onay bağlantısı gönderir. Diğer türler şimdilik olduğu gibi kaydedilir."
+# --- Register / Password reset ---
+#: app/core/auth/forms.py:27 app/core/templates/auth/login.html:45
+#: app/core/templates/auth/register.html:2
+#: app/core/templates/auth/register.html:10
+msgid "Create Account"
+msgstr "Hesap Oluştur"
 
-msgid "Remove this identifier?"
-msgstr "Bu kimliği kaldırmak istiyor musunuz?"
+#: app/core/auth/forms.py:31
+#, fuzzy
+msgid "Username or Email"
+msgstr "Kullanıcı Adı"
 
-msgid "This email is already your login email — no need to add it here."
-msgstr "Bu e-posta zaten giriş e-postanız — burada tekrar eklemenize gerek yok."
+#: app/core/auth/forms.py:33
+msgid "Remember me"
+msgstr ""
 
-msgid "This identifier is already registered."
-msgstr "Bu kimlik zaten kayıtlı."
+#: app/core/auth/forms.py:34 app/core/templates/auth/login.html:2
+#: app/core/templates/auth/register.html:52
+msgid "Sign In"
+msgstr "Giriş Yap"
 
-msgid "Value does not match the expected format."
-msgstr "Değer beklenen formata uymuyor."
+#: app/core/auth/forms.py:39
+#, fuzzy
+msgid "Send Reset Link"
+msgstr "Onay bağlantısını tekrar gönder"
 
-msgid "Value cannot be empty."
-msgstr "Değer boş olamaz."
+#: app/core/auth/forms.py:43 app/core/settings/forms.py:35
+#, fuzzy
+msgid "New Password"
+msgstr "Şifre"
 
-msgid "Identifier not found."
-msgstr "Kimlik bulunamadı."
+#: app/core/auth/forms.py:48 app/core/templates/auth/reset.html:2
+#: app/core/templates/auth/reset.html:10
+msgid "Reset Password"
+msgstr "Şifreyi Sıfırla"
 
-msgid "Identifier added."
-msgstr "Kimlik eklendi."
+#: app/core/auth/forms.py:53 app/core/auth/forms.py:63
+msgid "Authenticator Code"
+msgstr "Doğrulayıcı Kodu"
 
-msgid "Identifier added — a verification link has been sent."
-msgstr "Kimlik eklendi — bir onay bağlantısı gönderildi."
+#: app/core/auth/forms.py:56
+msgid "Verify"
+msgstr "Doğrula"
 
-msgid "Identifier removed."
-msgstr "Kimlik kaldırıldı."
+#: app/core/auth/forms.py:66 app/core/templates/settings/_tab_security.html:80
+#: app/core/templates/settings/_tab_security.html:100
+msgid "Enable 2FA"
+msgstr "2FA'yı Etkinleştir"
 
-msgid "Keywords used to personalise your scraping feed. Pick what you actually follow — the scraper will lean on these when ranking new papers and news."
-msgstr "Akış kişiselleştirme için anahtar kelimeler. Gerçekten takip ettiklerini ekle — scraping motor yeni makale ve haberleri sıralarken bunları kullanır."
+#: app/core/auth/password_policy.py:32
+#: app/core/templates/core/_password_rules.html:5
+msgid "At least 8 characters"
+msgstr "En az 8 karakter"
 
-msgid "Add a keyword"
-msgstr "Anahtar kelime ekle"
+#: app/core/auth/password_policy.py:33
+#, fuzzy
+msgid "Password must be at least 8 characters."
+msgstr "En az 8 karakter"
 
-msgid "Keyword"
-msgstr "Anahtar kelime"
+#: app/core/auth/password_policy.py:38
+#: app/core/templates/core/_password_rules.html:6
+msgid "At least one uppercase letter"
+msgstr "En az 1 buyuk harf"
 
-msgid "e.g. transformer architectures, graph neural networks"
-msgstr "örn. transformer mimarileri, graf sinir ağları"
+#: app/core/auth/password_policy.py:39
+#, fuzzy
+msgid "Password must contain at least one uppercase letter."
+msgstr "En az 1 buyuk harf"
 
-msgid "2–64 characters. Will be normalised to lowercase. Trends across users let us recommend related ones later."
-msgstr "2–64 karakter. Küçük harfe normalleştirilir. Kullanıcılar arası trend ile ileride benzer öneriler çıkarılır."
+#: app/core/auth/password_policy.py:44
+#: app/core/templates/core/_password_rules.html:7
+msgid "At least one lowercase letter"
+msgstr "En az 1 kucuk harf"
 
-msgid "No keywords yet — add one below to start shaping your feed."
-msgstr "Henüz anahtar kelime yok — aşağıdan ekleyerek akışını şekillendirmeye başla."
+#: app/core/auth/password_policy.py:45
+#, fuzzy
+msgid "Password must contain at least one lowercase letter."
+msgstr "En az 1 kucuk harf"
 
-msgid "Keyword too short."
-msgstr "Anahtar kelime çok kısa."
+#: app/core/auth/password_policy.py:50
+#: app/core/templates/core/_password_rules.html:8
+msgid "At least one digit"
+msgstr "En az 1 rakam"
 
-msgid "You already follow this keyword."
-msgstr "Bu anahtar kelimeyi zaten takip ediyorsun."
+#: app/core/auth/password_policy.py:51
+#, fuzzy
+msgid "Password must contain at least one digit."
+msgstr "En az 1 rakam"
 
-msgid "Keyword added."
-msgstr "Anahtar kelime eklendi."
+#: app/core/auth/routes.py:48
+msgid "Invalid credentials or account locked."
+msgstr "Geçersiz kimlik bilgileri veya hesap kilitli."
 
-msgid "Keyword removed."
-msgstr "Anahtar kelime kaldırıldı."
+#: app/core/auth/routes.py:98 app/core/settings/routes.py:267
+msgid "Code is invalid. Try again."
+msgstr "Kod geçersiz. Tekrar dene."
 
-msgid "Keyword added."
-msgstr "Anahtar kelime eklendi."
+#: app/core/auth/routes.py:113
+msgid "Logged in with a recovery code — consider regenerating your codes."
+msgstr "Kurtarma kodu ile giriş yapıldı — kodlarını yenilemeyi değerlendir."
 
-msgid "%(n)d keywords added."
-msgstr "%(n)d anahtar kelime eklendi."
+#: app/core/auth/routes.py:144
+msgid "Public registration is currently disabled."
+msgstr "Su anda acik kayit devre disi."
 
-msgid "%(n)d added, %(s)d already following."
-msgstr "%(n)d eklendi, %(s)d zaten takip ediliyor."
+#: app/core/auth/routes.py:158
+msgid "Account created. You can sign in now."
+msgstr "Hesap oluşturuldu. Şimdi giriş yapabilirsin."
 
-msgid "No valid keywords found."
-msgstr "Geçerli anahtar kelime bulunamadı."
+#: app/core/auth/routes.py:180
+#, python-format
+msgid "Dev mode: reset link → %(url)s"
+msgstr "Geliştirme modu: sıfırlama bağlantısı → %(url)s"
 
-msgid "Separate multiple keywords with comma or semicolon. Each term is normalised to lowercase."
-msgstr "Birden fazla anahtar kelimeyi virgül veya noktalı virgülle ayırın. Her terim küçük harfe dönüştürülür."
+#: app/core/auth/routes.py:181
+msgid "If that email exists, a reset link has been sent."
+msgstr "Bu e-posta kayıtlıysa bir sıfırlama bağlantısı gönderildi."
 
-msgid "Keyword not found."
-msgstr "Anahtar kelime bulunamadı."
+#: app/core/auth/routes.py:192
+msgid "Reset link is invalid or expired."
+msgstr "Sıfırlama bağlantısı geçersiz veya süresi dolmuş."
 
-# --- Admin academic panel ---
-msgid "Academic profile"
-msgstr "Akademik profil"
+#: app/core/auth/routes.py:198
+msgid "Password reset. You can sign in now."
+msgstr "Şifre sıfırlandı. Şimdi giriş yapabilirsin."
 
-msgid "Read-only view of the user's academic identifiers and research interests. They manage these from their own profile page."
-msgstr "Kullanıcının akademik kimliklerinin ve araştırma ilgi alanlarının salt-okunur görünümü. Kullanıcı bunları kendi profil sayfasından yönetir."
+#: app/core/auth/routes.py:217 app/core/auth/routes.py:233
+#: app/core/auth/routes.py:248
+msgid "Unknown OAuth provider."
+msgstr "Bilinmeyen OAuth sağlayıcısı."
 
-msgid "No keywords yet."
-msgstr "Henüz anahtar kelime yok."
+#: app/core/auth/routes.py:279
+msgid "OAuth login failed or registration disabled."
+msgstr "OAuth girişi başarısız veya kayıt devre dışı."
 
-# --- Tasks admin (Phase 2 slice 2) ---
-msgid "Tasks"
-msgstr "Görevler"
+#: app/core/auth/routes.py:298
+#, python-format
+msgid "This %(provider)s account is already linked."
+msgstr "Bu %(provider)s hesabi zaten bagli."
 
-msgid "menu.tasks"
-msgstr "Görevler"
+#: app/core/auth/routes.py:300
+#, python-format
+msgid "This %(provider)s account is linked to another user."
+msgstr "Bu %(provider)s hesabi baska bir kullaniciya bagli."
 
-msgid "Background Tasks"
-msgstr "Arka Plan Görevleri"
+#: app/core/auth/routes.py:316
+#, python-format
+msgid "%(provider)s account linked successfully."
+msgstr "%(provider)s hesabi basariyla baglandi."
 
-msgid "worker(s) online"
-msgstr "çalışan worker"
+#: app/core/menu/forms.py:9 app/core/templates/menu/list.html:18
+msgid "Code"
+msgstr "Kod"
 
-msgid "No workers online"
-msgstr "Çalışan worker yok"
+#: app/core/menu/forms.py:14
+msgid "Lowercase letters, digits and underscores only."
+msgstr ""
 
-msgid "No Celery worker is connected. Start one with:"
-msgstr "Bağlı Celery worker yok. Şu komutla başlat:"
+#: app/core/menu/forms.py:18 app/core/templates/menu/list.html:19
+msgid "Label Key"
+msgstr "Etiket Anahtarı"
 
-msgid "Or via docker compose:"
-msgstr "Veya docker compose ile:"
+#: app/core/menu/forms.py:19
+msgid "Icon (Bootstrap Icons class)"
+msgstr ""
 
-msgid "Workers"
-msgstr "Worker'lar"
+#: app/core/menu/forms.py:20
+msgid "URL"
+msgstr ""
 
-msgid "online"
-msgstr "çevrimiçi"
+#: app/core/menu/forms.py:21
+#, fuzzy
+msgid "Endpoint"
+msgstr "Endpoint / URL"
 
-msgid "No workers."
-msgstr "Worker yok."
+#: app/core/menu/forms.py:22 app/core/templates/menu/list.html:20
+msgid "Parent"
+msgstr "Üst Öğe"
 
+#: app/core/menu/forms.py:23
+#, fuzzy
+msgid "Module"
+msgstr "Kod"
+
+#: app/core/menu/forms.py:24 app/core/templates/menu/list.html:22
+msgid "Required Permission"
+msgstr "Gerekli İzin"
+
+#: app/core/menu/forms.py:25 app/core/templates/menu/list.html:23
+msgid "Order"
+msgstr "Sıra"
+
+#: app/core/menu/forms.py:26 app/core/templates/menu/list.html:24
+msgid "Visible"
+msgstr "Görünür"
+
+#: app/core/menu/forms.py:27 app/core/rbac/forms.py:10
+#: app/core/settings/forms.py:22 app/core/settings/forms.py:28
+#: app/core/settings/forms.py:47 app/core/settings/system_forms.py:16
+#: app/core/users/forms.py:13
+#, fuzzy
+msgid "Save"
+msgstr "Aktif"
+
+#: app/core/menu/routes.py:52
+msgid "Unknown endpoint."
+msgstr "Bilinmeyen endpoint."
+
+#: app/core/menu/routes.py:58
+msgid "Parent would create a cycle."
+msgstr "Bu üst öğe döngü oluşturur."
+
+#: app/core/menu/routes.py:78
+msgid "This code is already in use."
+msgstr "Bu kod zaten kullanımda."
+
+#: app/core/menu/routes.py:87
+msgid "Menu item created."
+msgstr "Menü öğesi oluşturuldu."
+
+#: app/core/menu/routes.py:110
+msgid "Menu item updated."
+msgstr "Menü öğesi güncellendi."
+
+#: app/core/menu/routes.py:123
+msgid "This menu item is critical and cannot be deleted."
+msgstr "Bu menü öğesi kritik ve silinemez."
+
+#: app/core/menu/routes.py:130
+msgid "Menu item deleted."
+msgstr "Menü öğesi silindi."
+
+#: app/core/menu/routes.py:145
+msgid "Visibility updated."
+msgstr "Görünürlük güncellendi."
+
+#: app/core/rbac/forms.py:8
+#, fuzzy
+msgid "Role Name"
+msgstr "Ad Soyad"
+
+#: app/core/rbac/forms.py:9 app/core/templates/rbac/role_list.html:19
+msgid "Description"
+msgstr "Açıklama"
+
+#: app/core/rbac/routes.py:49
+msgid "Role created."
+msgstr "Rol oluşturuldu."
+
+#: app/core/rbac/routes.py:79
+msgid "Role updated."
+msgstr "Rol güncellendi."
+
+#: app/core/rbac/routes.py:98
+msgid "The admin role cannot be deleted."
+msgstr "Admin rolü silinemez."
+
+#: app/core/rbac/routes.py:102
+msgid "Role deleted."
+msgstr "Rol silindi."
+
+#: app/core/settings/forms.py:16
+msgid "Light"
+msgstr ""
+
+#: app/core/settings/forms.py:16
+msgid "Dark"
+msgstr ""
+
+#: app/core/settings/forms.py:21 app/core/users/forms.py:12
+msgid "Avatar URL"
+msgstr ""
+
+#: app/core/settings/forms.py:27 app/core/settings/forms.py:34
+#, fuzzy
+msgid "Current Password"
+msgstr "Şifreyi Sıfırla"
+
+#: app/core/settings/forms.py:37
+#, fuzzy
+msgid "Confirm New Password"
+msgstr "Şifreyi Sıfırla"
+
+#: app/core/settings/forms.py:40
+#, fuzzy
+msgid "Change Password"
+msgstr "Şifre"
+
+#: app/core/settings/forms.py:44
+msgid "Language"
+msgstr ""
+
+#: app/core/settings/forms.py:45
+#, fuzzy
+msgid "Timezone"
+msgstr "Zaman"
+
+#: app/core/settings/forms.py:46
+#, fuzzy
+msgid "Theme"
+msgstr "Zaman"
+
+#: app/core/settings/routes.py:186
+msgid "Profile updated."
+msgstr "Profil güncellendi."
+
+#: app/core/settings/routes.py:187 app/core/settings/routes.py:200
+#: app/core/settings/routes.py:213 app/core/settings/routes.py:225
+#: app/modules/academic/routes.py:118 app/modules/academic/routes.py:187
+msgid "Please correct the errors below."
+msgstr "Aşağıdaki hataları düzeltin."
+
+#: app/core/settings/routes.py:198
+msgid "Email updated."
+msgstr "E-posta güncellendi."
+
+#: app/core/settings/routes.py:211
+msgid "Password changed."
+msgstr "Şifre değiştirildi."
+
+#: app/core/settings/routes.py:224
+msgid "Preferences updated."
+msgstr "Tercihler güncellendi."
+
+#: app/core/settings/routes.py:234 app/core/settings/routes.py:254
+msgid "2FA is already enabled."
+msgstr "2FA zaten etkin."
+
+#: app/core/settings/routes.py:260
+msgid "Setup expired — start again."
+msgstr "Kurulum zaman aşımına uğradı — yeniden başla."
+
+#: app/core/settings/routes.py:278
+msgid "2FA enabled. Save your recovery codes — they will not be shown again."
+msgstr "2FA etkinleştirildi. Kurtarma kodlarını kaydet — bir daha gösterilmeyecek."
+
+#: app/core/settings/routes.py:295
+msgid "Code required."
+msgstr "Kod gerekli."
+
+#: app/core/settings/routes.py:301
+msgid "Code is invalid."
+msgstr "Kod geçersiz."
+
+#: app/core/settings/routes.py:306
+msgid "2FA disabled."
+msgstr "2FA devre dışı bırakıldı."
+
+#: app/core/settings/routes.py:321
+msgid "New recovery codes generated. Old ones no longer work."
+msgstr "Yeni kurtarma kodları üretildi. Eskileri artık çalışmıyor."
+
+#: app/core/settings/routes.py:336
+msgid "Account not found."
+msgstr "Hesap bulunamadi."
+
+#: app/core/settings/routes.py:347
+msgid "Cannot unlink — this is your only login method. Set a password first."
+msgstr "Baglanti kesilemiyor — tek giris yonteminiz bu. Once sifre tanimlayin."
+
+#: app/core/settings/routes.py:356
+#, python-format
+msgid "%(provider)s account unlinked."
+msgstr "%(provider)s hesabinin baglantisi kesildi."
+
+#: app/core/settings/routes.py:371
+msgid "Device signed out."
+msgstr "Cihaz oturumu kapatildi."
+
+#: app/core/settings/routes.py:384
+#, python-format
+msgid "%(n)d other device(s) signed out."
+msgstr "%(n)d diger cihaz oturumu kapatildi."
+
+#: app/core/settings/routes.py:412
+msgid "System settings saved."
+msgstr "Sistem ayarları kaydedildi."
+
+#: app/core/settings/system_forms.py:8
+msgid "Application Name"
+msgstr ""
+
+#: app/core/settings/system_forms.py:10
+msgid "Default Language"
+msgstr ""
+
+#: app/core/settings/system_forms.py:14
+msgid "Auto-register OAuth users"
+msgstr ""
+
+#: app/core/settings/system_forms.py:15
+#, fuzzy
+msgid "Public registration enabled"
+msgstr "Su anda acik kayit devre disi."
+
+#: app/core/templates/audit/list.html:2 app/core/templates/audit/list.html:4
+msgid "Audit Log"
+msgstr "Denetim Günlüğü"
+
+#: app/core/templates/audit/list.html:9 app/core/templates/audit/list.html:54
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:65
+#: app/modules/dashboard/templates/dashboard/index.html:99
+msgid "User"
+msgstr "Kullanıcı"
+
+# --- Audit filters ---
+#: app/core/templates/audit/list.html:11 app/core/templates/audit/list.html:27
+msgid "— Any —"
+msgstr "— Hepsi —"
+
+#: app/core/templates/audit/list.html:18 app/core/templates/audit/list.html:55
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:66
+#: app/modules/dashboard/templates/dashboard/index.html:100
+msgid "Action"
+msgstr "İşlem"
+
+#: app/core/templates/audit/list.html:18
+msgid "(prefix)"
+msgstr "(ön ek)"
+
+#: app/core/templates/audit/list.html:25 app/core/templates/audit/list.html:55
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:67
+#: app/modules/dashboard/templates/dashboard/index.html:100
+msgid "Entity"
+msgstr "Nesne"
+
+#: app/core/templates/audit/list.html:34
+msgid "From"
+msgstr "Başlangıç"
+
+#: app/core/templates/audit/list.html:38
+msgid "To"
+msgstr "Bitiş"
+
+#: app/core/templates/audit/list.html:43
+msgid "Apply"
+msgstr "Uygula"
+
+#: app/core/templates/audit/list.html:44 app/core/templates/users/list.html:22
+msgid "Reset"
+msgstr "Sıfırla"
+
+#: app/core/templates/audit/list.html:45
+msgid "records"
+msgstr "kayıt"
+
+#: app/core/templates/audit/list.html:54
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:64
+#: app/modules/dashboard/templates/dashboard/index.html:99
+msgid "Time"
+msgstr "Zaman"
+
+#: app/core/templates/audit/list.html:55
+msgid "IP"
+msgstr "IP"
+
+#: app/core/templates/audit/list.html:68
+msgid "No entries match."
+msgstr "Eşleşen kayıt yok."
+
+#: app/core/templates/auth/forgot.html:2 app/core/templates/auth/forgot.html:10
+msgid "Forgot Password"
+msgstr "Şifremi Unuttum"
+
+#: app/core/templates/auth/forgot.html:12
+msgid "Enter your email and we will send you a reset link."
+msgstr "E-posta adresini gir, sana sıfırlama bağlantısı gönderelim."
+
+#: app/core/templates/auth/forgot.html:25
+msgid "Back to Sign In"
+msgstr "Giriş sayfasına dön"
+
+#: app/core/templates/auth/login.html:37
+msgid "Forgot password?"
+msgstr "Şifremi unuttum"
+
+#: app/core/templates/auth/login.html:44
+msgid "Don't have an account?"
+msgstr "Hesabın yok mu?"
+
+#: app/core/templates/auth/login.html:51
+msgid "Continue with Google"
+msgstr "Google ile devam et"
+
+#: app/core/templates/auth/login.html:54
+msgid "Continue with Microsoft"
+msgstr "Microsoft ile devam et"
+
+#: app/core/templates/auth/register.html:38
+#: app/core/templates/auth/reset.html:19
+#: app/core/templates/settings/_tab_password.html:14
+msgid "Minimum 8 characters."
+msgstr "En az 8 karakter."
+
+#: app/core/templates/auth/register.html:51
+msgid "Already have an account?"
+msgstr "Zaten hesabın var mı?"
+
+#: app/core/templates/auth/totp_challenge.html:2
+#: app/core/templates/auth/totp_challenge.html:10
+msgid "Two-Factor Authentication"
+msgstr "İki Faktörlü Doğrulama"
+
+#: app/core/templates/auth/totp_challenge.html:13
+msgid "Enter the 6-digit code from your authenticator app, or a recovery code."
+msgstr "Doğrulayıcı uygulamandaki 6 haneli kodu ya da bir kurtarma kodunu gir."
+
+#: app/core/templates/auth/totp_challenge.html:33
+msgid "Cancel and sign in as a different user"
+msgstr "Vazgeç ve farklı bir kullanıcıyla giriş yap"
+
+#: app/core/templates/core/_pagination.html:2
+msgid "Pagination"
+msgstr "Sayfalama"
+
+#: app/core/templates/core/_search_results.html:3
+msgid "No matches."
+msgstr "Eşleşme yok."
+
+# --- Users panel ---
+#: app/core/templates/core/_search_results.html:7
+#: app/core/templates/users/list.html:2 app/core/templates/users/list.html:5
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:15
+#: app/modules/dashboard/templates/dashboard/index.html:16
+msgid "Users"
+msgstr "Kullanıcılar"
+
+#: app/core/templates/core/_search_results.html:14
+msgid "inactive"
+msgstr "pasif"
+
+#: app/core/templates/core/_search_results.html:19
+#: app/core/templates/rbac/role_list.html:2
+#: app/core/templates/rbac/role_list.html:5
+#: app/core/templates/settings/_tab_account.html:16
+#: app/core/templates/users/edit.html:39 app/core/templates/users/list.html:34
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:48
+#: app/modules/dashboard/templates/dashboard/index.html:38
+msgid "Roles"
+msgstr "Roller"
+
+#: app/core/templates/core/_search_results.html:29
+msgid "Menu"
+msgstr "Menü"
+
+#: app/core/templates/core/_sidebar.html:41
+msgid "Collapse"
+msgstr "Daralt"
+
+# --- Search ---
+#: app/core/templates/core/_topbar.html:10
+msgid "Search…"
+msgstr "Ara…"
+
+#: app/core/templates/core/_topbar.html:37
+#: app/core/templates/settings/profile.html:2
+#: app/core/templates/settings/profile.html:4
+msgid "Profile"
+msgstr "Profil"
+
+#: app/core/templates/core/_topbar.html:38
+msgid "Settings"
+msgstr "Ayarlar"
+
+# --- Topbar / sidebar ---
+#: app/core/templates/core/_topbar.html:42
+msgid "Toggle Theme"
+msgstr "Tema Değiştir"
+
+#: app/core/templates/core/_topbar.html:46
+msgid "Sign Out"
+msgstr "Çıkış Yap"
+
+#: app/core/templates/errors/403.html:2
+msgid "Forbidden"
+msgstr ""
+
+#: app/core/templates/errors/403.html:6
+msgid "You don't have permission to access this page."
+msgstr "Bu sayfaya erişim yetkiniz yok."
+
+#: app/core/templates/errors/403.html:8 app/core/templates/errors/404.html:8
+#: app/core/templates/errors/500.html:8
+msgid "Go to Dashboard"
+msgstr "Kontrol Paneline Git"
+
+#: app/core/templates/errors/404.html:2
+#, fuzzy
+msgid "Not Found"
+msgstr "Makale bulunamadı."
+
+#: app/core/templates/errors/404.html:6
+msgid "The page you're looking for doesn't exist."
+msgstr "Aradığınız sayfa bulunamadı."
+
+#: app/core/templates/errors/500.html:2
+msgid "Server Error"
+msgstr ""
+
+#: app/core/templates/errors/500.html:6
+msgid "Something went wrong on our end. Please try again later."
+msgstr "Sunucu tarafında bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+
+#: app/core/templates/menu/list.html:2 app/core/templates/menu/list.html:5
+msgid "Menu Items"
+msgstr "Menü Öğeleri"
+
+# --- Menu CRUD ---
+#: app/core/templates/menu/list.html:8 app/core/templates/menu/menu_form.html:2
+#: app/core/templates/menu/menu_form.html:7
+msgid "New Menu Item"
+msgstr "Yeni Menü Öğesi"
+
+#: app/core/templates/menu/list.html:21
+msgid "Endpoint / URL"
+msgstr "Endpoint / URL"
+
+#: app/core/templates/menu/list.html:25
+#: app/core/templates/rbac/role_list.html:21
+#: app/core/templates/users/list.html:37
+msgid "Actions"
+msgstr "İşlemler"
+
+#: app/core/templates/menu/list.html:35
+msgid "Critical core item"
+msgstr "Kritik çekirdek öğe"
+
+#: app/core/templates/menu/list.html:35
+msgid "core"
+msgstr "çekirdek"
+
+#: app/core/templates/menu/list.html:52
+msgid "Toggle visibility"
+msgstr "Görünürlüğü değiştir"
+
+#: app/core/templates/menu/list.html:67
+msgid "Delete this menu item?"
+msgstr "Bu menü öğesini silmek istiyor musunuz?"
+
+#: app/core/templates/menu/list.html:77
+msgid "No menu items yet."
+msgstr "Henüz menü öğesi yok."
+
+#: app/core/templates/menu/menu_form.html:2
+#: app/core/templates/menu/menu_form.html:6
+msgid "Edit Menu Item"
+msgstr "Menü Öğesini Düzenle"
+
+#: app/core/templates/menu/menu_form.html:18
+msgid "Code is immutable after creation."
+msgstr "Kod oluşturulduktan sonra değiştirilemez."
+
+#: app/core/templates/menu/menu_form.html:51
+msgid "Use either Endpoint or URL."
+msgstr "Endpoint veya URL'den birini kullanın."
+
+#: app/core/templates/menu/menu_form.html:79
+#: app/core/templates/rbac/role_form.html:55
+#: app/core/templates/settings/_tab_security.html:86
+#: app/core/templates/users/edit.html:73
+msgid "Cancel"
+msgstr "İptal"
+
+#: app/core/templates/rbac/permission_list.html:2
+#: app/core/templates/rbac/permission_list.html:4
+#: app/core/templates/rbac/role_form.html:26
+#: app/core/templates/rbac/role_list.html:20
+#: app/modules/dashboard/templates/dashboard/index.html:49
+msgid "Permissions"
+msgstr "İzinler"
+
+#: app/core/templates/rbac/permission_list.html:6
+msgid ""
+"Permissions are defined by module manifests and synced on startup. They "
+"cannot be edited manually."
+msgstr ""
+"İzinler modül manifest'lerinde tanımlanır ve başlangıçta senkronize "
+"edilir. Elle düzenlenemez."
+
+#: app/core/templates/rbac/permission_list.html:25
+#: app/core/templates/rbac/role_form.html:50
+msgid "No permissions defined yet."
+msgstr "Henüz tanımlı izin yok."
+
+#: app/core/templates/rbac/role_form.html:2
+#: app/core/templates/rbac/role_form.html:6
+msgid "Edit Role"
+msgstr "Rolü Düzenle"
+
+# --- RBAC ---
+#: app/core/templates/rbac/role_form.html:2
+#: app/core/templates/rbac/role_form.html:7
+#: app/core/templates/rbac/role_list.html:8
+msgid "New Role"
+msgstr "Yeni Rol"
+
+#: app/core/templates/rbac/role_list.html:18
+msgid "Name"
+msgstr "Ad"
+
+#: app/core/templates/rbac/role_list.html:32
+msgid "Edit"
+msgstr "Düzenle"
+
+#: app/core/templates/rbac/role_list.html:36
+msgid "Delete this role?"
+msgstr "Bu rolü silmek istiyor musunuz?"
+
+#: app/core/templates/rbac/role_list.html:46
+msgid "No roles yet."
+msgstr "Henüz rol yok."
+
+#: app/core/templates/settings/_tab_account.html:2
+msgid "Account"
+msgstr "Hesap"
+
+#: app/core/templates/settings/_tab_account.html:7
+#: app/core/templates/users/edit.html:61
+msgid "User ID"
+msgstr "Kullanıcı ID"
+
+#: app/core/templates/settings/_tab_account.html:10
+#: app/core/templates/users/edit.html:63
+msgid "Account created"
+msgstr "Hesap oluşturulma"
+
+#: app/core/templates/settings/_tab_account.html:13
+#: app/core/templates/users/edit.html:65 app/core/templates/users/list.html:36
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:97
+#: app/modules/dashboard/templates/dashboard/index.html:128
+msgid "Last login"
+msgstr "Son giriş"
+
+#: app/core/templates/settings/_tab_account.html:21
+#: app/core/templates/users/list.html:35
+msgid "Status"
+msgstr "Durum"
+
+#: app/core/templates/settings/_tab_account.html:23
+#: app/core/templates/users/list.html:45 app/core/users/forms.py:11
+msgid "Superuser"
+msgstr "Süper Yönetici"
+
+#: app/core/templates/settings/_tab_account.html:24
+#: app/core/templates/tasks_admin/overview.html:48
+#: app/core/templates/users/list.html:56 app/core/users/forms.py:10
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:26
 msgid "Active"
 msgstr "Aktif"
 
-msgid "Reserved"
-msgstr "Rezerve"
+#: app/core/templates/settings/_tab_account.html:25
+#: app/core/templates/users/list.html:58
+msgid "Inactive"
+msgstr "Pasif"
 
+#: app/core/templates/settings/_tab_email.html:14
+msgid "Required to confirm your identity."
+msgstr "Kimliğinizi doğrulamak için gereklidir."
+
+#: app/core/templates/settings/_tab_oauth.html:2
+msgid "OAuth Accounts"
+msgstr "OAuth Hesapları"
+
+#: app/core/templates/settings/_tab_oauth.html:26
+#, python-format
+msgid "Unlink %(provider)s account?"
+msgstr "%(provider)s hesabinin baglantisini kesmek istiyor musunuz?"
+
+#: app/core/templates/settings/_tab_oauth.html:30
+msgid "Unlink"
+msgstr "Baglanti Kes"
+
+#: app/core/templates/settings/_tab_oauth.html:37
+msgid "No OAuth accounts linked."
+msgstr "Bağlı OAuth hesabı yok."
+
+#: app/core/templates/settings/_tab_oauth.html:41
+msgid "Link another account"
+msgstr "Baska hesap bagla"
+
+#: app/core/templates/settings/_tab_oauth.html:46
+msgid "Link Google"
+msgstr "Google Bagla"
+
+#: app/core/templates/settings/_tab_oauth.html:50
+msgid "Google linked"
+msgstr "Google Bagli"
+
+#: app/core/templates/settings/_tab_oauth.html:57
+msgid "Link Microsoft"
+msgstr "Microsoft Bagla"
+
+#: app/core/templates/settings/_tab_oauth.html:61
+msgid "Microsoft linked"
+msgstr "Microsoft Bagli"
+
+#: app/core/templates/settings/_tab_oauth.html:69
+msgid ""
+"You have no password set. If you unlink all OAuth accounts you will lose "
+"access."
+msgstr ""
+"Sifreniz tanimli degil. Tum OAuth hesaplarini koparirsiniz erisimi "
+"kaybedersiniz."
+
+# --- Profile tabs ---
+#: app/core/templates/settings/_tab_personal.html:2
+msgid "Personal Info"
+msgstr "Kişisel Bilgi"
+
+#: app/core/templates/settings/_tab_prefs.html:2
+msgid "Preferences"
+msgstr "Tercihler"
+
+#: app/core/templates/settings/_tab_prefs.html:20
+msgid "Language and theme changes apply on next page load."
+msgstr "Dil ve tema değişiklikleri sonraki sayfa yüklenişinde uygulanır."
+
+#: app/core/templates/settings/_tab_security.html:2
+msgid "Two-Factor Authentication (TOTP)"
+msgstr "İki Faktörlü Doğrulama (TOTP)"
+
+#: app/core/templates/settings/_tab_security.html:10
+msgid "Save these recovery codes now."
+msgstr "Kurtarma kodlarını şimdi kaydet."
+
+#: app/core/templates/settings/_tab_security.html:11
+msgid ""
+"Each code works once. Store them somewhere safe — they will not be shown "
+"again."
+msgstr ""
+"Her kod yalnızca bir kez kullanılır. Güvenli bir yerde sakla — bir daha "
+"gösterilmeyecekler."
+
+#: app/core/templates/settings/_tab_security.html:22
+msgid "Two-factor authentication is enabled."
+msgstr "İki faktörlü doğrulama etkin."
+
+#: app/core/templates/settings/_tab_security.html:26
+#, python-format
+msgid "Remaining recovery codes: %(n)s"
+msgstr "Kalan kurtarma kodu: %(n)s"
+
+#: app/core/templates/settings/_tab_security.html:31
+msgid "Generate new recovery codes? Old codes will stop working."
+msgstr "Yeni kurtarma kodları üretilsin mi? Eski kodlar çalışmayacak."
+
+#: app/core/templates/settings/_tab_security.html:35
+msgid "Regenerate recovery codes"
+msgstr "Kurtarma kodlarını yenile"
+
+#: app/core/templates/settings/_tab_security.html:41
+#: app/core/templates/settings/_tab_security.html:50
+msgid "Disable 2FA"
+msgstr "2FA'yı Devre Dışı Bırak"
+
+#: app/core/templates/settings/_tab_security.html:42
+msgid "Enter your current authenticator code or a recovery code to confirm."
+msgstr "Mevcut doğrulayıcı kodunu veya bir kurtarma kodunu girerek onayla."
+
+#: app/core/templates/settings/_tab_security.html:47
+msgid "6-digit code or recovery code"
+msgstr "6 haneli kod ya da kurtarma kodu"
+
+#: app/core/templates/settings/_tab_security.html:57
+msgid ""
+"Scan this QR with an authenticator app (Google Authenticator, Authy, "
+"1Password, …) and enter the 6-digit code below."
+msgstr ""
+"Bu QR'ı bir doğrulayıcı uygulama (Google Authenticator, Authy, 1Password,"
+" …) ile tarat ve aşağıya 6 haneli kodu gir."
+
+#: app/core/templates/settings/_tab_security.html:65
+msgid "Or enter this key manually:"
+msgstr "Ya da bu anahtarı manuel olarak gir:"
+
+#: app/core/templates/settings/_tab_security.html:94
+msgid ""
+"Add a second factor to your login. After enabling, you will be asked for "
+"a 6-digit code from your authenticator app each time you sign in."
+msgstr ""
+"Girişine ikinci bir faktör ekle. Etkinleştirdikten sonra her girişte "
+"doğrulayıcı uygulamandan 6 haneli kod istenecek."
+
+#: app/core/templates/settings/_tab_sessions.html:2
+msgid "Active Sessions"
+msgstr "Aktif Oturumlar"
+
+#: app/core/templates/settings/_tab_sessions.html:5
+msgid "These devices are currently signed in to your account."
+msgstr "Bu cihazlar su anda hesabiniza bagli."
+
+#: app/core/templates/settings/_tab_sessions.html:14
+msgid "This device"
+msgstr "Bu cihaz"
+
+#: app/core/templates/settings/_tab_sessions.html:22
+msgid "Last seen"
+msgstr "Son gorulme"
+
+#: app/core/templates/settings/_tab_sessions.html:24
+msgid "Started"
+msgstr "Baslangic"
+
+#: app/core/templates/settings/_tab_sessions.html:30
+msgid "Sign out this device?"
+msgstr "Bu cihazi oturumdan cikarmak istiyor musunuz?"
+
+#: app/core/templates/settings/_tab_sessions.html:33
+msgid "Sign out"
+msgstr "Oturumu Kapat"
+
+#: app/core/templates/settings/_tab_sessions.html:40
+msgid "No active sessions found."
+msgstr "Aktif oturum bulunamadi."
+
+#: app/core/templates/settings/_tab_sessions.html:48
+msgid "Sign out all other devices?"
+msgstr "Diger tum cihazlari oturumdan cikarmak istiyor musunuz?"
+
+#: app/core/templates/settings/_tab_sessions.html:51
+msgid "Sign out all other devices"
+msgstr "Diger tum cihazlari cikar"
+
+# --- System settings ---
+#: app/core/templates/settings/system.html:2
+#: app/core/templates/settings/system.html:4
+msgid "System Settings"
+msgstr "Sistem Ayarları"
+
+#: app/core/templates/settings/system.html:5
+msgid "These settings apply to the whole application."
+msgstr "Bu ayarlar tüm uygulamayı etkiler."
+
+#: app/core/templates/settings/system.html:17
+msgid "Used for anonymous visitors before they pick a language."
+msgstr "Dil seçimi yapmamış anonim ziyaretçiler için kullanılır."
+
+#: app/core/templates/settings/system.html:26
+msgid "Allow visitors to create accounts via /auth/register."
+msgstr "Ziyaretçilerin /auth/register ile hesap oluşturmasına izin ver."
+
+#: app/core/templates/settings/system.html:33
+msgid "On unknown OAuth identity, create a new account automatically."
+msgstr "Bilinmeyen OAuth kimliğinde otomatik olarak yeni hesap oluştur."
+
+# --- Tasks admin (Phase 2 slice 2) ---
+#: app/core/templates/tasks_admin/overview.html:2
+msgid "Tasks"
+msgstr "Görevler"
+
+#: app/core/templates/tasks_admin/overview.html:5
+msgid "Background Tasks"
+msgstr "Arka Plan Görevleri"
+
+#: app/core/templates/tasks_admin/overview.html:8
+msgid "worker(s) online"
+msgstr "çalışan worker"
+
+#: app/core/templates/tasks_admin/overview.html:10
+msgid "No workers online"
+msgstr "Çalışan worker yok"
+
+#: app/core/templates/tasks_admin/overview.html:18
+msgid "No Celery worker is connected. Start one with:"
+msgstr "Bağlı Celery worker yok. Şu komutla başlat:"
+
+#: app/core/templates/tasks_admin/overview.html:21
+msgid "Or via docker compose:"
+msgstr "Veya docker compose ile:"
+
+#: app/core/templates/tasks_admin/overview.html:29
+msgid "Workers"
+msgstr "Worker'lar"
+
+#: app/core/templates/tasks_admin/overview.html:35
+msgid "online"
+msgstr "çevrimiçi"
+
+#: app/core/templates/tasks_admin/overview.html:39
+msgid "No workers."
+msgstr "Worker yok."
+
+#: app/core/templates/tasks_admin/overview.html:60
 msgid "Nothing active."
 msgstr "Aktif iş yok."
 
+#: app/core/templates/tasks_admin/overview.html:69
+msgid "Reserved"
+msgstr "Rezerve"
+
+#: app/core/templates/tasks_admin/overview.html:78
 msgid "Nothing reserved."
 msgstr "Rezerve iş yok."
 
+#: app/core/templates/tasks_admin/overview.html:88
 msgid "Registered tasks"
 msgstr "Kayıtlı görevler"
 
+#: app/core/templates/tasks_admin/overview.html:100
 msgid "No tasks registered (no worker?)."
 msgstr "Kayıtlı görev yok (worker mı eksik?)."
 
+#: app/core/templates/tasks_admin/overview.html:108
 msgid "Beat schedule"
 msgstr "Beat zamanlaması"
 
+#: app/core/templates/tasks_admin/overview.html:117
 msgid "No periodic tasks."
 msgstr "Periyodik görev yok."
 
-# --- Scrape / papers feed (Phase 2 slice 3) ---
-msgid "Your feed"
-msgstr "Akışın"
+#: app/core/templates/users/edit.html:2 app/core/templates/users/edit.html:5
+msgid "Edit User"
+msgstr "Kullanıcıyı Düzenle"
 
-msgid "menu.feed"
-msgstr "Akış"
+#: app/core/templates/users/edit.html:53
+msgid "No roles defined."
+msgstr "Tanımlı rol yok."
 
-msgid "Scrape now"
-msgstr "Şimdi tara"
+#: app/core/templates/users/edit.html:60
+msgid "(immutable)"
+msgstr "(değiştirilemez)"
 
-msgid "Latest papers matched against your research interests. Add or refine keywords on your profile to change what shows up here."
-msgstr "Araştırma ilgi alanlarınla eşleşen en yeni makaleler. Profilinden anahtar kelime ekle veya güncelle, akış buna göre değişir."
+#: app/core/templates/users/edit.html:67
+msgid "Failed logins"
+msgstr "Başarısız giriş"
 
-msgid "Scrape queued — papers will appear here once the worker finishes."
-msgstr "Tarama kuyruğa alındı — worker bitirdiğinde makaleler burada görünecek."
+# --- Admin academic panel ---
+#: app/core/templates/users/edit.html:78
+msgid "Academic profile"
+msgstr "Akademik profil"
 
-msgid "Paper not found."
-msgstr "Makale bulunamadı."
+#: app/core/templates/users/edit.html:80
+msgid ""
+"Read-only view of the user's academic identifiers and research interests."
+" They manage these from their own profile page."
+msgstr ""
+"Kullanıcının akademik kimliklerinin ve araştırma ilgi alanlarının salt-"
+"okunur görünümü. Kullanıcı bunları kendi profil sayfasından yönetir."
 
-msgid "Nothing here yet."
-msgstr "Henüz bir şey yok."
+#: app/core/templates/users/edit.html:87
+#: app/modules/academic/templates/settings/_tab_identifiers.html:2
+msgid "Academic Identifiers"
+msgstr "Akademik Kimlikler"
 
-msgid "Add some research interests in your profile, then hit \"Scrape now\"."
-msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
+#: app/core/templates/users/edit.html:98
+#: app/modules/academic/templates/settings/_tab_identifiers.html:21
+msgid "Verified"
+msgstr "Doğrulandı"
 
-msgid "Add interests"
-msgstr "İlgi alanı ekle"
+#: app/core/templates/users/edit.html:100
+#: app/modules/academic/templates/settings/_tab_identifiers.html:23
+msgid "Unverified"
+msgstr "Doğrulanmadı"
 
-msgid "Seen"
-msgstr "Görüldü"
+#: app/core/templates/users/edit.html:108
+#: app/modules/academic/templates/settings/_tab_identifiers.html:51
+msgid "No academic identifiers yet."
+msgstr "Henüz akademik kimlik yok."
 
-msgid "new"
-msgstr "yeni"
+#: app/core/templates/users/edit.html:117
+#: app/modules/academic/templates/settings/_tab_interests.html:2
+msgid "Research Interests"
+msgstr "Araştırma İlgi Alanları"
 
+#: app/core/templates/users/edit.html:127
+msgid "No keywords yet."
+msgstr "Henüz anahtar kelime yok."
+
+#: app/core/templates/users/list.html:11
+msgid "Search by username, email, name…"
+msgstr "Kullanıcı adı, e-posta veya isimle ara…"
+
+#: app/core/templates/users/list.html:17
+msgid "Active only"
+msgstr "Sadece aktif"
+
+#: app/core/templates/users/list.html:21
+msgid "Filter"
+msgstr "Filtrele"
+
+#: app/core/templates/users/list.html:54
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:37
+msgid "Locked"
+msgstr "Kilitli"
+
+#: app/core/templates/users/list.html:69
+msgid "Unlock"
+msgstr "Kilidi Aç"
+
+#: app/core/templates/users/list.html:74
+msgid "Lock"
+msgstr "Kilitle"
+
+#: app/core/templates/users/list.html:79
+msgid "Delete this user?"
+msgstr "Bu kullanıcıyı silmek istiyor musunuz?"
+
+#: app/core/templates/users/list.html:87
+msgid "No users yet."
+msgstr "Henüz kullanıcı yok."
+
+#: app/core/users/routes.py:47
+msgid "You cannot remove your own superuser flag."
+msgstr "Kendi süper kullanıcı bayrağınızı kaldıramazsınız."
+
+#: app/core/users/routes.py:74
+msgid "User updated."
+msgstr "Kullanıcı güncellendi."
+
+#: app/core/users/routes.py:102
+msgid "You cannot lock your own account."
+msgstr "Kendi hesabınızı kilitleyemezsiniz."
+
+#: app/core/users/routes.py:106
+msgid "User locked."
+msgstr "Kullanıcı kilitlendi."
+
+#: app/core/users/routes.py:119
+msgid "User unlocked."
+msgstr "Kullanıcının kilidi açıldı."
+
+#: app/core/users/routes.py:131
+msgid "You cannot delete your own account."
+msgstr "Kendi hesabınızı silemezsiniz."
+
+#: app/core/users/routes.py:134
+msgid "The admin user cannot be deleted."
+msgstr "Admin kullanıcısı silinemez."
+
+#: app/core/users/routes.py:138
+msgid "User deleted."
+msgstr "Kullanıcı silindi."
+
+#: app/modules/academic/forms.py:8
+msgid "Type"
+msgstr ""
+
+#: app/modules/academic/forms.py:9
+msgid "Value"
+msgstr ""
+
+#: app/modules/academic/forms.py:10 app/modules/academic/forms.py:16
+#: app/modules/academic/templates/settings/_tab_identifiers.html:66
+#: app/modules/academic/templates/settings/_tab_interests.html:37
+msgid "Add"
+msgstr "Ekle"
+
+#: app/modules/academic/forms.py:15
+#, fuzzy
+msgid "Keyword(s)"
+msgstr "Henüz anahtar kelime yok."
+
+#: app/modules/academic/routes.py:68
+msgid "Verification link is invalid or expired."
+msgstr "Onay bağlantısı geçersiz veya süresi dolmuş."
+
+#: app/modules/academic/routes.py:76
+msgid "Email verified."
+msgstr "E-posta doğrulandı."
+
+#: app/modules/academic/routes.py:111 app/modules/academic/routes.py:147
+#, python-format
+msgid "Dev mode: verification link → %(url)s"
+msgstr "Geliştirme modu: onay bağlantısı → %(url)s"
+
+#: app/modules/academic/routes.py:114
+msgid "Identifier added — a verification link has been sent."
+msgstr "Kimlik eklendi — bir onay bağlantısı gönderildi."
+
+#: app/modules/academic/routes.py:116
+msgid "Identifier added."
+msgstr "Kimlik eklendi."
+
+#: app/modules/academic/routes.py:129
+msgid "Identifier removed."
+msgstr "Kimlik kaldırıldı."
+
+#: app/modules/academic/routes.py:149
+msgid "Verification link re-sent."
+msgstr "Onay bağlantısı tekrar gönderildi."
+
+#: app/modules/academic/routes.py:171
+msgid "No valid keywords found."
+msgstr "Geçerli anahtar kelime bulunamadı."
+
+#: app/modules/academic/routes.py:178
+#, python-format
+msgid "%(n)d keywords added."
+msgstr "%(n)d anahtar kelime eklendi."
+
+#: app/modules/academic/routes.py:180
+msgid "Keyword added."
+msgstr "Anahtar kelime eklendi."
+
+#: app/modules/academic/routes.py:184
+#, python-format
+msgid "%(n)d added, %(s)d already following."
+msgstr "%(n)d eklendi, %(s)d zaten takip ediliyor."
+
+#: app/modules/academic/routes.py:198
+msgid "Keyword removed."
+msgstr "Anahtar kelime kaldırıldı."
+
+#: app/modules/academic/templates/settings/_tab_identifiers.html:5
+msgid ""
+"Your historical and alternate academic identities. Useful when your name,"
+" affiliation, or institutional email has changed — old papers stay linked"
+" through these. This is separate from your login email."
+msgstr ""
+"Geçmişte kullandığın ve alternatif akademik kimliklerin. Soyisim, kurum "
+"veya kurumsal e-posta değişikliklerinde eski makaleler bu kimliklerle "
+"bağlı kalır. Giriş e-postandan bağımsızdır."
+
+#: app/modules/academic/templates/settings/_tab_identifiers.html:31
+msgid "Resend verification link"
+msgstr "Onay bağlantısını tekrar gönder"
+
+#: app/modules/academic/templates/settings/_tab_identifiers.html:38
+msgid "Remove this identifier?"
+msgstr "Bu kimliği kaldırmak istiyor musunuz?"
+
+#: app/modules/academic/templates/settings/_tab_identifiers.html:40
+#: app/modules/academic/templates/settings/_tab_interests.html:17
+msgid "Remove"
+msgstr "Kaldır"
+
+#: app/modules/academic/templates/settings/_tab_identifiers.html:57
+msgid "Add identifier"
+msgstr "Kimlik ekle"
+
+#: app/modules/academic/templates/settings/_tab_identifiers.html:63
+msgid "value (email / ORCID / etc.)"
+msgstr "değer (e-posta / ORCID / vb.)"
+
+#: app/modules/academic/templates/settings/_tab_identifiers.html:70
+msgid ""
+"Email type sends a verification link. Other types are stored as-is for "
+"now."
+msgstr ""
+"E-posta türü onay bağlantısı gönderir. Diğer türler şimdilik olduğu gibi "
+"kaydedilir."
+
+#: app/modules/academic/templates/settings/_tab_interests.html:5
+msgid ""
+"Keywords used to personalise your scraping feed. Pick what you actually "
+"follow — the scraper will lean on these when ranking new papers and news."
+msgstr ""
+"Akış kişiselleştirme için anahtar kelimeler. Gerçekten takip ettiklerini "
+"ekle — scraping motor yeni makale ve haberleri sıralarken bunları "
+"kullanır."
+
+#: app/modules/academic/templates/settings/_tab_interests.html:25
+msgid "No keywords yet — add one below to start shaping your feed."
+msgstr ""
+"Henüz anahtar kelime yok — aşağıdan ekleyerek akışını şekillendirmeye "
+"başla."
+
+#: app/modules/academic/templates/settings/_tab_interests.html:32
+msgid "Add a keyword"
+msgstr "Anahtar kelime ekle"
+
+#: app/modules/academic/templates/settings/_tab_interests.html:35
+msgid "e.g. Yapay Zeka ; Makine Öğrenmesi , Modelleme"
+msgstr ""
+
+#: app/modules/academic/templates/settings/_tab_interests.html:40
+msgid ""
+"Separate multiple keywords with comma or semicolon. Each term is "
+"normalised to lowercase."
+msgstr ""
+"Birden fazla anahtar kelimeyi virgül veya noktalı virgülle ayırın. Her "
+"terim küçük harfe dönüştürülür."
+
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:2
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:6
+#, fuzzy
+msgid "Admin Overview"
+msgstr "Genel Bakış"
+
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:59
+#: app/modules/dashboard/templates/dashboard/index.html:94
+msgid "Recent activity"
+msgstr "Son etkinlikler"
+
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:80
+#: app/modules/dashboard/templates/dashboard/index.html:112
+msgid "No activity yet."
+msgstr "Henüz etkinlik yok."
+
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:88
+#: app/modules/dashboard/templates/dashboard/index.html:119
+msgid "See full audit log"
+msgstr "Tüm denetim kaydını gör"
+
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:108
+#: app/modules/dashboard/templates/dashboard/index.html:139
+msgid "Quick actions"
+msgstr "Hızlı işlemler"
+
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:112
+#: app/modules/dashboard/templates/dashboard/index.html:143
+msgid "Manage users"
+msgstr "Kullanıcıları yönet"
+
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:117
+#: app/modules/dashboard/templates/dashboard/index.html:148
+msgid "Manage roles"
+msgstr "Rolleri yönet"
+
+#: app/modules/dashboard/templates/dashboard/admin_overview.html:122
+#, fuzzy
+msgid "Audit log"
+msgstr "Denetim Günlüğü"
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:2
+#: app/modules/dashboard/templates/dashboard/for_you.html:7
+#: app/modules/dashboard/templates/dashboard/index.html:59
 msgid "For you"
 msgstr "Senin için"
 
-msgid "All papers"
+#: app/modules/dashboard/templates/dashboard/for_you.html:10
+#: app/modules/dashboard/templates/dashboard/index.html:7
+#, python-format
+msgid "Welcome, %(name)s"
+msgstr "Hoş geldin, %(name)s"
+
+# --- Scrape / papers feed (Phase 2 slice 3) ---
+#: app/modules/dashboard/templates/dashboard/for_you.html:18
+#, fuzzy
+msgid "Personalise your feed"
+msgstr "Akışın"
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:19
+#, fuzzy
+msgid ""
+"Add research interests to your profile so we can surface relevant papers "
+"for you."
+msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:21
+#: app/modules/dashboard/templates/dashboard/index.html:85
+#: app/modules/scrape/templates/scrape/feed.html:75
+msgid "Add interests"
+msgstr "İlgi alanı ekle"
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:55
+#, fuzzy
+msgid "See all papers"
 msgstr "Tüm makaleler"
 
+#: app/modules/dashboard/templates/dashboard/for_you.html:63
+#: app/modules/dashboard/templates/dashboard/index.html:83
 msgid "No personalised papers yet."
 msgstr "Henüz kişiselleştirilmiş makale yok."
 
-msgid "Profile & preferences — Faz 1"
-msgstr "Profil ve tercihler — Faz 1"
+#: app/modules/dashboard/templates/dashboard/for_you.html:65
+#, fuzzy
+msgid "Browse all papers"
+msgstr "Tüm makaleler"
 
-msgid "System-wide settings — Faz 1"
-msgstr "Sistem geneli ayarlar — Faz 1"
+# --- Dashboard ---
+#: app/modules/dashboard/templates/dashboard/index.html:2
+#: app/modules/dashboard/templates/dashboard/index.html:6
+msgid "Dashboard"
+msgstr "Kontrol Paneli"
 
+#: app/modules/dashboard/templates/dashboard/index.html:27
+msgid "Active Users"
+msgstr "Aktif Kullanıcılar"
+
+#: app/modules/dashboard/templates/dashboard/index.html:60
+msgid "All papers"
+msgstr "Tüm makaleler"
+
+#: app/modules/dashboard/templates/dashboard/index.html:153
+msgid "Manage menu"
+msgstr "Menüyü yönet"
+
+#: app/modules/dashboard/templates/dashboard/index.html:162
+msgid "Scraping modules will populate this dashboard in Phase 2."
+msgstr "Scraping modülleri bu paneli Faz 2'de dolduracak."
+
+#: app/modules/scrape/routes.py:32
+msgid "Paper not found."
+msgstr "Makale bulunamadı."
+
+#: app/modules/scrape/routes.py:54
+msgid "Scrape queued — papers will appear here once the worker finishes."
+msgstr "Tarama kuyruğa alındı — worker bitirdiğinde makaleler burada görünecek."
+
+# --- Scrape / papers feed (Phase 2 slice 3) ---
+#: app/modules/scrape/templates/scrape/feed.html:2
+#: app/modules/scrape/templates/scrape/feed.html:5
+msgid "Your feed"
+msgstr "Akışın"
+
+#: app/modules/scrape/templates/scrape/feed.html:9
+msgid "Scrape now"
+msgstr "Şimdi tara"
+
+#: app/modules/scrape/templates/scrape/feed.html:15
+msgid ""
+"Latest papers matched against your research interests. Add or refine "
+"keywords on your profile to change what shows up here."
+msgstr ""
+"Araştırma ilgi alanlarınla eşleşen en yeni makaleler. Profilinden anahtar"
+" kelime ekle veya güncelle, akış buna göre değişir."
+
+#: app/modules/scrape/templates/scrape/feed.html:53
+msgid "Seen"
+msgstr "Görüldü"
+
+#: app/modules/scrape/templates/scrape/feed.html:55
+msgid "new"
+msgstr "yeni"
+
+#: app/modules/scrape/templates/scrape/feed.html:70
+msgid "Nothing here yet."
+msgstr "Henüz bir şey yok."
+
+#: app/modules/scrape/templates/scrape/feed.html:72
+msgid "Add some research interests in your profile, then hit \"Scrape now\"."
+msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
+
+#~ msgid "Username or Email"
+#~ msgstr "Kullanıcı Adı veya E-posta"
+
+#~ msgid "Remember me"
+#~ msgstr "Beni hatırla"
+
+#~ msgid "No entries yet."
+#~ msgstr "Henüz kayıt yok."
+
+#~ msgid "New Password"
+#~ msgstr "Yeni Şifre"
+
+#~ msgid "Confirm Password"
+#~ msgstr "Şifreyi Onayla"
+
+#~ msgid "Send Reset Link"
+#~ msgstr "Sıfırlama Bağlantısı Gönder"
+
+#~ msgid "Scrape Jobs"
+#~ msgstr "Scrape İşleri"
+
+#~ msgid "ScrapeMind modules will populate this dashboard in Faz 2."
+#~ msgstr "ScrapeMind modülleri bu paneli Faz 2'de dolduracak."
+
+#~ msgid "Role management — Faz 1"
+#~ msgstr "Rol yönetimi — Faz 1"
+
+#~ msgid "Password must be at least 8 characters."
+#~ msgstr "Sifre en az 8 karakter olmalidir."
+
+#~ msgid "Password must contain at least one uppercase letter."
+#~ msgstr "Sifre en az 1 buyuk harf icermelidir."
+
+#~ msgid "Password must contain at least one lowercase letter."
+#~ msgstr "Sifre en az 1 kucuk harf icermelidir."
+
+#~ msgid "Password must contain at least one digit."
+#~ msgstr "Sifre en az 1 rakam icermelidir."
+
+# --- Menu i18n keys (sidebar label_key değerleri) ---
+#~ msgid "menu.admin"
+#~ msgstr "Sistem Yönetimi"
+
+#~ msgid "menu.for_you"
+#~ msgstr "Senin İçin"
+
+#~ msgid "menu.dashboard"
+#~ msgstr "Dashboard"
+
+#~ msgid "menu.roles"
+#~ msgstr "Roller"
+
+#~ msgid "menu.menu_items"
+#~ msgstr "Menü Öğeleri"
+
+#~ msgid "menu.audit"
+#~ msgstr "Denetim Kaydı"
+
+#~ msgid "menu.profile"
+#~ msgstr "Profil"
+
+#~ msgid "menu.permissions"
+#~ msgstr "İzinler"
+
+#~ msgid "Menu management — Faz 1"
+#~ msgstr "Menü yönetimi — Faz 1"
+
+#~ msgid "Role Name"
+#~ msgstr "Rol Adı"
+
+#~ msgid "Save"
+#~ msgstr "Kaydet"
+
+#~ msgid "Icon (Bootstrap Icons class)"
+#~ msgstr "İkon (Bootstrap Icons sınıfı)"
+
+#~ msgid "URL"
+#~ msgstr "URL"
+
+#~ msgid "Endpoint"
+#~ msgstr "Endpoint"
+
+#~ msgid "Module"
+#~ msgstr "Modül"
+
+#~ msgid "Lowercase letters, digits and underscores only."
+#~ msgstr "Yalnızca küçük harf, rakam ve alt çizgi."
+
+#~ msgid "Avatar URL"
+#~ msgstr "Profil Resmi URL"
+
+#~ msgid "Current Password"
+#~ msgstr "Mevcut Şifre"
+
+#~ msgid "Confirm New Password"
+#~ msgstr "Yeni Şifre (Onay)"
+
+#~ msgid "Change Password"
+#~ msgstr "Şifre Değiştir"
+
+#~ msgid "Passwords do not match."
+#~ msgstr "Şifreler eşleşmiyor."
+
+#~ msgid "Language"
+#~ msgstr "Dil"
+
+#~ msgid "Timezone"
+#~ msgstr "Saat Dilimi"
+
+#~ msgid "Theme"
+#~ msgstr "Tema"
+
+#~ msgid "Light"
+#~ msgstr "Açık"
+
+#~ msgid "Dark"
+#~ msgstr "Koyu"
+
+#~ msgid "Current password is incorrect."
+#~ msgstr "Mevcut şifre yanlış."
+
+#~ msgid "Local password not set for this account."
+#~ msgstr "Bu hesap için yerel şifre tanımlı değil."
+
+#~ msgid "Connected"
+#~ msgstr "Bağlı"
+
+#~ msgid "Linking and unlinking accounts will be available in Phase 2."
+#~ msgstr "Hesap bağlama/koparma Faz 2'de gelecek."
+
+#~ msgid "Use letters, digits, dot, dash, underscore only."
+#~ msgstr "Yalnızca harf, rakam, nokta, tire, alt çizgi."
+
+#~ msgid "Username already in use."
+#~ msgstr "Bu kullanıcı adı zaten kullanımda."
+
+#~ msgid "menu.users"
+#~ msgstr "Kullanıcılar"
+
+#~ msgid "Application Name"
+#~ msgstr "Uygulama Adı"
+
+#~ msgid "Default Language"
+#~ msgstr "Varsayılan Dil"
+
+#~ msgid "Auto-register OAuth users"
+#~ msgstr "OAuth kullanıcılarını otomatik kayıt et"
+
+#~ msgid "Public registration enabled"
+#~ msgstr "Herkese açık kayıt etkin"
+
+#~ msgid "menu.system"
+#~ msgstr "Sistem Ayarları"
+
+# --- Multi-email (Phase 2) ---
+#~ msgid "Email Addresses"
+#~ msgstr "E-posta Adresleri"
+
+#~ msgid "Primary Email"
+#~ msgstr "Birincil E-posta"
+
+#~ msgid "Primary"
+#~ msgstr "Birincil"
+
+#~ msgid "Make primary"
+#~ msgstr "Birincil yap"
+
+#~ msgid "Remove this email?"
+#~ msgstr "Bu e-postayı kaldırmak istiyor musunuz?"
+
+#~ msgid "No email addresses on file."
+#~ msgstr "Kayıtlı e-posta yok."
+
+#~ msgid "Add another email"
+#~ msgstr "Başka bir e-posta ekle"
+
+#~ msgid "A verification link will be issued. Verify before promoting to primary."
+#~ msgstr "Bir onay bağlantısı oluşturulacak. Birincil yapmadan önce doğrulayın."
+
+#~ msgid ""
+#~ "You can keep multiple email addresses."
+#~ " One must be marked as primary "
+#~ "— that's the address used for "
+#~ "login and notifications."
+#~ msgstr ""
+#~ "Birden fazla e-posta adresi tutabilirsiniz."
+#~ " Biri birincil olarak işaretlenmiş olmalı"
+#~ " — bu adres giriş ve bildirimler "
+#~ "için kullanılır."
+
+#~ msgid "A verification link has been sent."
+#~ msgstr "Bir onay bağlantısı gönderildi."
+
+#~ msgid "Primary email updated."
+#~ msgstr "Birincil e-posta güncellendi."
+
+#~ msgid "Email removed."
+#~ msgstr "E-posta kaldırıldı."
+
+#~ msgid "Email not found."
+#~ msgstr "E-posta bulunamadı."
+
+#~ msgid "Verify the email before making it primary."
+#~ msgstr "Birincil yapmadan önce e-postayı doğrulayın."
+
+#~ msgid "Cannot delete the primary email. Promote another first."
+#~ msgstr "Birincil e-posta silinemez. Önce başka birini birincil yapın."
+
+# --- Academic identifiers / interests (Phase 2 correction) ---
+#~ msgid "Login Email"
+#~ msgstr "Giriş E-postası"
+
+#~ msgid "Type"
+#~ msgstr "Tür"
+
+#~ msgid "Value"
+#~ msgstr "Değer"
+
+#~ msgid "This email is already your login email — no need to add it here."
+#~ msgstr "Bu e-posta zaten giriş e-postanız — burada tekrar eklemenize gerek yok."
+
+#~ msgid "This identifier is already registered."
+#~ msgstr "Bu kimlik zaten kayıtlı."
+
+#~ msgid "Value does not match the expected format."
+#~ msgstr "Değer beklenen formata uymuyor."
+
+#~ msgid "Value cannot be empty."
+#~ msgstr "Değer boş olamaz."
+
+#~ msgid "Identifier not found."
+#~ msgstr "Kimlik bulunamadı."
+
+#~ msgid "Keyword"
+#~ msgstr "Anahtar kelime"
+
+#~ msgid "e.g. transformer architectures, graph neural networks"
+#~ msgstr "örn. transformer mimarileri, graf sinir ağları"
+
+#~ msgid ""
+#~ "2–64 characters. Will be normalised to"
+#~ " lowercase. Trends across users let "
+#~ "us recommend related ones later."
+#~ msgstr ""
+#~ "2–64 karakter. Küçük harfe normalleştirilir."
+#~ " Kullanıcılar arası trend ile ileride "
+#~ "benzer öneriler çıkarılır."
+
+#~ msgid "Keyword too short."
+#~ msgstr "Anahtar kelime çok kısa."
+
+#~ msgid "You already follow this keyword."
+#~ msgstr "Bu anahtar kelimeyi zaten takip ediyorsun."
+
+#~ msgid "Keyword not found."
+#~ msgstr "Anahtar kelime bulunamadı."
+
+#~ msgid "menu.tasks"
+#~ msgstr "Görevler"
+
+#~ msgid "menu.feed"
+#~ msgstr "Akış"
+
+#~ msgid "Profile & preferences — Faz 1"
+#~ msgstr "Profil ve tercihler — Faz 1"
+
+#~ msgid "System-wide settings — Faz 1"
+#~ msgstr "Sistem geneli ayarlar — Faz 1"
 

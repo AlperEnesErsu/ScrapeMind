@@ -46,3 +46,22 @@ class PasswordResetForm(FlaskForm):
         validators=[DataRequired(), EqualTo("password")],
     )
     submit = SubmitField(_l("Reset Password"))
+
+
+class TotpCodeForm(FlaskForm):
+    code = StringField(
+        _l("Authenticator Code"),
+        validators=[DataRequired(), Length(min=6, max=20)],
+    )
+    submit = SubmitField(_l("Verify"))
+
+
+class EnableTotpForm(FlaskForm):
+    """Used both during initial enable and during disable — we ask for the
+    current TOTP code in both cases as a proof-of-possession."""
+
+    code = StringField(
+        _l("Authenticator Code"),
+        validators=[DataRequired(), Length(min=6, max=6)],
+    )
+    submit = SubmitField(_l("Enable 2FA"))
