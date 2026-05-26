@@ -1,0 +1,103 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Two-Factor Authentication (TOTP)') }}</h6>
+
+{# ------------------------------------------------------------------ #}
+{# Just-generated recovery codes — shown ONCE. Pulled from the session #}
+{# by the context builder, so a refresh wipes them.                    #}
+{# ------------------------------------------------------------------ #}
+{% if fresh_recovery_codes %}
+  <div class="alert alert-warning">
+    <strong>{{ _('Save these recovery codes now.') }}</strong>
+    <div class="small">{{ _('Each code works once. Store them somewhere safe — they will not be shown again.') }}</div>
+    <pre class="mt-2 mb-0 p-2 bg-body-secondary rounded small"
+         style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">{% for c in fresh_recovery_codes %}{{ c }}
+{% endfor %}</pre>
+  </div>
+{% endif %}
+
+{% if is_totp_enabled %}
+  {# ----------------------- 2FA ON state ----------------------- #}
+  <div class="alert alert-success d-flex align-items-center gap-2 py-2">
+    <i class="bi bi-shield-check"></i>
+    <div>{{ _('Two-factor authentication is enabled.') }}</div>
+  </div>
+
+  <p class="small text-muted mb-3">
+    {{ _('Remaining recovery codes: %(n)s', n=remaining_recovery_codes) }}
+  </p>
+
+  <form hx-post="{{ url_for('settings.security_recovery_regen') }}"
+        hx-target="#tab-content" hx-swap="innerHTML"
+        hx-confirm="{{ _('Generate new recovery codes? Old codes will stop working.') }}"
+        class="mb-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-clockwise me-1"></i>{{ _('Regenerate recovery codes') }}
+    </button>
+  </form>
+
+  <hr>
+
+  <h6 class="text-muted mb-2">{{ _('Disable 2FA') }}</h6>
+  <p class="small text-muted">{{ _('Enter your current authenticator code or a recovery code to confirm.') }}</p>
+  <form hx-post="{{ url_for('settings.security_disable') }}"
+        hx-target="#tab-content" hx-swap="innerHTML" novalidate>
+    {{ verify_form.hidden_tag() }}
+    <div class="mb-2">
+      {{ verify_form.code(class='form-control', placeholder=_('6-digit code or recovery code')) }}
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-shield-x me-1"></i>{{ _('Disable 2FA') }}
+    </button>
+  </form>
+
+{% elif setup_secret %}
+  {# ----------------------- Setup wizard ----------------------- #}
+  <div class="alert alert-info py-2 small">
+    {{ _('Scan this QR with an authenticator app (Google Authenticator, Authy, 1Password, …) and enter the 6-digit code below.') }}
+  </div>
+
+  <div class="text-center mb-3">
+    <img src="{{ setup_qr }}" alt="QR" class="img-fluid border rounded p-2 bg-white" style="max-width:220px;">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label small text-muted">{{ _('Or enter this key manually:') }}</label>
+    <code class="d-block p-2 bg-body-secondary rounded text-center user-select-all"
+          style="letter-spacing:.1em;">{{ setup_secret }}</code>
+  </div>
+
+  <form hx-post="{{ url_for('settings.security_enable') }}"
+        hx-target="#tab-content" hx-swap="innerHTML" novalidate>
+    {{ enable_form.hidden_tag() }}
+    <div class="mb-2">
+      {{ enable_form.code(class='form-control text-center',
+                          inputmode='numeric', autocomplete='one-time-code',
+                          placeholder='123 456') }}
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-shield-check me-1"></i>{{ _('Enable 2FA') }}
+      </button>
+      <button type="submit"
+              hx-post="{{ url_for('settings.security_setup_cancel') }}"
+              hx-target="#tab-content" hx-swap="innerHTML"
+              class="btn btn-outline-secondary">
+        {{ _('Cancel') }}
+      </button>
+    </div>
+  </form>
+
+{% else %}
+  {# ----------------------- 2FA OFF state ----------------------- #}
+  <p class="small text-muted">
+    {{ _('Add a second factor to your login. After enabling, you will be asked for a 6-digit code from your authenticator app each time you sign in.') }}
+  </p>
+  <form hx-post="{{ url_for('settings.security_setup_begin') }}"
+        hx-target="#tab-content" hx-swap="innerHTML">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="bi bi-shield-lock me-1"></i>{{ _('Enable 2FA') }}
+    </button>
+  </form>
+{% endif %}

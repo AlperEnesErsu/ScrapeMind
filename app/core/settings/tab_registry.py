@@ -24,6 +24,7 @@ CORE_TABS: list[tuple[str, str, str]] = [
     ("personal", "bi-person",       "Personal Info"),
     ("email",    "bi-envelope",     "Login Email"),
     ("password", "bi-key",          "Password"),
+    ("security", "bi-shield-lock",  "Security (2FA)"),
     ("prefs",    "bi-sliders",      "Preferences"),
     ("oauth",    "bi-link-45deg",   "OAuth Accounts"),
     ("sessions", "bi-laptop",       "Active Sessions"),

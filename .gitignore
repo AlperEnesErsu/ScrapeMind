@@ -23,3 +23,6 @@ flask_session/
 .ruff_cache/
 .coverage
 htmlcov/
+
+# Babel build artifact (regenerated from source by pybabel extract)
+translations/messages.pot
