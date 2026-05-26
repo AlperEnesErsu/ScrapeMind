@@ -55,11 +55,13 @@ jobs:
         run: flask db upgrade
 
       - name: Tests
+        # --timeout=60 forces hangs to fail loudly (pytest-timeout).
+        # -v --tb=short makes Actions output readable when something breaks.
         # Baseline dropped to 55% temporarily — this PR added a lot of new
         # admin routes (users/system/audit-filters/dashboard/search) that are
         # service-tested but lack HTTP-level fixtures yet. Phase 2 should
         # bring an authenticated client fixture and push this back up to 70%.
-        run: pytest --cov=app --cov-fail-under=55
+        run: pytest -v --tb=short --timeout=60 --cov=app --cov-fail-under=55
 
       - name: Translation consistency (TR == EN key sets)
         run: |

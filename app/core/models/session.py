@@ -27,9 +27,7 @@ class UserSession(db.Model):
     ip_address = db.Column(db.String(45), nullable=True)
     user_agent = db.Column(db.String(255), nullable=True)
 
-    created_at = db.Column(
-        db.DateTime(timezone=True), server_default=db.func.now(), nullable=False
-    )
+    created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), nullable=False)
     last_seen_at = db.Column(
         db.DateTime(timezone=True),
         server_default=db.func.now(),

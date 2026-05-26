@@ -19,10 +19,10 @@ from flask_babel import lazy_gettext as _l
 
 @dataclass(frozen=True)
 class PolicyRule:
-    key: str          # makine adı (test için)
-    check: object     # callable(password) -> bool
-    label: object     # lazy_gettext string (template'de gösterilir)
-    error: object     # lazy_gettext string (form hatasında gösterilir)
+    key: str  # makine adı (test için)
+    check: object  # callable(password) -> bool
+    label: object  # lazy_gettext string (template'de gösterilir)
+    error: object  # lazy_gettext string (form hatasında gösterilir)
 
 
 RULES: list[PolicyRule] = [
