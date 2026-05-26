@@ -29,6 +29,13 @@ class User(UserMixin, BaseModel):
     locale = db.Column(db.String(8), nullable=False, default="tr")
     timezone = db.Column(db.String(64), nullable=False, default="Europe/Istanbul")
 
+    # 2FA (TOTP). totp_secret is base32; recovery_codes is a JSON list of
+    # argon2-hashed one-time codes. enabled_at is the source of truth for
+    # "is 2FA active?" — set only when the user confirms a code during setup.
+    totp_secret = db.Column(db.String(64), nullable=True)
+    totp_enabled_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    totp_recovery_codes = db.Column(db.JSON, nullable=True)
+
     roles = db.relationship("Role", secondary=user_roles, lazy="select")
     oauth_accounts = db.relationship("OAuthAccount", back_populates="user", lazy="select")
     settings = db.relationship("UserSettings", back_populates="user", uselist=False, lazy="select")
@@ -48,3 +55,7 @@ class User(UserMixin, BaseModel):
 
     def get_id(self) -> str:
         return str(self.id)
+
+    @property
+    def is_totp_enabled(self) -> bool:
+        return self.totp_enabled_at is not None and bool(self.totp_secret)

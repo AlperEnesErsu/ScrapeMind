@@ -1,4 +1,4 @@
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, redirect, render_template, request, session, url_for
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
 
@@ -16,6 +16,7 @@ from app.core.auth.forms import (
     PasswordResetForm,
     PasswordResetRequestForm,
     RegisterForm,
+    TotpCodeForm,
 )
 from app.core.auth.service import (
     make_password_reset_token,
@@ -24,8 +25,12 @@ from app.core.auth.service import (
     verify_password_reset_token,
 )
 from app.core.auth.strategies.local import LocalAuthStrategy
+from app.core.auth.totp_service import consume_recovery_code, verify_totp
 from app.core.models.user import User
-from app.extensions import limiter
+from app.extensions import db, limiter
+
+PENDING_2FA_KEY = "pending_2fa_user_id"
+PENDING_2FA_REMEMBER_KEY = "pending_2fa_remember"
 
 _local = LocalAuthStrategy()
 
@@ -43,6 +48,16 @@ def login():
             flash(_("Invalid credentials or account locked."), "danger")
             return render_template("auth/login.html", form=form)
 
+        # If 2FA is on, defer login until the user proves the second factor.
+        # Store the bare minimum in the unauthenticated session: who we're
+        # mid-authenticating + whether they ticked "remember me". The next
+        # endpoint (/auth/2fa) burns this state on success or expiry.
+        if user.is_totp_enabled:
+            session[PENDING_2FA_KEY] = user.id
+            session[PENDING_2FA_REMEMBER_KEY] = bool(form.remember_me.data)
+            next_page = request.args.get("next")
+            return redirect(url_for("auth.totp_challenge", next=next_page) if next_page else url_for("auth.totp_challenge"))
+
         login_user(user, remember=form.remember_me.data)
         key = create_session(user)
         set_current_key(key)
@@ -51,6 +66,62 @@ def login():
         return redirect(next_page)
 
     return render_template("auth/login.html", form=form)
+
+
+@auth_bp.route("/2fa", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
+def totp_challenge():
+    user_id = session.get(PENDING_2FA_KEY)
+    if not user_id:
+        return redirect(url_for("auth.login"))
+    user = User.query.filter_by(id=user_id, deleted_at=None).first()
+    if user is None or not user.is_totp_enabled:
+        # Stale pending state — clear and bounce back to login.
+        session.pop(PENDING_2FA_KEY, None)
+        session.pop(PENDING_2FA_REMEMBER_KEY, None)
+        return redirect(url_for("auth.login"))
+
+    form = TotpCodeForm()
+    if form.validate_on_submit():
+        code = (form.code.data or "").strip()
+        ok = verify_totp(user.totp_secret, code)
+        used_recovery = False
+        if not ok:
+            # Fall back to recovery codes — same form field, looks like XXXX-XXXX
+            # or 8+ characters and contains a dash, but we don't gate on shape;
+            # consume_recovery_code returns False for anything that doesn't match.
+            ok = consume_recovery_code(user, code)
+            used_recovery = ok
+
+        if not ok:
+            log_action("user.totp_failed", entity_type="user", entity_id=user.id)
+            flash(_("Code is invalid. Try again."), "danger")
+            return render_template("auth/totp_challenge.html", form=form)
+
+        remember = bool(session.pop(PENDING_2FA_REMEMBER_KEY, False))
+        session.pop(PENDING_2FA_KEY, None)
+        login_user(user, remember=remember)
+        key = create_session(user)
+        set_current_key(key)
+        log_action(
+            "user.login",
+            entity_type="user",
+            entity_id=user.id,
+            changes={"second_factor": "recovery_code" if used_recovery else "totp"},
+        )
+        if used_recovery:
+            flash(_("Logged in with a recovery code — consider regenerating your codes."), "warning")
+        next_page = request.args.get("next") or url_for("dashboard.index")
+        return redirect(next_page)
+
+    return render_template("auth/totp_challenge.html", form=form)
+
+
+@auth_bp.route("/2fa/cancel", methods=["POST", "GET"])
+def totp_cancel():
+    session.pop(PENDING_2FA_KEY, None)
+    session.pop(PENDING_2FA_REMEMBER_KEY, None)
+    return redirect(url_for("auth.login"))
 
 
 @auth_bp.route("/logout")
