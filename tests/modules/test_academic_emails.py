@@ -131,5 +131,6 @@ def test_list_filter_by_type(db, clean):
 
 
 def test_verify_email_route_invalid_redirects(client):
-    r = client.get("/auth/verify-email/garbage", follow_redirects=False)
+    # Route was moved from /auth/ to /academic/ in PR #6 (admin academic panel).
+    r = client.get("/academic/verify-email/garbage", follow_redirects=False)
     assert r.status_code == 302
