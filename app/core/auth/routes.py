@@ -4,13 +4,6 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from app.core.audit.middleware import log_action
 from app.core.auth import auth_bp
-from app.core.sessions.service import (
-    clear_current_key,
-    create_session,
-    delete_session,
-    get_current_key,
-    set_current_key,
-)
 from app.core.auth.forms import (
     LoginForm,
     PasswordResetForm,
@@ -25,6 +18,13 @@ from app.core.auth.service import (
 )
 from app.core.auth.strategies.local import LocalAuthStrategy
 from app.core.models.user import User
+from app.core.sessions.service import (
+    clear_current_key,
+    create_session,
+    delete_session,
+    get_current_key,
+    set_current_key,
+)
 from app.extensions import limiter
 
 _local = LocalAuthStrategy()
@@ -69,6 +69,7 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard.index"))
     from app.core.settings.service import get_system_setting
+
     if not get_system_setting("registration_open", True):
         flash(_("Public registration is currently disabled."), "warning")
         return redirect(url_for("auth.login"))
@@ -104,13 +105,13 @@ def forgot_password():
             reset_url = url_for("auth.reset_password_view", token=token, _external=True)
             log_action("user.password_reset_requested", entity_type="user", entity_id=user.id)
             from app.core.email.service import send_password_reset
+
             sent, dev_url = send_password_reset(user, reset_url)
             if not sent and dev_url and current_app_is_debug():
                 flash(_("Dev mode: reset link → %(url)s", url=dev_url), "info")
         flash(_("If that email exists, a reset link has been sent."), "success")
         return redirect(url_for("auth.login"))
     return render_template("auth/forgot.html", form=form)
-
 
 
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
@@ -139,6 +140,7 @@ def current_app_is_debug() -> bool:
 def oauth_redirect(provider: str):
     """Login için OAuth yönlendirmesi."""
     from flask import session
+
     from app.extensions import oauth as _oauth
 
     client = getattr(_oauth, provider, None)
@@ -155,6 +157,7 @@ def oauth_redirect(provider: str):
 def oauth_link_redirect(provider: str):
     """Giriş yapmış kullanıcı için OAuth hesabı bağlama yönlendirmesi."""
     from flask import session
+
     from app.extensions import oauth as _oauth
 
     client = getattr(_oauth, provider, None)
@@ -170,6 +173,7 @@ def oauth_link_redirect(provider: str):
 @auth_bp.route("/oauth/<provider>/callback")
 def oauth_callback(provider: str):
     from flask import session
+
     from app.extensions import oauth as _oauth
 
     client = getattr(_oauth, provider, None)
@@ -214,8 +218,9 @@ def oauth_callback(provider: str):
     return redirect(url_for("dashboard.index"))
 
 
-def _handle_oauth_link(*, user, provider: str, provider_user_id: str,
-                       email: str, raw_data: dict) -> None:
+def _handle_oauth_link(
+    *, user, provider: str, provider_user_id: str, email: str, raw_data: dict
+) -> None:
     """Mevcut kullanıcıya OAuth hesabı bağla — ya da zaten bağlıysa bildir."""
     from app.core.models.oauth_account import OAuthAccount
 
@@ -224,9 +229,18 @@ def _handle_oauth_link(*, user, provider: str, provider_user_id: str,
     ).first()
     if existing:
         if existing.user_id == user.id:
-            flash(_("This %(provider)s account is already linked.", provider=provider.capitalize()), "info")
+            flash(
+                _("This %(provider)s account is already linked.", provider=provider.capitalize()),
+                "info",
+            )
         else:
-            flash(_("This %(provider)s account is linked to another user.", provider=provider.capitalize()), "danger")
+            flash(
+                _(
+                    "This %(provider)s account is linked to another user.",
+                    provider=provider.capitalize(),
+                ),
+                "danger",
+            )
         return
 
     from app.extensions import db
@@ -240,7 +254,9 @@ def _handle_oauth_link(*, user, provider: str, provider_user_id: str,
     )
     db.session.add(account)
     db.session.commit()
-    log_action("user.oauth_linked", entity_type="oauth_account",
-               changes={"provider": provider, "email": email})
+    log_action(
+        "user.oauth_linked",
+        entity_type="oauth_account",
+        changes={"provider": provider, "email": email},
+    )
     flash(_("%(provider)s account linked successfully.", provider=provider.capitalize()), "success")
-

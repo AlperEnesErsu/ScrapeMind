@@ -14,21 +14,22 @@ Usage (in a module's __init__.py or routes.py):
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 
 # --------------------------------------------------------------------------- #
 # Core tabs — always present, order matters
 # --------------------------------------------------------------------------- #
 CORE_TABS: list[tuple[str, str, str]] = [
-    ("personal", "bi-person",       "Personal Info"),
-    ("email",    "bi-envelope",     "Login Email"),
-    ("password", "bi-key",          "Password"),
-    ("prefs",    "bi-sliders",      "Preferences"),
-    ("oauth",    "bi-link-45deg",   "OAuth Accounts"),
-    ("sessions", "bi-laptop",       "Active Sessions"),
-    ("account",  "bi-info-circle",  "Account"),
+    ("personal", "bi-person", "Personal Info"),
+    ("email", "bi-envelope", "Login Email"),
+    ("password", "bi-key", "Password"),
+    ("prefs", "bi-sliders", "Preferences"),
+    ("oauth", "bi-link-45deg", "OAuth Accounts"),
+    ("sessions", "bi-laptop", "Active Sessions"),
+    ("account", "bi-info-circle", "Account"),
 ]
+
 
 # --------------------------------------------------------------------------- #
 # Extra tabs registered by modules
@@ -37,8 +38,8 @@ CORE_TABS: list[tuple[str, str, str]] = [
 class ExtraTab:
     code: str
     icon: str
-    label_key: str          # plain string or i18n key — rendered by the template
-    ctx_builder: Callable   # () -> dict  (called on GET and on partial refreshes)
+    label_key: str  # plain string or i18n key — rendered by the template
+    ctx_builder: Callable  # () -> dict  (called on GET and on partial refreshes)
 
 
 _EXTRA_TABS: dict[str, ExtraTab] = {}
