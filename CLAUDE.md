@@ -5,10 +5,10 @@ ScrapeMind aynı zamanda `flask-core-base` adlı yeniden kullanılabilir bir Fla
 **İki şapka:** `app/core/` = her projede kullanılabilecek çekirdek, `app/modules/` = ScrapeMind'a özel.
 
 ## Konum
-`D:\app\ScrapeMind`
+`C:\Users\alper\OneDrive\Masaüstü\Project\ScrapeMind` (Windows geliştirme)
 
 ## Teknoloji
-Flask 3.1 · SQLAlchemy 2 · PostgreSQL 17 · Bootstrap 5 + HTMX · Flask-Babel (TR/EN)
+Flask 3.1 · SQLAlchemy 2 · PostgreSQL 17 · Bootstrap 5 + HTMX · Flask-Babel (TR/EN) · Celery 5.4 + Redis
 
 ## Veritabanı (yerel geliştirme)
 - Postgres: `myo_postgres17` Docker container'ı (port 5432, user: postgres, pw: myopassword123, db: scrapemind)
@@ -24,9 +24,9 @@ Flask 3.1 · SQLAlchemy 2 · PostgreSQL 17 · Bootstrap 5 + HTMX · Flask-Babel 
 
 ## Klasör Yapısı
 ```
-app/core/          → Auth, RBAC, Menü, Settings, Audit, i18n, UI — dokunma
+app/core/          → Auth, RBAC, Menü, Settings, Audit, i18n, Email, Sessions, UI — dokunma
 app/modules/       → ScrapeMind modülleri (scrape, academic, dashboard)
-app/tasks/         → Celery task'ları
+app/tasks/         → Celery task'ları (core_tasks, scrape_tasks, schedule)
 translations/      → TR + EN .po/.mo dosyaları
 scripts/           → seed.py, create_module.py, export_core_template.py
 ```
@@ -42,13 +42,31 @@ pybabel compile -d translations
 
 ## Tamamlanan Faz Durumu (Mayıs 2026)
 - **Faz 0** ✅ tam
-- **Faz 1** ✅ ~%95 (eksik: email gönderimi, şifre politikası, oturum yönetimi)
-- **Faz 2** 🔶 başlanmadı
+- **Faz 1** ✅ tam (email servisi, password policy, session yönetimi `ed5d4ac` ile geldi)
+- **Faz 2** 🔶 ilerliyor — bkz. aşağıdaki tablo
 
-## Bilinen Kısıtlar / Phase 2 Bekleyenler
-- Şifre resetleme tokeni üretiliyor ama email gönderilmiyor (dev'de flash'ta gösteriyor)
-- Oturum listesi / revoke yok
-- Şifre karmaşıklık kuralı yok (min 8 karakter var)
+### Faz 2 — Şu ana kadar merge'lenenler
+| PR  | Konu |
+|-----|------|
+| #4  | Multi-email + akademik kimlik temeli + UI cilası |
+| #5  | Identity model düzeltmesi — `User.email` sadece auth, akademik kimlikler ayrı tabloda |
+| #6  | ORCID / Scopus / WoS seed + admin academic profile paneli |
+| #7  | Celery + Redis worker + Beat scheduler + `/admin/tasks` paneli |
+| #8  | arXiv scraping — `Paper` modeli, source adapter, `/papers` feed |
+
+### Faz 2 — Hâlâ bekleyenler
+- **SMTP gerçek yapılandırması** (kod hazır; `.env.example` + prod dokümanı eksik)
+- **2FA (TOTP)** — profile tab + login ikinci adım
+- **Avatar dosya yükleme** (şu an sadece URL)
+- **API v1 (JWT)** — `app/api/v1/` boş, JWT strategy iskelet hâlinde
+- **Audit log retention + admin filtre/sayfalama**
+- **Ek scraping source'ları** (Semantic Scholar, PubMed) ve scrape-now UX
+
+## Bilinen Kısıtlar
+- Email gönderimi `MAIL_SUPPRESS_SEND=true` ise dev modu — link `flash` ile gösteriliyor
+- 2FA yok — sadece tek faktörlü auth (yerel + OAuth)
+- Avatar yalnızca URL alanı, dosya upload yok
+- JSON API yok — `/api/v1/` planlandı ama implement edilmedi
 
 ## Template Olarak Yeni Projede Kullanım
 ```bash

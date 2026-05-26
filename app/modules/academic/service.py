@@ -138,9 +138,7 @@ def list_user_keywords(user: User) -> list[Keyword]:
     return [r.keyword for r in rows]
 
 
-def add_user_keywords_bulk(
-    user: User, raw_input: str
-) -> tuple[list[Keyword], list[str]]:
+def add_user_keywords_bulk(user: User, raw_input: str) -> tuple[list[Keyword], list[str]]:
     """Virgül veya noktalı virgülle ayrılmış birden fazla anahtar kelimeyi ekler.
 
     Returns:
