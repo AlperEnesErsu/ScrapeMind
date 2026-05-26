@@ -104,6 +104,32 @@ python scripts/seed.py
 flask run --debug
 ```
 
+## 📧 Email Yapılandırması
+
+Email kodu `app/core/email/service.py` içinde Flask-Mail üzerinden. **`MAIL_SERVER` boşsa dev modu** — gerçek SMTP çağrısı yapılmaz, üretilen link `flash` ile gösterilir (dev kullanıcı için).
+
+### Lokal test — Mailhog (önerilen)
+
+```bash
+docker compose -f docker/docker-compose.yml --profile mail up -d mailhog
+```
+
+`.env`:
+```env
+MAIL_SERVER=localhost
+MAIL_PORT=1025
+MAIL_USE_TLS=false
+MAIL_USE_SSL=false
+```
+
+Şifre sıfırlama / akademik email doğrulama tetikledikten sonra **http://localhost:8025** adresinden gelen kutusunu izle.
+
+### Production sağlayıcıları
+
+`.env.example` içinde Gmail, Resend ve Amazon SES için hazır blok mevcut. `MAIL_USE_TLS` (587/STARTTLS) ile `MAIL_USE_SSL` (465) **aynı anda true olamaz** — sağlayıcıya göre birini seç.
+
+`MAIL_SUPPRESS_SEND=true` ile staging'de email göndermeyi geçici olarak kapatabilirsin (credential silmeden).
+
 ## 🧪 Test
 
 ```bash
