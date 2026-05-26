@@ -1,8 +1,29 @@
-from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app.core.audit.middleware import log_action
+from app.core.auth.forms import EnableTotpForm, TotpCodeForm
+from app.core.auth.totp_service import (
+    consume_recovery_code,
+    disable_totp,
+    enable_totp,
+    generate_secret,
+    provisioning_uri,
+    qr_data_uri,
+    regenerate_recovery_codes,
+    verify_totp,
+)
 from app.core.settings.forms import (
     EmailChangeForm,
     PasswordChangeForm,
@@ -82,10 +103,42 @@ def _sessions_ctx():
     }
 
 
+# Setup wizard secret lives in the Flask session — survives the GET/POST
+# round-trip without persisting an unconfirmed secret to the DB.
+_SECURITY_PENDING_SECRET = "pending_totp_secret"
+_SECURITY_FRESH_CODES = "fresh_recovery_codes"  # short-lived flash channel
+
+
+def _security_ctx():
+    """Build the Security tab context.
+
+    Three rendering modes coexist on the same tab:
+      * 2FA off, no setup in progress → "Enable 2FA" button
+      * Setup in progress (secret in session)  → show QR + confirm form
+      * 2FA on → "Disable" + "Regenerate recovery codes" + remaining-codes counter
+    """
+    pending_secret = session.get(_SECURITY_PENDING_SECRET)
+    fresh_codes = session.pop(_SECURITY_FRESH_CODES, None)
+    ctx: dict = {
+        "is_totp_enabled": current_user.is_totp_enabled,
+        "enable_form": EnableTotpForm(),
+        "verify_form": TotpCodeForm(),
+        "fresh_recovery_codes": fresh_codes,
+        "remaining_recovery_codes": len(current_user.totp_recovery_codes or []),
+    }
+    if pending_secret and not current_user.is_totp_enabled:
+        ctx["setup_secret"] = pending_secret
+        ctx["setup_qr"] = qr_data_uri(
+            provisioning_uri(pending_secret, current_user.email or current_user.username)
+        )
+    return ctx
+
+
 _CORE_CTX_BUILDERS = {
     "personal": _personal_ctx,
     "email": _email_ctx,
     "password": _password_ctx,
+    "security": _security_ctx,
     "prefs": _prefs_ctx,
     "oauth": _oauth_ctx,
     "sessions": _sessions_ctx,
@@ -210,6 +263,120 @@ def submit_prefs():
         )
     return _render_tab(
         "prefs", form=form, flash_msg=_("Please correct the errors below."), flash_kind="danger"
+    )
+
+
+@settings_bp.route("/profile/security/setup", methods=["POST"])
+@login_required
+def security_setup_begin():
+    """Generate a fresh secret and stash it in the session. Idempotent —
+    repeated clicks re-generate (user might have lost the QR mid-setup)."""
+    if current_user.is_totp_enabled:
+        return _render_tab(
+            "security",
+            flash_msg=_("2FA is already enabled."),
+            flash_kind="warning",
+            **_security_ctx(),
+        )
+    session[_SECURITY_PENDING_SECRET] = generate_secret()
+    return _render_tab("security", **_security_ctx())
+
+
+@settings_bp.route("/profile/security/setup/cancel", methods=["POST"])
+@login_required
+def security_setup_cancel():
+    session.pop(_SECURITY_PENDING_SECRET, None)
+    return _render_tab("security", **_security_ctx())
+
+
+@settings_bp.route("/profile/security/enable", methods=["POST"])
+@login_required
+def security_enable():
+    """Confirm setup: user enters a code from their authenticator app, we
+    verify against the pending secret, and only then persist it + emit
+    recovery codes."""
+    if current_user.is_totp_enabled:
+        return _render_tab(
+            "security",
+            flash_msg=_("2FA is already enabled."),
+            flash_kind="warning",
+            **_security_ctx(),
+        )
+
+    pending = session.get(_SECURITY_PENDING_SECRET)
+    if not pending:
+        return _render_tab(
+            "security",
+            flash_msg=_("Setup expired — start again."),
+            flash_kind="danger",
+            **_security_ctx(),
+        )
+
+    form = EnableTotpForm()
+    if not form.validate_on_submit() or not verify_totp(pending, form.code.data):
+        return _render_tab(
+            "security",
+            flash_msg=_("Code is invalid. Try again."),
+            flash_kind="danger",
+            **_security_ctx(),
+        )
+
+    codes = enable_totp(current_user, pending)
+    session.pop(_SECURITY_PENDING_SECRET, None)
+    session[_SECURITY_FRESH_CODES] = codes  # shown once on the next render
+    log_action("user.totp_enabled", entity_type="user", entity_id=current_user.id)
+    return _render_tab(
+        "security",
+        flash_msg=_("2FA enabled. Save your recovery codes — they will not be shown again."),
+        flash_kind="success",
+        **_security_ctx(),
+    )
+
+
+@settings_bp.route("/profile/security/disable", methods=["POST"])
+@login_required
+def security_disable():
+    """Disable 2FA — requires a current TOTP code (or recovery code) as
+    proof-of-possession. Keeps an attacker with only a stolen session from
+    turning 2FA off."""
+    if not current_user.is_totp_enabled:
+        return _render_tab("security", **_security_ctx())
+
+    form = TotpCodeForm()
+    if not form.validate_on_submit():
+        return _render_tab(
+            "security", flash_msg=_("Code required."), flash_kind="danger", **_security_ctx()
+        )
+
+    code = (form.code.data or "").strip()
+    if not (
+        verify_totp(current_user.totp_secret, code) or consume_recovery_code(current_user, code)
+    ):
+        return _render_tab(
+            "security", flash_msg=_("Code is invalid."), flash_kind="danger", **_security_ctx()
+        )
+
+    disable_totp(current_user)
+    log_action("user.totp_disabled", entity_type="user", entity_id=current_user.id)
+    return _render_tab(
+        "security", flash_msg=_("2FA disabled."), flash_kind="success", **_security_ctx()
+    )
+
+
+@settings_bp.route("/profile/security/recovery/regenerate", methods=["POST"])
+@login_required
+def security_recovery_regen():
+    """Mint fresh recovery codes. Old ones become useless immediately."""
+    if not current_user.is_totp_enabled:
+        return _render_tab("security", **_security_ctx())
+    codes = regenerate_recovery_codes(current_user)
+    session[_SECURITY_FRESH_CODES] = codes
+    log_action("user.totp_recovery_regen", entity_type="user", entity_id=current_user.id)
+    return _render_tab(
+        "security",
+        flash_msg=_("New recovery codes generated. Old ones no longer work."),
+        flash_kind="success",
+        **_security_ctx(),
     )
 
 

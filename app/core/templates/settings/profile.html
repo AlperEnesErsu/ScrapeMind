@@ -16,7 +16,7 @@
          hx-swap="innerHTML"
          hx-push-url="{{ url_for('settings.profile', tab=code) }}"
          data-tab="{{ code }}">
-        <i class="bi {{ icon }} me-2"></i>{{ label }}
+        <i class="bi {{ icon }} me-2"></i>{{ _(label) }}
       </a>
       {% endfor %}
     </div>
