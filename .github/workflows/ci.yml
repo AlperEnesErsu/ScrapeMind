@@ -9,6 +9,10 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    # Hard cap. The last two runs hung in fixture teardown for hours before
+    # GitHub's 6h default kicked in. 15 min is plenty for a green run (was
+    # ~1.5 min before the recent test/Celery additions).
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -56,12 +60,15 @@ jobs:
 
       - name: Tests
         # --timeout=60 forces hangs to fail loudly (pytest-timeout).
-        # -v --tb=short makes Actions output readable when something breaks.
+        # --timeout-method=thread also catches hangs inside blocking syscalls
+        # and fixture teardown — the signal-based default missed both in the
+        # last run and let it idle until GitHub's 6h cap.
+        # -v --tb=short -s makes Actions output readable and live (no capture).
         # Baseline dropped to 55% temporarily — this PR added a lot of new
         # admin routes (users/system/audit-filters/dashboard/search) that are
         # service-tested but lack HTTP-level fixtures yet. Phase 2 should
         # bring an authenticated client fixture and push this back up to 70%.
-        run: pytest -v --tb=short --timeout=60 --cov=app --cov-fail-under=55
+        run: pytest -v -s --tb=short --timeout=60 --timeout-method=thread --cov=app --cov-fail-under=55
 
       - name: Translation consistency (TR == EN key sets)
         run: |
