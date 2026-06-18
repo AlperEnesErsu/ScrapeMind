@@ -1,0 +1,62 @@
+{# Notes list partial — full list + add form. HTMX add/delete returns this. #}
+<div id="notes-panel" class="notes-panel">
+  <div class="notes-panel__head d-flex align-items-center justify-content-between mb-3">
+    <h6 class="m-0 d-inline-flex align-items-center gap-2">
+      <i class="bi bi-journal-text text-primary"></i>{{ _('My notes') }}
+    </h6>
+    <span class="small text-muted">{{ r.notes|length }} {{ _('note') }}</span>
+  </div>
+
+  {% if flash_msg %}
+  <div class="alert alert-{{ flash_kind or 'info' }} py-2 mb-3 small">{{ flash_msg }}</div>
+  {% endif %}
+
+  {% for n in r.notes %}
+  <div class="note-card note-card--{{ n.tag or 'default' }} mb-2">
+    <p class="note-card__body small mb-1">{{ n.body }}</p>
+    <div class="note-card__foot d-flex align-items-center gap-2">
+      <span class="small text-muted">{{ n.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+      {% if n.tag %}
+      <span class="note-tag note-tag--{{ n.tag }} ms-1">{{ n.tag }}</span>
+      {% endif %}
+      <button type="button" class="btn btn-sm action-btn action-btn--mute ms-auto"
+              hx-post="{{ url_for('scrape.delete_note_route', note_id=n.id) }}"
+              hx-target="#notes-panel" hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              hx-confirm="{{ _('Delete this note?') }}"
+              aria-label="{{ _('Delete note') }}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+  {% else %}
+  <p class="small text-muted text-center py-3 mb-2">{{ _('No notes yet — add the first one below.') }}</p>
+  {% endfor %}
+
+  <form class="note-add"
+        hx-post="{{ url_for('scrape.add_note_route', user_paper_id=r.id) }}"
+        hx-target="#notes-panel" hx-swap="outerHTML"
+        hx-on::after-request="if(event.detail.successful) this.reset()">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <textarea name="body" class="form-control form-control-sm note-add__body"
+              rows="3" placeholder="{{ _('New note — Cmd+Enter to save') }}"
+              onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter')this.form.requestSubmit()"></textarea>
+    <div class="note-add__foot d-flex align-items-center gap-1 mt-2">
+      <input type="radio" class="btn-check" id="tag-{{ r.id }}-none" name="tag" value="" checked>
+      <label for="tag-{{ r.id }}-none" class="btn btn-sm note-tag-btn">{{ _('No tag') }}</label>
+
+      <input type="radio" class="btn-check" id="tag-{{ r.id }}-deney" name="tag" value="deney">
+      <label for="tag-{{ r.id }}-deney" class="btn btn-sm note-tag-btn note-tag-btn--deney">{{ _('experiment') }}</label>
+
+      <input type="radio" class="btn-check" id="tag-{{ r.id }}-soru" name="tag" value="soru">
+      <label for="tag-{{ r.id }}-soru" class="btn btn-sm note-tag-btn note-tag-btn--soru">{{ _('question') }}</label>
+
+      <input type="radio" class="btn-check" id="tag-{{ r.id }}-sonuc" name="tag" value="sonuç">
+      <label for="tag-{{ r.id }}-sonuc" class="btn btn-sm note-tag-btn note-tag-btn--sonuc">{{ _('finding') }}</label>
+
+      <button type="submit" class="btn btn-sm btn-primary ms-auto">
+        <i class="bi bi-check2 me-1"></i>{{ _('Save') }}
+      </button>
+    </div>
+  </form>
+</div>

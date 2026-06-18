@@ -7,13 +7,15 @@ the "For you" dashboard becomes a personal feed instead of a firehose.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import structlog
 from sqlalchemy import desc
 
 from app.core.models.user import User
 from app.extensions import db
 from app.modules.academic.service import list_user_identifiers, list_user_keywords
-from app.modules.scrape.models import Paper, UserPaper
+from app.modules.scrape.models import Paper, PaperNote, UserPaper
 from app.modules.scrape.sources.arxiv_source import PaperPayload
 from app.modules.scrape.sources.arxiv_source import search as arxiv_search
 
@@ -87,11 +89,95 @@ def scrape_arxiv_for_user(user: User, *, max_results: int = 25) -> dict:
     return {"hits": len(payloads), "linked": linked, "query": query}
 
 
-def list_user_papers(user: User, *, limit: int = 50) -> list[UserPaper]:
+def list_user_papers(
+    user: User,
+    *,
+    limit: int = 50,
+    view: str = "discover",
+) -> list[UserPaper]:
+    """List a user's surfaced papers.
+
+    Views:
+        * "discover" — feed, hides dismissed rows
+        * "favorites" — starred only
+        * "dismissed" — hidden bin (recovery)
+        * "all"      — everything, no filter
+    """
+    q = UserPaper.query.filter_by(user_id=user.id).join(Paper)
+    if view == "discover":
+        q = q.filter(UserPaper.dismissed_at.is_(None))
+    elif view == "favorites":
+        q = q.filter(UserPaper.is_favorite.is_(True), UserPaper.dismissed_at.is_(None))
+    elif view == "dismissed":
+        q = q.filter(UserPaper.dismissed_at.isnot(None))
+    return q.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
+
+
+def get_user_paper(user: User, user_paper_id: int) -> UserPaper | None:
+    """Fetch a UserPaper that belongs to this user. Returns None on miss or
+    ownership mismatch — callers should treat both the same way."""
+    return UserPaper.query.filter_by(id=user_paper_id, user_id=user.id).first()
+
+
+# ----------------------------------------------------------------------------
+# Per-user paper state — favorites, dismiss, mark seen
+# ----------------------------------------------------------------------------
+
+
+def toggle_favorite(link: UserPaper) -> bool:
+    """Flip the favorite flag. Returns the new value so the caller can pick
+    the right flash/UI state without re-querying."""
+    link.is_favorite = not link.is_favorite
+    db.session.commit()
+    return link.is_favorite
+
+
+def set_dismissed(link: UserPaper, dismissed: bool) -> None:
+    link.dismissed_at = datetime.now(UTC) if dismissed else None
+    db.session.commit()
+
+
+def mark_seen(link: UserPaper) -> None:
+    if link.seen_at is None:
+        link.seen_at = datetime.now(UTC)
+        db.session.commit()
+
+
+# ----------------------------------------------------------------------------
+# Notes
+# ----------------------------------------------------------------------------
+
+ALLOWED_NOTE_TAGS = {"deney", "soru", "sonuç", "okuma", None, ""}
+
+
+def add_note(link: UserPaper, body: str, tag: str | None = None) -> PaperNote | None:
+    """Create a note on a UserPaper. Empty/whitespace-only bodies are
+    rejected (returns None) — that's the only validation the service does."""
+    body = (body or "").strip()
+    if not body:
+        return None
+    tag = (tag or "").strip().lower() or None
+    if tag not in ALLOWED_NOTE_TAGS:
+        tag = None
+    note = PaperNote(user_paper_id=link.id, body=body, tag=tag)
+    db.session.add(note)
+    db.session.commit()
+    return note
+
+
+def delete_note(note: PaperNote) -> None:
+    db.session.delete(note)
+    db.session.commit()
+
+
+def get_note_for_user(user: User, note_id: int) -> PaperNote | None:
+    """Fetch a note only if its parent UserPaper belongs to this user.
+
+    Guards against /papers/notes/<other-user-id> drive-by deletes — we
+    enforce ownership at the service layer so every caller is safe.
+    """
     return (
-        UserPaper.query.filter_by(user_id=user.id)
-        .join(Paper)
-        .order_by(desc(Paper.published_at), desc(UserPaper.created_at))
-        .limit(limit)
-        .all()
+        PaperNote.query.join(UserPaper, PaperNote.user_paper_id == UserPaper.id)
+        .filter(PaperNote.id == note_id, UserPaper.user_id == user.id)
+        .first()
     )
