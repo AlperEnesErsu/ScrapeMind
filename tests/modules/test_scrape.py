@@ -40,6 +40,7 @@ def _payload(ext_id: str, *, title="A Title", keyword="transformer") -> PaperPay
 
 @pytest.fixture
 def clean(db):
+    db.session.execute(text("DELETE FROM paper_notes"))
     db.session.execute(text("DELETE FROM user_papers"))
     db.session.execute(text("DELETE FROM papers"))
     db.session.execute(text("DELETE FROM user_keywords"))
@@ -69,6 +70,7 @@ def clean(db):
     db.session.add(u)
     db.session.commit()
     yield u
+    db.session.execute(text("DELETE FROM paper_notes"))
     db.session.execute(text("DELETE FROM user_papers"))
     db.session.execute(text("DELETE FROM papers"))
     db.session.execute(text("DELETE FROM user_keywords"))

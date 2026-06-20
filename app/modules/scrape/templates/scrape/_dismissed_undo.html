@@ -1,0 +1,14 @@
+{# Undo banner that replaces a card after the user hides it.
+   Same id as the card so the next HTMX swap (undismiss) puts the card back. #}
+<div id="card-{{ r.id }}" class="paper-card paper-card--dismissed mb-2">
+  <div class="d-flex align-items-center gap-2 small text-muted">
+    <i class="bi bi-eye-slash"></i>
+    <span>{{ _('Hidden from your feed.') }}</span>
+    <button type="button" class="btn btn-sm action-btn ms-auto"
+            hx-post="{{ url_for('scrape.undismiss', user_paper_id=r.id) }}"
+            hx-target="#card-{{ r.id }}" hx-swap="outerHTML"
+            hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>
+      <i class="bi bi-arrow-counterclockwise me-1"></i>{{ _('Undo') }}
+    </button>
+  </div>
+</div>

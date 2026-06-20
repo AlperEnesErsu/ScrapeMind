@@ -1,3 +1,3 @@
-from flask import Blueprint
-
-scrape_bp = Blueprint("scrape", __name__, template_folder="templates")
+# The actual scrape blueprint lives in routes.py — keep this file as the
+# package marker only. Defining it twice (here and in routes.py) used to
+# leave a dangling Blueprint that was never registered.
