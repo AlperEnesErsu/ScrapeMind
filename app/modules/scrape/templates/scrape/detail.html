@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}{{ r.paper.title }} — ScrapeMind{% endblock %}
+{% block content %}
+
+<div class="paper-detail">
+  <div class="paper-detail__head d-flex align-items-center gap-2 mb-3">
+    <a href="{{ url_for('scrape.feed') }}" class="btn btn-sm action-btn"
+       aria-label="{{ _('Back') }}">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <span class="small text-muted">{{ _('Discover') }} → {{ r.paper.source }}</span>
+
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <button type="button"
+              class="btn btn-sm action-btn{% if r.is_favorite %} action-btn--on-fav{% endif %}"
+              hx-post="{{ url_for('scrape.toggle_favorite_route', user_paper_id=r.id) }}"
+              hx-target="this" hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              aria-label="{{ _('Toggle favorite') }}">
+        <i class="bi {% if r.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      </button>
+      {% if r.paper.pdf_url %}
+      <a href="{{ r.paper.pdf_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </a>
+      {% endif %}
+      {% if r.paper.url %}
+      <a href="{{ r.paper.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('Source') }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="paper-detail__meta mb-3">
+    <span class="badge source-badge source-{{ r.paper.source }}">{{ r.paper.source }}</span>
+    {% if r.paper.published_at %}
+      <span class="small text-muted">{{ r.paper.published_at.strftime('%d %B %Y') }}</span>
+    {% endif %}
+    <span class="small text-muted">·</span>
+    <code class="small text-muted">{{ r.paper.external_id }}</code>
+  </div>
+
+  <h2 class="paper-detail__title mb-2">{{ r.paper.title }}</h2>
+
+  <p class="paper-detail__authors text-muted mb-3">
+    {% if r.paper.authors %}
+      {{ r.paper.authors[:5] | join(' · ') }}{% if r.paper.authors|length > 5 %}
+        <span class="text-muted-2">+ {{ r.paper.authors|length - 5 }} {{ _('more') }}</span>{% endif %}
+    {% endif %}
+  </p>
+
+  <div class="paper-detail__tags mb-3 d-flex flex-wrap gap-1">
+    {% if r.matched_keyword %}
+      <span class="kw-pill kw-pill--{{ (r.matched_keyword | length) % 5 }}">
+        <i class="bi bi-tag-fill"></i>{{ r.matched_keyword }}
+      </span>
+    {% endif %}
+    {% for c in (r.paper.categories or [])[:6] %}
+      <span class="kw-pill kw-pill--cat">{{ c }}</span>
+    {% endfor %}
+  </div>
+
+  <div class="paper-detail__body">
+    <div class="paper-detail__abstract">
+      <p class="small text-muted text-uppercase fw-medium mb-2" style="letter-spacing: .04em;">
+        {{ _('Abstract') }}
+      </p>
+      {% if r.paper.abstract %}
+        <p class="abstract-text">{{ r.paper.abstract }}</p>
+      {% else %}
+        <p class="small text-muted fst-italic">{{ _('No abstract available.') }}</p>
+      {% endif %}
+
+      <div class="ai-coming-soon mt-4">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-stars text-info"></i>
+          <span class="fw-medium">{{ _('AI analysis & Turkish translation') }}</span>
+          <span class="badge badge-soft ms-2">{{ _('Coming soon') }}</span>
+        </div>
+        <p class="small text-muted mt-2 mb-0">
+          {{ _('30-second TL;DR, method/findings/limitations breakdown, and a "Ask the paper" RAG chat. Hooked up in the next slice.') }}
+        </p>
+      </div>
+    </div>
+
+    <aside class="paper-detail__side">
+      {% include 'scrape/_notes_list.html' %}
+    </aside>
+  </div>
+</div>
+
+{% endblock %}

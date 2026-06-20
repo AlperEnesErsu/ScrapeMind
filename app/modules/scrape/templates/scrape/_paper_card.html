@@ -1,0 +1,79 @@
+{# Single paper card — also used as the HTMX swap target.
+   Outer wrapper id="card-{{ r.id }}" so action endpoints can replace it. #}
+<div id="card-{{ r.id }}" class="paper-card mb-2{% if r.is_favorite %} is-favorite{% endif %}{% if r.seen_at %} is-seen{% endif %}">
+  {% if flash_msg %}
+  <div class="alert alert-{{ flash_kind or 'info' }} py-2 mb-2 small">{{ flash_msg }}</div>
+  {% endif %}
+
+  <div class="paper-card__head">
+    <span class="badge source-badge source-{{ r.paper.source }}">{{ r.paper.source }}</span>
+    {% if r.paper.categories %}
+      <span class="small text-muted">{{ (r.paper.categories or [])[:2] | join(' · ') }}</span>
+    {% endif %}
+    {% if r.paper.published_at %}<span class="small text-muted">· {{ r.paper.published_at.strftime('%d.%m.%Y') }}</span>{% endif %}
+
+    <span class="ms-auto small d-flex align-items-center gap-2">
+      {% if r.is_favorite %}
+        <span class="text-danger d-inline-flex align-items-center gap-1"><i class="bi bi-heart-fill"></i>{{ _('Favorite') }}</span>
+      {% elif r.seen_at %}
+        <span class="text-muted d-inline-flex align-items-center gap-1"><i class="bi bi-eye"></i>{{ _('Seen') }}</span>
+      {% else %}
+        <span class="text-warning d-inline-flex align-items-center gap-1"><i class="bi bi-circle-fill" style="font-size:7px;"></i>{{ _('New') }}</span>
+      {% endif %}
+    </span>
+  </div>
+
+  <a href="{{ url_for('scrape.detail', user_paper_id=r.id) }}" class="paper-card__title">
+    {{ r.paper.title }}
+  </a>
+
+  <div class="paper-card__authors small text-muted">
+    {% if r.paper.authors %}
+      {{ r.paper.authors[:3] | join(', ') }}{% if r.paper.authors|length > 3 %} <span class="text-muted-2">+ {{ r.paper.authors|length - 3 }} {{ _('more') }}</span>{% endif %}
+    {% endif %}
+  </div>
+
+  {% if r.paper.abstract %}
+  <p class="paper-card__abstract small text-muted mb-2">{{ r.paper.abstract }}</p>
+  {% endif %}
+
+  <div class="paper-card__foot">
+    {% if r.matched_keyword %}
+      <span class="kw-pill kw-pill--{{ (r.matched_keyword | length) % 5 }}">{{ r.matched_keyword }}</span>
+    {% endif %}
+    {% if r.notes %}
+      <span class="small text-success d-inline-flex align-items-center gap-1"><i class="bi bi-journal-text"></i>{{ r.notes|length }} {{ _('note') }}</span>
+    {% endif %}
+
+    <div class="paper-card__actions ms-auto">
+      <button type="button"
+              class="btn btn-sm action-btn{% if r.is_favorite %} action-btn--on-fav{% endif %}"
+              hx-post="{{ url_for('scrape.toggle_favorite_route', user_paper_id=r.id) }}"
+              hx-target="#card-{{ r.id }}" hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              aria-label="{{ _('Toggle favorite') }}" title="{{ _('Toggle favorite') }}">
+        <i class="bi {% if r.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      </button>
+      <a href="{{ url_for('scrape.detail', user_paper_id=r.id) }}"
+         class="btn btn-sm action-btn{% if r.notes %} action-btn--on-note{% endif %}"
+         aria-label="{{ _('Open notes') }}" title="{{ _('Open notes') }}">
+        <i class="bi bi-journal-text"></i>
+      </a>
+      {% if r.paper.pdf_url %}
+      <a href="{{ r.paper.pdf_url }}" target="_blank" rel="noopener"
+         class="btn btn-sm action-btn"
+         aria-label="{{ _('Open PDF') }}" title="{{ _('Open PDF') }}">
+        <i class="bi bi-file-earmark-pdf"></i>
+      </a>
+      {% endif %}
+      <button type="button" class="btn btn-sm action-btn action-btn--mute"
+              hx-post="{{ url_for('scrape.dismiss', user_paper_id=r.id) }}"
+              hx-target="#card-{{ r.id }}" hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              hx-confirm="{{ _('Hide this paper from your feed?') }}"
+              aria-label="{{ _('Hide') }}" title="{{ _('Hide') }}">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  </div>
+</div>
