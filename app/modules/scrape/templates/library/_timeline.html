@@ -1,0 +1,60 @@
+{# Chronological event stream — scrape runs, favorites, notes, dismissals,
+   new keywords. Each event is a `TimelineEvent` dataclass row from
+   build_timeline(). The kind drives the icon + color. #}
+
+{% if events %}
+<div class="timeline">
+  {% for ev in events %}
+  <div class="timeline-event timeline-event--{{ ev.kind }}">
+    <div class="timeline-event__dot">
+      <i class="bi
+        {%- if ev.kind == 'scrape_run' %} bi-arrow-clockwise
+        {%- elif ev.kind == 'favorited' %} bi-heart-fill
+        {%- elif ev.kind == 'note_added' %} bi-journal-text
+        {%- elif ev.kind == 'dismissed' %} bi-eye-slash
+        {%- elif ev.kind == 'keyword_added' %} bi-tag-fill
+        {%- else %} bi-circle{% endif -%}"></i>
+    </div>
+
+    <div class="timeline-event__when small text-muted">
+      {{ ev.when.strftime('%d.%m.%Y %H:%M') }}
+    </div>
+
+    <div class="timeline-event__card">
+      {% if ev.link_url %}
+        <a href="{{ ev.link_url }}" class="timeline-event__title">{{ ev.title }}</a>
+      {% else %}
+        <span class="timeline-event__title">{{ ev.title }}</span>
+      {% endif %}
+
+      <span class="timeline-event__label">
+        {%- if ev.kind == 'scrape_run' %}{{ _('Scrape run') }}
+        {%- elif ev.kind == 'favorited' %}{{ _('Favorited') }}
+        {%- elif ev.kind == 'note_added' %}{{ _('Note added') }}
+        {%- elif ev.kind == 'dismissed' %}{{ _('Hidden') }}
+        {%- elif ev.kind == 'keyword_added' %}{{ _('New interest') }}{% endif -%}
+      </span>
+
+      {% if ev.tag %}
+        <span class="note-tag note-tag--{{ ev.tag }}">{{ ev.tag }}</span>
+      {% endif %}
+
+      {% if ev.detail %}
+      <p class="timeline-event__detail small text-muted mb-0">{{ ev.detail }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state py-5 text-center">
+  <i class="bi bi-clock-history" style="font-size: 36px; color: var(--bs-secondary-color);"></i>
+  <div class="mt-2 fw-medium">{{ _('No activity yet.') }}</div>
+  <p class="small text-muted mt-2 mb-3">
+    {{ _('Run a scrape, favorite a paper, or write a note — events will collect here.') }}
+  </p>
+  <a href="{{ url_for('scrape.feed') }}" class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-compass me-1"></i>{{ _('Open discover') }}
+  </a>
+</div>
+{% endif %}
