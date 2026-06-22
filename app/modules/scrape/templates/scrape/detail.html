@@ -61,27 +61,31 @@
     {% endfor %}
   </div>
 
+  {# Mode toggle — Original / TR / AI #}
+  <div class="mode-toggle mb-3">
+    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='original') }}"
+       class="mode-toggle__btn{% if mode == 'original' %} mode-toggle__btn--active{% endif %}">
+      <i class="bi bi-file-text me-1"></i>{{ _('Original') }}
+    </a>
+    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='tr') }}"
+       class="mode-toggle__btn{% if mode == 'tr' %} mode-toggle__btn--active{% endif %}">
+      <i class="bi bi-translate me-1"></i>{{ _('Turkish') }}
+    </a>
+    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='ai') }}"
+       class="mode-toggle__btn{% if mode == 'ai' %} mode-toggle__btn--active{% endif %}">
+      <i class="bi bi-stars text-info me-1"></i>{{ _('AI analysis') }}
+    </a>
+  </div>
+
   <div class="paper-detail__body">
     <div class="paper-detail__abstract">
-      <p class="small text-muted text-uppercase fw-medium mb-2" style="letter-spacing: .04em;">
-        {{ _('Abstract') }}
-      </p>
-      {% if r.paper.abstract %}
-        <p class="abstract-text">{{ r.paper.abstract }}</p>
-      {% else %}
-        <p class="small text-muted fst-italic">{{ _('No abstract available.') }}</p>
+      {% if mode == 'original' %}
+        {% include 'scrape/_mode_original.html' %}
+      {% elif mode == 'tr' %}
+        {% include 'scrape/_ai_translation.html' %}
+      {% elif mode == 'ai' %}
+        {% include 'scrape/_ai_analysis.html' %}
       {% endif %}
-
-      <div class="ai-coming-soon mt-4">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-stars text-info"></i>
-          <span class="fw-medium">{{ _('AI analysis & Turkish translation') }}</span>
-          <span class="badge badge-soft ms-2">{{ _('Coming soon') }}</span>
-        </div>
-        <p class="small text-muted mt-2 mb-0">
-          {{ _('30-second TL;DR, method/findings/limitations breakdown, and a "Ask the paper" RAG chat. Hooked up in the next slice.') }}
-        </p>
-      </div>
     </div>
 
     <aside class="paper-detail__side">

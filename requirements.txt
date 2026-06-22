@@ -35,6 +35,9 @@ Flask-Mail==0.10.0
 pyotp==2.9.0
 qrcode[pil]==7.4.2
 
+# Claude API — paper AI analysis + TR translation (Faz 2 slice 3)
+anthropic==0.46.0
+
 # Logging
 structlog==24.4.0
 

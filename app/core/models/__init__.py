@@ -18,7 +18,13 @@ from app.modules.academic.models import (  # noqa: E402
     UserIdentifier,
     UserKeyword,
 )
-from app.modules.scrape.models import Paper, PaperNote, UserPaper  # noqa: E402
+from app.modules.scrape.models import (  # noqa: E402
+    Paper,
+    PaperAnalysis,
+    PaperNote,
+    PaperTranslation,
+    UserPaper,
+)
 
 __all__ = [
     "Module",
@@ -38,4 +44,6 @@ __all__ = [
     "Paper",
     "UserPaper",
     "PaperNote",
+    "PaperAnalysis",
+    "PaperTranslation",
 ]

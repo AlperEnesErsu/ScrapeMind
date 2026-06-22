@@ -726,3 +726,143 @@ a.timeline-event__title:hover {
 .all-notes__paper-link:hover {
   text-decoration: underline;
 }
+
+/* ============================================================
+ * Paper detail — mode toggle + AI panels
+ * ============================================================ */
+
+.mode-toggle {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--bs-tertiary-bg);
+  padding: 3px;
+  border-radius: 10px;
+}
+
+.mode-toggle__btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 7px;
+  color: var(--bs-secondary-color);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  transition: background 0.12s, color 0.12s;
+}
+
+.mode-toggle__btn:hover {
+  color: var(--bs-body-color);
+}
+
+.mode-toggle__btn--active {
+  background: var(--paper-card-bg);
+  color: var(--bs-body-color);
+  font-weight: 500;
+  box-shadow: 0 0 0 0.5px var(--paper-card-border);
+}
+
+.text-purple {
+  color: #534ab7;
+}
+
+[data-bs-theme="dark"] .text-purple {
+  color: #afa9ec;
+}
+
+.paper-detail__title-tr {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* AI cards (Method / Findings / Limitations / Relevance) */
+.ai-tldr {
+  background: var(--paper-card-bg);
+  border: 1px solid var(--paper-card-border);
+  border-left: 3px solid #534ab7;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.ai-tldr p {
+  font-size: 14.5px;
+  line-height: 1.65;
+}
+
+.ai-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 767.98px) {
+  .ai-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-card {
+  background: var(--paper-card-bg);
+  border: 1px solid var(--paper-card-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.ai-card__list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ai-card__list li {
+  margin-bottom: 3px;
+}
+
+.ai-card__list li:last-child {
+  margin-bottom: 0;
+}
+
+/* Empty / disabled / loading states */
+.ai-empty,
+.ai-disabled {
+  background: var(--bs-tertiary-bg);
+  border: 1px dashed var(--paper-card-border);
+  border-radius: 10px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.ai-empty i,
+.ai-disabled i {
+  font-size: 28px;
+  color: var(--bs-secondary-color);
+  display: block;
+  margin-bottom: 10px;
+}
+
+.ai-empty i.bi-stars,
+.ai-empty i.bi-translate {
+  color: #534ab7;
+}
+
+[data-bs-theme="dark"] .ai-empty i.bi-stars,
+[data-bs-theme="dark"] .ai-empty i.bi-translate {
+  color: #afa9ec;
+}
+
+.ai-foot code {
+  font-size: 11px;
+}
+
+/* htmx-indicator: hidden by default, shown when its target request is in-flight */
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  display: inline-block;
+}
