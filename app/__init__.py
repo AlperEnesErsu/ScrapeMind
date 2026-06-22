@@ -147,6 +147,7 @@ def _register_blueprints(app: Flask) -> None:
     from app.core.users.routes import users_bp
     from app.modules.academic import academic_bp
     from app.modules.dashboard import dashboard_bp
+    from app.modules.scrape.library_routes import library_bp
     from app.modules.scrape.routes import scrape_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -157,6 +158,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(settings_bp, url_prefix="/settings")
     app.register_blueprint(audit_bp, url_prefix="/admin/audit")
     app.register_blueprint(scrape_bp, url_prefix="/papers")
+    app.register_blueprint(library_bp, url_prefix="/library")
     app.register_blueprint(academic_bp, url_prefix="/academic")
     app.register_blueprint(search_bp, url_prefix="/")
     app.register_blueprint(dashboard_bp, url_prefix="/")

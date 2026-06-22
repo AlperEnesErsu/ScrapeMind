@@ -7,6 +7,7 @@ the "For you" dashboard becomes a personal feed instead of a firehose.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import structlog
@@ -181,3 +182,163 @@ def get_note_for_user(user: User, note_id: int) -> PaperNote | None:
         .filter(PaperNote.id == note_id, UserPaper.user_id == user.id)
         .first()
     )
+
+
+def list_all_notes(user: User, *, limit: int = 100) -> list[PaperNote]:
+    """Every note this user has ever written, newest first. Used by the
+    Library "Notes" tab to show notes across papers in one stream."""
+    return (
+        PaperNote.query.join(UserPaper, PaperNote.user_paper_id == UserPaper.id)
+        .filter(UserPaper.user_id == user.id)
+        .order_by(desc(PaperNote.created_at))
+        .limit(limit)
+        .all()
+    )
+
+
+# ----------------------------------------------------------------------------
+# Timeline — merged activity stream for the Library page
+# ----------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class TimelineEvent:
+    """A single row on the Library timeline. Multiple source tables
+    (user_papers, paper_notes, audit_logs, user_keywords) are folded into
+    this one shape so the template just renders a list."""
+
+    when: datetime
+    kind: str  # see KIND_* constants below
+    title: str
+    detail: str | None = None
+    badge: str | None = None  # short status pill (e.g. "+12 new")
+    link_url: str | None = None
+    tag: str | None = None  # for note events
+
+
+KIND_SCRAPE = "scrape_run"
+KIND_FAVORITED = "favorited"
+KIND_NOTE_ADDED = "note_added"
+KIND_DISMISSED = "dismissed"
+KIND_KEYWORD_ADDED = "keyword_added"
+
+
+def build_timeline(user: User, *, limit: int = 40) -> list[TimelineEvent]:
+    """Build a merged activity stream of recent events for this user.
+
+    Sources, in priority order:
+      * audit_logs    — scrape runs (manual + nightly fan-out)
+      * paper_notes   — every note the user wrote
+      * user_papers   — favorited (uses updated_at as a proxy when is_favorite)
+                        + dismissed (dismissed_at) + newly surfaced (created_at)
+      * user_keywords — when the user added a new research interest
+
+    Each source query is capped by `limit` independently so a quiet week
+    of one source doesn't crowd out another.
+    """
+    from urllib.parse import quote
+
+    from app.core.models.audit import AuditLog
+    from app.modules.academic.models import Keyword, UserKeyword
+
+    events: list[TimelineEvent] = []
+
+    # ---- Scrape runs (from audit) ----
+    audit_runs = (
+        AuditLog.query.filter(
+            AuditLog.user_id == user.id,
+            AuditLog.action.in_(["scrape.manual_run", "scrape.auto_run"]),
+        )
+        .order_by(desc(AuditLog.created_at))
+        .limit(limit)
+        .all()
+    )
+    for a in audit_runs:
+        events.append(
+            TimelineEvent(
+                when=a.created_at,
+                kind=KIND_SCRAPE,
+                title="Otomatik tarama" if a.action == "scrape.auto_run" else "Manuel tarama",
+                detail=None,
+                badge=None,
+            )
+        )
+
+    # ---- Note events ----
+    notes = list_all_notes(user, limit=limit)
+    for n in notes:
+        link = n.user_paper
+        # Body preview — first ~70 chars on one line
+        preview = (n.body or "").replace("\n", " ").strip()
+        if len(preview) > 80:
+            preview = preview[:78] + "…"
+        events.append(
+            TimelineEvent(
+                when=n.created_at,
+                kind=KIND_NOTE_ADDED,
+                title=link.paper.title,
+                detail=preview,
+                tag=n.tag,
+                link_url=f"/papers/{link.id}",
+            )
+        )
+
+    # ---- Favorites + dismissals ----
+    fav_rows = (
+        UserPaper.query.filter(UserPaper.user_id == user.id, UserPaper.is_favorite.is_(True))
+        .order_by(desc(UserPaper.updated_at))
+        .limit(limit)
+        .all()
+    )
+    for r in fav_rows:
+        # updated_at is None when the row was inserted as favorite at scrape
+        # time (it never had a separate flip). Fall back to created_at.
+        when = r.updated_at or r.created_at
+        events.append(
+            TimelineEvent(
+                when=when,
+                kind=KIND_FAVORITED,
+                title=r.paper.title,
+                detail=r.matched_keyword,
+                link_url=f"/papers/{r.id}",
+            )
+        )
+
+    dis_rows = (
+        UserPaper.query.filter(UserPaper.user_id == user.id, UserPaper.dismissed_at.isnot(None))
+        .order_by(desc(UserPaper.dismissed_at))
+        .limit(limit)
+        .all()
+    )
+    for r in dis_rows:
+        events.append(
+            TimelineEvent(
+                when=r.dismissed_at,
+                kind=KIND_DISMISSED,
+                title=r.paper.title,
+                detail=r.matched_keyword,
+                link_url=f"/papers/{r.id}",
+            )
+        )
+
+    # ---- Keyword adds ----
+    kw_links = (
+        UserKeyword.query.filter_by(user_id=user.id)
+        .join(Keyword)
+        .order_by(desc(UserKeyword.created_at))
+        .limit(limit)
+        .all()
+    )
+    for ul in kw_links:
+        events.append(
+            TimelineEvent(
+                when=ul.created_at,
+                kind=KIND_KEYWORD_ADDED,
+                title=ul.keyword.value,
+                detail=None,
+                link_url=f"/papers/?q={quote(ul.keyword.value)}",
+            )
+        )
+
+    events.sort(key=lambda e: e.when, reverse=True)
+    return events[:limit]
