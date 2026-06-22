@@ -75,3 +75,49 @@ class PaperNote(BaseModel):
     )
     body = db.Column(db.Text, nullable=False)
     tag = db.Column(db.String(32), nullable=True)
+
+
+class PaperAnalysis(BaseModel):
+    """AI-generated structured analysis of a Paper — TL;DR + method/findings/
+    limitations/personal-relevance breakdown. One row per (paper, target_lang)
+    pair so future locales can co-exist. Refreshable but cached aggressively;
+    we re-run only on explicit user request.
+    """
+
+    __tablename__ = "paper_analyses"
+
+    paper_id = db.Column(db.BigInteger, db.ForeignKey("papers.id"), nullable=False, index=True)
+    target_lang = db.Column(db.String(8), nullable=False, default="tr")
+    tldr = db.Column(db.Text, nullable=True)
+    method = db.Column(db.JSON, nullable=True)  # list[str] bullets
+    findings = db.Column(db.JSON, nullable=True)  # list[str]
+    limitations = db.Column(db.JSON, nullable=True)  # list[str]
+    personal_relevance = db.Column(db.Text, nullable=True)
+    model_version = db.Column(db.String(64), nullable=True)
+    # Raw response payload is kept for debugging / re-parsing without re-calling
+    raw_response = db.Column(db.JSON, nullable=True)
+
+    paper = db.relationship("Paper", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint("paper_id", "target_lang", name="uq_paper_analysis_lang"),
+    )
+
+
+class PaperTranslation(BaseModel):
+    """Title + abstract translated into a target language. Same cache logic
+    as PaperAnalysis: one row per (paper, target_lang)."""
+
+    __tablename__ = "paper_translations"
+
+    paper_id = db.Column(db.BigInteger, db.ForeignKey("papers.id"), nullable=False, index=True)
+    target_lang = db.Column(db.String(8), nullable=False)
+    title_translated = db.Column(db.Text, nullable=True)
+    abstract_translated = db.Column(db.Text, nullable=True)
+    model_version = db.Column(db.String(64), nullable=True)
+
+    paper = db.relationship("Paper", lazy="joined")
+
+    __table_args__ = (
+        db.UniqueConstraint("paper_id", "target_lang", name="uq_paper_translation_lang"),
+    )

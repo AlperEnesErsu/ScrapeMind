@@ -62,6 +62,12 @@ class BaseConfig:
     MICROSOFT_CLIENT_SECRET = os.getenv("MICROSOFT_CLIENT_SECRET", "")
     MICROSOFT_TENANT_ID = os.getenv("MICROSOFT_TENANT_ID", "common")
 
+    # Anthropic Claude API — powers paper AI analysis + translation.
+    # When empty, /papers/<id>?mode=ai shows a "configure to enable" panel
+    # instead of crashing. Set in production to switch the feature on.
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+    ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True

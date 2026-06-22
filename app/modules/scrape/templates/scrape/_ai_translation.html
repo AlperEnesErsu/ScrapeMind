@@ -1,0 +1,60 @@
+{# TR translation panel. Three states:
+   1. AI disabled (no API key)       → _ai_disabled.html
+   2. No cached translation yet      → "Generate" button (HTMX trigger)
+   3. Cached translation present     → translated title + abstract
+#}
+<div id="ai-translation-panel">
+  {% if not ai_enabled %}
+    {% include 'scrape/_ai_disabled.html' %}
+  {% elif translation %}
+    <p class="small text-muted text-uppercase fw-medium mb-2" style="letter-spacing: .04em;">
+      <i class="bi bi-translate me-1"></i>{{ _('Translated title') }}
+    </p>
+    {% if translation.title_translated %}
+      <p class="paper-detail__title-tr mb-3">{{ translation.title_translated }}</p>
+    {% endif %}
+
+    <p class="small text-muted text-uppercase fw-medium mb-2" style="letter-spacing: .04em;">
+      {{ _('Translated abstract') }}
+    </p>
+    {% if translation.abstract_translated %}
+      <p class="abstract-text">{{ translation.abstract_translated }}</p>
+    {% else %}
+      <p class="small text-muted fst-italic">{{ _('No abstract to translate.') }}</p>
+    {% endif %}
+
+    <div class="ai-foot d-flex align-items-center gap-2 mt-3 small text-muted">
+      <i class="bi bi-stars text-info"></i>
+      <span>{{ _('Translated by') }} <code>{{ translation.model_version }}</code></span>
+      <span>·</span>
+      <span>{{ translation.updated_at.strftime('%d.%m.%Y %H:%M') if translation.updated_at else translation.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+      <button class="btn btn-sm action-btn ms-auto"
+              hx-post="{{ url_for('scrape.generate_translation_route', user_paper_id=r.id) }}?force=1"
+              hx-target="#ai-translation-panel" hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              hx-indicator="#ai-translation-panel"
+              aria-label="{{ _('Regenerate translation') }}" title="{{ _('Regenerate translation') }}">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  {% else %}
+    <div class="ai-empty">
+      <i class="bi bi-translate"></i>
+      <h6 class="mb-1">{{ _('Translate this paper to Turkish') }}</h6>
+      <p class="small text-muted mb-3">
+        {{ _('Title and abstract translated by Claude. Cached after first run — no repeated cost.') }}
+      </p>
+      <button class="btn btn-primary btn-sm"
+              hx-post="{{ url_for('scrape.generate_translation_route', user_paper_id=r.id) }}"
+              hx-target="#ai-translation-panel" hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              hx-disabled-elt="this"
+              hx-indicator="#ai-loading-tr">
+        <i class="bi bi-translate me-1"></i>{{ _('Translate now') }}
+      </button>
+      <div id="ai-loading-tr" class="htmx-indicator small text-muted mt-2">
+        <i class="bi bi-three-dots"></i> {{ _('Asking Claude…') }}
+      </div>
+    </div>
+  {% endif %}
+</div>

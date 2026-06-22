@@ -1,0 +1,9 @@
+{# Original-language abstract — exactly what the source published. #}
+<p class="small text-muted text-uppercase fw-medium mb-2" style="letter-spacing: .04em;">
+  {{ _('Abstract') }}
+</p>
+{% if r.paper.abstract %}
+  <p class="abstract-text">{{ r.paper.abstract }}</p>
+{% else %}
+  <p class="small text-muted fst-italic">{{ _('No abstract available.') }}</p>
+{% endif %}

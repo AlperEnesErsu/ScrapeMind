@@ -71,11 +71,84 @@ def feed():
 @scrape_bp.route("/<int:user_paper_id>")
 @login_required
 def detail(user_paper_id: int):
+    """Paper detail with a 3-mode toggle (Original / TR / AI Analysis).
+
+    Mode comes from `?mode=original|tr|ai`; default is "original". We pull
+    the cached translation/analysis up front so the partial doesn't have
+    to know about ai_service — anything missing just renders the "not yet"
+    state plus a "Generate" button that hits the HTMX trigger endpoint.
+    """
+    from app.modules.scrape.ai_service import get_analysis, get_translation, is_ai_enabled
+
     link = get_user_paper(current_user, user_paper_id)
     if link is None:
         abort(404)
     mark_seen(link)
-    return render_template("scrape/detail.html", r=link)
+
+    mode = request.args.get("mode", "original")
+    if mode not in {"original", "tr", "ai"}:
+        mode = "original"
+
+    return render_template(
+        "scrape/detail.html",
+        r=link,
+        mode=mode,
+        ai_enabled=is_ai_enabled(),
+        translation=get_translation(link.paper) if mode == "tr" else None,
+        analysis=get_analysis(link.paper) if mode == "ai" else None,
+    )
+
+
+@scrape_bp.route("/<int:user_paper_id>/analysis", methods=["POST"])
+@login_required
+def generate_analysis_route(user_paper_id: int):
+    """HTMX: trigger Claude analysis. Swaps the AI mode panel with the
+    rendered result. `?force=1` re-runs the cache."""
+    from app.modules.scrape.ai_service import (
+        get_or_generate_analysis,
+        is_ai_enabled,
+    )
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+    if not is_ai_enabled():
+        return render_template("scrape/_ai_disabled.html", kind="analysis")
+    force = request.args.get("force") == "1"
+    analysis = get_or_generate_analysis(link.paper, force=force)
+    log_action(
+        "paper.analysis_generated",
+        entity_type="paper",
+        entity_id=str(link.paper.id),
+        changes={"force": force, "ok": analysis is not None},
+    )
+    return render_template("scrape/_ai_analysis.html", r=link, analysis=analysis)
+
+
+@scrape_bp.route("/<int:user_paper_id>/translate", methods=["POST"])
+@login_required
+def generate_translation_route(user_paper_id: int):
+    """HTMX: trigger Claude translation. Swaps the TR mode panel with the
+    rendered title+abstract translation."""
+    from app.modules.scrape.ai_service import (
+        get_or_generate_translation,
+        is_ai_enabled,
+    )
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+    if not is_ai_enabled():
+        return render_template("scrape/_ai_disabled.html", kind="translation")
+    force = request.args.get("force") == "1"
+    translation = get_or_generate_translation(link.paper, force=force)
+    log_action(
+        "paper.translation_generated",
+        entity_type="paper",
+        entity_id=str(link.paper.id),
+        changes={"force": force, "ok": translation is not None},
+    )
+    return render_template("scrape/_ai_translation.html", r=link, translation=translation)
 
 
 # ----------------------------------------------------------------------------
