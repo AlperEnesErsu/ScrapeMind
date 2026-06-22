@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('My library') }} — ScrapeMind{% endblock %}
+{% block content %}
+
+<div class="library-head d-flex flex-wrap align-items-center gap-2 mb-3">
+  <h4 class="m-0 d-inline-flex align-items-center gap-2">
+    <i class="bi bi-bookmark-heart text-primary"></i>{{ _('My library') }}
+  </h4>
+  <span class="small text-muted">
+    {{ counts.favorites }} {{ _('favorites') }} · {{ counts.notes }} {{ _('notes') }}
+  </span>
+</div>
+
+<div class="view-tabs mb-3 d-flex flex-wrap gap-1">
+  <a class="view-tab{% if view == 'timeline' %} view-tab--active{% endif %}"
+     href="{{ url_for('library.index') }}">
+    <i class="bi bi-clock-history me-1"></i>{{ _('Timeline') }}
+  </a>
+  <a class="view-tab{% if view == 'favorites' %} view-tab--active{% endif %}"
+     href="{{ url_for('library.index', view='favorites') }}">
+    <i class="bi bi-heart me-1"></i>{{ _('Favorites') }}
+    <span class="view-tab__count">{{ counts.favorites }}</span>
+  </a>
+  <a class="view-tab{% if view == 'notes' %} view-tab--active{% endif %}"
+     href="{{ url_for('library.index', view='notes') }}">
+    <i class="bi bi-journal-text me-1"></i>{{ _('Notes') }}
+    <span class="view-tab__count">{{ counts.notes }}</span>
+  </a>
+  <a class="view-tab{% if view == 'hidden' %} view-tab--active{% endif %}"
+     href="{{ url_for('library.index', view='hidden') }}">
+    <i class="bi bi-eye-slash me-1"></i>{{ _('Hidden') }}
+    {% if counts.hidden %}<span class="view-tab__count">{{ counts.hidden }}</span>{% endif %}
+  </a>
+</div>
+
+{% if view == 'timeline' %}
+  {% include 'library/_timeline.html' %}
+{% elif view == 'notes' %}
+  {% include 'library/_notes.html' %}
+{% else %}
+  {# favorites + hidden share the paper-card layout #}
+  {% if rows %}
+    {% for r in rows %}
+      {% include 'scrape/_paper_card.html' %}
+    {% endfor %}
+  {% else %}
+    <div class="empty-state py-5 text-center">
+      <i class="bi bi-{% if view == 'favorites' %}heart{% else %}eye-slash{% endif %}"
+         style="font-size: 36px; color: var(--bs-secondary-color);"></i>
+      <div class="mt-2 fw-medium">
+        {% if view == 'favorites' %}{{ _('No favorites yet.') }}
+        {% else %}{{ _('Nothing hidden.') }}{% endif %}
+      </div>
+      <p class="small text-muted mt-2 mb-3">
+        {% if view == 'favorites' %}
+          {{ _('Star papers from the discover feed — they will collect here.') }}
+        {% else %}
+          {{ _('Papers you hide will be listed here so you can recover them.') }}
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+{% endif %}
+
+{% endblock %}
