@@ -1,0 +1,10 @@
+{# Single favorite button — swap target for the detail-page heart icon.
+   Same hx-* wiring as the card variant but only renders the button. #}
+<button type="button"
+        class="btn btn-sm action-btn{% if r.is_favorite %} action-btn--on-fav{% endif %}"
+        hx-post="{{ url_for('scrape.toggle_favorite_route', user_paper_id=r.id) }}?as=button"
+        hx-target="this" hx-swap="outerHTML"
+        hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+        aria-label="{{ _('Toggle favorite') }}">
+  <i class="bi {% if r.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+</button>

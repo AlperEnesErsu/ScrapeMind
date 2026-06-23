@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScrapeMind 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-26 12:01+0300\n"
+"POT-Creation-Date: 2026-06-23 11:01+0300\n"
 "PO-Revision-Date: 2026-05-16 00:00+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -14,34 +14,70 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+# --- Dashboard ---
+#: app/core/_i18n_noop.py:17
+msgid "menu.dashboard"
+msgstr "Home"
+
+#: app/core/_i18n_noop.py:18
+msgid "menu.discover"
+msgstr "Discover"
+
+#: app/core/_i18n_noop.py:19
+msgid "menu.library"
+msgstr "My library"
+
+#: app/core/_i18n_noop.py:20
+msgid "menu.library.timeline"
+msgstr "Timeline"
+
+#: app/core/_i18n_noop.py:21
+msgid "menu.library.favorites"
+msgstr "Favorites"
+
+#: app/core/_i18n_noop.py:22
+msgid "menu.library.notes"
+msgstr "Notes"
+
+# --- Profile tabs ---
+#: app/core/_i18n_noop.py:27 app/core/templates/settings/_tab_personal.html:2
+msgid "Personal Info"
+msgstr "Personal Info"
+
 # Tab labels declared in app/core/settings/tab_registry.py — passed through
 # gettext at render time (profile.html does {{ _(label) }}), so pybabel
 # can't pick them up statically. Keep these msgids manually in sync with
 # CORE_TABS until the tab registry switches to lazy_gettext().
+#: app/core/_i18n_noop.py:28
+#, fuzzy
 msgid "Login Email"
 msgstr "Login Email"
 
+#: app/core/_i18n_noop.py:29 app/core/auth/forms.py:22
+#: app/core/auth/forms.py:32 app/core/templates/settings/_tab_password.html:2
+msgid "Password"
+msgstr "Password"
+
+#: app/core/_i18n_noop.py:30
 msgid "Security (2FA)"
-msgstr "Security (2FA)"
+msgstr ""
 
-# Sidebar menu labels — see tr/messages.po for context.
-msgid "menu.dashboard"
-msgstr "Home"
+#: app/core/_i18n_noop.py:31 app/core/templates/settings/_tab_prefs.html:2
+msgid "Preferences"
+msgstr "Preferences"
 
-msgid "menu.discover"
-msgstr "Discover"
+#: app/core/_i18n_noop.py:32 app/core/templates/settings/_tab_oauth.html:2
+msgid "OAuth Accounts"
+msgstr "OAuth Accounts"
 
-msgid "menu.library"
-msgstr "My library"
+#: app/core/_i18n_noop.py:33 app/core/templates/settings/_tab_sessions.html:2
+#, fuzzy
+msgid "Active Sessions"
+msgstr "Active Users"
 
-msgid "menu.library.timeline"
-msgstr "Timeline"
-
-msgid "menu.library.favorites"
-msgstr "Favorites"
-
-msgid "menu.library.notes"
-msgstr "Notes"
+#: app/core/_i18n_noop.py:34 app/core/templates/settings/_tab_account.html:2
+msgid "Account"
+msgstr "Account"
 
 #: app/core/auth/forms.py:11 app/core/templates/settings/_tab_account.html:4
 #: app/core/templates/users/edit.html:59 app/core/templates/users/list.html:31
@@ -62,11 +98,6 @@ msgstr "Email"
 #: app/core/templates/users/list.html:33 app/core/users/forms.py:8
 msgid "Full Name"
 msgstr "Full Name"
-
-#: app/core/auth/forms.py:22 app/core/auth/forms.py:32
-#: app/core/templates/settings/_tab_password.html:2
-msgid "Password"
-msgstr "Password"
 
 #: app/core/auth/forms.py:24 app/core/auth/forms.py:45
 #, fuzzy
@@ -114,7 +145,7 @@ msgstr "Password"
 msgid "Reset Password"
 msgstr "Reset Password"
 
-#: app/core/auth/forms.py:53 app/core/auth/forms.py:63
+#: app/core/auth/forms.py:53 app/core/auth/forms.py:64
 msgid "Authenticator Code"
 msgstr ""
 
@@ -123,7 +154,7 @@ msgstr ""
 msgid "Verify"
 msgstr "Verified"
 
-#: app/core/auth/forms.py:66 app/core/templates/settings/_tab_security.html:80
+#: app/core/auth/forms.py:67 app/core/templates/settings/_tab_security.html:80
 #: app/core/templates/settings/_tab_security.html:100
 msgid "Enable 2FA"
 msgstr ""
@@ -170,60 +201,60 @@ msgstr ""
 msgid "Invalid credentials or account locked."
 msgstr "Invalid credentials or account locked."
 
-#: app/core/auth/routes.py:98 app/core/settings/routes.py:267
+#: app/core/auth/routes.py:102 app/core/settings/routes.py:319
 msgid "Code is invalid. Try again."
 msgstr ""
 
-#: app/core/auth/routes.py:113
+#: app/core/auth/routes.py:118
 msgid "Logged in with a recovery code — consider regenerating your codes."
 msgstr ""
 
-#: app/core/auth/routes.py:144
+#: app/core/auth/routes.py:151
 #, fuzzy
 msgid "Public registration is currently disabled."
 msgstr "Public registration enabled"
 
-#: app/core/auth/routes.py:158
+#: app/core/auth/routes.py:165
 msgid "Account created. You can sign in now."
 msgstr "Account created. You can sign in now."
 
-#: app/core/auth/routes.py:180
+#: app/core/auth/routes.py:188
 #, python-format
 msgid "Dev mode: reset link → %(url)s"
 msgstr "Dev mode: reset link → %(url)s"
 
-#: app/core/auth/routes.py:181
+#: app/core/auth/routes.py:189
 msgid "If that email exists, a reset link has been sent."
 msgstr "If that email exists, a reset link has been sent."
 
-#: app/core/auth/routes.py:192
+#: app/core/auth/routes.py:199
 msgid "Reset link is invalid or expired."
 msgstr "Reset link is invalid or expired."
 
-#: app/core/auth/routes.py:198
+#: app/core/auth/routes.py:205
 msgid "Password reset. You can sign in now."
 msgstr "Password reset. You can sign in now."
 
-#: app/core/auth/routes.py:217 app/core/auth/routes.py:233
-#: app/core/auth/routes.py:248
+#: app/core/auth/routes.py:225 app/core/auth/routes.py:242
+#: app/core/auth/routes.py:258
 msgid "Unknown OAuth provider."
 msgstr "Unknown OAuth provider."
 
-#: app/core/auth/routes.py:279
+#: app/core/auth/routes.py:289
 msgid "OAuth login failed or registration disabled."
 msgstr "OAuth login failed or registration is disabled."
 
-#: app/core/auth/routes.py:298
+#: app/core/auth/routes.py:310
 #, fuzzy, python-format
 msgid "This %(provider)s account is already linked."
 msgstr "This code is already in use."
 
-#: app/core/auth/routes.py:300
+#: app/core/auth/routes.py:316
 #, python-format
 msgid "This %(provider)s account is linked to another user."
 msgstr ""
 
-#: app/core/auth/routes.py:316
+#: app/core/auth/routes.py:337
 #, python-format
 msgid "%(provider)s account linked successfully."
 msgstr ""
@@ -278,6 +309,8 @@ msgstr "Visible"
 #: app/core/settings/forms.py:22 app/core/settings/forms.py:28
 #: app/core/settings/forms.py:47 app/core/settings/system_forms.py:16
 #: app/core/users/forms.py:13
+#: app/modules/scrape/templates/scrape/_note_edit.html:43
+#: app/modules/scrape/templates/scrape/_notes_list.html:42
 #, fuzzy
 msgid "Save"
 msgstr "Active"
@@ -380,82 +413,82 @@ msgstr "Time"
 msgid "Theme"
 msgstr "Time"
 
-#: app/core/settings/routes.py:186
+#: app/core/settings/routes.py:201
 msgid "Profile updated."
 msgstr "Profile updated."
 
-#: app/core/settings/routes.py:187 app/core/settings/routes.py:200
-#: app/core/settings/routes.py:213 app/core/settings/routes.py:225
-#: app/modules/academic/routes.py:118 app/modules/academic/routes.py:187
+#: app/core/settings/routes.py:204 app/core/settings/routes.py:221
+#: app/core/settings/routes.py:241 app/core/settings/routes.py:265
+#: app/modules/academic/routes.py:139 app/modules/academic/routes.py:226
 msgid "Please correct the errors below."
 msgstr "Please correct the errors below."
 
-#: app/core/settings/routes.py:198
+#: app/core/settings/routes.py:217
 msgid "Email updated."
 msgstr "Email updated."
 
-#: app/core/settings/routes.py:211
+#: app/core/settings/routes.py:236
 msgid "Password changed."
 msgstr "Password changed."
 
-#: app/core/settings/routes.py:224
+#: app/core/settings/routes.py:262
 msgid "Preferences updated."
 msgstr "Preferences updated."
 
-#: app/core/settings/routes.py:234 app/core/settings/routes.py:254
+#: app/core/settings/routes.py:277 app/core/settings/routes.py:301
 #, fuzzy
 msgid "2FA is already enabled."
 msgstr "Email already in use."
 
-#: app/core/settings/routes.py:260
+#: app/core/settings/routes.py:310
 msgid "Setup expired — start again."
 msgstr ""
 
-#: app/core/settings/routes.py:278
+#: app/core/settings/routes.py:330
 msgid "2FA enabled. Save your recovery codes — they will not be shown again."
 msgstr ""
 
-#: app/core/settings/routes.py:295
+#: app/core/settings/routes.py:348
 msgid "Code required."
 msgstr ""
 
-#: app/core/settings/routes.py:301
+#: app/core/settings/routes.py:356
 msgid "Code is invalid."
 msgstr ""
 
-#: app/core/settings/routes.py:306
+#: app/core/settings/routes.py:362
 msgid "2FA disabled."
 msgstr ""
 
-#: app/core/settings/routes.py:321
+#: app/core/settings/routes.py:377
 msgid "New recovery codes generated. Old ones no longer work."
 msgstr ""
 
-#: app/core/settings/routes.py:336
+#: app/core/settings/routes.py:391
 #, fuzzy
 msgid "Account not found."
 msgstr "Paper not found."
 
-#: app/core/settings/routes.py:347
+#: app/core/settings/routes.py:402
 msgid "Cannot unlink — this is your only login method. Set a password first."
 msgstr ""
 
-#: app/core/settings/routes.py:356
+#: app/core/settings/routes.py:412
 #, fuzzy, python-format
 msgid "%(provider)s account unlinked."
 msgstr "No OAuth accounts linked."
 
-#: app/core/settings/routes.py:371
+#: app/core/settings/routes.py:428
 #, fuzzy
 msgid "Device signed out."
 msgstr "Sign Out"
 
-#: app/core/settings/routes.py:384
+#: app/core/settings/routes.py:447
 #, python-format
 msgid "%(n)d other device(s) signed out."
 msgstr ""
 
-#: app/core/settings/routes.py:412
+#: app/core/settings/routes.py:484
 msgid "System settings saved."
 msgstr "System settings saved."
 
@@ -630,30 +663,6 @@ msgstr "Menu"
 msgid "Collapse"
 msgstr "Collapse"
 
-# --- Search ---
-#: app/core/templates/core/_topbar.html:10
-msgid "Search…"
-msgstr "Search…"
-
-#: app/core/templates/core/_topbar.html:37
-#: app/core/templates/settings/profile.html:2
-#: app/core/templates/settings/profile.html:4
-msgid "Profile"
-msgstr "Profile"
-
-#: app/core/templates/core/_topbar.html:38
-msgid "Settings"
-msgstr "Settings"
-
-# --- Topbar / sidebar ---
-#: app/core/templates/core/_topbar.html:42
-msgid "Toggle Theme"
-msgstr "Toggle Theme"
-
-#: app/core/templates/core/_topbar.html:46
-msgid "Sign Out"
-msgstr "Sign Out"
-
 #: app/core/templates/errors/403.html:2
 msgid "Forbidden"
 msgstr ""
@@ -741,6 +750,7 @@ msgstr "Use either Endpoint or URL."
 #: app/core/templates/rbac/role_form.html:55
 #: app/core/templates/settings/_tab_security.html:86
 #: app/core/templates/users/edit.html:73
+#: app/modules/scrape/templates/scrape/_note_edit.html:39
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -782,6 +792,7 @@ msgid "Name"
 msgstr "Name"
 
 #: app/core/templates/rbac/role_list.html:32
+#: app/modules/scrape/templates/scrape/_note_view.html:14
 msgid "Edit"
 msgstr "Edit"
 
@@ -792,10 +803,6 @@ msgstr "Delete this role?"
 #: app/core/templates/rbac/role_list.html:46
 msgid "No roles yet."
 msgstr "No roles yet."
-
-#: app/core/templates/settings/_tab_account.html:2
-msgid "Account"
-msgstr "Account"
 
 #: app/core/templates/settings/_tab_account.html:7
 #: app/core/templates/users/edit.html:61
@@ -840,10 +847,6 @@ msgstr "Inactive"
 msgid "Required to confirm your identity."
 msgstr "Required to confirm your identity."
 
-#: app/core/templates/settings/_tab_oauth.html:2
-msgid "OAuth Accounts"
-msgstr "OAuth Accounts"
-
 #: app/core/templates/settings/_tab_oauth.html:26
 #, python-format
 msgid "Unlink %(provider)s account?"
@@ -886,15 +889,6 @@ msgid ""
 "You have no password set. If you unlink all OAuth accounts you will lose "
 "access."
 msgstr ""
-
-# --- Profile tabs ---
-#: app/core/templates/settings/_tab_personal.html:2
-msgid "Personal Info"
-msgstr "Personal Info"
-
-#: app/core/templates/settings/_tab_prefs.html:2
-msgid "Preferences"
-msgstr "Preferences"
 
 #: app/core/templates/settings/_tab_prefs.html:20
 msgid "Language and theme changes apply on next page load."
@@ -960,11 +954,6 @@ msgid ""
 "a 6-digit code from your authenticator app each time you sign in."
 msgstr ""
 
-#: app/core/templates/settings/_tab_sessions.html:2
-#, fuzzy
-msgid "Active Sessions"
-msgstr "Active Users"
-
 #: app/core/templates/settings/_tab_sessions.html:5
 msgid "These devices are currently signed in to your account."
 msgstr ""
@@ -1003,6 +992,11 @@ msgstr ""
 #: app/core/templates/settings/_tab_sessions.html:51
 msgid "Sign out all other devices"
 msgstr ""
+
+#: app/core/templates/settings/profile.html:2
+#: app/core/templates/settings/profile.html:4
+msgid "Profile"
+msgstr "Profile"
 
 # --- System settings ---
 #: app/core/templates/settings/system.html:2
@@ -1241,46 +1235,46 @@ msgstr "Verification link is invalid or expired."
 msgid "Email verified."
 msgstr "Email verified."
 
-#: app/modules/academic/routes.py:111 app/modules/academic/routes.py:147
+#: app/modules/academic/routes.py:121 app/modules/academic/routes.py:180
 #, python-format
 msgid "Dev mode: verification link → %(url)s"
 msgstr "Dev mode: verification link → %(url)s"
 
-#: app/modules/academic/routes.py:114
+#: app/modules/academic/routes.py:127
 msgid "Identifier added — a verification link has been sent."
 msgstr "Identifier added — a verification link has been sent."
 
-#: app/modules/academic/routes.py:116
+#: app/modules/academic/routes.py:133
 msgid "Identifier added."
 msgstr "Identifier added."
 
-#: app/modules/academic/routes.py:129
+#: app/modules/academic/routes.py:156
 msgid "Identifier removed."
 msgstr "Identifier removed."
 
-#: app/modules/academic/routes.py:149
+#: app/modules/academic/routes.py:186
 msgid "Verification link re-sent."
 msgstr "Verification link re-sent."
 
-#: app/modules/academic/routes.py:171
+#: app/modules/academic/routes.py:210
 msgid "No valid keywords found."
 msgstr "No valid keywords found."
 
-#: app/modules/academic/routes.py:178
+#: app/modules/academic/routes.py:217
 #, python-format
 msgid "%(n)d keywords added."
 msgstr "%(n)d keywords added."
 
-#: app/modules/academic/routes.py:180
+#: app/modules/academic/routes.py:217
 msgid "Keyword added."
 msgstr "Keyword added."
 
-#: app/modules/academic/routes.py:184
+#: app/modules/academic/routes.py:221
 #, python-format
 msgid "%(n)d added, %(s)d already following."
 msgstr "%(n)d added, %(s)d already following."
 
-#: app/modules/academic/routes.py:198
+#: app/modules/academic/routes.py:240
 msgid "Keyword removed."
 msgstr "Keyword removed."
 
@@ -1364,6 +1358,7 @@ msgstr "Recent activity"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:80
 #: app/modules/dashboard/templates/dashboard/index.html:112
+#: app/modules/scrape/templates/library/_timeline.html:52
 msgid "No activity yet."
 msgstr "No activity yet."
 
@@ -1393,50 +1388,68 @@ msgid "Audit log"
 msgstr "Audit Log"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:2
-#: app/modules/dashboard/templates/dashboard/for_you.html:7
+#: app/modules/dashboard/templates/dashboard/for_you.html:9
 #: app/modules/dashboard/templates/dashboard/index.html:59
 msgid "For you"
 msgstr "For you"
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:10
+#: app/modules/dashboard/templates/dashboard/for_you.html:12
 #: app/modules/dashboard/templates/dashboard/index.html:7
 #, python-format
 msgid "Welcome, %(name)s"
 msgstr "Welcome, %(name)s"
 
+#: app/modules/dashboard/templates/dashboard/for_you.html:20
+#: app/modules/scrape/templates/scrape/feed.html:24
+msgid "Scrape now"
+msgstr "Scrape now"
+
 # --- Scrape / papers feed (Phase 2 slice 3) ---
-#: app/modules/dashboard/templates/dashboard/for_you.html:18
+#: app/modules/dashboard/templates/dashboard/for_you.html:30
 #, fuzzy
 msgid "Personalise your feed"
 msgstr "Your feed"
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:19
+#: app/modules/dashboard/templates/dashboard/for_you.html:32
 #, fuzzy
 msgid ""
 "Add research interests to your profile so we can surface relevant papers "
 "for you."
 msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:21
+#: app/modules/dashboard/templates/dashboard/for_you.html:35
 #: app/modules/dashboard/templates/dashboard/index.html:85
-#: app/modules/scrape/templates/scrape/feed.html:75
+#: app/modules/scrape/templates/scrape/feed.html:79
 msgid "Add interests"
 msgstr "Add interests"
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:55
-#, fuzzy
-msgid "See all papers"
-msgstr "All papers"
+#: app/modules/dashboard/templates/dashboard/for_you.html:50
+msgid "See full Discover feed"
+msgstr "See full Discover feed"
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:63
+#: app/modules/dashboard/templates/dashboard/for_you.html:53
+msgid "Open my library"
+msgstr "Open my library"
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:59
 #: app/modules/dashboard/templates/dashboard/index.html:83
 msgid "No personalised papers yet."
 msgstr "No personalised papers yet."
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:65
+#: app/modules/dashboard/templates/dashboard/for_you.html:62
+msgid "Run a scrape to fill your feed — or check the Discover page."
+msgstr "Run a scrape to fill your feed — or check the Discover page."
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:64
+msgid "Add some interests and run a scrape to see papers here."
+msgstr "Add some interests and run a scrape to see papers here."
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:68
+#: app/modules/scrape/templates/library/_notes.html:28
+#: app/modules/scrape/templates/library/_timeline.html:57
 #, fuzzy
-msgid "Browse all papers"
-msgstr "All papers"
+msgid "Open discover"
+msgstr "Discover"
 
 # --- Dashboard ---
 #: app/modules/dashboard/templates/dashboard/index.html:2
@@ -1460,45 +1473,396 @@ msgstr "Manage menu"
 msgid "Scraping modules will populate this dashboard in Phase 2."
 msgstr "Scraping modules will populate this dashboard in Phase 2."
 
-#: app/modules/scrape/routes.py:32
+#: app/modules/scrape/routes.py:191
 msgid "Paper not found."
 msgstr "Paper not found."
 
-#: app/modules/scrape/routes.py:54
+#: app/modules/scrape/routes.py:217
+msgid "Saved to favorites."
+msgstr ""
+
+#: app/modules/scrape/routes.py:217
+msgid "Removed from favorites."
+msgstr ""
+
+# --- Scrape / papers feed (Phase 2 slice 3) ---
+#: app/modules/scrape/routes.py:233
+#: app/modules/scrape/templates/scrape/_dismissed_undo.html:6
+#, fuzzy
+msgid "Hidden from your feed."
+msgstr "Your feed"
+
+#: app/modules/scrape/routes.py:270 app/modules/scrape/routes.py:273
+#: app/modules/scrape/routes.py:331
+msgid "Empty notes are not saved."
+msgstr ""
+
+#: app/modules/scrape/routes.py:360
 msgid "Scrape queued — papers will appear here once the worker finishes."
 msgstr "Scrape queued — papers will appear here once the worker finishes."
 
-# --- Scrape / papers feed (Phase 2 slice 3) ---
-#: app/modules/scrape/templates/scrape/feed.html:2
-#: app/modules/scrape/templates/scrape/feed.html:5
-msgid "Your feed"
-msgstr "Your feed"
+#: app/modules/scrape/templates/library/_notes.html:23
+#, fuzzy
+msgid "No notes yet."
+msgstr "No roles yet."
 
-#: app/modules/scrape/templates/scrape/feed.html:9
-msgid "Scrape now"
+#: app/modules/scrape/templates/library/_notes.html:25
+msgid ""
+"Open any paper and write a note — it will appear here across all your "
+"reading."
+msgstr ""
+
+#: app/modules/scrape/templates/library/_timeline.html:31
+#, fuzzy
+msgid "Scrape run"
 msgstr "Scrape now"
 
-#: app/modules/scrape/templates/scrape/feed.html:15
-msgid ""
-"Latest papers matched against your research interests. Add or refine "
-"keywords on your profile to change what shows up here."
-msgstr ""
-"Latest papers matched against your research interests. Add or refine "
-"keywords on your profile to change what shows up here."
+#: app/modules/scrape/templates/library/_timeline.html:32
+#, fuzzy
+msgid "Favorited"
+msgstr "Status"
 
-#: app/modules/scrape/templates/scrape/feed.html:53
+#: app/modules/scrape/templates/library/_timeline.html:33
+msgid "Note added"
+msgstr ""
+
+#: app/modules/scrape/templates/library/_timeline.html:34
+#: app/modules/scrape/templates/library/index.html:31
+#: app/modules/scrape/templates/scrape/feed.html:52
+msgid "Hidden"
+msgstr ""
+
+#: app/modules/scrape/templates/library/_timeline.html:35
+#, fuzzy
+msgid "New interest"
+msgstr "Add interests"
+
+#: app/modules/scrape/templates/library/_timeline.html:54
+msgid ""
+"Run a scrape, favorite a paper, or write a note — events will collect "
+"here."
+msgstr ""
+
+#: app/modules/scrape/templates/library/index.html:2
+#: app/modules/scrape/templates/library/index.html:7
+#, fuzzy
+msgid "My library"
+msgstr "My library"
+
+#: app/modules/scrape/templates/library/index.html:10
+msgid "favorites"
+msgstr ""
+
+#: app/modules/scrape/templates/library/index.html:10
+#, fuzzy
+msgid "notes"
+msgstr "No matches."
+
+#: app/modules/scrape/templates/library/index.html:17
+#, fuzzy
+msgid "Timeline"
+msgstr "Time"
+
+#: app/modules/scrape/templates/library/index.html:21
+#: app/modules/scrape/templates/scrape/feed.html:47
+msgid "Favorites"
+msgstr ""
+
+#: app/modules/scrape/templates/library/index.html:26
+#, fuzzy
+msgid "Notes"
+msgstr "No matches."
+
+#: app/modules/scrape/templates/library/index.html:51
+#: app/modules/scrape/templates/scrape/feed.html:64
+#, fuzzy
+msgid "No favorites yet."
+msgstr "No roles yet."
+
+#: app/modules/scrape/templates/library/index.html:52
+#: app/modules/scrape/templates/scrape/feed.html:65
+#, fuzzy
+msgid "Nothing hidden."
+msgstr "Nothing active."
+
+#: app/modules/scrape/templates/library/index.html:56
+#: app/modules/scrape/templates/scrape/feed.html:70
+msgid "Star papers from the discover feed — they will collect here."
+msgstr ""
+
+#: app/modules/scrape/templates/library/index.html:58
+#: app/modules/scrape/templates/scrape/feed.html:72
+msgid "Papers you hide will be listed here so you can recover them."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:15
+msgid "30-second summary"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:26
+msgid "Method"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:38
+msgid "Findings"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:50
+#, fuzzy
+msgid "Limitations"
+msgstr "Actions"
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:62
+msgid "Why this matters for you"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:71
+msgid "Generated by"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:78
+msgid "Regenerate analysis"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:85
+msgid "AI analysis for this paper"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:87
+msgid ""
+"30-second summary plus method / findings / limitations breakdown, in "
+"Turkish. Cached — runs only on demand."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:95
+msgid "Analyze now"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:98
+#: app/modules/scrape/templates/scrape/_ai_translation.html:56
+msgid "Asking Claude…"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_disabled.html:5
+msgid "AI is not configured"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_disabled.html:7
+#, python-format
+msgid "Set %(var)s in your .env to unlock paper analysis and Turkish translation."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_disabled.html:10
+msgid "Until then the original abstract is the only view."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:11
+msgid "Translated title"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:18
+msgid "Translated abstract"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:23
+msgid "No abstract to translate."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:28
+msgid "Translated by"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:36
+msgid "Regenerate translation"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:43
+msgid "Translate this paper to Turkish"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:45
+msgid ""
+"Title and abstract translated by Claude. Cached after first run — no "
+"repeated cost."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:53
+#, fuzzy
+msgid "Translate now"
+msgstr "Scrape now"
+
+#: app/modules/scrape/templates/scrape/_dismissed_undo.html:11
+#, fuzzy
+msgid "Undo"
+msgstr "Unlock"
+
+# --- Topbar / sidebar ---
+#: app/modules/scrape/templates/scrape/_favorite_button.html:8
+#: app/modules/scrape/templates/scrape/_paper_card.html:54
+#, fuzzy
+msgid "Toggle favorite"
+msgstr "Toggle Theme"
+
+#: app/modules/scrape/templates/scrape/_mode_original.html:3
+msgid "Abstract"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_mode_original.html:8
+msgid "No abstract available."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:20
+#: app/modules/scrape/templates/scrape/_notes_list.html:30
+msgid "No tag"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:21
+#: app/modules/scrape/templates/scrape/_notes_list.html:33
+#, fuzzy
+msgid "experiment"
+msgstr "Parent"
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:22
+#: app/modules/scrape/templates/scrape/_notes_list.html:36
+#, fuzzy
+msgid "question"
+msgstr "Description"
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:23
+#: app/modules/scrape/templates/scrape/_notes_list.html:39
+msgid "finding"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:39
+msgid "Cancel edit"
+msgstr "Cancel edit"
+
+#: app/modules/scrape/templates/scrape/_note_view.html:14
+msgid "Edit note"
+msgstr "Edit note"
+
+#: app/modules/scrape/templates/scrape/_note_view.html:21
+#, fuzzy
+msgid "Delete this note?"
+msgstr "Delete this role?"
+
+#: app/modules/scrape/templates/scrape/_note_view.html:22
+#, fuzzy
+msgid "Delete note"
+msgstr "Delete this user?"
+
+#: app/modules/scrape/templates/scrape/_notes_list.html:5
+msgid "My notes"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_notes_list.html:7
+#: app/modules/scrape/templates/scrape/_paper_card.html:45
+msgid "note"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_notes_list.html:17
+msgid "No notes yet — add the first one below."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_notes_list.html:26
+msgid "New note — Cmd+Enter to save"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:17
+msgid "Favorite"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:19
 msgid "Seen"
 msgstr "Seen"
 
-#: app/modules/scrape/templates/scrape/feed.html:55
-msgid "new"
+#: app/modules/scrape/templates/scrape/_paper_card.html:21
+#, fuzzy
+msgid "New"
 msgstr "new"
 
-#: app/modules/scrape/templates/scrape/feed.html:70
+#: app/modules/scrape/templates/scrape/_paper_card.html:32
+#: app/modules/scrape/templates/scrape/detail.html:47
+#, fuzzy
+msgid "more"
+msgstr "core"
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:59
+#, fuzzy
+msgid "Open notes"
+msgstr "Menu Items"
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:65
+msgid "Open PDF"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:73
+msgid "Hide"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:73
+msgid "Hide — undo available"
+msgstr "Hide — undo available"
+
+#: app/modules/scrape/templates/scrape/detail.html:8
+msgid "Back"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/detail.html:11
+#: app/modules/scrape/templates/scrape/feed.html:2
+#: app/modules/scrape/templates/scrape/feed.html:7
+#: app/modules/scrape/templates/scrape/feed.html:42
+#, fuzzy
+msgid "Discover"
+msgstr "Discover"
+
+#: app/modules/scrape/templates/scrape/detail.html:17
+msgid "Copy BibTeX"
+msgstr "Copy BibTeX"
+
+#: app/modules/scrape/templates/scrape/detail.html:18
+msgid "Cite"
+msgstr "Cite"
+
+#: app/modules/scrape/templates/scrape/detail.html:27
+msgid "Source"
+msgstr ""
+
+# Tab labels declared in app/core/settings/tab_registry.py — passed through
+# gettext at render time (profile.html does {{ _(label) }}), so pybabel
+# can't pick them up statically. Keep these msgids manually in sync with
+# CORE_TABS until the tab registry switches to lazy_gettext().
+#: app/modules/scrape/templates/scrape/detail.html:66
+#, fuzzy
+msgid "Original"
+msgstr "Login Email"
+
+#: app/modules/scrape/templates/scrape/detail.html:70
+msgid "Turkish"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/detail.html:74
+msgid "AI analysis"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/feed.html:9
+msgid "Papers matched against your research interests."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/feed.html:17
+msgid "Filter — title, abstract, keyword"
+msgstr "Filter — title, abstract, keyword"
+
+#: app/modules/scrape/templates/scrape/feed.html:32
+#, python-format
+msgid "Filtering: %(term)s"
+msgstr "Filtering: %(term)s"
+
+#: app/modules/scrape/templates/scrape/feed.html:66
 msgid "Nothing here yet."
 msgstr "Nothing here yet."
 
-#: app/modules/scrape/templates/scrape/feed.html:72
+#: app/modules/scrape/templates/scrape/feed.html:74
 msgid "Add some research interests in your profile, then hit \"Scrape now\"."
 msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
 
@@ -1536,8 +1900,9 @@ msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
 #~ msgid "menu.for_you"
 #~ msgstr "For You"
 
+# Sidebar menu labels — see tr/messages.po for context.
 #~ msgid "menu.dashboard"
-#~ msgstr "Dashboard"
+#~ msgstr "Home"
 
 #~ msgid "menu.roles"
 #~ msgstr "Roles"
@@ -1755,4 +2120,47 @@ msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
 
 #~ msgid "System-wide settings — Faz 1"
 #~ msgstr "System-wide settings — Phase 1"
+
+#~ msgid "Security (2FA)"
+#~ msgstr "Security (2FA)"
+
+#~ msgid "menu.library.timeline"
+#~ msgstr "Timeline"
+
+#~ msgid "menu.library.favorites"
+#~ msgstr "Favorites"
+
+#~ msgid "menu.library.notes"
+#~ msgstr "Notes"
+
+# --- Search ---
+#~ msgid "Search…"
+#~ msgstr "Search…"
+
+#~ msgid "Settings"
+#~ msgstr "Settings"
+
+#~ msgid "Sign Out"
+#~ msgstr "Sign Out"
+
+#~ msgid "See all papers"
+#~ msgstr "All papers"
+
+#~ msgid "Browse all papers"
+#~ msgstr "All papers"
+
+# --- Scrape / papers feed (Phase 2 slice 3) ---
+#~ msgid "Your feed"
+#~ msgstr "Your feed"
+
+#~ msgid ""
+#~ "Latest papers matched against your "
+#~ "research interests. Add or refine "
+#~ "keywords on your profile to change "
+#~ "what shows up here."
+#~ msgstr ""
+#~ "Latest papers matched against your "
+#~ "research interests. Add or refine "
+#~ "keywords on your profile to change "
+#~ "what shows up here."
 

@@ -2,22 +2,36 @@
 {% block title %}{{ _('For you') }} — ScrapeMind{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h4 class="mb-0">
-    <i class="bi bi-stars me-2 text-primary"></i>{{ _('For you') }}
-  </h4>
-  <span class="text-muted small">
-    {{ _('Welcome, %(name)s', name=current_user.full_name or current_user.username) }}
-  </span>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h4 class="m-0 d-inline-flex align-items-center gap-2">
+      <i class="bi bi-stars text-primary"></i>{{ _('For you') }}
+    </h4>
+    <div class="small text-muted mt-1">
+      {{ _('Welcome, %(name)s', name=current_user.full_name or current_user.username) }}
+    </div>
+  </div>
+
+  {% if has_interests %}
+  <form method="post" action="{{ url_for('scrape.run_now') }}" class="m-0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-sm btn-primary">
+      <i class="bi bi-arrow-clockwise me-1"></i>{{ _('Scrape now') }}
+    </button>
+  </form>
+  {% endif %}
 </div>
 
 {% if not has_interests %}
-<div class="alert alert-info d-flex align-items-center gap-3">
+<div class="alert alert-info d-flex align-items-start gap-3">
   <i class="bi bi-lightbulb fs-4"></i>
   <div>
-    <strong>{{ _('Personalise your feed') }}</strong><br>
-    <span class="small">{{ _('Add research interests to your profile so we can surface relevant papers for you.') }}</span>
-    <a href="{{ url_for('settings.profile', tab='interests') }}" class="btn btn-sm btn-primary ms-2">
+    <strong>{{ _('Personalise your feed') }}</strong>
+    <p class="small mb-2 mt-1">
+      {{ _('Add research interests to your profile so we can surface relevant papers for you.') }}
+    </p>
+    <a href="{{ url_for('settings.profile', tab='interests') }}" class="btn btn-sm btn-primary">
       <i class="bi bi-tags me-1"></i>{{ _('Add interests') }}
     </a>
   </div>
@@ -25,46 +39,34 @@
 {% endif %}
 
 {% if for_you %}
-<div class="list-group mb-4">
-  {% for r in for_you %}
-  <a href="{{ url_for('scrape.feed') }}" class="list-group-item list-group-item-action">
-    <div class="d-flex justify-content-between align-items-start gap-2">
-      <div class="flex-grow-1 text-truncate">
-        {% if not r.seen_at %}
-          <i class="bi bi-circle-fill text-primary me-1" style="font-size:0.45em; vertical-align:middle;"></i>
-        {% endif %}
-        <strong>{{ r.paper.title }}</strong>
-        {% if r.paper.authors %}
-          <span class="text-muted small ms-1">— {{ r.paper.authors[:2] | join(', ') }}</span>
-        {% endif %}
-      </div>
-      <div class="text-nowrap text-end" style="min-width:90px;">
-        {% if r.matched_keyword %}
-          <span class="badge rounded-pill text-bg-primary-subtle text-primary">{{ r.matched_keyword }}</span>
-        {% endif %}
-        {% if r.paper.published_at %}
-          <div class="text-muted small">{{ r.paper.published_at.strftime('%d.%m.%Y') }}</div>
-        {% endif %}
-      </div>
-    </div>
-  </a>
+  {# Top 5 cards live here. Reuse the same Discover partial so layout stays
+     consistent and quick-action buttons work the same everywhere. #}
+  {% for r in for_you[:5] %}
+    {% include 'scrape/_paper_card.html' %}
   {% endfor %}
-</div>
-<div class="text-center">
-  <a href="{{ url_for('scrape.feed') }}" class="btn btn-outline-primary btn-sm">
-    <i class="bi bi-newspaper me-1"></i>{{ _('See all papers') }}
-  </a>
-</div>
 
-{% else %}
-<div class="card">
-  <div class="card-body text-center py-5 text-muted">
-    <i class="bi bi-newspaper fs-1 mb-3 d-block opacity-25"></i>
-    <p class="mb-3">{{ _('No personalised papers yet.') }}</p>
-    <a href="{{ url_for('scrape.feed') }}" class="btn btn-sm btn-outline-secondary me-2">
-      <i class="bi bi-newspaper me-1"></i>{{ _('Browse all papers') }}
+  <div class="text-center mt-3">
+    <a href="{{ url_for('scrape.feed') }}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-compass me-1"></i>{{ _('See full Discover feed') }}
+    </a>
+    <a href="{{ url_for('library.index') }}" class="btn btn-outline-secondary btn-sm ms-2">
+      <i class="bi bi-bookmark-heart me-1"></i>{{ _('Open my library') }}
     </a>
   </div>
+{% else %}
+<div class="empty-state py-5 text-center">
+  <i class="bi bi-newspaper" style="font-size: 36px; color: var(--bs-secondary-color);"></i>
+  <div class="mt-2 fw-medium">{{ _('No personalised papers yet.') }}</div>
+  <p class="small text-muted mt-2 mb-3">
+    {% if has_interests %}
+      {{ _('Run a scrape to fill your feed — or check the Discover page.') }}
+    {% else %}
+      {{ _('Add some interests and run a scrape to see papers here.') }}
+    {% endif %}
+  </p>
+  <a href="{{ url_for('scrape.feed') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-compass me-1"></i>{{ _('Open discover') }}
+  </a>
 </div>
 {% endif %}
 

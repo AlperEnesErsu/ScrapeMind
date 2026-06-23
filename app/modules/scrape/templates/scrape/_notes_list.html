@@ -12,23 +12,7 @@
   {% endif %}
 
   {% for n in r.notes %}
-  <div class="note-card note-card--{{ n.tag or 'default' }} mb-2">
-    <p class="note-card__body small mb-1">{{ n.body }}</p>
-    <div class="note-card__foot d-flex align-items-center gap-2">
-      <span class="small text-muted">{{ n.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-      {% if n.tag %}
-      <span class="note-tag note-tag--{{ n.tag }} ms-1">{{ n.tag }}</span>
-      {% endif %}
-      <button type="button" class="btn btn-sm action-btn action-btn--mute ms-auto"
-              hx-post="{{ url_for('scrape.delete_note_route', note_id=n.id) }}"
-              hx-target="#notes-panel" hx-swap="outerHTML"
-              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
-              hx-confirm="{{ _('Delete this note?') }}"
-              aria-label="{{ _('Delete note') }}">
-        <i class="bi bi-trash"></i>
-      </button>
-    </div>
-  </div>
+    {% include 'scrape/_note_view.html' %}
   {% else %}
   <p class="small text-muted text-center py-3 mb-2">{{ _('No notes yet — add the first one below.') }}</p>
   {% endfor %}
