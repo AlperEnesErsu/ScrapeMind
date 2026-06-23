@@ -24,6 +24,25 @@ msgstr "Login Email"
 msgid "Security (2FA)"
 msgstr "Security (2FA)"
 
+# Sidebar menu labels — see tr/messages.po for context.
+msgid "menu.dashboard"
+msgstr "Home"
+
+msgid "menu.discover"
+msgstr "Discover"
+
+msgid "menu.library"
+msgstr "My library"
+
+msgid "menu.library.timeline"
+msgstr "Timeline"
+
+msgid "menu.library.favorites"
+msgstr "Favorites"
+
+msgid "menu.library.notes"
+msgstr "Notes"
+
 #: app/core/auth/forms.py:11 app/core/templates/settings/_tab_account.html:4
 #: app/core/templates/users/edit.html:59 app/core/templates/users/list.html:31
 msgid "Username"

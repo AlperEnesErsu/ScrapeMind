@@ -27,6 +27,27 @@ msgstr "Giriş E-postası"
 msgid "Security (2FA)"
 msgstr "Güvenlik (2FA)"
 
+# Sidebar menu labels — stored in menu_items.label_key (DB-driven), rendered
+# via {{ _(node.item.label_key) }} so pybabel can't extract them either.
+# Keep these in sync with the menu_items seed migration (f3b1a0c2d8e7).
+msgid "menu.dashboard"
+msgstr "Ana Sayfa"
+
+msgid "menu.discover"
+msgstr "Keşfet"
+
+msgid "menu.library"
+msgstr "Kütüphanem"
+
+msgid "menu.library.timeline"
+msgstr "Zaman Çizelgesi"
+
+msgid "menu.library.favorites"
+msgstr "Favoriler"
+
+msgid "menu.library.notes"
+msgstr "Notlar"
+
 #: app/core/auth/forms.py:11 app/core/templates/settings/_tab_account.html:4
 #: app/core/templates/users/edit.html:59 app/core/templates/users/list.html:31
 msgid "Username"
