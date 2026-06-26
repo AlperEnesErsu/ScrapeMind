@@ -1,0 +1,27 @@
+{# Single-note read view. id="note-<id>" so /notes/<id>/edit can swap it
+   with the inline editor below without touching siblings. #}
+<div id="note-{{ n.id }}" class="note-card note-card--{{ n.tag or 'default' }} mb-2">
+  <p class="note-card__body small mb-1">{{ n.body }}</p>
+  <div class="note-card__foot d-flex align-items-center gap-2">
+    <span class="small text-muted">{{ n.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+    {% if n.tag %}
+    <span class="note-tag note-tag--{{ n.tag }} ms-1">{{ n.tag }}</span>
+    {% endif %}
+    <div class="ms-auto d-flex gap-1">
+      <button type="button" class="btn btn-sm action-btn"
+              hx-get="{{ url_for('scrape.edit_note_route', note_id=n.id) }}"
+              hx-target="#note-{{ n.id }}" hx-swap="outerHTML"
+              aria-label="{{ _('Edit note') }}" title="{{ _('Edit') }}">
+        <i class="bi bi-pencil"></i>
+      </button>
+      <button type="button" class="btn btn-sm action-btn action-btn--mute"
+              hx-post="{{ url_for('scrape.delete_note_route', note_id=n.id) }}"
+              hx-target="#notes-panel" hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              hx-confirm="{{ _('Delete this note?') }}"
+              aria-label="{{ _('Delete note') }}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+</div>

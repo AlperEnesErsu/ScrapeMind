@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-26 12:01+0300\n"
+"POT-Creation-Date: 2026-06-23 11:01+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -17,36 +17,69 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+# --- Dashboard ---
+#: app/core/_i18n_noop.py:17
+msgid "menu.dashboard"
+msgstr "Ana Sayfa"
+
+#: app/core/_i18n_noop.py:18
+msgid "menu.discover"
+msgstr "Keşfet"
+
+#: app/core/_i18n_noop.py:19
+msgid "menu.library"
+msgstr "Kütüphanem"
+
+#: app/core/_i18n_noop.py:20
+msgid "menu.library.timeline"
+msgstr "Zaman Çizelgesi"
+
+#: app/core/_i18n_noop.py:21
+msgid "menu.library.favorites"
+msgstr "Favoriler"
+
+#: app/core/_i18n_noop.py:22
+msgid "menu.library.notes"
+msgstr "Notlar"
+
+# --- Profile tabs ---
+#: app/core/_i18n_noop.py:27 app/core/templates/settings/_tab_personal.html:2
+msgid "Personal Info"
+msgstr "Kişisel Bilgi"
+
 # Tab labels declared in app/core/settings/tab_registry.py — passed through
 # gettext at render time (profile.html does {{ _(label) }}), so pybabel
 # can't pick them up statically. Keep these msgids manually in sync with
 # CORE_TABS until the tab registry switches to lazy_gettext().
+#: app/core/_i18n_noop.py:28
+#, fuzzy
 msgid "Login Email"
 msgstr "Giriş E-postası"
 
+#: app/core/_i18n_noop.py:29 app/core/auth/forms.py:22
+#: app/core/auth/forms.py:32 app/core/templates/settings/_tab_password.html:2
+msgid "Password"
+msgstr "Şifre"
+
+#: app/core/_i18n_noop.py:30
 msgid "Security (2FA)"
-msgstr "Güvenlik (2FA)"
+msgstr ""
 
-# Sidebar menu labels — stored in menu_items.label_key (DB-driven), rendered
-# via {{ _(node.item.label_key) }} so pybabel can't extract them either.
-# Keep these in sync with the menu_items seed migration (f3b1a0c2d8e7).
-msgid "menu.dashboard"
-msgstr "Ana Sayfa"
+#: app/core/_i18n_noop.py:31 app/core/templates/settings/_tab_prefs.html:2
+msgid "Preferences"
+msgstr "Tercihler"
 
-msgid "menu.discover"
-msgstr "Keşfet"
+#: app/core/_i18n_noop.py:32 app/core/templates/settings/_tab_oauth.html:2
+msgid "OAuth Accounts"
+msgstr "OAuth Hesapları"
 
-msgid "menu.library"
-msgstr "Kütüphanem"
+#: app/core/_i18n_noop.py:33 app/core/templates/settings/_tab_sessions.html:2
+msgid "Active Sessions"
+msgstr "Aktif Oturumlar"
 
-msgid "menu.library.timeline"
-msgstr "Zaman Çizelgesi"
-
-msgid "menu.library.favorites"
-msgstr "Favoriler"
-
-msgid "menu.library.notes"
-msgstr "Notlar"
+#: app/core/_i18n_noop.py:34 app/core/templates/settings/_tab_account.html:2
+msgid "Account"
+msgstr "Hesap"
 
 #: app/core/auth/forms.py:11 app/core/templates/settings/_tab_account.html:4
 #: app/core/templates/users/edit.html:59 app/core/templates/users/list.html:31
@@ -67,11 +100,6 @@ msgstr "E-posta"
 #: app/core/templates/users/list.html:33 app/core/users/forms.py:8
 msgid "Full Name"
 msgstr "Ad Soyad"
-
-#: app/core/auth/forms.py:22 app/core/auth/forms.py:32
-#: app/core/templates/settings/_tab_password.html:2
-msgid "Password"
-msgstr "Şifre"
 
 #: app/core/auth/forms.py:24 app/core/auth/forms.py:45
 #, fuzzy
@@ -119,7 +147,7 @@ msgstr "Şifre"
 msgid "Reset Password"
 msgstr "Şifreyi Sıfırla"
 
-#: app/core/auth/forms.py:53 app/core/auth/forms.py:63
+#: app/core/auth/forms.py:53 app/core/auth/forms.py:64
 msgid "Authenticator Code"
 msgstr "Doğrulayıcı Kodu"
 
@@ -127,7 +155,7 @@ msgstr "Doğrulayıcı Kodu"
 msgid "Verify"
 msgstr "Doğrula"
 
-#: app/core/auth/forms.py:66 app/core/templates/settings/_tab_security.html:80
+#: app/core/auth/forms.py:67 app/core/templates/settings/_tab_security.html:80
 #: app/core/templates/settings/_tab_security.html:100
 msgid "Enable 2FA"
 msgstr "2FA'yı Etkinleştir"
@@ -176,59 +204,59 @@ msgstr "En az 1 rakam"
 msgid "Invalid credentials or account locked."
 msgstr "Geçersiz kimlik bilgileri veya hesap kilitli."
 
-#: app/core/auth/routes.py:98 app/core/settings/routes.py:267
+#: app/core/auth/routes.py:102 app/core/settings/routes.py:319
 msgid "Code is invalid. Try again."
 msgstr "Kod geçersiz. Tekrar dene."
 
-#: app/core/auth/routes.py:113
+#: app/core/auth/routes.py:118
 msgid "Logged in with a recovery code — consider regenerating your codes."
 msgstr "Kurtarma kodu ile giriş yapıldı — kodlarını yenilemeyi değerlendir."
 
-#: app/core/auth/routes.py:144
+#: app/core/auth/routes.py:151
 msgid "Public registration is currently disabled."
 msgstr "Su anda acik kayit devre disi."
 
-#: app/core/auth/routes.py:158
+#: app/core/auth/routes.py:165
 msgid "Account created. You can sign in now."
 msgstr "Hesap oluşturuldu. Şimdi giriş yapabilirsin."
 
-#: app/core/auth/routes.py:180
+#: app/core/auth/routes.py:188
 #, python-format
 msgid "Dev mode: reset link → %(url)s"
 msgstr "Geliştirme modu: sıfırlama bağlantısı → %(url)s"
 
-#: app/core/auth/routes.py:181
+#: app/core/auth/routes.py:189
 msgid "If that email exists, a reset link has been sent."
 msgstr "Bu e-posta kayıtlıysa bir sıfırlama bağlantısı gönderildi."
 
-#: app/core/auth/routes.py:192
+#: app/core/auth/routes.py:199
 msgid "Reset link is invalid or expired."
 msgstr "Sıfırlama bağlantısı geçersiz veya süresi dolmuş."
 
-#: app/core/auth/routes.py:198
+#: app/core/auth/routes.py:205
 msgid "Password reset. You can sign in now."
 msgstr "Şifre sıfırlandı. Şimdi giriş yapabilirsin."
 
-#: app/core/auth/routes.py:217 app/core/auth/routes.py:233
-#: app/core/auth/routes.py:248
+#: app/core/auth/routes.py:225 app/core/auth/routes.py:242
+#: app/core/auth/routes.py:258
 msgid "Unknown OAuth provider."
 msgstr "Bilinmeyen OAuth sağlayıcısı."
 
-#: app/core/auth/routes.py:279
+#: app/core/auth/routes.py:289
 msgid "OAuth login failed or registration disabled."
 msgstr "OAuth girişi başarısız veya kayıt devre dışı."
 
-#: app/core/auth/routes.py:298
+#: app/core/auth/routes.py:310
 #, python-format
 msgid "This %(provider)s account is already linked."
 msgstr "Bu %(provider)s hesabi zaten bagli."
 
-#: app/core/auth/routes.py:300
+#: app/core/auth/routes.py:316
 #, python-format
 msgid "This %(provider)s account is linked to another user."
 msgstr "Bu %(provider)s hesabi baska bir kullaniciya bagli."
 
-#: app/core/auth/routes.py:316
+#: app/core/auth/routes.py:337
 #, python-format
 msgid "%(provider)s account linked successfully."
 msgstr "%(provider)s hesabi basariyla baglandi."
@@ -283,6 +311,8 @@ msgstr "Görünür"
 #: app/core/settings/forms.py:22 app/core/settings/forms.py:28
 #: app/core/settings/forms.py:47 app/core/settings/system_forms.py:16
 #: app/core/users/forms.py:13
+#: app/modules/scrape/templates/scrape/_note_edit.html:43
+#: app/modules/scrape/templates/scrape/_notes_list.html:42
 #, fuzzy
 msgid "Save"
 msgstr "Aktif"
@@ -385,79 +415,79 @@ msgstr "Zaman"
 msgid "Theme"
 msgstr "Zaman"
 
-#: app/core/settings/routes.py:186
+#: app/core/settings/routes.py:201
 msgid "Profile updated."
 msgstr "Profil güncellendi."
 
-#: app/core/settings/routes.py:187 app/core/settings/routes.py:200
-#: app/core/settings/routes.py:213 app/core/settings/routes.py:225
-#: app/modules/academic/routes.py:118 app/modules/academic/routes.py:187
+#: app/core/settings/routes.py:204 app/core/settings/routes.py:221
+#: app/core/settings/routes.py:241 app/core/settings/routes.py:265
+#: app/modules/academic/routes.py:139 app/modules/academic/routes.py:226
 msgid "Please correct the errors below."
 msgstr "Aşağıdaki hataları düzeltin."
 
-#: app/core/settings/routes.py:198
+#: app/core/settings/routes.py:217
 msgid "Email updated."
 msgstr "E-posta güncellendi."
 
-#: app/core/settings/routes.py:211
+#: app/core/settings/routes.py:236
 msgid "Password changed."
 msgstr "Şifre değiştirildi."
 
-#: app/core/settings/routes.py:224
+#: app/core/settings/routes.py:262
 msgid "Preferences updated."
 msgstr "Tercihler güncellendi."
 
-#: app/core/settings/routes.py:234 app/core/settings/routes.py:254
+#: app/core/settings/routes.py:277 app/core/settings/routes.py:301
 msgid "2FA is already enabled."
 msgstr "2FA zaten etkin."
 
-#: app/core/settings/routes.py:260
+#: app/core/settings/routes.py:310
 msgid "Setup expired — start again."
 msgstr "Kurulum zaman aşımına uğradı — yeniden başla."
 
-#: app/core/settings/routes.py:278
+#: app/core/settings/routes.py:330
 msgid "2FA enabled. Save your recovery codes — they will not be shown again."
 msgstr "2FA etkinleştirildi. Kurtarma kodlarını kaydet — bir daha gösterilmeyecek."
 
-#: app/core/settings/routes.py:295
+#: app/core/settings/routes.py:348
 msgid "Code required."
 msgstr "Kod gerekli."
 
-#: app/core/settings/routes.py:301
+#: app/core/settings/routes.py:356
 msgid "Code is invalid."
 msgstr "Kod geçersiz."
 
-#: app/core/settings/routes.py:306
+#: app/core/settings/routes.py:362
 msgid "2FA disabled."
 msgstr "2FA devre dışı bırakıldı."
 
-#: app/core/settings/routes.py:321
+#: app/core/settings/routes.py:377
 msgid "New recovery codes generated. Old ones no longer work."
 msgstr "Yeni kurtarma kodları üretildi. Eskileri artık çalışmıyor."
 
-#: app/core/settings/routes.py:336
+#: app/core/settings/routes.py:391
 msgid "Account not found."
 msgstr "Hesap bulunamadi."
 
-#: app/core/settings/routes.py:347
+#: app/core/settings/routes.py:402
 msgid "Cannot unlink — this is your only login method. Set a password first."
 msgstr "Baglanti kesilemiyor — tek giris yonteminiz bu. Once sifre tanimlayin."
 
-#: app/core/settings/routes.py:356
+#: app/core/settings/routes.py:412
 #, python-format
 msgid "%(provider)s account unlinked."
 msgstr "%(provider)s hesabinin baglantisi kesildi."
 
-#: app/core/settings/routes.py:371
+#: app/core/settings/routes.py:428
 msgid "Device signed out."
 msgstr "Cihaz oturumu kapatildi."
 
-#: app/core/settings/routes.py:384
+#: app/core/settings/routes.py:447
 #, python-format
 msgid "%(n)d other device(s) signed out."
 msgstr "%(n)d diger cihaz oturumu kapatildi."
 
-#: app/core/settings/routes.py:412
+#: app/core/settings/routes.py:484
 msgid "System settings saved."
 msgstr "Sistem ayarları kaydedildi."
 
@@ -632,30 +662,6 @@ msgstr "Menü"
 msgid "Collapse"
 msgstr "Daralt"
 
-# --- Search ---
-#: app/core/templates/core/_topbar.html:10
-msgid "Search…"
-msgstr "Ara…"
-
-#: app/core/templates/core/_topbar.html:37
-#: app/core/templates/settings/profile.html:2
-#: app/core/templates/settings/profile.html:4
-msgid "Profile"
-msgstr "Profil"
-
-#: app/core/templates/core/_topbar.html:38
-msgid "Settings"
-msgstr "Ayarlar"
-
-# --- Topbar / sidebar ---
-#: app/core/templates/core/_topbar.html:42
-msgid "Toggle Theme"
-msgstr "Tema Değiştir"
-
-#: app/core/templates/core/_topbar.html:46
-msgid "Sign Out"
-msgstr "Çıkış Yap"
-
 #: app/core/templates/errors/403.html:2
 msgid "Forbidden"
 msgstr ""
@@ -743,6 +749,7 @@ msgstr "Endpoint veya URL'den birini kullanın."
 #: app/core/templates/rbac/role_form.html:55
 #: app/core/templates/settings/_tab_security.html:86
 #: app/core/templates/users/edit.html:73
+#: app/modules/scrape/templates/scrape/_note_edit.html:39
 msgid "Cancel"
 msgstr "İptal"
 
@@ -784,6 +791,7 @@ msgid "Name"
 msgstr "Ad"
 
 #: app/core/templates/rbac/role_list.html:32
+#: app/modules/scrape/templates/scrape/_note_view.html:14
 msgid "Edit"
 msgstr "Düzenle"
 
@@ -794,10 +802,6 @@ msgstr "Bu rolü silmek istiyor musunuz?"
 #: app/core/templates/rbac/role_list.html:46
 msgid "No roles yet."
 msgstr "Henüz rol yok."
-
-#: app/core/templates/settings/_tab_account.html:2
-msgid "Account"
-msgstr "Hesap"
 
 #: app/core/templates/settings/_tab_account.html:7
 #: app/core/templates/users/edit.html:61
@@ -842,10 +846,6 @@ msgstr "Pasif"
 msgid "Required to confirm your identity."
 msgstr "Kimliğinizi doğrulamak için gereklidir."
 
-#: app/core/templates/settings/_tab_oauth.html:2
-msgid "OAuth Accounts"
-msgstr "OAuth Hesapları"
-
 #: app/core/templates/settings/_tab_oauth.html:26
 #, python-format
 msgid "Unlink %(provider)s account?"
@@ -886,15 +886,6 @@ msgid ""
 msgstr ""
 "Sifreniz tanimli degil. Tum OAuth hesaplarini koparirsiniz erisimi "
 "kaybedersiniz."
-
-# --- Profile tabs ---
-#: app/core/templates/settings/_tab_personal.html:2
-msgid "Personal Info"
-msgstr "Kişisel Bilgi"
-
-#: app/core/templates/settings/_tab_prefs.html:2
-msgid "Preferences"
-msgstr "Tercihler"
 
 #: app/core/templates/settings/_tab_prefs.html:20
 msgid "Language and theme changes apply on next page load."
@@ -966,10 +957,6 @@ msgstr ""
 "Girişine ikinci bir faktör ekle. Etkinleştirdikten sonra her girişte "
 "doğrulayıcı uygulamandan 6 haneli kod istenecek."
 
-#: app/core/templates/settings/_tab_sessions.html:2
-msgid "Active Sessions"
-msgstr "Aktif Oturumlar"
-
 #: app/core/templates/settings/_tab_sessions.html:5
 msgid "These devices are currently signed in to your account."
 msgstr "Bu cihazlar su anda hesabiniza bagli."
@@ -1005,6 +992,11 @@ msgstr "Diger tum cihazlari oturumdan cikarmak istiyor musunuz?"
 #: app/core/templates/settings/_tab_sessions.html:51
 msgid "Sign out all other devices"
 msgstr "Diger tum cihazlari cikar"
+
+#: app/core/templates/settings/profile.html:2
+#: app/core/templates/settings/profile.html:4
+msgid "Profile"
+msgstr "Profil"
 
 # --- System settings ---
 #: app/core/templates/settings/system.html:2
@@ -1243,46 +1235,46 @@ msgstr "Onay bağlantısı geçersiz veya süresi dolmuş."
 msgid "Email verified."
 msgstr "E-posta doğrulandı."
 
-#: app/modules/academic/routes.py:111 app/modules/academic/routes.py:147
+#: app/modules/academic/routes.py:121 app/modules/academic/routes.py:180
 #, python-format
 msgid "Dev mode: verification link → %(url)s"
 msgstr "Geliştirme modu: onay bağlantısı → %(url)s"
 
-#: app/modules/academic/routes.py:114
+#: app/modules/academic/routes.py:127
 msgid "Identifier added — a verification link has been sent."
 msgstr "Kimlik eklendi — bir onay bağlantısı gönderildi."
 
-#: app/modules/academic/routes.py:116
+#: app/modules/academic/routes.py:133
 msgid "Identifier added."
 msgstr "Kimlik eklendi."
 
-#: app/modules/academic/routes.py:129
+#: app/modules/academic/routes.py:156
 msgid "Identifier removed."
 msgstr "Kimlik kaldırıldı."
 
-#: app/modules/academic/routes.py:149
+#: app/modules/academic/routes.py:186
 msgid "Verification link re-sent."
 msgstr "Onay bağlantısı tekrar gönderildi."
 
-#: app/modules/academic/routes.py:171
+#: app/modules/academic/routes.py:210
 msgid "No valid keywords found."
 msgstr "Geçerli anahtar kelime bulunamadı."
 
-#: app/modules/academic/routes.py:178
+#: app/modules/academic/routes.py:217
 #, python-format
 msgid "%(n)d keywords added."
 msgstr "%(n)d anahtar kelime eklendi."
 
-#: app/modules/academic/routes.py:180
+#: app/modules/academic/routes.py:217
 msgid "Keyword added."
 msgstr "Anahtar kelime eklendi."
 
-#: app/modules/academic/routes.py:184
+#: app/modules/academic/routes.py:221
 #, python-format
 msgid "%(n)d added, %(s)d already following."
 msgstr "%(n)d eklendi, %(s)d zaten takip ediliyor."
 
-#: app/modules/academic/routes.py:198
+#: app/modules/academic/routes.py:240
 msgid "Keyword removed."
 msgstr "Anahtar kelime kaldırıldı."
 
@@ -1369,6 +1361,7 @@ msgstr "Son etkinlikler"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:80
 #: app/modules/dashboard/templates/dashboard/index.html:112
+#: app/modules/scrape/templates/library/_timeline.html:52
 msgid "No activity yet."
 msgstr "Henüz etkinlik yok."
 
@@ -1398,50 +1391,68 @@ msgid "Audit log"
 msgstr "Denetim Günlüğü"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:2
-#: app/modules/dashboard/templates/dashboard/for_you.html:7
+#: app/modules/dashboard/templates/dashboard/for_you.html:9
 #: app/modules/dashboard/templates/dashboard/index.html:59
 msgid "For you"
 msgstr "Senin için"
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:10
+#: app/modules/dashboard/templates/dashboard/for_you.html:12
 #: app/modules/dashboard/templates/dashboard/index.html:7
 #, python-format
 msgid "Welcome, %(name)s"
 msgstr "Hoş geldin, %(name)s"
 
+#: app/modules/dashboard/templates/dashboard/for_you.html:20
+#: app/modules/scrape/templates/scrape/feed.html:24
+msgid "Scrape now"
+msgstr "Şimdi tara"
+
 # --- Scrape / papers feed (Phase 2 slice 3) ---
-#: app/modules/dashboard/templates/dashboard/for_you.html:18
+#: app/modules/dashboard/templates/dashboard/for_you.html:30
 #, fuzzy
 msgid "Personalise your feed"
 msgstr "Akışın"
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:19
+#: app/modules/dashboard/templates/dashboard/for_you.html:32
 #, fuzzy
 msgid ""
 "Add research interests to your profile so we can surface relevant papers "
 "for you."
 msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:21
+#: app/modules/dashboard/templates/dashboard/for_you.html:35
 #: app/modules/dashboard/templates/dashboard/index.html:85
-#: app/modules/scrape/templates/scrape/feed.html:75
+#: app/modules/scrape/templates/scrape/feed.html:79
 msgid "Add interests"
 msgstr "İlgi alanı ekle"
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:55
-#, fuzzy
-msgid "See all papers"
-msgstr "Tüm makaleler"
+#: app/modules/dashboard/templates/dashboard/for_you.html:50
+msgid "See full Discover feed"
+msgstr "Tüm Keşfet beslemesini aç"
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:63
+#: app/modules/dashboard/templates/dashboard/for_you.html:53
+msgid "Open my library"
+msgstr "Kütüphanemi aç"
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:59
 #: app/modules/dashboard/templates/dashboard/index.html:83
 msgid "No personalised papers yet."
 msgstr "Henüz kişiselleştirilmiş makale yok."
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:65
+#: app/modules/dashboard/templates/dashboard/for_you.html:62
+msgid "Run a scrape to fill your feed — or check the Discover page."
+msgstr "Beslemeyi doldurmak için bir tarama çalıştır — ya da Keşfet sayfasına bak."
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:64
+msgid "Add some interests and run a scrape to see papers here."
+msgstr "Burada makaleler görmek için ilgi alanı ekle ve bir tarama çalıştır."
+
+#: app/modules/dashboard/templates/dashboard/for_you.html:68
+#: app/modules/scrape/templates/library/_notes.html:28
+#: app/modules/scrape/templates/library/_timeline.html:57
 #, fuzzy
-msgid "Browse all papers"
-msgstr "Tüm makaleler"
+msgid "Open discover"
+msgstr "Keşfet"
 
 # --- Dashboard ---
 #: app/modules/dashboard/templates/dashboard/index.html:2
@@ -1465,45 +1476,396 @@ msgstr "Menüyü yönet"
 msgid "Scraping modules will populate this dashboard in Phase 2."
 msgstr "Scraping modülleri bu paneli Faz 2'de dolduracak."
 
-#: app/modules/scrape/routes.py:32
+#: app/modules/scrape/routes.py:191
 msgid "Paper not found."
 msgstr "Makale bulunamadı."
 
-#: app/modules/scrape/routes.py:54
+#: app/modules/scrape/routes.py:217
+msgid "Saved to favorites."
+msgstr ""
+
+#: app/modules/scrape/routes.py:217
+msgid "Removed from favorites."
+msgstr ""
+
+# --- Scrape / papers feed (Phase 2 slice 3) ---
+#: app/modules/scrape/routes.py:233
+#: app/modules/scrape/templates/scrape/_dismissed_undo.html:6
+#, fuzzy
+msgid "Hidden from your feed."
+msgstr "Akışın"
+
+#: app/modules/scrape/routes.py:270 app/modules/scrape/routes.py:273
+#: app/modules/scrape/routes.py:331
+msgid "Empty notes are not saved."
+msgstr ""
+
+#: app/modules/scrape/routes.py:360
 msgid "Scrape queued — papers will appear here once the worker finishes."
 msgstr "Tarama kuyruğa alındı — worker bitirdiğinde makaleler burada görünecek."
 
-# --- Scrape / papers feed (Phase 2 slice 3) ---
-#: app/modules/scrape/templates/scrape/feed.html:2
-#: app/modules/scrape/templates/scrape/feed.html:5
-msgid "Your feed"
-msgstr "Akışın"
+#: app/modules/scrape/templates/library/_notes.html:23
+#, fuzzy
+msgid "No notes yet."
+msgstr "Henüz rol yok."
 
-#: app/modules/scrape/templates/scrape/feed.html:9
-msgid "Scrape now"
+#: app/modules/scrape/templates/library/_notes.html:25
+msgid ""
+"Open any paper and write a note — it will appear here across all your "
+"reading."
+msgstr ""
+
+#: app/modules/scrape/templates/library/_timeline.html:31
+#, fuzzy
+msgid "Scrape run"
 msgstr "Şimdi tara"
 
-#: app/modules/scrape/templates/scrape/feed.html:15
-msgid ""
-"Latest papers matched against your research interests. Add or refine "
-"keywords on your profile to change what shows up here."
-msgstr ""
-"Araştırma ilgi alanlarınla eşleşen en yeni makaleler. Profilinden anahtar"
-" kelime ekle veya güncelle, akış buna göre değişir."
+#: app/modules/scrape/templates/library/_timeline.html:32
+#, fuzzy
+msgid "Favorited"
+msgstr "Baslangic"
 
-#: app/modules/scrape/templates/scrape/feed.html:53
+#: app/modules/scrape/templates/library/_timeline.html:33
+msgid "Note added"
+msgstr ""
+
+#: app/modules/scrape/templates/library/_timeline.html:34
+#: app/modules/scrape/templates/library/index.html:31
+#: app/modules/scrape/templates/scrape/feed.html:52
+msgid "Hidden"
+msgstr ""
+
+#: app/modules/scrape/templates/library/_timeline.html:35
+#, fuzzy
+msgid "New interest"
+msgstr "İlgi alanı ekle"
+
+#: app/modules/scrape/templates/library/_timeline.html:54
+msgid ""
+"Run a scrape, favorite a paper, or write a note — events will collect "
+"here."
+msgstr ""
+
+#: app/modules/scrape/templates/library/index.html:2
+#: app/modules/scrape/templates/library/index.html:7
+#, fuzzy
+msgid "My library"
+msgstr "Kütüphanem"
+
+#: app/modules/scrape/templates/library/index.html:10
+msgid "favorites"
+msgstr ""
+
+#: app/modules/scrape/templates/library/index.html:10
+#, fuzzy
+msgid "notes"
+msgstr "Eşleşme yok."
+
+#: app/modules/scrape/templates/library/index.html:17
+#, fuzzy
+msgid "Timeline"
+msgstr "Zaman"
+
+#: app/modules/scrape/templates/library/index.html:21
+#: app/modules/scrape/templates/scrape/feed.html:47
+msgid "Favorites"
+msgstr ""
+
+#: app/modules/scrape/templates/library/index.html:26
+#, fuzzy
+msgid "Notes"
+msgstr "Eşleşme yok."
+
+#: app/modules/scrape/templates/library/index.html:51
+#: app/modules/scrape/templates/scrape/feed.html:64
+#, fuzzy
+msgid "No favorites yet."
+msgstr "Henüz rol yok."
+
+#: app/modules/scrape/templates/library/index.html:52
+#: app/modules/scrape/templates/scrape/feed.html:65
+#, fuzzy
+msgid "Nothing hidden."
+msgstr "Aktif iş yok."
+
+#: app/modules/scrape/templates/library/index.html:56
+#: app/modules/scrape/templates/scrape/feed.html:70
+msgid "Star papers from the discover feed — they will collect here."
+msgstr ""
+
+#: app/modules/scrape/templates/library/index.html:58
+#: app/modules/scrape/templates/scrape/feed.html:72
+msgid "Papers you hide will be listed here so you can recover them."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:15
+msgid "30-second summary"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:26
+msgid "Method"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:38
+msgid "Findings"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:50
+#, fuzzy
+msgid "Limitations"
+msgstr "İşlemler"
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:62
+msgid "Why this matters for you"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:71
+msgid "Generated by"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:78
+msgid "Regenerate analysis"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:85
+msgid "AI analysis for this paper"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:87
+msgid ""
+"30-second summary plus method / findings / limitations breakdown, in "
+"Turkish. Cached — runs only on demand."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:95
+msgid "Analyze now"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_analysis.html:98
+#: app/modules/scrape/templates/scrape/_ai_translation.html:56
+msgid "Asking Claude…"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_disabled.html:5
+msgid "AI is not configured"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_disabled.html:7
+#, python-format
+msgid "Set %(var)s in your .env to unlock paper analysis and Turkish translation."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_disabled.html:10
+msgid "Until then the original abstract is the only view."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:11
+msgid "Translated title"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:18
+msgid "Translated abstract"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:23
+msgid "No abstract to translate."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:28
+msgid "Translated by"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:36
+msgid "Regenerate translation"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:43
+msgid "Translate this paper to Turkish"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:45
+msgid ""
+"Title and abstract translated by Claude. Cached after first run — no "
+"repeated cost."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_ai_translation.html:53
+#, fuzzy
+msgid "Translate now"
+msgstr "Şimdi tara"
+
+#: app/modules/scrape/templates/scrape/_dismissed_undo.html:11
+#, fuzzy
+msgid "Undo"
+msgstr "Kilidi Aç"
+
+# --- Topbar / sidebar ---
+#: app/modules/scrape/templates/scrape/_favorite_button.html:8
+#: app/modules/scrape/templates/scrape/_paper_card.html:54
+#, fuzzy
+msgid "Toggle favorite"
+msgstr "Tema Değiştir"
+
+#: app/modules/scrape/templates/scrape/_mode_original.html:3
+msgid "Abstract"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_mode_original.html:8
+msgid "No abstract available."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:20
+#: app/modules/scrape/templates/scrape/_notes_list.html:30
+msgid "No tag"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:21
+#: app/modules/scrape/templates/scrape/_notes_list.html:33
+#, fuzzy
+msgid "experiment"
+msgstr "Üst Öğe"
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:22
+#: app/modules/scrape/templates/scrape/_notes_list.html:36
+#, fuzzy
+msgid "question"
+msgstr "Açıklama"
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:23
+#: app/modules/scrape/templates/scrape/_notes_list.html:39
+msgid "finding"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_note_edit.html:39
+msgid "Cancel edit"
+msgstr "Düzenlemeyi iptal et"
+
+#: app/modules/scrape/templates/scrape/_note_view.html:14
+msgid "Edit note"
+msgstr "Notu düzenle"
+
+#: app/modules/scrape/templates/scrape/_note_view.html:21
+#, fuzzy
+msgid "Delete this note?"
+msgstr "Bu rolü silmek istiyor musunuz?"
+
+#: app/modules/scrape/templates/scrape/_note_view.html:22
+#, fuzzy
+msgid "Delete note"
+msgstr "Bu kullanıcıyı silmek istiyor musunuz?"
+
+#: app/modules/scrape/templates/scrape/_notes_list.html:5
+msgid "My notes"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_notes_list.html:7
+#: app/modules/scrape/templates/scrape/_paper_card.html:45
+msgid "note"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_notes_list.html:17
+msgid "No notes yet — add the first one below."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_notes_list.html:26
+msgid "New note — Cmd+Enter to save"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:17
+msgid "Favorite"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:19
 msgid "Seen"
 msgstr "Görüldü"
 
-#: app/modules/scrape/templates/scrape/feed.html:55
-msgid "new"
+#: app/modules/scrape/templates/scrape/_paper_card.html:21
+#, fuzzy
+msgid "New"
 msgstr "yeni"
 
-#: app/modules/scrape/templates/scrape/feed.html:70
+#: app/modules/scrape/templates/scrape/_paper_card.html:32
+#: app/modules/scrape/templates/scrape/detail.html:47
+#, fuzzy
+msgid "more"
+msgstr "çekirdek"
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:59
+#, fuzzy
+msgid "Open notes"
+msgstr "Menü Öğeleri"
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:65
+msgid "Open PDF"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:73
+msgid "Hide"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/_paper_card.html:73
+msgid "Hide — undo available"
+msgstr "Gizle — geri al hazır"
+
+#: app/modules/scrape/templates/scrape/detail.html:8
+msgid "Back"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/detail.html:11
+#: app/modules/scrape/templates/scrape/feed.html:2
+#: app/modules/scrape/templates/scrape/feed.html:7
+#: app/modules/scrape/templates/scrape/feed.html:42
+#, fuzzy
+msgid "Discover"
+msgstr "Keşfet"
+
+#: app/modules/scrape/templates/scrape/detail.html:17
+msgid "Copy BibTeX"
+msgstr "BibTeX kopyala"
+
+#: app/modules/scrape/templates/scrape/detail.html:18
+msgid "Cite"
+msgstr "Atıf"
+
+#: app/modules/scrape/templates/scrape/detail.html:27
+msgid "Source"
+msgstr ""
+
+# Tab labels declared in app/core/settings/tab_registry.py — passed through
+# gettext at render time (profile.html does {{ _(label) }}), so pybabel
+# can't pick them up statically. Keep these msgids manually in sync with
+# CORE_TABS until the tab registry switches to lazy_gettext().
+#: app/modules/scrape/templates/scrape/detail.html:66
+#, fuzzy
+msgid "Original"
+msgstr "Giriş E-postası"
+
+#: app/modules/scrape/templates/scrape/detail.html:70
+msgid "Turkish"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/detail.html:74
+msgid "AI analysis"
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/feed.html:9
+msgid "Papers matched against your research interests."
+msgstr ""
+
+#: app/modules/scrape/templates/scrape/feed.html:17
+msgid "Filter — title, abstract, keyword"
+msgstr "Filtrele — başlık, özet, anahtar kelime"
+
+#: app/modules/scrape/templates/scrape/feed.html:32
+#, python-format
+msgid "Filtering: %(term)s"
+msgstr "Filtre: %(term)s"
+
+#: app/modules/scrape/templates/scrape/feed.html:66
 msgid "Nothing here yet."
 msgstr "Henüz bir şey yok."
 
-#: app/modules/scrape/templates/scrape/feed.html:72
+#: app/modules/scrape/templates/scrape/feed.html:74
 msgid "Add some research interests in your profile, then hit \"Scrape now\"."
 msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
 
@@ -1553,8 +1915,11 @@ msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
 #~ msgid "menu.for_you"
 #~ msgstr "Senin İçin"
 
+# Sidebar menu labels — stored in menu_items.label_key (DB-driven), rendered
+# via {{ _(node.item.label_key) }} so pybabel can't extract them either.
+# Keep these in sync with the menu_items seed migration (f3b1a0c2d8e7).
 #~ msgid "menu.dashboard"
-#~ msgstr "Dashboard"
+#~ msgstr "Ana Sayfa"
 
 #~ msgid "menu.roles"
 #~ msgstr "Roller"
@@ -1775,4 +2140,47 @@ msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
 
 #~ msgid "System-wide settings — Faz 1"
 #~ msgstr "Sistem geneli ayarlar — Faz 1"
+
+#~ msgid "Security (2FA)"
+#~ msgstr "Güvenlik (2FA)"
+
+#~ msgid "menu.library.timeline"
+#~ msgstr "Zaman Çizelgesi"
+
+#~ msgid "menu.library.favorites"
+#~ msgstr "Favoriler"
+
+#~ msgid "menu.library.notes"
+#~ msgstr "Notlar"
+
+# --- Search ---
+#~ msgid "Search…"
+#~ msgstr "Ara…"
+
+#~ msgid "Settings"
+#~ msgstr "Ayarlar"
+
+#~ msgid "Sign Out"
+#~ msgstr "Çıkış Yap"
+
+#~ msgid "See all papers"
+#~ msgstr "Tüm makaleler"
+
+#~ msgid "Browse all papers"
+#~ msgstr "Tüm makaleler"
+
+# --- Scrape / papers feed (Phase 2 slice 3) ---
+#~ msgid "Your feed"
+#~ msgstr "Akışın"
+
+#~ msgid ""
+#~ "Latest papers matched against your "
+#~ "research interests. Add or refine "
+#~ "keywords on your profile to change "
+#~ "what shows up here."
+#~ msgstr ""
+#~ "Araştırma ilgi alanlarınla eşleşen en "
+#~ "yeni makaleler. Profilinden anahtar kelime "
+#~ "ekle veya güncelle, akış buna göre "
+#~ "değişir."
 

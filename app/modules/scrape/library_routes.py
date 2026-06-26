@@ -19,6 +19,8 @@ from flask_login import current_user, login_required
 
 from app.modules.scrape.service import (
     build_timeline,
+    count_all_notes,
+    count_user_papers,
     list_all_notes,
     list_user_papers,
 )
@@ -35,12 +37,11 @@ def index():
     if view not in _VALID_VIEWS:
         view = "timeline"
 
-    # Counts power the tab badges. We only need the *visible* counts:
-    # favorites and notes. Timeline/hidden are computed on the fly.
+    # Counts power the tab badges — SQL count, not Python len(materialized).
     counts = {
-        "favorites": len(list_user_papers(current_user, limit=500, view="favorites")),
-        "notes": len(list_all_notes(current_user, limit=500)),
-        "hidden": len(list_user_papers(current_user, limit=500, view="dismissed")),
+        "favorites": count_user_papers(current_user, view="favorites"),
+        "notes": count_all_notes(current_user),
+        "hidden": count_user_papers(current_user, view="dismissed"),
     }
 
     ctx: dict = {"view": view, "counts": counts}

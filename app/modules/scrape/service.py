@@ -90,11 +90,25 @@ def scrape_arxiv_for_user(user: User, *, max_results: int = 25) -> dict:
     return {"hits": len(payloads), "linked": linked, "query": query}
 
 
+def _user_papers_query(user: User, view: str):
+    """Shared filter builder for list/count. View vocabulary matches
+    list_user_papers below."""
+    q = UserPaper.query.filter_by(user_id=user.id)
+    if view == "discover":
+        q = q.filter(UserPaper.dismissed_at.is_(None))
+    elif view == "favorites":
+        q = q.filter(UserPaper.is_favorite.is_(True), UserPaper.dismissed_at.is_(None))
+    elif view == "dismissed":
+        q = q.filter(UserPaper.dismissed_at.isnot(None))
+    return q
+
+
 def list_user_papers(
     user: User,
     *,
     limit: int = 50,
     view: str = "discover",
+    q: str | None = None,
 ) -> list[UserPaper]:
     """List a user's surfaced papers.
 
@@ -103,15 +117,73 @@ def list_user_papers(
         * "favorites" — starred only
         * "dismissed" — hidden bin (recovery)
         * "all"      — everything, no filter
+
+    `q` is an optional case-insensitive substring match against the
+    paper's title, abstract, or matched keyword. Trimmed; empty == no
+    filter.
     """
-    q = UserPaper.query.filter_by(user_id=user.id).join(Paper)
-    if view == "discover":
-        q = q.filter(UserPaper.dismissed_at.is_(None))
-    elif view == "favorites":
-        q = q.filter(UserPaper.is_favorite.is_(True), UserPaper.dismissed_at.is_(None))
-    elif view == "dismissed":
-        q = q.filter(UserPaper.dismissed_at.isnot(None))
-    return q.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
+    query = _user_papers_query(user, view).join(Paper)
+    q = (q or "").strip()
+    if q:
+        like = f"%{q.lower()}%"
+        query = query.filter(
+            db.or_(
+                db.func.lower(Paper.title).like(like),
+                db.func.lower(Paper.abstract).like(like),
+                db.func.lower(UserPaper.matched_keyword).like(like),
+            )
+        )
+    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
+
+
+def count_user_papers(user: User, view: str = "discover") -> int:
+    """COUNT(*) for the same view filters list_user_papers uses. Library /
+    Discover tab badges use this instead of materialising 500 rows just to
+    take len() of them."""
+    from sqlalchemy import func
+
+    q = _user_papers_query(user, view).with_entities(func.count(UserPaper.id))
+    return q.scalar() or 0
+
+
+def to_bibtex(paper: Paper) -> str:
+    """Render a paper as a BibTeX entry. arXiv → @misc, anything else → @article.
+
+    Keep it minimal and safe (no template engine) — researchers paste this
+    into their .bib so the format must round-trip BibTeX parsers cleanly.
+    """
+    # Stable cite key: <firstAuthorLastname><year><externalId-suffix>
+    year = paper.published_at.year if paper.published_at else "n.d."
+    first_author = (paper.authors or ["unknown"])[0]
+    last = first_author.split()[-1].lower() if first_author else "unknown"
+    ext_tail = (paper.external_id or "").split("/")[-1].replace(".", "")[:8]
+    cite_key = f"{last}{year}{ext_tail}"
+
+    entry_type = "misc" if paper.source == "arxiv" else "article"
+    authors = " and ".join(paper.authors or [])
+    fields = [
+        f"  title     = {{{paper.title}}},",
+        f"  author    = {{{authors}}}," if authors else None,
+        f"  year      = {{{year}}}," if year != "n.d." else None,
+        f"  url       = {{{paper.url}}}," if paper.url else None,
+        f"  eprint    = {{{paper.external_id}}}," if paper.source == "arxiv" else None,
+        "  archivePrefix = {arXiv}," if paper.source == "arxiv" else None,
+        f"  abstract  = {{{(paper.abstract or '').strip()}}}," if paper.abstract else None,
+    ]
+    body = "\n".join(f for f in fields if f)
+    return f"@{entry_type}{{{cite_key},\n{body}\n}}\n"
+
+
+def count_all_notes(user: User) -> int:
+    from sqlalchemy import func
+
+    return (
+        db.session.query(func.count(PaperNote.id))
+        .join(UserPaper, PaperNote.user_paper_id == UserPaper.id)
+        .filter(UserPaper.user_id == user.id)
+        .scalar()
+        or 0
+    )
 
 
 def get_user_paper(user: User, user_paper_id: int) -> UserPaper | None:
@@ -169,6 +241,21 @@ def add_note(link: UserPaper, body: str, tag: str | None = None) -> PaperNote | 
 def delete_note(note: PaperNote) -> None:
     db.session.delete(note)
     db.session.commit()
+
+
+def edit_note(note: PaperNote, body: str, tag: str | None = None) -> bool:
+    """In-place note update. Empty body is a no-op (returns False) — match
+    the add_note contract so callers can re-use validation logic."""
+    body = (body or "").strip()
+    if not body:
+        return False
+    tag = (tag or "").strip().lower() or None
+    if tag not in ALLOWED_NOTE_TAGS:
+        tag = None
+    note.body = body
+    note.tag = tag
+    db.session.commit()
+    return True
 
 
 def get_note_for_user(user: User, note_id: int) -> PaperNote | None:

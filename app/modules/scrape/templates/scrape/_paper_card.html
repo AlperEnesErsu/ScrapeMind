@@ -70,8 +70,7 @@
               hx-post="{{ url_for('scrape.dismiss', user_paper_id=r.id) }}"
               hx-target="#card-{{ r.id }}" hx-swap="outerHTML"
               hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
-              hx-confirm="{{ _('Hide this paper from your feed?') }}"
-              aria-label="{{ _('Hide') }}" title="{{ _('Hide') }}">
+              aria-label="{{ _('Hide') }}" title="{{ _('Hide — undo available') }}">
         <i class="bi bi-x"></i>
       </button>
     </div>
