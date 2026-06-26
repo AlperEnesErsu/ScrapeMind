@@ -11,13 +11,11 @@
     <span class="small text-muted">{{ _('Discover') }} → {{ r.paper.source }}</span>
 
     <div class="ms-auto d-flex align-items-center gap-2">
-      <button type="button"
-              class="btn btn-sm action-btn{% if r.is_favorite %} action-btn--on-fav{% endif %}"
-              hx-post="{{ url_for('scrape.toggle_favorite_route', user_paper_id=r.id) }}"
-              hx-target="this" hx-swap="outerHTML"
-              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
-              aria-label="{{ _('Toggle favorite') }}">
-        <i class="bi {% if r.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      {% include 'scrape/_favorite_button.html' %}
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-cite-url="{{ url_for('scrape.cite_route', user_paper_id=r.id) }}"
+              id="cite-btn"
+              aria-label="{{ _('Copy BibTeX') }}">
+        <i class="bi bi-quote me-1"></i>{{ _('Cite') }}
       </button>
       {% if r.paper.pdf_url %}
       <a href="{{ r.paper.pdf_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">

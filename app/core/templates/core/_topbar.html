@@ -1,5 +1,11 @@
 <nav class="navbar navbar-expand-lg sticky-top border-bottom" id="topbar" style="background: var(--topbar-bg);">
   <div class="container-fluid">
+    {# Mobile hamburger — only visible below md. Toggles #sidebar.mobile-open via app.js. #}
+    <button type="button" class="btn btn-sm btn-outline-secondary d-md-none me-2" id="sidebar-toggle"
+            aria-label="{{ _('Toggle sidebar') }}">
+      <i class="bi bi-list"></i>
+    </button>
+
     <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ url_for('dashboard.index') }}">
       <i class="bi bi-brain"></i> ScrapeMind
     </a>
@@ -16,14 +22,27 @@
         <div id="search-results" class="position-absolute end-0" style="z-index: 1050; top: 100%;"></div>
       </div>
 
-      {# Language picker #}
+      {# Theme toggle — visible button (used to be buried in user dropdown). #}
+      <button class="btn btn-sm btn-outline-secondary" id="theme-toggle-topbar"
+              aria-label="{{ _('Toggle theme') }}" title="{{ _('Toggle theme') }}">
+        <i class="bi bi-circle-half"></i>
+      </button>
+
+      {# Language picker — preserves the current ?view=, ?tab=, ?mode= so a
+         locale swap on /library/?view=notes lands you back where you were. #}
+      {% set _qs = request.args.to_dict(flat=True) %}
       <div class="dropdown">
         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
           {{ g.locale | upper }}
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="?lang=tr">TR</a></li>
-          <li><a class="dropdown-item" href="?lang=en">EN</a></li>
+          {% for lang in ['tr', 'en'] %}
+            {% set _qs2 = _qs | dictsort %}
+            {% set _qs2 = _qs.items() | rejectattr('0', 'equalto', 'lang') | list %}
+            {% set _qstr = '&'.join(['%s=%s' % (k,v) for k,v in _qs2]) %}
+            <li><a class="dropdown-item"
+                   href="?{% if _qstr %}{{ _qstr }}&{% endif %}lang={{ lang }}">{{ lang | upper }}</a></li>
+          {% endfor %}
         </ul>
       </div>
 

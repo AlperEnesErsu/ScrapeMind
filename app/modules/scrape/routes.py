@@ -23,12 +23,15 @@ from flask_login import current_user, login_required
 from app.core.audit.middleware import log_action
 from app.modules.scrape.service import (
     add_note,
+    count_user_papers,
     delete_note,
+    edit_note,
     get_note_for_user,
     get_user_paper,
     list_user_papers,
     mark_seen,
     set_dismissed,
+    to_bibtex,
     toggle_favorite,
 )
 
@@ -60,12 +63,13 @@ def feed():
     view = request.args.get("view", "discover")
     if view not in {"discover", "favorites", "dismissed", "all"}:
         view = "discover"
-    rows = list_user_papers(current_user, limit=100, view=view)
+    q = request.args.get("q", "").strip()
+    rows = list_user_papers(current_user, limit=100, view=view, q=q or None)
     counts = {
-        "discover": len(list_user_papers(current_user, limit=500, view="discover")),
-        "favorites": len(list_user_papers(current_user, limit=500, view="favorites")),
+        "discover": count_user_papers(current_user, view="discover"),
+        "favorites": count_user_papers(current_user, view="favorites"),
     }
-    return render_template("scrape/feed.html", rows=rows, view=view, counts=counts)
+    return render_template("scrape/feed.html", rows=rows, view=view, counts=counts, q=q)
 
 
 @scrape_bp.route("/<int:user_paper_id>")
@@ -156,6 +160,28 @@ def generate_translation_route(user_paper_id: int):
 # ----------------------------------------------------------------------------
 
 
+@scrape_bp.route("/<int:user_paper_id>/cite", methods=["GET"])
+@login_required
+def cite_route(user_paper_id: int):
+    """Plain-text BibTeX entry for the paper. Browser-side JS copies it to
+    the clipboard; we also serve it as a download for the rare power user
+    who wants the .bib file directly via ?download=1."""
+    from flask import Response
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+    bib = to_bibtex(link.paper)
+    if request.args.get("download") == "1":
+        filename = f"{link.paper.source}-{link.paper.external_id}.bib"
+        return Response(
+            bib,
+            mimetype="application/x-bibtex",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    return Response(bib, mimetype="text/plain; charset=utf-8")
+
+
 @scrape_bp.route("/<int:user_paper_id>/open", methods=["POST"])
 @login_required
 def open_paper(user_paper_id: int):
@@ -183,6 +209,10 @@ def toggle_favorite_route(user_paper_id: int):
         changes={"is_favorite": is_now_fav},
     )
     if _is_htmx():
+        # Detail-page button uses ?as=button to swap just itself; feed cards
+        # swap the whole card so the badge ("Favorite"/"New") refreshes too.
+        if request.args.get("as") == "button":
+            return render_template("scrape/_favorite_button.html", r=link)
         return _render_card(link)
     flash(_("Saved to favorites.") if is_now_fav else _("Removed from favorites."), "success")
     return redirect(request.referrer or url_for("scrape.feed"))
@@ -265,6 +295,49 @@ def delete_note_route(note_id: int):
     if _is_htmx():
         return render_template("scrape/_notes_list.html", r=parent)
     return redirect(url_for("scrape.detail", user_paper_id=parent.id))
+
+
+@scrape_bp.route("/notes/<int:note_id>/view", methods=["GET"])
+@login_required
+def view_note_route(note_id: int):
+    """Read-mode partial for a single note. Used by the inline edit form's
+    Cancel button to swap back to the original card."""
+    note = get_note_for_user(current_user, note_id)
+    if note is None:
+        abort(404)
+    return render_template("scrape/_note_view.html", n=note)
+
+
+@scrape_bp.route("/notes/<int:note_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_note_route(note_id: int):
+    """Inline edit. GET returns the textarea swap; POST persists and swaps
+    back to the read view. Empty body is rejected the same way add_note
+    does — validation in one place."""
+    note = get_note_for_user(current_user, note_id)
+    if note is None:
+        abort(404)
+
+    if request.method == "GET":
+        return render_template("scrape/_note_edit.html", n=note)
+
+    body = request.form.get("body", "")
+    tag = request.form.get("tag", "")
+    ok = edit_note(note, body, tag=tag)
+    if not ok:
+        return render_template(
+            "scrape/_note_edit.html",
+            n=note,
+            flash_msg=_("Empty notes are not saved."),
+            flash_kind="danger",
+        )
+    log_action(
+        "paper.note_edited",
+        entity_type="paper_note",
+        entity_id=str(note.id),
+        changes={"tag": note.tag},
+    )
+    return render_template("scrape/_note_view.html", n=note)
 
 
 # ----------------------------------------------------------------------------

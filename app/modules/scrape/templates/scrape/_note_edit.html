@@ -1,0 +1,48 @@
+{# Inline edit form — same shape as the add form so layout doesn't jump.
+   Submitting POSTs to /notes/<id>/edit and swaps back to _note_view.html.
+   Cancel hits the GET endpoint? No — better: hx-get on the same edit url
+   isn't right either. We HTMX-get _note_view directly via a tiny route. #}
+<div id="note-{{ n.id }}"
+     class="note-card note-card--{{ n.tag or 'default' }} mb-2 note-card--editing">
+  {% if flash_msg %}
+  <div class="alert alert-{{ flash_kind or 'info' }} py-1 mb-2 small">{{ flash_msg }}</div>
+  {% endif %}
+  <form hx-post="{{ url_for('scrape.edit_note_route', note_id=n.id) }}"
+        hx-target="#note-{{ n.id }}" hx-swap="outerHTML">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <textarea name="body" class="form-control form-control-sm note-add__body mb-2"
+              rows="3"
+              onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter')this.form.requestSubmit()"
+              >{{ n.body }}</textarea>
+
+    <div class="d-flex align-items-center gap-1">
+      {% set _tags = [
+        ('',       _('No tag')),
+        ('deney',  _('experiment')),
+        ('soru',   _('question')),
+        ('sonuç',  _('finding')),
+      ] %}
+      {% for val, label in _tags %}
+        <input type="radio" class="btn-check"
+               id="edit-tag-{{ n.id }}-{{ val or 'none' }}" name="tag" value="{{ val }}"
+               {% if (n.tag or '') == val %}checked{% endif %}>
+        <label for="edit-tag-{{ n.id }}-{{ val or 'none' }}"
+               class="btn btn-sm note-tag-btn{% if val %} note-tag-btn--{{ 'sonuc' if val == 'sonuç' else val }}{% endif %}">
+          {{ label }}
+        </label>
+      {% endfor %}
+
+      <div class="ms-auto d-flex gap-1">
+        <button type="button" class="btn btn-sm action-btn action-btn--mute"
+                hx-get="{{ url_for('scrape.view_note_route', note_id=n.id) }}"
+                hx-target="#note-{{ n.id }}" hx-swap="outerHTML"
+                aria-label="{{ _('Cancel edit') }}" title="{{ _('Cancel') }}">
+          <i class="bi bi-x-lg"></i>
+        </button>
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-check2 me-1"></i>{{ _('Save') }}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
