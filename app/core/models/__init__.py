@@ -8,23 +8,6 @@ from app.core.models.session import UserSession
 from app.core.models.settings import SystemSettings, UserSettings
 from app.core.models.user import User
 
-# Module-owned models are imported here so Alembic and SQLAlchemy registry
-# see them. PROJECT.md keeps core/ free of module-specific code, but model
-# *registration* is unavoidable at this layer until a plugin-aware Alembic
-# env.py is built (planned for late Phase 2).
-from app.modules.academic.models import (  # noqa: E402
-    IdentifierType,
-    Keyword,
-    UserIdentifier,
-    UserKeyword,
-)
-from app.modules.scrape.models import (  # noqa: E402
-    Paper,
-    PaperAnalysis,
-    PaperNote,
-    PaperTranslation,
-    UserPaper,
-)
 
 __all__ = [
     "Module",
@@ -37,13 +20,5 @@ __all__ = [
     "SystemSettings",
     "AuditLog",
     "UserSession",
-    "IdentifierType",
-    "UserIdentifier",
-    "Keyword",
-    "UserKeyword",
-    "Paper",
-    "UserPaper",
-    "PaperNote",
-    "PaperAnalysis",
-    "PaperTranslation",
 ]
+
