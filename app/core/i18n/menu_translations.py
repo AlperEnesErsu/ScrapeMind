@@ -1,0 +1,19 @@
+from flask_babel import lazy_gettext
+
+# Dummy file to force pybabel to extract database-backed menu labels.
+# These keys are loaded dynamically from the MenuItem table and rendered in _sidebar.html.
+lazy_gettext("menu.dashboard")
+lazy_gettext("menu.feed")
+lazy_gettext("menu.admin")
+lazy_gettext("menu.profile")
+lazy_gettext("menu.users")
+lazy_gettext("menu.roles")
+lazy_gettext("menu.permissions")
+lazy_gettext("menu.menu_items")
+lazy_gettext("menu.audit")
+lazy_gettext("menu.tasks")
+lazy_gettext("menu.system")
+lazy_gettext("menu.for_you")
+lazy_gettext("menu.library.timeline")
+lazy_gettext("menu.library.favorites")
+lazy_gettext("menu.library.notes")
