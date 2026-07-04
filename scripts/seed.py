@@ -49,6 +49,7 @@ with app.app_context():
         ("menu.manage", "perm.menu.manage"),
         ("audit.view", "perm.audit.view"),
         ("dashboard.view", "perm.dashboard.view"),
+        ("dashboard.admin", "perm.dashboard.admin"),
         ("users.view", "perm.users.view"),
         ("users.manage", "perm.users.manage"),
         ("system.manage", "perm.system.manage"),
@@ -125,6 +126,8 @@ with app.app_context():
     # Sistem Yönetimi grubunun altındaki öğeler
     admin_group = MenuItem.query.filter_by(code="admin_group").first()
     admin_children = [
+        dict(code="admin_overview",    label_key="menu.dashboard",    icon="bi-speedometer2",
+             endpoint="dashboard.admin_overview", required_permission="dashboard.admin",  order_index=5),
         dict(code="admin_users",       label_key="menu.users",        icon="bi-people",
              endpoint="users.user_list",         required_permission="users.view",        order_index=10),
         dict(code="admin_roles",       label_key="menu.roles",        icon="bi-shield-lock",

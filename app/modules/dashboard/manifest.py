@@ -4,6 +4,7 @@ MODULE = {
     "version": "1.0.0",
     "permissions": [
         {"code": "dashboard.view", "label_key": "perm.dashboard.view"},
+        {"code": "dashboard.admin", "label_key": "perm.dashboard.admin"},
     ],
     "menu": [
         {
