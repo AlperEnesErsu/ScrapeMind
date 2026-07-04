@@ -49,9 +49,23 @@ def admin_overview():
         .order_by(User.last_login_at.desc())
         .first()
     )
+
+    from sqlalchemy import func
+    from app.modules.academic.models import Keyword, UserKeyword
+
+    top_keywords = (
+        db.session.query(Keyword.value, func.count(UserKeyword.user_id).label("count"))
+        .join(UserKeyword, Keyword.id == UserKeyword.keyword_id)
+        .group_by(Keyword.value)
+        .order_by(func.count(UserKeyword.user_id).desc())
+        .limit(5)
+        .all()
+    )
+
     return render_template(
         "dashboard/admin_overview.html",
         metrics=metrics,
         recent_logs=recent_logs,
         last_login_user=last_login_user,
+        top_keywords=top_keywords,
     )
