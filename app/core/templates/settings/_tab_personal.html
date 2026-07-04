@@ -9,7 +9,8 @@
   </div>
   <div class="mb-3">
     <label class="form-label">{{ form.avatar_url.label.text }}</label>
-    {{ form.avatar_url(class="form-control", placeholder="https://...") }}
+    {{ form.avatar_url(class="form-control" + (" is-invalid" if form.avatar_url.errors else ""), placeholder="https://...") }}
+    {% for err in form.avatar_url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
   </div>
   <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
 </form>
