@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-04 22:17+0300\n"
+"POT-Creation-Date: 2026-07-04 22:31+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -160,7 +160,7 @@ msgid "Total Roles"
 msgstr "Toplam Rol"
 
 #: app/core/i18n/menu_translations.py:26
-#: app/modules/dashboard/templates/dashboard/for_you.html:152
+#: app/modules/dashboard/templates/dashboard/for_you.html:321
 msgid "Recent System Activity"
 msgstr "Son Sistem Aktivitesi"
 
@@ -172,11 +172,153 @@ msgstr "Yeni Kullanıcı"
 #: app/core/i18n/menu_translations.py:30
 #: app/core/templates/users/create.html:30
 msgid "Must be at least 8 characters, with uppercase, lowercase, and a digit."
-msgstr "En az 8 karakter uzunluğunda olmalı; büyük harf, küçük harf ve rakam içermelidir."
+msgstr ""
+"En az 8 karakter uzunluğunda olmalı; büyük harf, küçük harf ve rakam "
+"içermelidir."
 
 #: app/core/i18n/menu_translations.py:31
 msgid "Create User"
 msgstr "Kullanıcı Oluştur"
+
+#: app/core/i18n/menu_translations.py:34
+#: app/modules/dashboard/templates/dashboard/for_you.html:119
+msgid "Getting Started with ScrapeMind"
+msgstr "ScrapeMind Kullanımına Başlarken"
+
+#: app/core/i18n/menu_translations.py:35
+#: app/modules/dashboard/templates/dashboard/for_you.html:122
+msgid ""
+"ScrapeMind monitors academic papers matching your specific keywords. "
+"Follow these steps to set up your personalized research feed:"
+msgstr ""
+"ScrapeMind, belirlediğiniz anahtar kelimelerle eşleşen akademik yayınları "
+"takip eder. Kişisel yayın akışınızı oluşturmak için aşağıdaki adımları izleyin:"
+
+#: app/core/i18n/menu_translations.py:36
+#: app/modules/dashboard/templates/dashboard/for_you.html:130
+msgid "Add Research Interests"
+msgstr "Araştırma İlgi Alanları Ekle"
+
+#: app/core/i18n/menu_translations.py:37
+#: app/modules/dashboard/templates/dashboard/for_you.html:132
+msgid ""
+"Enter keywords in the right sidebar, or click on trending topics to "
+"follow them."
+msgstr ""
+"Sağ kenar çubuğuna anahtar kelimeler girin veya takip etmek için popüler "
+"başlıklara tıklayın."
+
+#: app/core/i18n/menu_translations.py:38
+#: app/modules/dashboard/templates/dashboard/for_you.html:141
+msgid "Trigger Paper Scraping"
+msgstr "Yayın Taramasını Başlat"
+
+#: app/core/i18n/menu_translations.py:39
+#: app/modules/dashboard/templates/dashboard/for_you.html:143
+msgid ""
+"Once interests are added, click the \"Scrape Now\" button to search and "
+"import papers from arXiv."
+msgstr ""
+"İlgi alanları eklendikten sonra, arXiv üzerindeki makaleleri aramak ve "
+"içe aktarmak için \"Şimdi Tara\" butonuna tıklayın."
+
+#: app/core/i18n/menu_translations.py:40
+#: app/modules/dashboard/templates/dashboard/for_you.html:152
+msgid "Read and Analyze"
+msgstr "Oku ve Analiz Et"
+
+#: app/core/i18n/menu_translations.py:41
+#: app/modules/dashboard/templates/dashboard/for_you.html:154
+msgid ""
+"Papers will populate your homepage. Use ScrapeMind's AI features to "
+"instantly translate abstracts or write notes."
+msgstr ""
+"Yayınlar ana sayfanıza yüklenecektir. Özetleri anında çevirmek veya "
+"not yazmak için ScrapeMind'ın yapay zeka özelliklerini kullanın."
+
+#: app/core/i18n/menu_translations.py:42
+#: app/modules/dashboard/templates/dashboard/for_you.html:165
+msgid "Surfaced Publications"
+msgstr "Eşleşen Yayınlar"
+
+#: app/core/i18n/menu_translations.py:43
+#: app/modules/dashboard/templates/dashboard/for_you.html:174
+msgid "See full Discover feed"
+msgstr "Keşfet akışının tamamını gör"
+
+#: app/core/i18n/menu_translations.py:44
+#: app/modules/dashboard/templates/dashboard/for_you.html:177
+msgid "Open my library"
+msgstr "Kütüphanemi aç"
+
+#: app/core/i18n/menu_translations.py:45
+#: app/modules/dashboard/templates/dashboard/for_you.html:211
+msgid "My Research Interests"
+msgstr "Araştırma İlgi Alanlarım"
+
+#: app/core/i18n/menu_translations.py:46
+#: app/modules/dashboard/templates/dashboard/for_you.html:219
+msgid "Add keyword..."
+msgstr "Anahtar kelime ekle..."
+
+#: app/core/i18n/menu_translations.py:47
+#: app/modules/dashboard/templates/dashboard/for_you.html:233
+msgid "Remove interest"
+msgstr "İlgi alanını kaldır"
+
+#: app/core/i18n/menu_translations.py:48
+#: app/modules/dashboard/templates/dashboard/for_you.html:239
+msgid "No followed keywords yet."
+msgstr "Henüz takip edilen anahtar kelime yok."
+
+#: app/core/i18n/menu_translations.py:49
+#: app/modules/dashboard/templates/dashboard/for_you.html:247
+msgid "Trending in ScrapeMind"
+msgstr "ScrapeMind'da Popüler"
+
+#: app/core/i18n/menu_translations.py:50
+#: app/modules/dashboard/templates/dashboard/for_you.html:256
+msgid "Following"
+msgstr "Takip Ediliyor"
+
+#: app/core/i18n/menu_translations.py:51
+#: app/modules/dashboard/templates/dashboard/for_you.html:262
+msgid "Follow"
+msgstr "Takip Et"
+
+#: app/core/i18n/menu_translations.py:52
+#: app/modules/dashboard/templates/dashboard/for_you.html:278
+msgid "Data Scraper"
+msgstr "Veri Tarayıcı"
+
+#: app/core/i18n/menu_translations.py:53
+#: app/modules/dashboard/templates/dashboard/for_you.html:282
+msgid ""
+"Scraping queries ArXiv and other databases using your research interest "
+"keywords to find matching papers."
+msgstr ""
+"Tarama işlemi, ilgi alanı anahtar kelimelerinizi kullanarak ArXiv ve "
+"diğer veritabanlarında eşleşen makaleleri arar."
+
+#: app/core/i18n/menu_translations.py:54 app/modules/dashboard/routes.py:104
+msgid "Interest added successfully."
+msgstr "İlgi alanı başarıyla eklendi."
+
+#: app/core/i18n/menu_translations.py:55 app/modules/dashboard/routes.py:106
+msgid "Failed to add interest."
+msgstr "İlgi alanı eklenemedi."
+
+#: app/core/i18n/menu_translations.py:56 app/modules/dashboard/routes.py:108
+msgid "Interest name cannot be empty."
+msgstr "İlgi alanı boş olamaz."
+
+#: app/core/i18n/menu_translations.py:57 app/modules/dashboard/routes.py:123
+msgid "Interest removed successfully."
+msgstr "İlgi alanı başarıyla kaldırıldı."
+
+#: app/core/i18n/menu_translations.py:58 app/modules/dashboard/routes.py:125
+msgid "Failed to remove interest."
+msgstr "İlgi alanı kaldırılamadı."
 
 #: app/core/menu/routes.py:52
 msgid "Unknown endpoint."
@@ -1249,53 +1391,54 @@ msgid "Recent activity"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:80
-#: app/modules/dashboard/templates/dashboard/for_you.html:165
+#: app/modules/dashboard/templates/dashboard/for_you.html:334
 #: app/modules/dashboard/templates/dashboard/index.html:112
 #: app/modules/scrape/templates/library/_timeline.html:52
 msgid "No activity yet."
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:88
-#: app/modules/dashboard/templates/dashboard/for_you.html:173
+#: app/modules/dashboard/templates/dashboard/for_you.html:342
 #: app/modules/dashboard/templates/dashboard/index.html:119
 msgid "See full audit log"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:107
-#: app/modules/dashboard/templates/dashboard/for_you.html:131
+#: app/modules/dashboard/templates/dashboard/for_you.html:300
 msgid "Top Research Topics"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:114
-#: app/modules/dashboard/templates/dashboard/for_you.html:139
+#: app/modules/dashboard/templates/dashboard/for_you.html:308
 msgid "users"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:119
-#: app/modules/dashboard/templates/dashboard/for_you.html:144
+#: app/modules/dashboard/templates/dashboard/for_you.html:270
+#: app/modules/dashboard/templates/dashboard/for_you.html:313
 msgid "No topics followed yet."
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:125
-#: app/modules/dashboard/templates/dashboard/for_you.html:181
+#: app/modules/dashboard/templates/dashboard/for_you.html:350
 #: app/modules/dashboard/templates/dashboard/index.html:139
 msgid "Quick actions"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:129
-#: app/modules/dashboard/templates/dashboard/for_you.html:186
+#: app/modules/dashboard/templates/dashboard/for_you.html:355
 #: app/modules/dashboard/templates/dashboard/index.html:143
 msgid "Manage users"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:134
-#: app/modules/dashboard/templates/dashboard/for_you.html:189
+#: app/modules/dashboard/templates/dashboard/for_you.html:358
 #: app/modules/dashboard/templates/dashboard/index.html:148
 msgid "Manage roles"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:139
-#: app/modules/dashboard/templates/dashboard/for_you.html:192
+#: app/modules/dashboard/templates/dashboard/for_you.html:361
 msgid "Audit log"
 msgstr ""
 
@@ -1312,48 +1455,34 @@ msgid "Welcome, %(name)s"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:20
+#: app/modules/dashboard/templates/dashboard/for_you.html:192
+#: app/modules/dashboard/templates/dashboard/for_you.html:288
 #: app/modules/scrape/templates/scrape/feed.html:24
 msgid "Scrape now"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:82
-msgid "Personalise your feed"
+msgid "Followed Interests"
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:84
-msgid ""
-"Add research interests to your profile so we can surface relevant papers "
-"for you."
-msgstr ""
-
-#: app/modules/dashboard/templates/dashboard/for_you.html:87
-#: app/modules/dashboard/templates/dashboard/index.html:85
-#: app/modules/scrape/templates/scrape/feed.html:79
-msgid "Add interests"
-msgstr ""
-
-#: app/modules/dashboard/templates/dashboard/for_you.html:101
-msgid "See full Discover feed"
+#: app/modules/dashboard/templates/dashboard/for_you.html:93
+msgid "Favorite Papers"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:104
-msgid "Open my library"
+msgid "Academic Notes"
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:110
+#: app/modules/dashboard/templates/dashboard/for_you.html:184
 #: app/modules/dashboard/templates/dashboard/index.html:83
 msgid "No personalised papers yet."
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:113
+#: app/modules/dashboard/templates/dashboard/for_you.html:186
 msgid "Run a scrape to fill your feed — or check the Discover page."
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:115
-msgid "Add some interests and run a scrape to see papers here."
-msgstr ""
-
-#: app/modules/dashboard/templates/dashboard/for_you.html:119
+#: app/modules/dashboard/templates/dashboard/for_you.html:196
 #: app/modules/scrape/templates/library/_notes.html:28
 #: app/modules/scrape/templates/library/_timeline.html:57
 msgid "Open discover"
@@ -1366,6 +1495,11 @@ msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/index.html:60
 msgid "All papers"
+msgstr ""
+
+#: app/modules/dashboard/templates/dashboard/index.html:85
+#: app/modules/scrape/templates/scrape/feed.html:79
+msgid "Add interests"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/index.html:153
@@ -2930,15 +3064,14 @@ msgstr ""
 #~ msgid "Scrape now"
 #~ msgstr "Şimdi tara"
 
-# --- Scrape / papers feed (Phase 2 slice 3) ---
 #~ msgid "Personalise your feed"
-#~ msgstr "Akışın"
+#~ msgstr ""
 
 #~ msgid ""
 #~ "Add research interests to your profile"
 #~ " so we can surface relevant papers"
 #~ " for you."
-#~ msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
+#~ msgstr ""
 
 #~ msgid "Add interests"
 #~ msgstr "İlgi alanı ekle"
@@ -2959,7 +3092,7 @@ msgstr ""
 #~ "bak."
 
 #~ msgid "Add some interests and run a scrape to see papers here."
-#~ msgstr "Burada makaleler görmek için ilgi alanı ekle ve bir tarama çalıştır."
+#~ msgstr ""
 
 #~ msgid "Open discover"
 #~ msgstr "Keşfet"
