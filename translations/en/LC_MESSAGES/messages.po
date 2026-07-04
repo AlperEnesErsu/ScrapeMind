@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScrapeMind 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-04 19:16+0300\n"
+"POT-Creation-Date: 2026-07-04 19:26+0300\n"
 "PO-Revision-Date: 2026-05-16 00:00+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -134,6 +134,32 @@ msgstr "Favorites"
 #: app/core/i18n/menu_translations.py:19
 msgid "menu.library.notes"
 msgstr "My Notes"
+
+#: app/core/i18n/menu_translations.py:22
+#: app/modules/dashboard/templates/dashboard/for_you.html:34
+msgid "Total Users"
+msgstr "Total Users"
+
+#: app/core/i18n/menu_translations.py:23
+#: app/modules/dashboard/templates/dashboard/for_you.html:45
+#: app/modules/dashboard/templates/dashboard/index.html:27
+msgid "Active Users"
+msgstr "Active Users"
+
+#: app/core/i18n/menu_translations.py:24
+#: app/modules/dashboard/templates/dashboard/for_you.html:56
+msgid "Locked Users"
+msgstr "Locked Users"
+
+#: app/core/i18n/menu_translations.py:25
+#: app/modules/dashboard/templates/dashboard/for_you.html:67
+msgid "Total Roles"
+msgstr "Total Roles"
+
+#: app/core/i18n/menu_translations.py:26
+#: app/modules/dashboard/templates/dashboard/for_you.html:152
+msgid "Recent System Activity"
+msgstr "Recent System Activity"
 
 #: app/core/menu/routes.py:52
 msgid "Unknown endpoint."
@@ -1191,44 +1217,53 @@ msgid "Recent activity"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:80
+#: app/modules/dashboard/templates/dashboard/for_you.html:165
 #: app/modules/dashboard/templates/dashboard/index.html:112
 #: app/modules/scrape/templates/library/_timeline.html:52
 msgid "No activity yet."
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:88
+#: app/modules/dashboard/templates/dashboard/for_you.html:173
 #: app/modules/dashboard/templates/dashboard/index.html:119
 msgid "See full audit log"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:107
+#: app/modules/dashboard/templates/dashboard/for_you.html:131
 msgid "Top Research Topics"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:114
+#: app/modules/dashboard/templates/dashboard/for_you.html:139
 msgid "users"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:119
+#: app/modules/dashboard/templates/dashboard/for_you.html:144
 msgid "No topics followed yet."
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:125
+#: app/modules/dashboard/templates/dashboard/for_you.html:181
 #: app/modules/dashboard/templates/dashboard/index.html:139
 msgid "Quick actions"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:129
+#: app/modules/dashboard/templates/dashboard/for_you.html:186
 #: app/modules/dashboard/templates/dashboard/index.html:143
 msgid "Manage users"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:134
+#: app/modules/dashboard/templates/dashboard/for_you.html:189
 #: app/modules/dashboard/templates/dashboard/index.html:148
 msgid "Manage roles"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:139
+#: app/modules/dashboard/templates/dashboard/for_you.html:192
 msgid "Audit log"
 msgstr ""
 
@@ -1249,44 +1284,44 @@ msgstr ""
 msgid "Scrape now"
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:30
+#: app/modules/dashboard/templates/dashboard/for_you.html:82
 msgid "Personalise your feed"
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:32
+#: app/modules/dashboard/templates/dashboard/for_you.html:84
 msgid ""
 "Add research interests to your profile so we can surface relevant papers "
 "for you."
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:35
+#: app/modules/dashboard/templates/dashboard/for_you.html:87
 #: app/modules/dashboard/templates/dashboard/index.html:85
 #: app/modules/scrape/templates/scrape/feed.html:79
 msgid "Add interests"
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:50
+#: app/modules/dashboard/templates/dashboard/for_you.html:101
 msgid "See full Discover feed"
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:53
+#: app/modules/dashboard/templates/dashboard/for_you.html:104
 msgid "Open my library"
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:59
+#: app/modules/dashboard/templates/dashboard/for_you.html:110
 #: app/modules/dashboard/templates/dashboard/index.html:83
 msgid "No personalised papers yet."
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:62
+#: app/modules/dashboard/templates/dashboard/for_you.html:113
 msgid "Run a scrape to fill your feed — or check the Discover page."
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:64
+#: app/modules/dashboard/templates/dashboard/for_you.html:115
 msgid "Add some interests and run a scrape to see papers here."
 msgstr ""
 
-#: app/modules/dashboard/templates/dashboard/for_you.html:68
+#: app/modules/dashboard/templates/dashboard/for_you.html:119
 #: app/modules/scrape/templates/library/_notes.html:28
 #: app/modules/scrape/templates/library/_timeline.html:57
 msgid "Open discover"
@@ -1295,10 +1330,6 @@ msgstr ""
 #: app/modules/dashboard/templates/dashboard/index.html:2
 #: app/modules/dashboard/templates/dashboard/index.html:6
 msgid "Dashboard"
-msgstr ""
-
-#: app/modules/dashboard/templates/dashboard/index.html:27
-msgid "Active Users"
 msgstr ""
 
 #: app/modules/dashboard/templates/dashboard/index.html:60

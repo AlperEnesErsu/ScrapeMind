@@ -17,3 +17,11 @@ lazy_gettext("menu.for_you")
 lazy_gettext("menu.library.timeline")
 lazy_gettext("menu.library.favorites")
 lazy_gettext("menu.library.notes")
+
+# Other new translation strings used on the split dashboard
+lazy_gettext("Total Users")
+lazy_gettext("Active Users")
+lazy_gettext("Locked Users")
+lazy_gettext("Total Roles")
+lazy_gettext("Recent System Activity")
+
