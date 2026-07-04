@@ -11,11 +11,16 @@ def select_locale() -> str:
     if lang in SUPPORTED_LOCALES:
         g.locale = lang
         return lang
-    # 2. Authenticated user's preference
+    # 2. Cookie preference
+    cookie_lang = request.cookies.get("lang")
+    if cookie_lang in SUPPORTED_LOCALES:
+        g.locale = cookie_lang
+        return cookie_lang
+    # 3. Authenticated user's preference
     if current_user.is_authenticated and current_user.locale in SUPPORTED_LOCALES:
         g.locale = current_user.locale
         return current_user.locale
-    # 3. Browser Accept-Language
+    # 4. Browser Accept-Language
     best = request.accept_languages.best_match(SUPPORTED_LOCALES)
     g.locale = best or "tr"
     return g.locale

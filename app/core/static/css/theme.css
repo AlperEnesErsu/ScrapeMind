@@ -1,31 +1,35 @@
-/*
- * Theme.
- *
- * Bootstrap 5.3 ships a native dark mode keyed on `data-bs-theme` — we set
- * that on <html> in base.html. Bootstrap re-themes its own components
- * (.table, .card, .dropdown-menu, .form-*, .text-muted, .badge, <code>, …)
- * automatically.
- *
- * This file only defines the *extra* tokens our shell uses (sidebar, topbar)
- * and a few tweaks where Bootstrap's defaults don't quite fit.
- */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
 
 :root,
 [data-bs-theme="light"] {
-  --sidebar-bg: #ffffff;
+  --sidebar-bg: #f8fafc;
   --sidebar-width: 240px;
   --topbar-bg: #ffffff;
-  --nav-link-hover-bg: #e9ecef;
-  --nav-link-active-bg: #0d6efd;
+  --nav-link-hover-bg: #f1f5f9;
+  --nav-link-active-bg: #6366f1;
   --nav-link-active-color: #ffffff;
+  --bs-primary: #6366f1;
+  --bs-primary-rgb: 99, 102, 241;
+  --bs-body-bg: #f8fafc;
+  --card-border-radius: 12px;
 }
 
 [data-bs-theme="dark"] {
-  --sidebar-bg: #1f2125;
-  --topbar-bg: #1f2125;
-  --nav-link-hover-bg: #2b2f36;
-  --nav-link-active-bg: #3d8bfd;
+  --sidebar-bg: #0f172a;
+  --topbar-bg: #0f172a;
+  --nav-link-hover-bg: #1e293b;
+  --nav-link-active-bg: #4f46e5;
   --nav-link-active-color: #ffffff;
+  --bs-primary: #818cf8;
+  --bs-primary-rgb: 129, 140, 248;
+  --bs-body-bg: #0b0f19;
+  --bs-card-bg: #111827;
+  --card-border-radius: 12px;
 }
 
 /* Sidebar */
@@ -87,7 +91,24 @@ main h4 {
 
 /* Card lift on hover for tables/lists */
 .card {
-  transition: box-shadow 0.15s ease;
+  border-radius: var(--card-border-radius, 12px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.02) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-bs-theme="dark"] .card {
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-bs-theme="dark"] .card:hover {
+  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.3), 0 4px 12px -2px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Tighten data-tables and align badges nicely */

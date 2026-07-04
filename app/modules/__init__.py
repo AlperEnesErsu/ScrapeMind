@@ -20,6 +20,20 @@ logger = structlog.get_logger()
 _MODULES_PKG = Path(__file__).parent
 
 
+def discover_and_register_models() -> None:
+    """Scan app/modules/, and import any models.py modules to register their models."""
+    for finder, name, ispkg in pkgutil.iter_modules([str(_MODULES_PKG)]):
+        if name.startswith("_"):
+            continue
+        try:
+            importlib.import_module(f"app.modules.{name}.models")
+        except ImportError as e:
+            # Only ignore if the models.py file itself does not exist.
+            if e.name != f"app.modules.{name}.models":
+                logger.exception("plugin_models_import_failed", module=name)
+                raise
+
+
 def discover_and_sync_modules() -> None:
     """Scan app/modules/, import each manifest, upsert into DB (idempotent)."""
     from app.core.models.menu import MenuItem

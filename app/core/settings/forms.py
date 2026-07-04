@@ -21,6 +21,36 @@ class PersonalInfoForm(FlaskForm):
     avatar_url = StringField(_l("Avatar URL"), validators=[Optional(), Length(max=512)])
     submit = SubmitField(_l("Save"))
 
+    def validate_avatar_url(self, field):
+        if not field.data:
+            return
+        from urllib.parse import urlparse
+        import socket
+        import ipaddress
+        from wtforms.validators import ValidationError
+
+        try:
+            parsed = urlparse(field.data)
+            if parsed.scheme not in ('http', 'https'):
+                raise ValidationError(_l("URL must start with http:// or https://"))
+            
+            hostname = parsed.hostname
+            if not hostname:
+                raise ValidationError(_l("Invalid URL hostname."))
+                
+            try:
+                ip = socket.gethostbyname(hostname)
+            except Exception:
+                raise ValidationError(_l("Unable to resolve hostname."))
+                
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_loopback or ip_obj.is_private:
+                raise ValidationError(_l("Private or local URLs are not allowed."))
+        except ValidationError:
+            raise
+        except Exception:
+            raise ValidationError(_l("Invalid URL format."))
+
 
 class EmailChangeForm(FlaskForm):
     email = StringField(_l("Email"), validators=[DataRequired(), Email(), Length(max=255)])

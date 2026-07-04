@@ -37,11 +37,8 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           {% for lang in ['tr', 'en'] %}
-            {% set _qs2 = _qs | dictsort %}
-            {% set _qs2 = _qs.items() | rejectattr('0', 'equalto', 'lang') | list %}
-            {% set _qstr = '&'.join(['%s=%s' % (k,v) for k,v in _qs2]) %}
             <li><a class="dropdown-item"
-                   href="?{% if _qstr %}{{ _qstr }}&{% endif %}lang={{ lang }}">{{ lang | upper }}</a></li>
+                   href="{{ url_for('settings.set_locale', lang=lang) }}">{{ lang | upper }}</a></li>
           {% endfor %}
         </ul>
       </div>

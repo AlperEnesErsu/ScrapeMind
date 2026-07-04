@@ -289,6 +289,11 @@ def oauth_callback(provider: str):
         flash(_("OAuth login failed or registration disabled."), "danger")
         return redirect(url_for("auth.login"))
 
+    if user.is_totp_enabled:
+        session[PENDING_2FA_KEY] = user.id
+        session[PENDING_2FA_REMEMBER_KEY] = False
+        return redirect(url_for("auth.totp_challenge"))
+
     login_user(user)
     key = create_session(user)
     set_current_key(key)

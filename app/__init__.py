@@ -9,8 +9,10 @@ logger = structlog.get_logger()
 
 def create_app() -> Flask:
     import app.core.models  # noqa: F401 — registers all SQLAlchemy models before init
-    import app.modules.academic.models  # noqa: F401
-    import app.modules.scrape.models  # noqa: F401
+
+    from app.modules import discover_and_register_models
+
+    discover_and_register_models()
 
     app = Flask(__name__, template_folder="core/templates", static_folder="core/static")
     app.config.from_object(get_config())

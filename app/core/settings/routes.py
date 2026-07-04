@@ -505,3 +505,28 @@ def set_theme():
     user_settings.settings = settings_copy
     db.session.commit()
     return jsonify({"theme": theme})
+
+
+@settings_bp.route("/set-locale/<lang>", methods=["GET"])
+def set_locale(lang: str):
+    from flask import make_response
+    from app.core.i18n.utils import SUPPORTED_LOCALES
+
+    if lang not in SUPPORTED_LOCALES:
+        abort(400)
+
+    if current_user.is_authenticated:
+        from app.core.models.settings import UserSettings
+        user_settings = current_user.settings
+        if user_settings is None:
+            user_settings = UserSettings(user_id=current_user.id, settings={})
+            db.session.add(user_settings)
+        settings_copy = dict(user_settings.settings or {})
+        settings_copy["locale"] = lang
+        user_settings.settings = settings_copy
+        db.session.commit()
+
+    referrer = request.referrer or url_for("dashboard.index")
+    response = make_response(redirect(referrer))
+    response.set_cookie("lang", lang, max_age=30 * 24 * 60 * 60, path="/")
+    return response
