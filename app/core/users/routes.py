@@ -29,6 +29,67 @@ def user_list():
     return render_template("users/list.html", users=users, q=q, only_active=only_active)
 
 
+@users_bp.route("/new", methods=["GET", "POST"])
+@login_required
+@permission_required("users.manage")
+def user_new():
+    from app.core.users.forms import UserCreateForm
+    from app.core.models.user import User
+    from app.core.auth.strategies.local import LocalAuthStrategy
+    from app.extensions import db
+
+    form = UserCreateForm()
+    all_roles = Role.query.filter(Role.deleted_at.is_(None)).order_by(Role.name).all()
+
+    if form.validate_on_submit():
+        username = form.username.data.strip()
+        email = form.email.data.strip().lower()
+
+        # Check unique constraints
+        if User.query.filter(User.username == username).first():
+            form.username.errors.append(_("Username already in use."))
+        elif User.query.filter(User.email == email).first():
+            form.email.errors.append(_("Email already in use."))
+        else:
+            # Create user
+            user = User(
+                username=username,
+                email=email,
+                full_name=form.full_name.data.strip(),
+                password_hash=LocalAuthStrategy.hash_password(form.password.data),
+                is_active=form.is_active.data,
+                is_superuser=form.is_superuser.data,
+                avatar_url=(form.avatar_url.data or "").strip() or None,
+            )
+            db.session.add(user)
+            db.session.flush()
+
+            # Set roles
+            role_ids = [int(rid) for rid in request.form.getlist("role_ids")]
+            set_user_roles(user, role_ids)
+
+            log_action(
+                "user.create",
+                entity_type="user",
+                entity_id=str(user.id),
+                changes={
+                    "username": user.username,
+                    "email": user.email,
+                    "is_active": user.is_active,
+                    "is_superuser": user.is_superuser,
+                    "role_ids": role_ids,
+                },
+            )
+            flash(_("User created."), "success")
+            return redirect(url_for("users.user_list"))
+
+    return render_template(
+        "users/create.html",
+        form=form,
+        all_roles=all_roles,
+    )
+
+
 @users_bp.route("/<int:user_id>", methods=["GET", "POST"])
 @login_required
 @permission_required("users.manage")

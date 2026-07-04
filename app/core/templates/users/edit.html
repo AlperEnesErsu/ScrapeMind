@@ -22,6 +22,7 @@
     <div class="col-md-6">
       <label class="form-label">{{ form.avatar_url.label.text }}</label>
       {{ form.avatar_url(class="form-control", placeholder="https://...") }}
+      {% for err in form.avatar_url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>
     <div class="col-md-6 d-flex align-items-end gap-4">
       <div class="form-check">

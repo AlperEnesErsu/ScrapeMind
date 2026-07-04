@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScrapeMind 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-04 19:26+0300\n"
+"POT-Creation-Date: 2026-07-04 22:17+0300\n"
 "PO-Revision-Date: 2026-05-16 00:00+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -160,6 +160,20 @@ msgstr "Total Roles"
 #: app/modules/dashboard/templates/dashboard/for_you.html:152
 msgid "Recent System Activity"
 msgstr "Recent System Activity"
+
+#: app/core/i18n/menu_translations.py:29 app/core/templates/users/create.html:2
+#: app/core/templates/users/create.html:5 app/core/templates/users/list.html:8
+msgid "New User"
+msgstr "New User"
+
+#: app/core/i18n/menu_translations.py:30
+#: app/core/templates/users/create.html:30
+msgid "Must be at least 8 characters, with uppercase, lowercase, and a digit."
+msgstr "Must be at least 8 characters, with uppercase, lowercase, and a digit."
+
+#: app/core/i18n/menu_translations.py:31
+msgid "Create User"
+msgstr "Create User"
 
 #: app/core/menu/routes.py:52
 msgid "Unknown endpoint."
@@ -327,7 +341,7 @@ msgstr ""
 msgid "Apply"
 msgstr ""
 
-#: app/core/templates/audit/list.html:44 app/core/templates/users/list.html:22
+#: app/core/templates/audit/list.html:44 app/core/templates/users/list.html:27
 msgid "Reset"
 msgstr ""
 
@@ -454,7 +468,8 @@ msgstr ""
 #: app/core/templates/rbac/role_list.html:2
 #: app/core/templates/rbac/role_list.html:5
 #: app/core/templates/settings/_tab_account.html:16
-#: app/core/templates/users/edit.html:39 app/core/templates/users/list.html:34
+#: app/core/templates/users/create.html:52
+#: app/core/templates/users/edit.html:40 app/core/templates/users/list.html:39
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:48
 #: app/modules/dashboard/templates/dashboard/index.html:38
 msgid "Roles"
@@ -566,7 +581,7 @@ msgstr ""
 
 #: app/core/templates/menu/list.html:25
 #: app/core/templates/rbac/role_list.html:21
-#: app/core/templates/users/list.html:37
+#: app/core/templates/users/list.html:42
 msgid "Actions"
 msgstr ""
 
@@ -606,7 +621,8 @@ msgstr ""
 #: app/core/templates/menu/menu_form.html:79
 #: app/core/templates/rbac/role_form.html:55
 #: app/core/templates/settings/_tab_security.html:86
-#: app/core/templates/users/edit.html:73
+#: app/core/templates/users/create.html:73
+#: app/core/templates/users/edit.html:74
 #: app/modules/scrape/templates/scrape/_note_edit.html:39
 msgid "Cancel"
 msgstr ""
@@ -667,51 +683,51 @@ msgid "Account"
 msgstr ""
 
 #: app/core/templates/settings/_tab_account.html:4
-#: app/core/templates/users/edit.html:59 app/core/templates/users/list.html:31
+#: app/core/templates/users/edit.html:60 app/core/templates/users/list.html:36
 msgid "Username"
 msgstr ""
 
 #: app/core/templates/settings/_tab_account.html:7
-#: app/core/templates/users/edit.html:61
+#: app/core/templates/users/edit.html:62
 msgid "User ID"
 msgstr ""
 
 #: app/core/templates/settings/_tab_account.html:10
-#: app/core/templates/users/edit.html:63
+#: app/core/templates/users/edit.html:64
 msgid "Account created"
 msgstr ""
 
 #: app/core/templates/settings/_tab_account.html:13
-#: app/core/templates/users/edit.html:65 app/core/templates/users/list.html:36
+#: app/core/templates/users/edit.html:66 app/core/templates/users/list.html:41
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:97
 #: app/modules/dashboard/templates/dashboard/index.html:128
 msgid "Last login"
 msgstr ""
 
 #: app/core/templates/settings/_tab_account.html:21
-#: app/core/templates/users/list.html:35
+#: app/core/templates/users/list.html:40
 msgid "Status"
 msgstr ""
 
 #: app/core/templates/settings/_tab_account.html:23
-#: app/core/templates/users/list.html:45
+#: app/core/templates/users/list.html:50
 msgid "Superuser"
 msgstr ""
 
 #: app/core/templates/settings/_tab_account.html:24
 #: app/core/templates/tasks_admin/overview.html:48
-#: app/core/templates/users/list.html:56
+#: app/core/templates/users/list.html:61
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:26
 msgid "Active"
 msgstr ""
 
 #: app/core/templates/settings/_tab_account.html:25
-#: app/core/templates/users/list.html:58
+#: app/core/templates/users/list.html:63
 msgid "Inactive"
 msgstr ""
 
 #: app/core/templates/settings/_tab_email.html:2
-#: app/core/templates/users/list.html:32
+#: app/core/templates/users/list.html:37
 msgid "Email"
 msgstr ""
 
@@ -968,127 +984,140 @@ msgstr ""
 msgid "No periodic tasks."
 msgstr ""
 
+#: app/core/templates/users/create.html:66
+#: app/core/templates/users/edit.html:54
+msgid "No roles defined."
+msgstr ""
+
 #: app/core/templates/users/edit.html:2 app/core/templates/users/edit.html:5
 msgid "Edit User"
 msgstr ""
 
-#: app/core/templates/users/edit.html:53
-msgid "No roles defined."
-msgstr ""
-
-#: app/core/templates/users/edit.html:60
+#: app/core/templates/users/edit.html:61
 msgid "(immutable)"
 msgstr ""
 
-#: app/core/templates/users/edit.html:67
+#: app/core/templates/users/edit.html:68
 msgid "Failed logins"
 msgstr ""
 
-#: app/core/templates/users/edit.html:78
+#: app/core/templates/users/edit.html:79
 msgid "Academic profile"
 msgstr ""
 
-#: app/core/templates/users/edit.html:80
+#: app/core/templates/users/edit.html:81
 msgid ""
 "Read-only view of the user's academic identifiers and research interests."
 " They manage these from their own profile page."
 msgstr ""
 
-#: app/core/templates/users/edit.html:87
+#: app/core/templates/users/edit.html:88
 #: app/modules/academic/templates/settings/_tab_identifiers.html:2
 msgid "Academic Identifiers"
 msgstr ""
 
-#: app/core/templates/users/edit.html:98
+#: app/core/templates/users/edit.html:99
 #: app/modules/academic/templates/settings/_tab_identifiers.html:21
 msgid "Verified"
 msgstr ""
 
-#: app/core/templates/users/edit.html:100
+#: app/core/templates/users/edit.html:101
 #: app/modules/academic/templates/settings/_tab_identifiers.html:23
 msgid "Unverified"
 msgstr ""
 
-#: app/core/templates/users/edit.html:108
+#: app/core/templates/users/edit.html:109
 #: app/modules/academic/templates/settings/_tab_identifiers.html:51
 msgid "No academic identifiers yet."
 msgstr ""
 
-#: app/core/templates/users/edit.html:117
+#: app/core/templates/users/edit.html:118
 #: app/modules/academic/templates/settings/_tab_interests.html:2
 msgid "Research Interests"
 msgstr ""
 
-#: app/core/templates/users/edit.html:127
+#: app/core/templates/users/edit.html:128
 msgid "No keywords yet."
 msgstr ""
 
-#: app/core/templates/users/list.html:11
+#: app/core/templates/users/list.html:16
 msgid "Search by username, email, name…"
 msgstr ""
 
-#: app/core/templates/users/list.html:17
+#: app/core/templates/users/list.html:22
 msgid "Active only"
 msgstr ""
 
-#: app/core/templates/users/list.html:21
+#: app/core/templates/users/list.html:26
 msgid "Filter"
 msgstr ""
 
-#: app/core/templates/users/list.html:33
+#: app/core/templates/users/list.html:38
 msgid "Full Name"
 msgstr ""
 
-#: app/core/templates/users/list.html:54
+#: app/core/templates/users/list.html:59
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:37
 msgid "Locked"
 msgstr ""
 
-#: app/core/templates/users/list.html:69
+#: app/core/templates/users/list.html:74
 msgid "Unlock"
 msgstr ""
 
-#: app/core/templates/users/list.html:74
+#: app/core/templates/users/list.html:79
 msgid "Lock"
 msgstr ""
 
-#: app/core/templates/users/list.html:79
+#: app/core/templates/users/list.html:84
 msgid "Delete this user?"
 msgstr ""
 
-#: app/core/templates/users/list.html:87
+#: app/core/templates/users/list.html:92
 msgid "No users yet."
 msgstr ""
 
-#: app/core/users/routes.py:47
+#: app/core/users/routes.py:50
+msgid "Username already in use."
+msgstr ""
+
+#: app/core/users/routes.py:52
+msgid "Email already in use."
+msgstr ""
+
+#: app/core/users/routes.py:83
+msgid "User created."
+msgstr ""
+
+#: app/core/users/routes.py:108
 msgid "You cannot remove your own superuser flag."
 msgstr ""
 
-#: app/core/users/routes.py:74
+#: app/core/users/routes.py:135
 msgid "User updated."
 msgstr ""
 
-#: app/core/users/routes.py:102
+#: app/core/users/routes.py:163
 msgid "You cannot lock your own account."
 msgstr ""
 
-#: app/core/users/routes.py:106
+#: app/core/users/routes.py:167
 msgid "User locked."
 msgstr ""
 
-#: app/core/users/routes.py:119
+#: app/core/users/routes.py:180
 msgid "User unlocked."
 msgstr ""
 
-#: app/core/users/routes.py:131
+#: app/core/users/routes.py:192
 msgid "You cannot delete your own account."
 msgstr ""
 
-#: app/core/users/routes.py:134
+#: app/core/users/routes.py:195
 msgid "The admin user cannot be deleted."
 msgstr ""
 
-#: app/core/users/routes.py:138
+#: app/core/users/routes.py:199
 msgid "User deleted."
 msgstr ""
 

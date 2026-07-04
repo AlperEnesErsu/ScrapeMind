@@ -104,3 +104,8 @@ def test_soft_delete_excludes_from_list(db, clean):
 def test_user_list_route_requires_login(client):
     r = client.get("/admin/users/", follow_redirects=False)
     assert r.status_code in (302, 401)
+
+
+def test_user_new_route_requires_login(client):
+    r = client.get("/admin/users/new", follow_redirects=False)
+    assert r.status_code in (302, 401)

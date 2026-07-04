@@ -25,3 +25,8 @@ lazy_gettext("Locked Users")
 lazy_gettext("Total Roles")
 lazy_gettext("Recent System Activity")
 
+# New user creation panel helpers
+lazy_gettext("New User")
+lazy_gettext("Must be at least 8 characters, with uppercase, lowercase, and a digit.")
+lazy_gettext("Create User")
+
