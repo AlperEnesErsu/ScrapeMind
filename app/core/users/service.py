@@ -36,6 +36,11 @@ def update_user(
     email = email.strip().lower()
     if email != user.email and User.query.filter(User.email == email, User.id != user.id).first():
         return False, "Email already in use."
+    if avatar_url:
+        from app.core.settings.service import validate_url_safety
+        ok, err = validate_url_safety(avatar_url)
+        if not ok:
+            return False, err
     user.full_name = full_name.strip()
     user.email = email
     user.is_active = is_active

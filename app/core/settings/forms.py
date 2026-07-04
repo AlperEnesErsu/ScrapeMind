@@ -24,32 +24,12 @@ class PersonalInfoForm(FlaskForm):
     def validate_avatar_url(self, field):
         if not field.data:
             return
-        from urllib.parse import urlparse
-        import socket
-        import ipaddress
+        from app.core.settings.service import validate_url_safety
         from wtforms.validators import ValidationError
 
-        try:
-            parsed = urlparse(field.data)
-            if parsed.scheme not in ('http', 'https'):
-                raise ValidationError(_l("URL must start with http:// or https://"))
-            
-            hostname = parsed.hostname
-            if not hostname:
-                raise ValidationError(_l("Invalid URL hostname."))
-                
-            try:
-                ip = socket.gethostbyname(hostname)
-            except Exception:
-                raise ValidationError(_l("Unable to resolve hostname."))
-                
-            ip_obj = ipaddress.ip_address(ip)
-            if ip_obj.is_loopback or ip_obj.is_private:
-                raise ValidationError(_l("Private or local URLs are not allowed."))
-        except ValidationError:
-            raise
-        except Exception:
-            raise ValidationError(_l("Invalid URL format."))
+        ok, err = validate_url_safety(field.data)
+        if not ok:
+            raise ValidationError(_l(err))
 
 
 class EmailChangeForm(FlaskForm):

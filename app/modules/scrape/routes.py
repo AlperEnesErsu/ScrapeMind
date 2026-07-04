@@ -357,5 +357,26 @@ def run_now():
         entity_id=str(current_user.id),
         changes={"task_id": getattr(async_result, "id", None)},
     )
+    if _is_htmx():
+        return render_template("scrape/_scrape_spinner.html", task_id=async_result.id)
     flash(_("Scrape queued — papers will appear here once the worker finishes."), "info")
     return redirect(url_for("scrape.feed"))
+
+
+@scrape_bp.route("/status/<task_id>", methods=["GET"])
+@login_required
+def scrape_status_poll(task_id: str):
+    from celery.result import AsyncResult
+    from flask import Response
+    from app.modules.academic.service import list_user_keywords
+
+    res = AsyncResult(task_id)
+    if res.ready():
+        has_interests = bool(list_user_keywords(current_user))
+        response = Response(
+            render_template("scrape/_scraper_widget.html", has_interests=has_interests)
+        )
+        response.headers["HX-Refresh"] = "true"
+        return response
+    else:
+        return render_template("scrape/_scrape_spinner.html", task_id=task_id)

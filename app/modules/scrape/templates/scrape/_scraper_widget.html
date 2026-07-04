@@ -1,0 +1,20 @@
+<div id="scraper-widget" class="card shadow-sm border-0 bg-body">
+  <div class="card-header py-2 bg-transparent border-bottom">
+    <strong><i class="bi bi-arrow-clockwise me-2 text-success"></i>{{ _('Data Scraper') }}</strong>
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">
+      {{ _('Scraping queries ArXiv and other databases using your research interest keywords to find matching papers.') }}
+    </p>
+    <div class="d-grid">
+      <button class="btn btn-sm btn-primary"
+              hx-post="{{ url_for('scrape.run_now') }}"
+              hx-target="#scraper-widget"
+              hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              {% if not has_interests %}disabled{% endif %}>
+        <i class="bi bi-arrow-clockwise me-2"></i>{{ _('Scrape now') }}
+      </button>
+    </div>
+  </div>
+</div>

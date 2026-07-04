@@ -1,0 +1,14 @@
+<div id="scraper-widget" class="card shadow-sm border-0 bg-body"
+     hx-get="{{ url_for('scrape.scrape_status_poll', task_id=task_id) }}"
+     hx-trigger="every 3s"
+     hx-swap="outerHTML">
+  <div class="card-header py-2 bg-transparent border-bottom">
+    <strong><i class="bi bi-arrow-clockwise me-2 text-success"></i>{{ _('Data Scraper') }}</strong>
+  </div>
+  <div class="card-body text-center py-4">
+    <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="small text-muted">{{ _('Scraping in progress...') }}</div>
+  </div>
+</div>

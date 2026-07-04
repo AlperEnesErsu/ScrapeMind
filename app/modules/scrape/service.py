@@ -122,7 +122,8 @@ def list_user_papers(
     paper's title, abstract, or matched keyword. Trimmed; empty == no
     filter.
     """
-    query = _user_papers_query(user, view).join(Paper)
+    from sqlalchemy.orm import selectinload
+    query = _user_papers_query(user, view).join(Paper).options(selectinload(UserPaper.notes))
     q = (q or "").strip()
     if q:
         like = f"%{q.lower()}%"

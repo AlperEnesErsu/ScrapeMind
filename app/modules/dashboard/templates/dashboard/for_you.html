@@ -273,24 +273,7 @@
       </div>
 
       <!-- Scrape Manual Controller Card -->
-      <div class="card shadow-sm border-0 bg-body">
-        <div class="card-header py-2 bg-transparent border-bottom">
-          <strong><i class="bi bi-arrow-clockwise me-2 text-success"></i>{{ _('Data Scraper') }}</strong>
-        </div>
-        <div class="card-body">
-          <p class="text-muted small mb-3">
-            {{ _('Scraping queries ArXiv and other databases using your research interest keywords to find matching papers.') }}
-          </p>
-          <div class="d-grid">
-            <form method="post" action="{{ url_for('scrape.run_now') }}" class="m-0 d-grid">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-sm btn-primary" {% if not has_interests %}disabled{% endif %}>
-                <i class="bi bi-arrow-clockwise me-2"></i>{{ _('Scrape now') }}
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
+      {% include 'scrape/_scraper_widget.html' %}
 
     {% else %}
       <!-- Admin Control Center Panel -->

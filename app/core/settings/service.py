@@ -22,7 +22,40 @@ def set_system_setting(key: str, value: Any, updated_by_id: int | None = None) -
     db.session.commit()
 
 
+def validate_url_safety(url: str | None) -> tuple[bool, str | None]:
+    if not url:
+        return True, None
+    from urllib.parse import urlparse
+    import socket
+    import ipaddress
+
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False, "URL must start with http:// or https://"
+        
+        hostname = parsed.hostname
+        if not hostname:
+            return False, "Invalid URL hostname."
+            
+        try:
+            ip = socket.gethostbyname(hostname)
+        except Exception:
+            return False, "Unable to resolve hostname."
+            
+        ip_obj = ipaddress.ip_address(ip)
+        if ip_obj.is_loopback or ip_obj.is_private:
+            return False, "Private or local URLs are not allowed."
+    except Exception:
+        return False, "Invalid URL format."
+    return True, None
+
+
 def update_personal_info(user: User, full_name: str, avatar_url: str | None) -> None:
+    if avatar_url:
+        ok, err = validate_url_safety(avatar_url)
+        if not ok:
+            raise ValueError(err)
     user.full_name = full_name.strip()
     user.avatar_url = (avatar_url or "").strip() or None
     db.session.commit()

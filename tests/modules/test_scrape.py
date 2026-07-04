@@ -172,3 +172,8 @@ def test_celery_task_through_eager(db, clean, monkeypatch):
 def test_feed_route_requires_login(client):
     r = client.get("/papers/", follow_redirects=False)
     assert r.status_code in (302, 401)
+
+
+def test_scrape_status_poll_requires_login(client):
+    r = client.get("/papers/status/some-task-id", follow_redirects=False)
+    assert r.status_code in (302, 401)
