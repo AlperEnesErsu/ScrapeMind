@@ -1,0 +1,8 @@
+<button type="button"
+        class="btn btn-sm action-btn{% if r.read_later %} action-btn--on-read-later{% endif %}"
+        hx-post="{{ url_for('scrape.toggle_read_later_route', user_paper_id=r.id) }}?as=button"
+        hx-target="this" hx-swap="outerHTML"
+        hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+        aria-label="{{ _('Toggle Read Later') }}" title="{{ _('Toggle Read Later') }}">
+  <i class="bi {% if r.read_later %}bi-bookmark-heart-fill{% else %}bi-bookmark-heart{% endif %}"></i>
+</button>

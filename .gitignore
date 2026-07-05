@@ -26,3 +26,8 @@ htmlcov/
 
 # Babel build artifact (regenerated from source by pybabel extract)
 translations/messages.pot
+
+# Local dev artefacts — SQLite scratch DBs, Celery beat schedule, root pot
+*.db
+celerybeat-schedule*
+/messages.pot

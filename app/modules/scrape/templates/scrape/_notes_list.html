@@ -4,12 +4,46 @@
     <h6 class="m-0 d-inline-flex align-items-center gap-2">
       <i class="bi bi-journal-text text-primary"></i>{{ _('My notes') }}
     </h6>
-    <span class="small text-muted">{{ r.notes|length }} {{ _('note') }}</span>
+    <div class="d-flex align-items-center gap-2">
+      {% if r.notes %}
+      <a href="{{ url_for('scrape.export_notes_route', user_paper_id=r.id) }}" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 0.7rem;" title="{{ _('Export Notes as Markdown') }}">
+        <i class="bi bi-download me-1"></i>{{ _('Export') }}
+      </a>
+      {% endif %}
+      <span class="small text-muted">{{ r.notes|length }} {{ _('note') }}</span>
+    </div>
   </div>
 
   {% if flash_msg %}
   <div class="alert alert-{{ flash_kind or 'info' }} py-2 mb-3 small">{{ flash_msg }}</div>
   {% endif %}
+
+  <div class="note-filter-chips d-flex flex-wrap gap-1 mb-3">
+    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" style="font-size: 0.7rem;" onclick="filterNotes('all')">{{ _('All') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill" style="font-size: 0.7rem;" onclick="filterNotes('deney')">{{ _('Experiment') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" style="font-size: 0.7rem;" onclick="filterNotes('soru')">{{ _('Question') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-warning py-0 px-2 rounded-pill" style="font-size: 0.7rem;" onclick="filterNotes('sonuç')">{{ _('Finding') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-info py-0 px-2 rounded-pill" style="font-size: 0.7rem;" onclick="filterNotes('okuma')">{{ _('Reading') }}</button>
+  </div>
+
+  <script>
+    if (typeof filterNotes !== 'function') {
+      window.filterNotes = function(tag) {
+        const cards = document.querySelectorAll('.note-card');
+        cards.forEach(card => {
+          if (tag === 'all') {
+            card.style.display = 'block';
+          } else {
+            if (card.classList.contains('note-card--' + tag)) {
+              card.style.display = 'block';
+            } else {
+              card.style.display = 'none';
+            }
+          }
+        });
+      }
+    }
+  </script>
 
   {% for n in r.notes %}
     {% include 'scrape/_note_view.html' %}

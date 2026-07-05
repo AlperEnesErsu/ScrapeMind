@@ -11,6 +11,35 @@
   </span>
 </div>
 
+<!-- Activity Heatmap Widget (U10) -->
+<div class="card shadow-sm border-0 mb-4 bg-body">
+  <div class="card-body p-3">
+    <h6 class="fw-semibold mb-2 d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+      <i class="bi bi-calendar3 text-primary"></i>{{ _('Activity Heatmap') }}
+    </h6>
+    <div class="heatmap-wrapper overflow-auto">
+      <div class="heatmap-grid" style="grid-auto-flow: column; grid-template-rows: repeat(7, 10px); min-width: 700px;">
+        {% for day in heatmap_days %}
+          <div class="heatmap-day" 
+               data-level="{{ day.level }}" 
+               title="{% if day.date %}{{ day.date }}: {{ day.count }} {{ _('activities') }}{% endif %}"
+               data-bs-toggle="tooltip">
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="d-flex justify-content-end align-items-center gap-1 mt-2 small text-muted" style="font-size: 0.75rem;">
+      <span>{{ _('Less') }}</span>
+      <div class="heatmap-day" data-level="0" style="width: 10px; height: 10px;"></div>
+      <div class="heatmap-day" data-level="1" style="width: 10px; height: 10px;"></div>
+      <div class="heatmap-day" data-level="2" style="width: 10px; height: 10px;"></div>
+      <div class="heatmap-day" data-level="3" style="width: 10px; height: 10px;"></div>
+      <div class="heatmap-day" data-level="4" style="width: 10px; height: 10px;"></div>
+      <span>{{ _('More') }}</span>
+    </div>
+  </div>
+</div>
+
 <div class="view-tabs mb-3 d-flex flex-wrap gap-1">
   <a class="view-tab{% if view == 'timeline' %} view-tab--active{% endif %}"
      href="{{ url_for('library.index') }}">
@@ -20,6 +49,11 @@
      href="{{ url_for('library.index', view='favorites') }}">
     <i class="bi bi-heart me-1"></i>{{ _('Favorites') }}
     <span class="view-tab__count">{{ counts.favorites }}</span>
+  </a>
+  <a class="view-tab{% if view == 'read_later' %} view-tab--active{% endif %}"
+     href="{{ url_for('library.index', view='read_later') }}">
+    <i class="bi bi-bookmark-heart me-1"></i>{{ _('Read Later') }}
+    <span class="view-tab__count">{{ counts.read_later }}</span>
   </a>
   <a class="view-tab{% if view == 'notes' %} view-tab--active{% endif %}"
      href="{{ url_for('library.index', view='notes') }}">
@@ -38,22 +72,25 @@
 {% elif view == 'notes' %}
   {% include 'library/_notes.html' %}
 {% else %}
-  {# favorites + hidden share the paper-card layout #}
+  {# favorites + read_later + hidden share the paper-card layout #}
   {% if rows %}
     {% for r in rows %}
       {% include 'scrape/_paper_card.html' %}
     {% endfor %}
   {% else %}
     <div class="empty-state py-5 text-center">
-      <i class="bi bi-{% if view == 'favorites' %}heart{% else %}eye-slash{% endif %}"
+      <i class="bi bi-{% if view == 'favorites' %}heart{% elif view == 'read_later' %}bookmark-heart{% else %}eye-slash{% endif %}"
          style="font-size: 36px; color: var(--bs-secondary-color);"></i>
       <div class="mt-2 fw-medium">
         {% if view == 'favorites' %}{{ _('No favorites yet.') }}
+        {% elif view == 'read_later' %}{{ _('No bookmarks yet.') }}
         {% else %}{{ _('Nothing hidden.') }}{% endif %}
       </div>
       <p class="small text-muted mt-2 mb-3">
         {% if view == 'favorites' %}
           {{ _('Star papers from the discover feed — they will collect here.') }}
+        {% elif view == 'read_later' %}
+          {{ _('Bookmark papers to read them later — they will collect here.') }}
         {% else %}
           {{ _('Papers you hide will be listed here so you can recover them.') }}
         {% endif %}
@@ -62,4 +99,17 @@
   {% endif %}
 {% endif %}
 
+<!-- Initialize Bootstrap tooltips for the heatmap -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
+</script>
+
+<div class="shortcuts-hint mt-4 text-center">
+  <i class="bi bi-keyboard me-2"></i><strong>{{ _('Keyboard Shortcuts') }}:</strong> <kbd>j</kbd>/<kbd>k</kbd> {{ _('select papers') }} · <kbd>f</kbd> {{ _('toggle favorite') }} · <kbd>n</kbd> {{ _('open details') }}
+</div>
 {% endblock %}

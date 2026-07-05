@@ -6,7 +6,9 @@ from app.extensions import db
 class BaseModel(db.Model):
     __abstract__ = True
 
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     created_at = db.Column(
         db.DateTime(timezone=True),
         server_default=db.func.now(),

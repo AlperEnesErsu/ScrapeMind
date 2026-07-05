@@ -1,0 +1,3 @@
+{# Single chat bubble. Rendered via Jinja so {{ content }} is auto-escaped —
+   never interpolate user/Claude text into raw HTML in the route. #}
+<div class="chat-message chat-message--{{ role }}">{{ content }}</div>

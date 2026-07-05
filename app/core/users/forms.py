@@ -14,12 +14,14 @@ class UserEditForm(FlaskForm):
 
     def validate_avatar_url(self, field):
         from app.core.settings.forms import PersonalInfoForm
+
         PersonalInfoForm().validate_avatar_url(field)
 
 
 class UserCreateForm(FlaskForm):
-    from app.core.auth.password_policy import wtf_validator as _pw  # noqa: PLC0415
     from wtforms import PasswordField  # noqa: PLC0415
+
+    from app.core.auth.password_policy import wtf_validator as _pw  # noqa: PLC0415
 
     username = StringField(_l("Username"), validators=[DataRequired(), Length(min=3, max=64)])
     full_name = StringField(_l("Full Name"), validators=[DataRequired(), Length(min=2, max=128)])
@@ -32,4 +34,5 @@ class UserCreateForm(FlaskForm):
 
     def validate_avatar_url(self, field):
         from app.core.settings.forms import PersonalInfoForm
+
         PersonalInfoForm().validate_avatar_url(field)

@@ -88,3 +88,62 @@ document.getElementById('cite-btn')?.addEventListener('click', async (e) => {
     btn.classList.add('btn-outline-secondary');
   }, 1500);
 });
+
+
+// Keyboard navigation for feed / library lists
+(function() {
+  let currentFocusIndex = -1;
+
+  function getPaperCards() {
+    return document.querySelectorAll('.paper-card');
+  }
+
+  function updateFocusedCard() {
+    const cards = getPaperCards();
+    cards.forEach((card, index) => {
+      if (index === currentFocusIndex) {
+        card.classList.add('keyboard-focused');
+        card.setAttribute('tabindex', '0');
+        card.focus();
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        card.classList.remove('keyboard-focused');
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+      return;
+    }
+
+    const cards = getPaperCards();
+    if (cards.length === 0) return;
+
+    if (e.key === 'j') {
+      currentFocusIndex = (currentFocusIndex + 1) % cards.length;
+      updateFocusedCard();
+      e.preventDefault();
+    } else if (e.key === 'k') {
+      currentFocusIndex = (currentFocusIndex - 1 + cards.length) % cards.length;
+      updateFocusedCard();
+      e.preventDefault();
+    } else if (e.key === 'f') {
+      if (currentFocusIndex >= 0 && currentFocusIndex < cards.length) {
+        const card = cards[currentFocusIndex];
+        const favBtn = card.querySelector('[hx-post*="/favorite/toggle"]');
+        if (favBtn) {
+          favBtn.click();
+        }
+      }
+    } else if (e.key === 'n') {
+      if (currentFocusIndex >= 0 && currentFocusIndex < cards.length) {
+        const card = cards[currentFocusIndex];
+        const titleLink = card.querySelector('.paper-card__title');
+        if (titleLink) {
+          titleLink.click();
+        }
+      }
+    }
+  });
+})();

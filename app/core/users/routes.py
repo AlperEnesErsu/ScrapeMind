@@ -33,9 +33,9 @@ def user_list():
 @login_required
 @permission_required("users.manage")
 def user_new():
-    from app.core.users.forms import UserCreateForm
-    from app.core.models.user import User
     from app.core.auth.strategies.local import LocalAuthStrategy
+    from app.core.models.user import User
+    from app.core.users.forms import UserCreateForm
     from app.extensions import db
 
     form = UserCreateForm()

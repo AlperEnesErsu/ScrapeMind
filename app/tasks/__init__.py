@@ -95,8 +95,12 @@ def _bootstrap_for_worker() -> None:
         config_cls = get_config()
 
         _redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        broker_url = os.getenv("CELERY_BROKER_URL", getattr(config_cls, "CELERY_BROKER_URL", _redis_url))
-        result_backend = os.getenv("CELERY_RESULT_BACKEND", getattr(config_cls, "CELERY_RESULT_BACKEND", _redis_url))
+        broker_url = os.getenv(
+            "CELERY_BROKER_URL", getattr(config_cls, "CELERY_BROKER_URL", _redis_url)
+        )
+        result_backend = os.getenv(
+            "CELERY_RESULT_BACKEND", getattr(config_cls, "CELERY_RESULT_BACKEND", _redis_url)
+        )
         always_eager = getattr(config_cls, "CELERY_TASK_ALWAYS_EAGER", False)
         eager_propagates = getattr(config_cls, "CELERY_TASK_EAGER_PROPAGATES", True)
         timezone = getattr(config_cls, "BABEL_DEFAULT_TIMEZONE", "UTC")

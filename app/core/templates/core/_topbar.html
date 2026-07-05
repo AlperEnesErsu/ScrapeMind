@@ -22,6 +22,33 @@
         <div id="search-results" class="position-absolute end-0" style="z-index: 1050; top: 100%;"></div>
       </div>
 
+      {# Notifications bell (🔔) #}
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary position-relative" 
+                type="button" 
+                id="notification-bell" 
+                data-bs-toggle="dropdown" 
+                aria-expanded="false"
+                hx-get="{{ url_for('dashboard.list_notifications') }}"
+                hx-target="#notifications-list"
+                hx-trigger="click"
+                onclick="document.getElementById('notification-badge')?.remove();"
+                title="{{ _('Notifications') }}">
+          <i class="bi bi-bell"></i>
+          {% set unread_count = current_user.notifications.filter_by(is_read=False).count() if current_user.is_authenticated else 0 %}
+          {% if unread_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-badge" style="font-size: 0.55rem; padding: 0.25em 0.4em;">
+              {{ unread_count }}
+            </span>
+          {% endif %}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end p-0 shadow" aria-labelledby="notification-bell" style="max-height: 350px; overflow-y: auto;" id="notifications-list">
+          <div class="text-center py-3 px-4">
+            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+          </div>
+        </ul>
+      </div>
+
       {# Theme toggle — visible button (used to be buried in user dropdown). #}
       <button class="btn btn-sm btn-outline-secondary" id="theme-toggle-topbar"
               aria-label="{{ _('Toggle theme') }}" title="{{ _('Toggle theme') }}">

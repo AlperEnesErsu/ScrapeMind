@@ -12,6 +12,7 @@
 
     <div class="ms-auto d-flex align-items-center gap-2">
       {% include 'scrape/_favorite_button.html' %}
+      {% include 'scrape/_read_later_button.html' %}
       <button type="button" class="btn btn-sm btn-outline-secondary" data-cite-url="{{ url_for('scrape.cite_route', user_paper_id=r.id) }}"
               id="cite-btn"
               aria-label="{{ _('Copy BibTeX') }}">
@@ -59,36 +60,8 @@
     {% endfor %}
   </div>
 
-  {# Mode toggle — Original / TR / AI #}
-  <div class="mode-toggle mb-3">
-    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='original') }}"
-       class="mode-toggle__btn{% if mode == 'original' %} mode-toggle__btn--active{% endif %}">
-      <i class="bi bi-file-text me-1"></i>{{ _('Original') }}
-    </a>
-    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='tr') }}"
-       class="mode-toggle__btn{% if mode == 'tr' %} mode-toggle__btn--active{% endif %}">
-      <i class="bi bi-translate me-1"></i>{{ _('Turkish') }}
-    </a>
-    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='ai') }}"
-       class="mode-toggle__btn{% if mode == 'ai' %} mode-toggle__btn--active{% endif %}">
-      <i class="bi bi-stars text-info me-1"></i>{{ _('AI analysis') }}
-    </a>
-  </div>
-
-  <div class="paper-detail__body">
-    <div class="paper-detail__abstract">
-      {% if mode == 'original' %}
-        {% include 'scrape/_mode_original.html' %}
-      {% elif mode == 'tr' %}
-        {% include 'scrape/_ai_translation.html' %}
-      {% elif mode == 'ai' %}
-        {% include 'scrape/_ai_analysis.html' %}
-      {% endif %}
-    </div>
-
-    <aside class="paper-detail__side">
-      {% include 'scrape/_notes_list.html' %}
-    </aside>
+  <div id="paper-detail-content">
+    {% include 'scrape/_detail_content.html' %}
   </div>
 </div>
 

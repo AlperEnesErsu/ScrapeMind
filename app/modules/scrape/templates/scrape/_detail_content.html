@@ -1,0 +1,71 @@
+<div id="paper-detail-content">
+  {# Mode toggle — Original / TR / AI / Chat #}
+  <div class="mode-toggle mb-3">
+    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='original') }}"
+       hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='original') }}"
+       hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
+       class="mode-toggle__btn{% if mode == 'original' %} mode-toggle__btn--active{% endif %}">
+      <i class="bi bi-file-text me-1"></i>{{ _('Original') }}
+    </a>
+    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='tr') }}"
+       hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='tr') }}"
+       hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
+       class="mode-toggle__btn{% if mode == 'tr' %} mode-toggle__btn--active{% endif %}">
+      <i class="bi bi-translate me-1"></i>{{ _('Turkish') }}
+    </a>
+    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='ai') }}"
+       hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='ai') }}"
+       hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
+       class="mode-toggle__btn{% if mode == 'ai' %} mode-toggle__btn--active{% endif %}">
+      <i class="bi bi-stars text-info me-1"></i>{{ _('AI analysis') }}
+    </a>
+    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='chat') }}"
+       hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='chat') }}"
+       hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
+       class="mode-toggle__btn{% if mode == 'chat' %} mode-toggle__btn--active{% endif %}">
+      <i class="bi bi-chat-dots-fill text-primary me-1"></i>{{ _('Ask Paper') }}
+    </a>
+  </div>
+
+  <div class="paper-detail__body">
+    <div class="paper-detail__abstract">
+      {% if mode == 'original' %}
+        {% include 'scrape/_mode_original.html' %}
+      {% elif mode == 'tr' %}
+        {% include 'scrape/_ai_translation.html' %}
+      {% elif mode == 'ai' %}
+        {% include 'scrape/_ai_analysis.html' %}
+      {% elif mode == 'chat' %}
+        {% include 'scrape/_paper_chat.html' %}
+      {% endif %}
+      
+      {# Similar papers section (UF7) #}
+      {% if mode == 'original' and similar_papers %}
+        <div class="mt-4 pt-4 border-top">
+          <h6 class="fw-semibold mb-3"><i class="bi bi-journal-bookmark me-2 text-primary"></i>{{ _('Similar Papers') }}</h6>
+          <div class="row g-3">
+            {% for sim in similar_papers %}
+              <div class="col-md-6">
+                <div class="card h-100 p-3 shadow-none border rounded-3 card-hover-effect">
+                  <a href="{{ url_for('scrape.detail', user_paper_id=sim.id) }}" class="text-decoration-none text-body fw-medium small d-block mb-1 text-truncate" title="{{ sim.paper.title }}">
+                    {{ sim.paper.title }}
+                  </a>
+                  <div class="d-flex align-items-center gap-2 mt-auto">
+                    <span class="badge source-badge source-{{ sim.paper.source }} py-1" style="font-size: 0.65rem;">{{ sim.paper.source }}</span>
+                    {% if sim.matched_keyword %}
+                      <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-tag-fill me-1"></i>{{ sim.matched_keyword }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <aside class="paper-detail__side">
+      {% include 'scrape/_notes_list.html' %}
+    </aside>
+  </div>
+</div>

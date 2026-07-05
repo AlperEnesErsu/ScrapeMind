@@ -40,6 +40,8 @@ def _payload(ext_id: str, *, title="A Title", keyword="transformer") -> PaperPay
 
 @pytest.fixture
 def clean(db):
+    db.session.execute(text("DELETE FROM notifications"))
+    db.session.execute(text("DELETE FROM paper_chat_messages"))
     db.session.execute(text("DELETE FROM paper_notes"))
     db.session.execute(text("DELETE FROM user_papers"))
     db.session.execute(text("DELETE FROM papers"))
@@ -70,6 +72,8 @@ def clean(db):
     db.session.add(u)
     db.session.commit()
     yield u
+    db.session.execute(text("DELETE FROM notifications"))
+    db.session.execute(text("DELETE FROM paper_chat_messages"))
     db.session.execute(text("DELETE FROM paper_notes"))
     db.session.execute(text("DELETE FROM user_papers"))
     db.session.execute(text("DELETE FROM papers"))
@@ -177,3 +181,33 @@ def test_feed_route_requires_login(client):
 def test_scrape_status_poll_requires_login(client):
     r = client.get("/papers/status/some-task-id", follow_redirects=False)
     assert r.status_code in (302, 401)
+
+
+def test_read_later_toggling(db, clean):
+    from app.modules.scrape.service import toggle_read_later
+
+    paper = upsert_paper(_payload("2401.00003"))
+    link, _ = link_user_paper(clean, paper, matched_keyword="x")
+    assert link.read_later is False
+
+    new_status = toggle_read_later(link)
+    assert new_status is True
+    assert link.read_later is True
+
+    new_status = toggle_read_later(link)
+    assert new_status is False
+    assert link.read_later is False
+
+
+def test_notifications_creation(db, clean):
+    from app.core.models.notification import Notification, add_notification
+
+    noti = add_notification(clean.id, "Test Title", "Test Message")
+    assert noti.id is not None
+    assert noti.title == "Test Title"
+    assert noti.message == "Test Message"
+    assert noti.is_read is False
+
+    fetched = Notification.query.filter_by(user_id=clean.id).first()
+    assert fetched is not None
+    assert fetched.id == noti.id
