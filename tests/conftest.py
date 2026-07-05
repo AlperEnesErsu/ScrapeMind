@@ -34,7 +34,16 @@ def app():
 
     from app.config import get_config
 
-    db_url = os.environ.get("DATABASE_URL") or get_config().DATABASE_URL
+    # Prefer an explicit TEST_DATABASE_URL (that's what CI sets); fall back to
+    # deriving a *_test DB from DATABASE_URL, then to the config default.
+    # NOTE: configs expose SQLALCHEMY_DATABASE_URI, not DATABASE_URL — reading
+    # the latter off the class raises AttributeError when no env var is set
+    # (which is exactly the CI case).
+    db_url = (
+        os.environ.get("TEST_DATABASE_URL")
+        or os.environ.get("DATABASE_URL")
+        or get_config().SQLALCHEMY_DATABASE_URI
+    )
     if db_url:
         if db_url.startswith("sqlite:"):
             test_db_url = db_url.replace(".db", "_test.db")
