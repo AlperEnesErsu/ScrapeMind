@@ -4,7 +4,9 @@ from app.extensions import db
 class OAuthAccount(db.Model):
     __tablename__ = "oauth_accounts"
 
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False)
     provider = db.Column(db.String(32), nullable=False)
     provider_user_id = db.Column(db.String(255), nullable=False)

@@ -74,8 +74,8 @@
 {% elif user_stats %}
   <!-- Regular User Library Stats Cards -->
   <div class="row g-3 mb-4">
-    <div class="col-sm-4">
-      <div class="card h-100 shadow-sm border-0 card-hover-effect" style="background: linear-gradient(135deg, hsl(250, 45%, 22%) 0%, hsl(250, 50%, 30%) 100%); color: #ffffff;">
+    <div class="col-sm-6 col-md-3">
+      <div class="card h-100 shadow-sm border-0 card-hover-effect stat-card stat-card--interests">
         <div class="card-body d-flex justify-content-between align-items-center">
           <div>
             <div class="fs-2 fw-bold">{{ user_stats.interests_count }}</div>
@@ -85,8 +85,8 @@
         </div>
       </div>
     </div>
-    <div class="col-sm-4">
-      <div class="card h-100 shadow-sm border-0 card-hover-effect" style="background: linear-gradient(135deg, hsl(340, 50%, 24%) 0%, hsl(340, 55%, 32%) 100%); color: #ffffff;">
+    <div class="col-sm-6 col-md-3">
+      <div class="card h-100 shadow-sm border-0 card-hover-effect stat-card stat-card--favorites">
         <div class="card-body d-flex justify-content-between align-items-center">
           <div>
             <div class="fs-2 fw-bold">{{ user_stats.favorites_count }}</div>
@@ -96,8 +96,19 @@
         </div>
       </div>
     </div>
-    <div class="col-sm-4">
-      <div class="card h-100 shadow-sm border-0 card-hover-effect" style="background: linear-gradient(135deg, hsl(160, 45%, 20%) 0%, hsl(160, 50%, 28%) 100%); color: #ffffff;">
+    <div class="col-sm-6 col-md-3">
+      <div class="card h-100 shadow-sm border-0 card-hover-effect stat-card stat-card--read-later">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fs-2 fw-bold">{{ user_stats.read_later_count }}</div>
+            <div class="small text-white-75">{{ _('Read Later') }}</div>
+          </div>
+          <i class="bi bi-bookmark-heart fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card h-100 shadow-sm border-0 card-hover-effect stat-card stat-card--notes">
         <div class="card-body d-flex justify-content-between align-items-center">
           <div>
             <div class="fs-2 fw-bold">{{ user_stats.notes_count }}</div>
@@ -112,7 +123,7 @@
 
 <div class="row g-4">
   <div class="col-lg-8">
-    {% if not has_interests %}
+    {% if not onboarding_complete %}
     <div class="card shadow-sm border-0 mb-4 bg-body">
       <div class="card-body p-4">
         <h5 class="fw-semibold mb-3 d-flex align-items-center gap-2">
@@ -125,9 +136,13 @@
         <div class="mt-4">
           <!-- Step 1 -->
           <div class="d-flex gap-3 mb-4">
-            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">1</div>
+            {% if step1_done %}
+              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;"><i class="bi bi-check-lg"></i></div>
+            {% else %}
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">1</div>
+            {% endif %}
             <div>
-              <h6 class="fw-semibold mb-1">{{ _('Add Research Interests') }}</h6>
+              <h6 class="fw-semibold mb-1 {% if step1_done %}text-muted text-decoration-line-through{% endif %}">{{ _('Add Research Interests') }}</h6>
               <p class="text-muted small mb-2">
                 {{ _('Enter keywords in the right sidebar, or click on trending topics to follow them.') }}
               </p>
@@ -136,9 +151,13 @@
           
           <!-- Step 2 -->
           <div class="d-flex gap-3 mb-4">
-            <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">2</div>
+            {% if step2_done %}
+              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;"><i class="bi bi-check-lg"></i></div>
+            {% else %}
+              <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">2</div>
+            {% endif %}
             <div>
-              <h6 class="fw-semibold mb-1">{{ _('Trigger Paper Scraping') }}</h6>
+              <h6 class="fw-semibold mb-1 {% if step2_done %}text-muted text-decoration-line-through{% endif %}">{{ _('Trigger Paper Scraping') }}</h6>
               <p class="text-muted small mb-2">
                 {{ _('Once interests are added, click the "Scrape Now" button to search and import papers from arXiv.') }}
               </p>
@@ -147,9 +166,13 @@
 
           <!-- Step 3 -->
           <div class="d-flex gap-3">
-            <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">3</div>
+            {% if step3_done %}
+              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;"><i class="bi bi-check-lg"></i></div>
+            {% else %}
+              <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">3</div>
+            {% endif %}
             <div>
-              <h6 class="fw-semibold mb-1">{{ _('Read and Analyze') }}</h6>
+              <h6 class="fw-semibold mb-1 {% if step3_done %}text-muted text-decoration-line-through{% endif %}">{{ _('Read and Analyze') }}</h6>
               <p class="text-muted small mb-0">
                 {{ _('Papers will populate your homepage. Use ScrapeMind\'s AI features to instantly translate abstracts or write notes.') }}
               </p>
@@ -205,6 +228,31 @@
     {% if not metrics %}
       <!-- Regular User Sidebar Panels -->
       
+      <!-- Weekly Insights Card -->
+      <div class="card mb-3 shadow-sm border-0 bg-body">
+        <div class="card-header py-2 bg-transparent border-bottom">
+          <strong><i class="bi bi-graph-up-arrow me-2 text-info"></i>{{ _('Weekly Insights') }}</strong>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-column gap-2 small">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted"><i class="bi bi-newspaper me-1"></i>{{ _('New papers this week') }}:</span>
+              <span class="badge bg-primary-subtle text-primary rounded-pill">{{ weekly_insights.recent_papers_count }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted"><i class="bi bi-journal-text me-1"></i>{{ _('Notes taken this week') }}:</span>
+              <span class="badge bg-success-subtle text-success rounded-pill">{{ weekly_insights.recent_notes_count }}</span>
+            </div>
+            {% if weekly_insights.active_interest %}
+            <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top">
+              <span class="text-muted"><i class="bi bi-stars me-1 text-warning"></i>{{ _('Top interest') }}:</span>
+              <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">{{ weekly_insights.active_interest }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
       <!-- My Interests Manager Card -->
       <div class="card mb-3 shadow-sm border-0 bg-body">
         <div class="card-header py-2 bg-transparent border-bottom d-flex justify-content-between align-items-center">

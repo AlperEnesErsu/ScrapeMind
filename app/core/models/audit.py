@@ -4,7 +4,9 @@ from app.extensions import db
 class AuditLog(db.Model):
     __tablename__ = "audit_logs"
 
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=True)
     action = db.Column(db.String(128), nullable=False)
     entity_type = db.Column(db.String(64), nullable=True)

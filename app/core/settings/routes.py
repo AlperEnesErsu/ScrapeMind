@@ -510,6 +510,7 @@ def set_theme():
 @settings_bp.route("/set-locale/<lang>", methods=["GET"])
 def set_locale(lang: str):
     from flask import make_response
+
     from app.core.i18n.utils import SUPPORTED_LOCALES
 
     if lang not in SUPPORTED_LOCALES:
@@ -517,6 +518,7 @@ def set_locale(lang: str):
 
     if current_user.is_authenticated:
         from app.core.models.settings import UserSettings
+
         user_settings = current_user.settings
         if user_settings is None:
             user_settings = UserSettings(user_id=current_user.id, settings={})

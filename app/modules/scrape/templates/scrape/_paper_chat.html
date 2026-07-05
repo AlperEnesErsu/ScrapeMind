@@ -1,0 +1,59 @@
+<div class="ai-chat">
+  <h5 class="fw-semibold d-flex align-items-center gap-2 mb-2">
+    <i class="bi bi-chat-dots text-primary"></i>{{ _('Ask Paper') }} (RAG Chat)
+  </h5>
+  <p class="text-muted small">
+    {{ _('Ask Claude about this paper\'s methodology, findings, or how it relates to your work. The conversation history is saved.') }}
+  </p>
+
+  {% if not ai_enabled %}
+    <div class="ai-disabled p-4 text-center border border-dashed rounded-3">
+      <i class="bi bi-exclamation-triangle text-warning fs-3 mb-2"></i>
+      <p class="mb-0 small text-muted">
+        {{ _('Claude AI is not configured. Please set ANTHROPIC_API_KEY in your config/env to enable RAG chat.') }}
+      </p>
+    </div>
+  {% else %}
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages-box">
+        {% for msg in chat_messages %}
+          <div class="chat-message chat-message--{{ msg.role }}">
+            {{ msg.content }}
+          </div>
+        {% else %}
+          <div class="text-center text-muted my-auto py-5">
+            <i class="bi bi-robot fs-1 d-block mb-2 opacity-50"></i>
+            <span class="small">{{ _('No questions asked yet. Start the conversation below!') }}</span>
+          </div>
+        {% endfor %}
+        <div id="chat-loading" class="chat-message chat-message--assistant htmx-indicator">
+          <div class="spinner-border spinner-border-sm text-secondary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <span class="ms-2 small text-muted">{{ _('Thinking...') }}</span>
+        </div>
+      </div>
+      
+      <form class="chat-input-area" 
+            hx-post="{{ url_for('scrape.send_chat_message', user_paper_id=r.id) }}"
+            hx-target="#chat-messages-box"
+            hx-swap="beforeend"
+            hx-indicator="#chat-loading"
+            hx-on::after-request="this.reset(); document.getElementById('chat-messages-box').scrollTop = document.getElementById('chat-messages-box').scrollHeight;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <textarea name="message" placeholder="{{ _('Ask a question...') }}" required 
+                  onkeydown="if(event.keyCode == 13 && !event.shiftKey) { event.preventDefault(); this.form.dispatchEvent(new Event('submit')); }"></textarea>
+        <button type="submit" class="btn btn-primary btn-sm px-3">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </form>
+    </div>
+    <script>
+      // Automatically scroll to bottom of chat
+      var box = document.getElementById('chat-messages-box');
+      if (box) {
+        box.scrollTop = box.scrollHeight;
+      }
+    </script>
+  {% endif %}
+</div>

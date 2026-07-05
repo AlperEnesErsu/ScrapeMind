@@ -98,6 +98,8 @@ def _user_papers_query(user: User, view: str):
         q = q.filter(UserPaper.dismissed_at.is_(None))
     elif view == "favorites":
         q = q.filter(UserPaper.is_favorite.is_(True), UserPaper.dismissed_at.is_(None))
+    elif view == "read_later":
+        q = q.filter(UserPaper.read_later.is_(True), UserPaper.dismissed_at.is_(None))
     elif view == "dismissed":
         q = q.filter(UserPaper.dismissed_at.isnot(None))
     return q
@@ -123,6 +125,7 @@ def list_user_papers(
     filter.
     """
     from sqlalchemy.orm import selectinload
+
     query = _user_papers_query(user, view).join(Paper).options(selectinload(UserPaper.notes))
     q = (q or "").strip()
     if q:
@@ -132,6 +135,7 @@ def list_user_papers(
                 db.func.lower(Paper.title).like(like),
                 db.func.lower(Paper.abstract).like(like),
                 db.func.lower(UserPaper.matched_keyword).like(like),
+                db.func.lower(db.cast(Paper.authors, db.String)).like(like),
             )
         )
     return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
@@ -204,6 +208,13 @@ def toggle_favorite(link: UserPaper) -> bool:
     link.is_favorite = not link.is_favorite
     db.session.commit()
     return link.is_favorite
+
+
+def toggle_read_later(link: UserPaper) -> bool:
+    """Flip the read later (bookmark) flag."""
+    link.read_later = not link.read_later
+    db.session.commit()
+    return link.read_later
 
 
 def set_dismissed(link: UserPaper, dismissed: bool) -> None:

@@ -4,7 +4,9 @@ from app.extensions import db
 class MenuItem(db.Model):
     __tablename__ = "menu_items"
 
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     parent_id = db.Column(db.BigInteger, db.ForeignKey("menu_items.id"), nullable=True)
     code = db.Column(db.String(64), unique=True, nullable=False)
     label_key = db.Column(db.String(128), nullable=False)

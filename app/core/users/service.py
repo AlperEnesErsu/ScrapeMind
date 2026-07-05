@@ -38,6 +38,7 @@ def update_user(
         return False, "Email already in use."
     if avatar_url:
         from app.core.settings.service import validate_url_safety
+
         ok, err = validate_url_safety(avatar_url)
         if not ok:
             return False, err

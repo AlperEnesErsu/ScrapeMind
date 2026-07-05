@@ -18,7 +18,9 @@ from app.extensions import db
 class UserSession(db.Model):
     __tablename__ = "user_sessions"
 
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
 
     # Tarayıcı cookie'sine yazılan rastgele token (64 hex karakter)

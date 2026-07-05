@@ -20,7 +20,16 @@ def run_for_user(self, user_id: int, *, max_results: int = 25) -> dict:
         logger.warning("scrape_user_missing", user_id=user_id)
         return {"hits": 0, "linked": 0, "reason": "user_missing"}
     try:
-        return scrape_arxiv_for_user(user, max_results=max_results)
+        res = scrape_arxiv_for_user(user, max_results=max_results)
+        from app.core.models.notification import add_notification
+
+        # Translate to dynamic message in Turkish (matching user language preference)
+        add_notification(
+            user.id,
+            title="Tarama Tamamlandı",
+            message=f"ArXiv taraması başarıyla tamamlandı. {res.get('linked', 0)} adet yeni makale feed'inize eklendi.",
+        )
+        return res
     except Exception as exc:  # noqa: BLE001
         logger.exception("scrape_failed", user_id=user_id)
         # Retry with exponential backoff — arXiv occasionally rate-limits.

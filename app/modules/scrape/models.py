@@ -46,6 +46,7 @@ class UserPaper(BaseModel):
     matched_keyword = db.Column(db.String(64), nullable=True)
     seen_at = db.Column(db.DateTime(timezone=True), nullable=True)
     is_favorite = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    read_later = db.Column(db.Boolean, nullable=False, default=False, index=True)
     dismissed_at = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
 
     paper = db.relationship("Paper", lazy="joined")
@@ -75,6 +76,28 @@ class PaperNote(BaseModel):
     )
     body = db.Column(db.Text, nullable=False)
     tag = db.Column(db.String(32), nullable=True)
+
+
+class PaperChatMessage(BaseModel):
+    """Sohbet mesajı modeli — kullanıcı ile Claude arasındaki RAG konuşması."""
+
+    __tablename__ = "paper_chat_messages"
+
+    user_paper_id = db.Column(
+        db.BigInteger, db.ForeignKey("user_papers.id"), nullable=False, index=True
+    )
+    role = db.Column(db.String(16), nullable=False)  # "user" veya "assistant"
+    content = db.Column(db.Text, nullable=False)
+
+    user_paper = db.relationship(
+        "UserPaper",
+        backref=db.backref(
+            "chat_messages",
+            cascade="all, delete-orphan",
+            lazy="select",
+            order_by="PaperChatMessage.created_at",
+        ),
+    )
 
 
 class PaperAnalysis(BaseModel):

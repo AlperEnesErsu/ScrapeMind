@@ -1,9 +1,13 @@
 {# Single paper card — also used as the HTMX swap target.
    Outer wrapper id="card-{{ r.id }}" so action endpoints can replace it. #}
-<div id="card-{{ r.id }}" class="paper-card mb-2{% if r.is_favorite %} is-favorite{% endif %}{% if r.seen_at %} is-seen{% endif %}">
-  {% if flash_msg %}
-  <div class="alert alert-{{ flash_kind or 'info' }} py-2 mb-2 small">{{ flash_msg }}</div>
-  {% endif %}
+<div id="card-{{ r.id }}" class="paper-card mb-2{% if r.is_favorite %} is-favorite{% endif %}{% if r.seen_at %} is-seen{% endif %} d-flex gap-3 align-items-start">
+  <div class="pt-1 ps-1">
+    <input type="checkbox" name="paper_ids" value="{{ r.id }}" class="form-check-input bulk-select-checkbox" onclick="toggleBulkPanel()">
+  </div>
+  <div class="flex-grow-1">
+    {% if flash_msg %}
+    <div class="alert alert-{{ flash_kind or 'info' }} py-2 mb-2 small">{{ flash_msg }}</div>
+    {% endif %}
 
   <div class="paper-card__head">
     <span class="badge source-badge source-{{ r.paper.source }}">{{ r.paper.source }}</span>
@@ -74,5 +78,6 @@
         <i class="bi bi-x"></i>
       </button>
     </div>
+  </div>
   </div>
 </div>

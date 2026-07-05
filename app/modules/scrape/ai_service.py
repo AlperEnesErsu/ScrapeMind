@@ -261,6 +261,56 @@ def get_or_generate_translation(
     return generate_translation(paper, target_lang=target_lang)
 
 
+def ask_paper(paper: Paper, question: str, history: list[dict] = None) -> str | None:
+    """Ask a question about a paper using Claude with abstract and notes context.
+
+    history is a list of dicts: [{'role': 'user'|'assistant', 'content': '...'}]
+    """
+    if not is_ai_enabled():
+        return None
+
+    title = (paper.title or "").strip()
+    abstract = (paper.abstract or "").strip()
+
+    from flask_login import current_user
+
+    from app.modules.scrape.models import UserPaper
+
+    user_paper = UserPaper.query.filter_by(user_id=current_user.id, paper_id=paper.id).first()
+    notes_text = ""
+    if user_paper and user_paper.notes:
+        notes_text = "\n\nKullanıcının bu makale üzerine aldığı notlar:\n" + "\n".join(
+            f"- [{n.tag or 'Not'}]: {n.body}" for n in user_paper.notes
+        )
+
+    system_prompt = f"""Sen akademik bir araştırma asistanısın. Sana başlığı ve özeti verilen şu bilimsel makale hakkında soruları yanıtlayacaksın.
+Cevaplarını DAİMA samimi, net, markdown formatında ve Türkçe olarak ver. Eğer yanıt makalede yer almıyorsa, bunu açıkça belirt.
+
+Makale Başlığı: {title}
+Makale Özeti:
+{abstract}{notes_text}"""
+
+    messages = []
+    if history:
+        for msg in history:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": question})
+
+    try:
+        client = _client()
+        resp = client.messages.create(
+            model=_model(), max_tokens=800, system=system_prompt, messages=messages
+        )
+        raw = ""
+        for block in resp.content:
+            if getattr(block, "type", None) == "text":
+                raw += getattr(block, "text", "")
+        return raw.strip() or None
+    except Exception:
+        logger.exception("claude_ask_paper_failed")
+        return None
+
+
 # ----------------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------------

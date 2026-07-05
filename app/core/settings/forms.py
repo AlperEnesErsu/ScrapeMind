@@ -24,8 +24,9 @@ class PersonalInfoForm(FlaskForm):
     def validate_avatar_url(self, field):
         if not field.data:
             return
-        from app.core.settings.service import validate_url_safety
         from wtforms.validators import ValidationError
+
+        from app.core.settings.service import validate_url_safety
 
         ok, err = validate_url_safety(field.data)
         if not ok:
