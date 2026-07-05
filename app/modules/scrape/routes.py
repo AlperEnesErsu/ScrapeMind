@@ -203,11 +203,15 @@ def send_chat_message(user_paper_id: int):
         changes={"question_length": len(question), "answer_length": len(answer)},
     )
 
-    # 5. Return both messages for HTMX to append to the chat log
-    return f"""
-    <div class="chat-message chat-message--user">{user_msg.content}</div>
-    <div class="chat-message chat-message--assistant">{assistant_msg.content}</div>
-    """
+    # 5. Return both messages for HTMX to append to the chat log. Render via
+    #    Jinja so the user's question and Claude's answer are auto-escaped —
+    #    interpolating them into raw HTML here would be a stored-XSS hole
+    #    (a question containing <script> would execute on every reload).
+    return render_template(
+        "scrape/_chat_message.html", role="user", content=user_msg.content
+    ) + render_template(
+        "scrape/_chat_message.html", role="assistant", content=assistant_msg.content
+    )
 
 
 @scrape_bp.route("/<int:user_paper_id>/analysis", methods=["POST"])

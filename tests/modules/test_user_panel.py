@@ -317,6 +317,28 @@ def test_chat_blocked_when_ai_disabled(auth_client, clean_papers, monkeypatch):
     assert r.status_code == 400
 
 
+def test_chat_escapes_user_input(auth_client, clean_papers, monkeypatch):
+    """A question containing HTML must come back escaped, not as live markup —
+    guards the stored-XSS hole in the chat response."""
+    client, uid = auth_client
+    paper = _make_paper()
+    link = _link(uid, paper)
+
+    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda: True)
+    monkeypatch.setattr(
+        "app.modules.scrape.ai_service.ask_paper",
+        lambda paper, question, history=None: "cevap",
+    )
+
+    r = client.post(
+        f"/papers/{link.id}/chat",
+        data={"message": "<script>alert('xss')</script>"},
+    )
+    body = r.get_data(as_text=True)
+    assert "<script>alert" not in body
+    assert "&lt;script&gt;" in body
+
+
 # --------------------------------------------------------------------------
 # Notifications
 # --------------------------------------------------------------------------
