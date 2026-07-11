@@ -15,6 +15,7 @@ def create_app() -> Flask:
 
     app = Flask(__name__, template_folder="core/templates", static_folder="core/static")
     app.config.from_object(get_config())
+    _validate_production_config(app)
 
     _init_extensions(app)
     _init_logging(app)
@@ -42,6 +43,30 @@ def create_app() -> Flask:
             )
 
     return app
+
+
+def _validate_production_config(app: Flask) -> None:
+    """Fail fast in production if security-critical config is empty.
+
+    The configs deliberately fall back to empty strings so importing the
+    module during CI/alembic doesn't crash. That's fine for dev/test, but a
+    production process booting with an empty SECRET_KEY (forgeable sessions)
+    or DATABASE_URL must not start silently — refuse loudly instead.
+    """
+    import os
+
+    if os.getenv("FLASK_ENV") != "production":
+        return
+    missing = []
+    if not app.config.get("SECRET_KEY"):
+        missing.append("SECRET_KEY")
+    if not app.config.get("SQLALCHEMY_DATABASE_URI"):
+        missing.append("DATABASE_URL")
+    if missing:
+        raise RuntimeError(
+            "Production start-up aborted — missing required config: "
+            f"{', '.join(missing)}. Set them in the environment before launching."
+        )
 
 
 def _init_extensions(app: Flask) -> None:

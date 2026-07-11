@@ -64,3 +64,9 @@ def reset_password(user: User, new_password: str) -> None:
     user.is_locked = False
     user.locked_until = None
     db.session.commit()
+    # Kill every existing session for this user. A password reset is the
+    # user's way of locking out whoever might currently be signed in (e.g.
+    # after an account compromise) — leaving old sessions alive defeats that.
+    from app.core.sessions.service import delete_all_sessions
+
+    delete_all_sessions(user)

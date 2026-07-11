@@ -45,8 +45,15 @@ def discover_and_sync_modules() -> None:
             continue
         try:
             mod = importlib.import_module(f"app.modules.{name}.manifest")
-            manifest: dict = mod.MODULE
-        except (ImportError, AttributeError):
+        except ImportError:
+            # No manifest.py — the module opts out of DB registration. Normal.
+            logger.debug("module_has_no_manifest", module=name)
+            continue
+        manifest = getattr(mod, "MODULE", None)
+        if not isinstance(manifest, dict):
+            # manifest.py exists but is malformed (missing/invalid MODULE) —
+            # that's a mistake worth surfacing, not swallowing.
+            logger.warning("module_manifest_invalid", module=name)
             continue
 
         _sync_module(Module, Permission, MenuItem, manifest)
