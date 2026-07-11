@@ -102,7 +102,7 @@ def _register_session_guard(app: Flask) -> None:
         if key is None:
             # Eski oturum (session tracking öncesi) — geçerli say, key üret
             return
-        record = touch_session(key)
+        record = touch_session(key, expected_user_id=current_user.id)
         if record is None:
             # Oturum revoke edilmiş
             logout_user()

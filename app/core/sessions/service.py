@@ -23,10 +23,18 @@ def create_session(user: User) -> str:
     return key
 
 
-def touch_session(key: str) -> UserSession | None:
-    """Her istekte çağrılır — last_seen günceller, bulamazsa None döner."""
+def touch_session(key: str, expected_user_id: int | None = None) -> UserSession | None:
+    """Her istekte çağrılır — last_seen günceller, bulamazsa None döner.
+
+    `expected_user_id` verilirse (auth'lı istekte current_user.id), session
+    kaydının sahibiyle eşleşmezse None döner — böylece bir kullanıcının
+    cookie'sindeki session key başka bir kullanıcının kaydına denk gelirse
+    (defense-in-depth) oturum geçersiz sayılır.
+    """
     record = UserSession.query.filter_by(session_key=key).first()
     if record is None:
+        return None
+    if expected_user_id is not None and record.user_id != expected_user_id:
         return None
     record.last_seen_at = datetime.now(UTC)
     db.session.commit()

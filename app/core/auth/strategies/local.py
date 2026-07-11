@@ -11,6 +11,12 @@ logger = structlog.get_logger()
 
 _pwd_ctx = CryptContext(schemes=["argon2"], deprecated="auto")
 
+# Precomputed hash we verify against when the username doesn't exist, so an
+# attacker can't tell registered usernames apart from unregistered ones by
+# timing the response (a real argon2 verify is ~50-100ms; skipping it for a
+# missing user would return in ~1ms).
+_DUMMY_HASH = _pwd_ctx.hash("scrapemind-timing-pad")
+
 FAILED_LOGIN_LIMIT = 5
 LOCKOUT_MINUTES = 15
 
@@ -28,6 +34,9 @@ class LocalAuthStrategy(AuthStrategy):
         ).first()
 
         if user is None:
+            # Burn ~the same time a real verify would take so response timing
+            # doesn't reveal whether this username exists.
+            _pwd_ctx.verify(password, _DUMMY_HASH)
             return None
 
         user.check_lock()

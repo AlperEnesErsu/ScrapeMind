@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from flask import flash, redirect, render_template, request, session, url_for
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
@@ -11,6 +13,7 @@ from app.core.auth.forms import (
     RegisterForm,
     TotpCodeForm,
 )
+from app.core.auth.security import safe_next_or
 from app.core.auth.service import (
     make_password_reset_token,
     register_user,
@@ -31,6 +34,32 @@ from app.extensions import db, limiter
 
 PENDING_2FA_KEY = "pending_2fa_user_id"
 PENDING_2FA_REMEMBER_KEY = "pending_2fa_remember"
+PENDING_2FA_TS_KEY = "pending_2fa_ts"
+# How long a half-finished 2FA login stays valid before the user must
+# re-enter their password.
+PENDING_2FA_MAX_AGE_SECONDS = 10 * 60
+
+
+def _login_and_redirect(user, *, remember: bool, second_factor: str | None = None, post_flash=None):
+    """Finalise a login: rotate the session (anti-fixation), sign the user
+    in, open a tracked session, and redirect to a *validated* next URL.
+
+    `post_flash` is an optional (message, category) tuple flashed *after*
+    the session is cleared — flashing before session.clear() would wipe it.
+    """
+    next_arg = request.args.get("next")
+    # Rotate the session id to defeat fixation — anything an anonymous
+    # attacker planted before auth is discarded here.
+    session.clear()
+    login_user(user, remember=remember)
+    key = create_session(user)
+    set_current_key(key)
+    changes = {"second_factor": second_factor} if second_factor else None
+    log_action("user.login", entity_type="user", entity_id=user.id, changes=changes)
+    if post_flash:
+        flash(post_flash[0], post_flash[1])
+    return redirect(safe_next_or(next_arg, url_for("dashboard.index")))
+
 
 _local = LocalAuthStrategy()
 
@@ -50,11 +79,13 @@ def login():
 
         # If 2FA is on, defer login until the user proves the second factor.
         # Store the bare minimum in the unauthenticated session: who we're
-        # mid-authenticating + whether they ticked "remember me". The next
+        # mid-authenticating + whether they ticked "remember me" + a timestamp
+        # so a half-finished login can't be resumed hours later. The next
         # endpoint (/auth/2fa) burns this state on success or expiry.
         if user.is_totp_enabled:
             session[PENDING_2FA_KEY] = user.id
             session[PENDING_2FA_REMEMBER_KEY] = bool(form.remember_me.data)
+            session[PENDING_2FA_TS_KEY] = datetime.now(UTC).timestamp()
             next_page = request.args.get("next")
             return redirect(
                 url_for("auth.totp_challenge", next=next_page)
@@ -62,12 +93,7 @@ def login():
                 else url_for("auth.totp_challenge")
             )
 
-        login_user(user, remember=form.remember_me.data)
-        key = create_session(user)
-        set_current_key(key)
-        log_action("user.login", entity_type="user", entity_id=user.id)
-        next_page = request.args.get("next") or url_for("dashboard.index")
-        return redirect(next_page)
+        return _login_and_redirect(user, remember=form.remember_me.data)
 
     return render_template("auth/login.html", form=form)
 
@@ -78,11 +104,20 @@ def totp_challenge():
     user_id = session.get(PENDING_2FA_KEY)
     if not user_id:
         return redirect(url_for("auth.login"))
+
+    # Expire a stale half-finished login. Without this, a signed session
+    # cookie carrying the pending state could be replayed long after the
+    # password step.
+    ts = session.get(PENDING_2FA_TS_KEY)
+    if not ts or (datetime.now(UTC).timestamp() - float(ts)) > PENDING_2FA_MAX_AGE_SECONDS:
+        _clear_pending_2fa()
+        flash(_("Your login session expired. Please sign in again."), "warning")
+        return redirect(url_for("auth.login"))
+
     user = User.query.filter_by(id=user_id, deleted_at=None).first()
     if user is None or not user.is_totp_enabled:
         # Stale pending state — clear and bounce back to login.
-        session.pop(PENDING_2FA_KEY, None)
-        session.pop(PENDING_2FA_REMEMBER_KEY, None)
+        _clear_pending_2fa()
         return redirect(url_for("auth.login"))
 
     form = TotpCodeForm()
@@ -102,25 +137,30 @@ def totp_challenge():
             flash(_("Code is invalid. Try again."), "danger")
             return render_template("auth/totp_challenge.html", form=form)
 
-        remember = bool(session.pop(PENDING_2FA_REMEMBER_KEY, False))
-        session.pop(PENDING_2FA_KEY, None)
-        login_user(user, remember=remember)
-        key = create_session(user)
-        set_current_key(key)
-        log_action(
-            "user.login",
-            entity_type="user",
-            entity_id=user.id,
-            changes={"second_factor": "recovery_code" if used_recovery else "totp"},
-        )
+        remember = bool(session.get(PENDING_2FA_REMEMBER_KEY, False))
+        # _login_and_redirect clears the whole session (incl. pending state)
+        # before signing in, so the recovery warning must be flashed *after*
+        # that — hand it over as post_flash.
+        post_flash = None
         if used_recovery:
-            flash(
-                _("Logged in with a recovery code — consider regenerating your codes."), "warning"
+            post_flash = (
+                _("Logged in with a recovery code — consider regenerating your codes."),
+                "warning",
             )
-        next_page = request.args.get("next") or url_for("dashboard.index")
-        return redirect(next_page)
+        return _login_and_redirect(
+            user,
+            remember=remember,
+            second_factor="recovery_code" if used_recovery else "totp",
+            post_flash=post_flash,
+        )
 
     return render_template("auth/totp_challenge.html", form=form)
+
+
+def _clear_pending_2fa() -> None:
+    session.pop(PENDING_2FA_KEY, None)
+    session.pop(PENDING_2FA_REMEMBER_KEY, None)
+    session.pop(PENDING_2FA_TS_KEY, None)
 
 
 @auth_bp.route("/2fa/cancel", methods=["POST", "GET"])
@@ -284,6 +324,9 @@ def oauth_callback(provider: str):
         email=userinfo.get("email", ""),
         full_name=userinfo.get("name", ""),
         raw_data=userinfo,
+        # Only Google/OIDC providers that assert a verified email get to
+        # auto-link/register. Absent claim → treated as unverified.
+        email_verified=bool(userinfo.get("email_verified", False)),
     )
     if user is None:
         flash(_("OAuth login failed or registration disabled."), "danger")
@@ -292,12 +335,10 @@ def oauth_callback(provider: str):
     if user.is_totp_enabled:
         session[PENDING_2FA_KEY] = user.id
         session[PENDING_2FA_REMEMBER_KEY] = False
+        session[PENDING_2FA_TS_KEY] = datetime.now(UTC).timestamp()
         return redirect(url_for("auth.totp_challenge"))
 
-    login_user(user)
-    key = create_session(user)
-    set_current_key(key)
-    return redirect(url_for("dashboard.index"))
+    return _login_and_redirect(user, remember=False)
 
 
 def _handle_oauth_link(

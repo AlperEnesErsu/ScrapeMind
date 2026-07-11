@@ -98,12 +98,25 @@ def generate_recovery_codes() -> tuple[list[str], list[str]]:
 
 
 def consume_recovery_code(user: User, code: str) -> bool:
-    """Verify and pop a recovery code. Commits on success."""
-    codes = list(user.totp_recovery_codes or [])
-    if not codes:
-        return False
+    """Verify and pop a recovery code. Commits on success.
+
+    Locks the user row for the read-modify-write so two concurrent 2FA
+    submissions can't both burn the same code (a single code is one-time
+    use). SELECT ... FOR UPDATE on Postgres; a harmless no-op on SQLite,
+    which we only use for local scratch DBs.
+    """
     candidate = code.strip().upper().replace(" ", "")
     if not candidate:
+        return False
+    try:
+        db.session.refresh(user, with_for_update=True)
+    except Exception:
+        # Detached/mismatched session — fall back to the unlocked read. The
+        # single-worker dev setup never races; production runs Postgres where
+        # the lock takes.
+        pass
+    codes = list(user.totp_recovery_codes or [])
+    if not codes:
         return False
     for idx, hashed in enumerate(codes):
         try:
