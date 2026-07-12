@@ -66,6 +66,31 @@ function getCsrfToken() {
   return meta ? meta.getAttribute('content') : '';
 }
 
+// Generic copy-to-clipboard for [data-copy-target] buttons. Delegated on
+// document so it also works on HTMX-swapped content (e.g. the 2FA recovery
+// codes partial, which is loaded into the profile tab after page load).
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-copy-target]');
+  if (!btn) return;
+  const target = document.querySelector(btn.dataset.copyTarget);
+  if (!target) return;
+  const original = btn.innerHTML;
+  const copiedLabel = btn.dataset.copiedLabel || 'Copied';
+  try {
+    await navigator.clipboard.writeText(target.textContent.trim());
+    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>' + copiedLabel;
+    btn.classList.add('btn-success');
+    btn.classList.remove('btn-outline-secondary');
+  } catch (err) {
+    btn.innerHTML = '<i class="bi bi-x me-1"></i>Failed';
+  }
+  setTimeout(() => {
+    btn.innerHTML = original;
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-outline-secondary');
+  }, 1500);
+});
+
 // BibTeX copy-to-clipboard — Cite button on paper detail.
 document.getElementById('cite-btn')?.addEventListener('click', async (e) => {
   const btn = e.currentTarget;

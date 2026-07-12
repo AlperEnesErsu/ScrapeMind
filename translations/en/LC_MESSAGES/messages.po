@@ -1902,6 +1902,12 @@ msgstr "Nothing here yet."
 msgid "Add some research interests in your profile, then hit \"Scrape now\"."
 msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
 
+msgid "Copy"
+msgstr "Copy"
+
+msgid "Copied"
+msgstr "Copied"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

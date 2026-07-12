@@ -7,9 +7,18 @@
 {# ------------------------------------------------------------------ #}
 {% if fresh_recovery_codes %}
   <div class="alert alert-warning">
-    <strong>{{ _('Save these recovery codes now.') }}</strong>
-    <div class="small">{{ _('Each code works once. Store them somewhere safe — they will not be shown again.') }}</div>
-    <pre class="mt-2 mb-0 p-2 bg-body-secondary rounded small"
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div>
+        <strong>{{ _('Save these recovery codes now.') }}</strong>
+        <div class="small">{{ _('Each code works once. Store them somewhere safe — they will not be shown again.') }}</div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+              data-copy-target="#recovery-codes-text"
+              data-copied-label="{{ _('Copied') }}">
+        <i class="bi bi-clipboard me-1"></i>{{ _('Copy') }}
+      </button>
+    </div>
+    <pre id="recovery-codes-text" class="mt-2 mb-0 p-2 bg-body-secondary rounded small"
          style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">{% for c in fresh_recovery_codes %}{{ c }}
 {% endfor %}</pre>
   </div>
