@@ -93,8 +93,8 @@
               <td class="small text-muted text-nowrap">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
               <td class="small fw-semibold">{{ log.user_id or '—' }}</td>
               <td class="small">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2 font-monospace" style="font-size: 0.75rem;">
-                  {{ action_labels.get(log.action, log.action) }}
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2" style="font-size: 0.75rem;">
+                  {{ humanize_action(log.action) }}
                 </span>
               </td>
               <td class="small text-muted font-monospace">{{ log.entity_type }}{% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>

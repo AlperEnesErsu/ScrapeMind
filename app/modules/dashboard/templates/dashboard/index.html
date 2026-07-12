@@ -105,7 +105,7 @@
             <tr>
               <td class="small text-muted">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
               <td class="small">{{ log.user_id or '—' }}</td>
-              <td class="small"><code>{{ log.action }}</code></td>
+              <td class="small">{{ humanize_action(log.action) }}</td>
               <td class="small">{{ log.entity_type }}{% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>
             </tr>
             {% else %}

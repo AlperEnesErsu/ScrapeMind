@@ -16,64 +16,64 @@ msgstr ""
 
 #: app/core/auth/routes.py:48
 msgid "Invalid credentials or account locked."
-msgstr ""
+msgstr "Invalid credentials or account locked."
 
 #: app/core/auth/routes.py:102 app/core/settings/routes.py:319
 msgid "Code is invalid. Try again."
-msgstr ""
+msgstr "Code is invalid. Try again."
 
 #: app/core/auth/routes.py:118
 msgid "Logged in with a recovery code — consider regenerating your codes."
-msgstr ""
+msgstr "Logged in with a recovery code — consider regenerating your codes."
 
 #: app/core/auth/routes.py:151
 msgid "Public registration is currently disabled."
-msgstr ""
+msgstr "Public registration enabled"
 
 #: app/core/auth/routes.py:165
 msgid "Account created. You can sign in now."
-msgstr ""
+msgstr "Account created. You can sign in now."
 
 #: app/core/auth/routes.py:188
 #, python-format
 msgid "Dev mode: reset link → %(url)s"
-msgstr ""
+msgstr "Dev mode: reset link → %(url)s"
 
 #: app/core/auth/routes.py:189
 msgid "If that email exists, a reset link has been sent."
-msgstr ""
+msgstr "If that email exists, a reset link has been sent."
 
 #: app/core/auth/routes.py:199
 msgid "Reset link is invalid or expired."
-msgstr ""
+msgstr "Reset link is invalid or expired."
 
 #: app/core/auth/routes.py:205
 msgid "Password reset. You can sign in now."
-msgstr ""
+msgstr "Password reset. You can sign in now."
 
 #: app/core/auth/routes.py:225 app/core/auth/routes.py:242
 #: app/core/auth/routes.py:258
 msgid "Unknown OAuth provider."
-msgstr ""
+msgstr "Unknown OAuth provider."
 
 #: app/core/auth/routes.py:289
 msgid "OAuth login failed or registration disabled."
-msgstr ""
+msgstr "OAuth login failed or registration is disabled."
 
 #: app/core/auth/routes.py:315
 #, python-format
 msgid "This %(provider)s account is already linked."
-msgstr ""
+msgstr "This code is already in use."
 
 #: app/core/auth/routes.py:321
 #, python-format
 msgid "This %(provider)s account is linked to another user."
-msgstr ""
+msgstr "This %(provider)s account is linked to another user."
 
 #: app/core/auth/routes.py:342
 #, python-format
 msgid "%(provider)s account linked successfully."
-msgstr ""
+msgstr "%(provider)s account linked successfully."
 
 #: app/core/i18n/menu_translations.py:5
 msgid "menu.dashboard"
@@ -317,292 +317,292 @@ msgstr "Failed to remove interest."
 
 #: app/core/menu/routes.py:52
 msgid "Unknown endpoint."
-msgstr ""
+msgstr "Unknown endpoint."
 
 #: app/core/menu/routes.py:58
 msgid "Parent would create a cycle."
-msgstr ""
+msgstr "Parent would create a cycle."
 
 #: app/core/menu/routes.py:78
 msgid "This code is already in use."
-msgstr ""
+msgstr "This code is already in use."
 
 #: app/core/menu/routes.py:87
 msgid "Menu item created."
-msgstr ""
+msgstr "Menu item created."
 
 #: app/core/menu/routes.py:110
 msgid "Menu item updated."
-msgstr ""
+msgstr "Menu item updated."
 
 #: app/core/menu/routes.py:123
 msgid "This menu item is critical and cannot be deleted."
-msgstr ""
+msgstr "This menu item is critical and cannot be deleted."
 
 #: app/core/menu/routes.py:130
 msgid "Menu item deleted."
-msgstr ""
+msgstr "Menu item deleted."
 
 #: app/core/menu/routes.py:145
 msgid "Visibility updated."
-msgstr ""
+msgstr "Visibility updated."
 
 #: app/core/rbac/routes.py:49
 msgid "Role created."
-msgstr ""
+msgstr "Role created."
 
 #: app/core/rbac/routes.py:79
 msgid "Role updated."
-msgstr ""
+msgstr "Role updated."
 
 #: app/core/rbac/routes.py:98
 msgid "The admin role cannot be deleted."
-msgstr ""
+msgstr "The admin role cannot be deleted."
 
 #: app/core/rbac/routes.py:102
 msgid "Role deleted."
-msgstr ""
+msgstr "Role deleted."
 
 #: app/core/settings/routes.py:201
 msgid "Profile updated."
-msgstr ""
+msgstr "Profile updated."
 
 #: app/core/settings/routes.py:204 app/core/settings/routes.py:221
 #: app/core/settings/routes.py:241 app/core/settings/routes.py:265
 #: app/modules/academic/routes.py:139 app/modules/academic/routes.py:226
 msgid "Please correct the errors below."
-msgstr ""
+msgstr "Please correct the errors below."
 
 #: app/core/settings/routes.py:217
 msgid "Email updated."
-msgstr ""
+msgstr "Email updated."
 
 #: app/core/settings/routes.py:236
 msgid "Password changed."
-msgstr ""
+msgstr "Password changed."
 
 #: app/core/settings/routes.py:262
 msgid "Preferences updated."
-msgstr ""
+msgstr "Preferences updated."
 
 #: app/core/settings/routes.py:277 app/core/settings/routes.py:301
 msgid "2FA is already enabled."
-msgstr ""
+msgstr "Email already in use."
 
 #: app/core/settings/routes.py:310
 msgid "Setup expired — start again."
-msgstr ""
+msgstr "Setup expired — start again."
 
 #: app/core/settings/routes.py:330
 msgid "2FA enabled. Save your recovery codes — they will not be shown again."
-msgstr ""
+msgstr "2FA enabled. Save your recovery codes — they will not be shown again."
 
 #: app/core/settings/routes.py:348
 msgid "Code required."
-msgstr ""
+msgstr "Code required."
 
 #: app/core/settings/routes.py:356
 msgid "Code is invalid."
-msgstr ""
+msgstr "Code is invalid."
 
 #: app/core/settings/routes.py:362
 msgid "2FA disabled."
-msgstr ""
+msgstr "2FA disabled."
 
 #: app/core/settings/routes.py:377
 msgid "New recovery codes generated. Old ones no longer work."
-msgstr ""
+msgstr "New recovery codes generated. Old ones no longer work."
 
 #: app/core/settings/routes.py:391
 msgid "Account not found."
-msgstr ""
+msgstr "Paper not found."
 
 #: app/core/settings/routes.py:402
 msgid "Cannot unlink — this is your only login method. Set a password first."
-msgstr ""
+msgstr "Cannot unlink — this is your only login method. Set a password first."
 
 #: app/core/settings/routes.py:412
 #, python-format
 msgid "%(provider)s account unlinked."
-msgstr ""
+msgstr "No OAuth accounts linked."
 
 #: app/core/settings/routes.py:428
 msgid "Device signed out."
-msgstr ""
+msgstr "Sign Out"
 
 #: app/core/settings/routes.py:447
 #, python-format
 msgid "%(n)d other device(s) signed out."
-msgstr ""
+msgstr "%(n)d other device(s) signed out."
 
 #: app/core/settings/routes.py:484
 msgid "System settings saved."
-msgstr ""
+msgstr "System settings saved."
 
 #: app/core/templates/audit/list.html:2 app/core/templates/audit/list.html:4
 msgid "Audit Log"
-msgstr ""
+msgstr "Audit Log"
 
 #: app/core/templates/audit/list.html:9 app/core/templates/audit/list.html:54
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:65
 #: app/modules/dashboard/templates/dashboard/index.html:99
 msgid "User"
-msgstr ""
+msgstr "User"
 
 #: app/core/templates/audit/list.html:11 app/core/templates/audit/list.html:27
 msgid "— Any —"
-msgstr ""
+msgstr "— Any —"
 
 #: app/core/templates/audit/list.html:18 app/core/templates/audit/list.html:55
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:66
 #: app/modules/dashboard/templates/dashboard/index.html:100
 msgid "Action"
-msgstr ""
+msgstr "Action"
 
 #: app/core/templates/audit/list.html:18
 msgid "(prefix)"
-msgstr ""
+msgstr "(prefix)"
 
 #: app/core/templates/audit/list.html:25 app/core/templates/audit/list.html:55
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:67
 #: app/modules/dashboard/templates/dashboard/index.html:100
 msgid "Entity"
-msgstr ""
+msgstr "Entity"
 
 #: app/core/templates/audit/list.html:34
 msgid "From"
-msgstr ""
+msgstr "From"
 
 #: app/core/templates/audit/list.html:38
 msgid "To"
-msgstr ""
+msgstr "To"
 
 #: app/core/templates/audit/list.html:43
 msgid "Apply"
-msgstr ""
+msgstr "Apply"
 
 #: app/core/templates/audit/list.html:44 app/core/templates/users/list.html:27
 msgid "Reset"
-msgstr ""
+msgstr "Reset"
 
 #: app/core/templates/audit/list.html:45
 msgid "records"
-msgstr ""
+msgstr "records"
 
 #: app/core/templates/audit/list.html:54
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:64
 #: app/modules/dashboard/templates/dashboard/index.html:99
 msgid "Time"
-msgstr ""
+msgstr "Time"
 
 #: app/core/templates/audit/list.html:55
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: app/core/templates/audit/list.html:68
 msgid "No entries match."
-msgstr ""
+msgstr "No entries match."
 
 #: app/core/templates/auth/forgot.html:2 app/core/templates/auth/forgot.html:10
 msgid "Forgot Password"
-msgstr ""
+msgstr "Forgot Password"
 
 #: app/core/templates/auth/forgot.html:12
 msgid "Enter your email and we will send you a reset link."
-msgstr ""
+msgstr "Enter your email and we will send you a reset link."
 
 #: app/core/templates/auth/forgot.html:25
 msgid "Back to Sign In"
-msgstr ""
+msgstr "Back to Sign In"
 
 #: app/core/templates/auth/login.html:2
 #: app/core/templates/auth/register.html:52
 msgid "Sign In"
-msgstr ""
+msgstr "Sign In"
 
 #: app/core/templates/auth/login.html:37
 msgid "Forgot password?"
-msgstr ""
+msgstr "Forgot password?"
 
 #: app/core/templates/auth/login.html:44
 msgid "Don't have an account?"
-msgstr ""
+msgstr "Don't have an account?"
 
 #: app/core/templates/auth/login.html:45
 #: app/core/templates/auth/register.html:2
 #: app/core/templates/auth/register.html:10
 msgid "Create Account"
-msgstr ""
+msgstr "Create Account"
 
 #: app/core/templates/auth/login.html:51
 msgid "Continue with Google"
-msgstr ""
+msgstr "Continue with Google"
 
 #: app/core/templates/auth/login.html:54
 msgid "Continue with Microsoft"
-msgstr ""
+msgstr "Continue with Microsoft"
 
 #: app/core/templates/auth/register.html:38
 #: app/core/templates/auth/reset.html:19
 #: app/core/templates/settings/_tab_password.html:14
 msgid "Minimum 8 characters."
-msgstr ""
+msgstr "Minimum 8 characters."
 
 #: app/core/templates/auth/register.html:51
 msgid "Already have an account?"
-msgstr ""
+msgstr "Already have an account?"
 
 #: app/core/templates/auth/reset.html:2 app/core/templates/auth/reset.html:10
 msgid "Reset Password"
-msgstr ""
+msgstr "Reset Password"
 
 #: app/core/templates/auth/totp_challenge.html:2
 #: app/core/templates/auth/totp_challenge.html:10
 msgid "Two-Factor Authentication"
-msgstr ""
+msgstr "Two-Factor Authentication"
 
 #: app/core/templates/auth/totp_challenge.html:13
 msgid "Enter the 6-digit code from your authenticator app, or a recovery code."
-msgstr ""
+msgstr "Enter the 6-digit code from your authenticator app, or a recovery code."
 
 #: app/core/templates/auth/totp_challenge.html:33
 msgid "Cancel and sign in as a different user"
-msgstr ""
+msgstr "Cancel and sign in as a different user"
 
 #: app/core/templates/core/_pagination.html:2
 msgid "Pagination"
-msgstr ""
+msgstr "Pagination"
 
 #: app/core/templates/core/_password_rules.html:5
 msgid "At least 8 characters"
-msgstr ""
+msgstr "Minimum 8 characters."
 
 #: app/core/templates/core/_password_rules.html:6
 msgid "At least one uppercase letter"
-msgstr ""
+msgstr "At least one uppercase letter"
 
 #: app/core/templates/core/_password_rules.html:7
 msgid "At least one lowercase letter"
-msgstr ""
+msgstr "At least one lowercase letter"
 
 #: app/core/templates/core/_password_rules.html:8
 msgid "At least one digit"
-msgstr ""
+msgstr "At least one digit"
 
 #: app/core/templates/core/_search_results.html:3
 msgid "No matches."
-msgstr ""
+msgstr "No matches."
 
 #: app/core/templates/core/_search_results.html:7
 #: app/core/templates/users/list.html:2 app/core/templates/users/list.html:5
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:15
 #: app/modules/dashboard/templates/dashboard/index.html:16
 msgid "Users"
-msgstr ""
+msgstr "Users"
 
 #: app/core/templates/core/_search_results.html:14
 msgid "inactive"
-msgstr ""
+msgstr "inactive"
 
 #: app/core/templates/core/_search_results.html:19
 #: app/core/templates/rbac/role_list.html:2
@@ -613,150 +613,150 @@ msgstr ""
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:48
 #: app/modules/dashboard/templates/dashboard/index.html:38
 msgid "Roles"
-msgstr ""
+msgstr "Roles"
 
 #: app/core/templates/core/_search_results.html:29
 msgid "Menu"
-msgstr ""
+msgstr "Menu"
 
 #: app/core/templates/core/_sidebar.html:41
 msgid "Collapse"
-msgstr ""
+msgstr "Collapse"
 
 #: app/core/templates/core/_topbar.html:5
 msgid "Toggle sidebar"
-msgstr ""
+msgstr "Toggle sidebar"
 
 #: app/core/templates/core/_topbar.html:16
 msgid "Search…"
-msgstr ""
+msgstr "Search…"
 
 #: app/core/templates/core/_topbar.html:27
 msgid "Toggle theme"
-msgstr ""
+msgstr "Toggle theme"
 
 #: app/core/templates/core/_topbar.html:53
 #: app/core/templates/settings/profile.html:2
 #: app/core/templates/settings/profile.html:4
 msgid "Profile"
-msgstr ""
+msgstr "Profile"
 
 #: app/core/templates/core/_topbar.html:54
 msgid "Settings"
-msgstr ""
+msgstr "Settings"
 
 #: app/core/templates/core/_topbar.html:58
 msgid "Toggle Theme"
-msgstr ""
+msgstr "Toggle Theme"
 
 #: app/core/templates/core/_topbar.html:62
 msgid "Sign Out"
-msgstr ""
+msgstr "Sign Out"
 
 #: app/core/templates/errors/403.html:2
 msgid "Forbidden"
-msgstr ""
+msgstr "Forbidden"
 
 #: app/core/templates/errors/403.html:6
 msgid "You don't have permission to access this page."
-msgstr ""
+msgstr "You don't have permission to access this page."
 
 #: app/core/templates/errors/403.html:8 app/core/templates/errors/404.html:8
 #: app/core/templates/errors/500.html:8
 msgid "Go to Dashboard"
-msgstr ""
+msgstr "Go to Dashboard"
 
 #: app/core/templates/errors/404.html:2
 msgid "Not Found"
-msgstr ""
+msgstr "Paper not found."
 
 #: app/core/templates/errors/404.html:6
 msgid "The page you're looking for doesn't exist."
-msgstr ""
+msgstr "The page you're looking for doesn't exist."
 
 #: app/core/templates/errors/500.html:2
 msgid "Server Error"
-msgstr ""
+msgstr "Server Error"
 
 #: app/core/templates/errors/500.html:6
 msgid "Something went wrong on our end. Please try again later."
-msgstr ""
+msgstr "Something went wrong on our end. Please try again later."
 
 #: app/core/templates/menu/list.html:2 app/core/templates/menu/list.html:5
 msgid "Menu Items"
-msgstr ""
+msgstr "Menu Items"
 
 #: app/core/templates/menu/list.html:8 app/core/templates/menu/menu_form.html:2
 #: app/core/templates/menu/menu_form.html:7
 msgid "New Menu Item"
-msgstr ""
+msgstr "New Menu Item"
 
 #: app/core/templates/menu/list.html:18
 msgid "Code"
-msgstr ""
+msgstr "Code"
 
 #: app/core/templates/menu/list.html:19
 msgid "Label Key"
-msgstr ""
+msgstr "Label Key"
 
 #: app/core/templates/menu/list.html:20
 msgid "Parent"
-msgstr ""
+msgstr "Parent"
 
 #: app/core/templates/menu/list.html:21
 msgid "Endpoint / URL"
-msgstr ""
+msgstr "Endpoint / URL"
 
 #: app/core/templates/menu/list.html:22
 msgid "Required Permission"
-msgstr ""
+msgstr "Required Permission"
 
 #: app/core/templates/menu/list.html:23
 msgid "Order"
-msgstr ""
+msgstr "Order"
 
 #: app/core/templates/menu/list.html:24
 msgid "Visible"
-msgstr ""
+msgstr "Visible"
 
 #: app/core/templates/menu/list.html:25
 #: app/core/templates/rbac/role_list.html:21
 #: app/core/templates/users/list.html:42
 msgid "Actions"
-msgstr ""
+msgstr "Actions"
 
 #: app/core/templates/menu/list.html:35
 msgid "Critical core item"
-msgstr ""
+msgstr "Critical core item"
 
 #: app/core/templates/menu/list.html:35
 msgid "core"
-msgstr ""
+msgstr "core"
 
 #: app/core/templates/menu/list.html:52
 msgid "Toggle visibility"
-msgstr ""
+msgstr "Toggle visibility"
 
 #: app/core/templates/menu/list.html:67
 msgid "Delete this menu item?"
-msgstr ""
+msgstr "Delete this menu item?"
 
 #: app/core/templates/menu/list.html:77
 msgid "No menu items yet."
-msgstr ""
+msgstr "No menu items yet."
 
 #: app/core/templates/menu/menu_form.html:2
 #: app/core/templates/menu/menu_form.html:6
 msgid "Edit Menu Item"
-msgstr ""
+msgstr "Edit Menu Item"
 
 #: app/core/templates/menu/menu_form.html:18
 msgid "Code is immutable after creation."
-msgstr ""
+msgstr "Code is immutable after creation."
 
 #: app/core/templates/menu/menu_form.html:51
 msgid "Use either Endpoint or URL."
-msgstr ""
+msgstr "Use either Endpoint or URL."
 
 #: app/core/templates/menu/menu_form.html:79
 #: app/core/templates/rbac/role_form.html:55
@@ -765,7 +765,7 @@ msgstr ""
 #: app/core/templates/users/edit.html:74
 #: app/modules/scrape/templates/scrape/_note_edit.html:39
 msgid "Cancel"
-msgstr ""
+msgstr "Cancel"
 
 #: app/core/templates/rbac/permission_list.html:2
 #: app/core/templates/rbac/permission_list.html:4
@@ -773,544 +773,556 @@ msgstr ""
 #: app/core/templates/rbac/role_list.html:20
 #: app/modules/dashboard/templates/dashboard/index.html:49
 msgid "Permissions"
-msgstr ""
+msgstr "Permissions"
 
 #: app/core/templates/rbac/permission_list.html:6
 msgid ""
 "Permissions are defined by module manifests and synced on startup. They "
 "cannot be edited manually."
 msgstr ""
+"Permissions are defined by module manifests and synced on startup. They "
+"cannot be edited manually."
 
 #: app/core/templates/rbac/permission_list.html:25
 #: app/core/templates/rbac/role_form.html:50
 msgid "No permissions defined yet."
-msgstr ""
+msgstr "No permissions defined yet."
 
 #: app/core/templates/rbac/role_form.html:2
 #: app/core/templates/rbac/role_form.html:6
 msgid "Edit Role"
-msgstr ""
+msgstr "Edit Role"
 
 #: app/core/templates/rbac/role_form.html:2
 #: app/core/templates/rbac/role_form.html:7
 #: app/core/templates/rbac/role_list.html:8
 msgid "New Role"
-msgstr ""
+msgstr "New Role"
 
 #: app/core/templates/rbac/role_list.html:18
 msgid "Name"
-msgstr ""
+msgstr "Name"
 
 #: app/core/templates/rbac/role_list.html:19
 msgid "Description"
-msgstr ""
+msgstr "Description"
 
 #: app/core/templates/rbac/role_list.html:32
 #: app/modules/scrape/templates/scrape/_note_view.html:14
 msgid "Edit"
-msgstr ""
+msgstr "Edit"
 
 #: app/core/templates/rbac/role_list.html:36
 msgid "Delete this role?"
-msgstr ""
+msgstr "Delete this role?"
 
 #: app/core/templates/rbac/role_list.html:46
 msgid "No roles yet."
-msgstr ""
+msgstr "No roles yet."
 
 #: app/core/templates/settings/_tab_account.html:2
 msgid "Account"
-msgstr ""
+msgstr "Account"
 
 #: app/core/templates/settings/_tab_account.html:4
 #: app/core/templates/users/edit.html:60 app/core/templates/users/list.html:36
 msgid "Username"
-msgstr ""
+msgstr "Username"
 
 #: app/core/templates/settings/_tab_account.html:7
 #: app/core/templates/users/edit.html:62
 msgid "User ID"
-msgstr ""
+msgstr "User ID"
 
 #: app/core/templates/settings/_tab_account.html:10
 #: app/core/templates/users/edit.html:64
 msgid "Account created"
-msgstr ""
+msgstr "Account created"
 
 #: app/core/templates/settings/_tab_account.html:13
 #: app/core/templates/users/edit.html:66 app/core/templates/users/list.html:41
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:97
 #: app/modules/dashboard/templates/dashboard/index.html:128
 msgid "Last login"
-msgstr ""
+msgstr "Last login"
 
 #: app/core/templates/settings/_tab_account.html:21
 #: app/core/templates/users/list.html:40
 msgid "Status"
-msgstr ""
+msgstr "Status"
 
 #: app/core/templates/settings/_tab_account.html:23
 #: app/core/templates/users/list.html:50
 msgid "Superuser"
-msgstr ""
+msgstr "Superuser"
 
 #: app/core/templates/settings/_tab_account.html:24
 #: app/core/templates/tasks_admin/overview.html:48
 #: app/core/templates/users/list.html:61
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:26
 msgid "Active"
-msgstr ""
+msgstr "Active"
 
 #: app/core/templates/settings/_tab_account.html:25
 #: app/core/templates/users/list.html:63
 msgid "Inactive"
-msgstr ""
+msgstr "Inactive"
 
 #: app/core/templates/settings/_tab_email.html:2
 #: app/core/templates/users/list.html:37
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 #: app/core/templates/settings/_tab_email.html:14
 msgid "Required to confirm your identity."
-msgstr ""
+msgstr "Required to confirm your identity."
 
 #: app/core/templates/settings/_tab_oauth.html:2
 msgid "OAuth Accounts"
-msgstr ""
+msgstr "OAuth Accounts"
 
 #: app/core/templates/settings/_tab_oauth.html:26
 #, python-format
 msgid "Unlink %(provider)s account?"
-msgstr ""
+msgstr "Unlink %(provider)s account?"
 
 #: app/core/templates/settings/_tab_oauth.html:30
 msgid "Unlink"
-msgstr ""
+msgstr "Unlock"
 
 #: app/core/templates/settings/_tab_oauth.html:37
 msgid "No OAuth accounts linked."
-msgstr ""
+msgstr "No OAuth accounts linked."
 
 #: app/core/templates/settings/_tab_oauth.html:41
 msgid "Link another account"
-msgstr ""
+msgstr "OAuth Accounts"
 
 #: app/core/templates/settings/_tab_oauth.html:46
 msgid "Link Google"
-msgstr ""
+msgstr "Link Google"
 
 #: app/core/templates/settings/_tab_oauth.html:50
 msgid "Google linked"
-msgstr ""
+msgstr "No roles defined."
 
 #: app/core/templates/settings/_tab_oauth.html:57
 msgid "Link Microsoft"
-msgstr ""
+msgstr "Continue with Microsoft"
 
 #: app/core/templates/settings/_tab_oauth.html:61
 msgid "Microsoft linked"
-msgstr ""
+msgstr "Microsoft linked"
 
 #: app/core/templates/settings/_tab_oauth.html:69
 msgid ""
 "You have no password set. If you unlink all OAuth accounts you will lose "
 "access."
 msgstr ""
+"You have no password set. If you unlink all OAuth accounts you will lose "
+"access."
 
 #: app/core/templates/settings/_tab_password.html:2
 msgid "Password"
-msgstr ""
+msgstr "Password"
 
 #: app/core/templates/settings/_tab_personal.html:2
 msgid "Personal Info"
-msgstr ""
+msgstr "Personal Info"
 
 #: app/core/templates/settings/_tab_prefs.html:2
 msgid "Preferences"
-msgstr ""
+msgstr "Preferences"
 
 #: app/core/templates/settings/_tab_prefs.html:20
 msgid "Language and theme changes apply on next page load."
-msgstr ""
+msgstr "Language and theme changes apply on next page load."
 
 #: app/core/templates/settings/_tab_security.html:2
 msgid "Two-Factor Authentication (TOTP)"
-msgstr ""
+msgstr "Two-Factor Authentication (TOTP)"
 
 #: app/core/templates/settings/_tab_security.html:10
 msgid "Save these recovery codes now."
-msgstr ""
+msgstr "Save these recovery codes now."
 
 #: app/core/templates/settings/_tab_security.html:11
 msgid ""
 "Each code works once. Store them somewhere safe — they will not be shown "
 "again."
 msgstr ""
+"Each code works once. Store them somewhere safe — they will not be shown "
+"again."
 
 #: app/core/templates/settings/_tab_security.html:22
 msgid "Two-factor authentication is enabled."
-msgstr ""
+msgstr "Two-factor authentication is enabled."
 
 #: app/core/templates/settings/_tab_security.html:26
 #, python-format
 msgid "Remaining recovery codes: %(n)s"
-msgstr ""
+msgstr "Remaining recovery codes: %(n)s"
 
 #: app/core/templates/settings/_tab_security.html:31
 msgid "Generate new recovery codes? Old codes will stop working."
-msgstr ""
+msgstr "Generate new recovery codes? Old codes will stop working."
 
 #: app/core/templates/settings/_tab_security.html:35
 msgid "Regenerate recovery codes"
-msgstr ""
+msgstr "Regenerate recovery codes"
 
 #: app/core/templates/settings/_tab_security.html:41
 #: app/core/templates/settings/_tab_security.html:50
 msgid "Disable 2FA"
-msgstr ""
+msgstr "Disable 2FA"
 
 #: app/core/templates/settings/_tab_security.html:42
 msgid "Enter your current authenticator code or a recovery code to confirm."
-msgstr ""
+msgstr "Enter your current authenticator code or a recovery code to confirm."
 
 #: app/core/templates/settings/_tab_security.html:47
 msgid "6-digit code or recovery code"
-msgstr ""
+msgstr "6-digit code or recovery code"
 
 #: app/core/templates/settings/_tab_security.html:57
 msgid ""
 "Scan this QR with an authenticator app (Google Authenticator, Authy, "
 "1Password, …) and enter the 6-digit code below."
 msgstr ""
+"Scan this QR with an authenticator app (Google Authenticator, Authy, "
+"1Password, …) and enter the 6-digit code below."
 
 #: app/core/templates/settings/_tab_security.html:65
 msgid "Or enter this key manually:"
-msgstr ""
+msgstr "Or enter this key manually:"
 
 #: app/core/templates/settings/_tab_security.html:80
 #: app/core/templates/settings/_tab_security.html:100
 msgid "Enable 2FA"
-msgstr ""
+msgstr "Enable 2FA"
 
 #: app/core/templates/settings/_tab_security.html:94
 msgid ""
 "Add a second factor to your login. After enabling, you will be asked for "
 "a 6-digit code from your authenticator app each time you sign in."
 msgstr ""
+"Add a second factor to your login. After enabling, you will be asked for "
+"a 6-digit code from your authenticator app each time you sign in."
 
 #: app/core/templates/settings/_tab_sessions.html:2
 msgid "Active Sessions"
-msgstr ""
+msgstr "Active Users"
 
 #: app/core/templates/settings/_tab_sessions.html:5
 msgid "These devices are currently signed in to your account."
-msgstr ""
+msgstr "These devices are currently signed in to your account."
 
 #: app/core/templates/settings/_tab_sessions.html:14
 msgid "This device"
-msgstr ""
+msgstr "This device"
 
 #: app/core/templates/settings/_tab_sessions.html:22
 msgid "Last seen"
-msgstr ""
+msgstr "Last login"
 
 #: app/core/templates/settings/_tab_sessions.html:24
 msgid "Started"
-msgstr ""
+msgstr "Status"
 
 #: app/core/templates/settings/_tab_sessions.html:30
 msgid "Sign out this device?"
-msgstr ""
+msgstr "Sign out this device?"
 
 #: app/core/templates/settings/_tab_sessions.html:33
 msgid "Sign out"
-msgstr ""
+msgstr "Sign Out"
 
 #: app/core/templates/settings/_tab_sessions.html:40
 msgid "No active sessions found."
-msgstr ""
+msgstr "No active sessions found."
 
 #: app/core/templates/settings/_tab_sessions.html:48
 msgid "Sign out all other devices?"
-msgstr ""
+msgstr "Sign out all other devices?"
 
 #: app/core/templates/settings/_tab_sessions.html:51
 msgid "Sign out all other devices"
-msgstr ""
+msgstr "Sign out all other devices"
 
 #: app/core/templates/settings/system.html:2
 #: app/core/templates/settings/system.html:4
 msgid "System Settings"
-msgstr ""
+msgstr "System Settings"
 
 #: app/core/templates/settings/system.html:5
 msgid "These settings apply to the whole application."
-msgstr ""
+msgstr "These settings apply to the whole application."
 
 #: app/core/templates/settings/system.html:17
 msgid "Used for anonymous visitors before they pick a language."
-msgstr ""
+msgstr "Used for anonymous visitors before they pick a language."
 
 #: app/core/templates/settings/system.html:26
 msgid "Allow visitors to create accounts via /auth/register."
-msgstr ""
+msgstr "Allow visitors to create accounts via /auth/register."
 
 #: app/core/templates/settings/system.html:33
 msgid "On unknown OAuth identity, create a new account automatically."
-msgstr ""
+msgstr "On unknown OAuth identity, create a new account automatically."
 
 #: app/core/templates/tasks_admin/overview.html:2
 msgid "Tasks"
-msgstr ""
+msgstr "Tasks"
 
 #: app/core/templates/tasks_admin/overview.html:5
 msgid "Background Tasks"
-msgstr ""
+msgstr "Background Tasks"
 
 #: app/core/templates/tasks_admin/overview.html:8
 msgid "worker(s) online"
-msgstr ""
+msgstr "worker(s) online"
 
 #: app/core/templates/tasks_admin/overview.html:10
 msgid "No workers online"
-msgstr ""
+msgstr "No workers online"
 
 #: app/core/templates/tasks_admin/overview.html:18
 msgid "No Celery worker is connected. Start one with:"
-msgstr ""
+msgstr "No Celery worker is connected. Start one with:"
 
 #: app/core/templates/tasks_admin/overview.html:21
 msgid "Or via docker compose:"
-msgstr ""
+msgstr "Or via docker compose:"
 
 #: app/core/templates/tasks_admin/overview.html:29
 msgid "Workers"
-msgstr ""
+msgstr "Workers"
 
 #: app/core/templates/tasks_admin/overview.html:35
 msgid "online"
-msgstr ""
+msgstr "online"
 
 #: app/core/templates/tasks_admin/overview.html:39
 msgid "No workers."
-msgstr ""
+msgstr "No workers."
 
 #: app/core/templates/tasks_admin/overview.html:60
 msgid "Nothing active."
-msgstr ""
+msgstr "Nothing active."
 
 #: app/core/templates/tasks_admin/overview.html:69
 msgid "Reserved"
-msgstr ""
+msgstr "Reserved"
 
 #: app/core/templates/tasks_admin/overview.html:78
 msgid "Nothing reserved."
-msgstr ""
+msgstr "Nothing reserved."
 
 #: app/core/templates/tasks_admin/overview.html:88
 msgid "Registered tasks"
-msgstr ""
+msgstr "Registered tasks"
 
 #: app/core/templates/tasks_admin/overview.html:100
 msgid "No tasks registered (no worker?)."
-msgstr ""
+msgstr "No tasks registered (no worker?)."
 
 #: app/core/templates/tasks_admin/overview.html:108
 msgid "Beat schedule"
-msgstr ""
+msgstr "Beat schedule"
 
 #: app/core/templates/tasks_admin/overview.html:117
 msgid "No periodic tasks."
-msgstr ""
+msgstr "No periodic tasks."
 
 #: app/core/templates/users/create.html:66
 #: app/core/templates/users/edit.html:54
 msgid "No roles defined."
-msgstr ""
+msgstr "No roles defined."
 
 #: app/core/templates/users/edit.html:2 app/core/templates/users/edit.html:5
 msgid "Edit User"
-msgstr ""
+msgstr "Edit User"
 
 #: app/core/templates/users/edit.html:61
 msgid "(immutable)"
-msgstr ""
+msgstr "(immutable)"
 
 #: app/core/templates/users/edit.html:68
 msgid "Failed logins"
-msgstr ""
+msgstr "Failed logins"
 
 #: app/core/templates/users/edit.html:79
 msgid "Academic profile"
-msgstr ""
+msgstr "Academic profile"
 
 #: app/core/templates/users/edit.html:81
 msgid ""
 "Read-only view of the user's academic identifiers and research interests."
 " They manage these from their own profile page."
 msgstr ""
+"Read-only view of the user's academic identifiers and research interests."
+" They manage these from their own profile page."
 
 #: app/core/templates/users/edit.html:88
 #: app/modules/academic/templates/settings/_tab_identifiers.html:2
 msgid "Academic Identifiers"
-msgstr ""
+msgstr "Academic Identifiers"
 
 #: app/core/templates/users/edit.html:99
 #: app/modules/academic/templates/settings/_tab_identifiers.html:21
 msgid "Verified"
-msgstr ""
+msgstr "Verified"
 
 #: app/core/templates/users/edit.html:101
 #: app/modules/academic/templates/settings/_tab_identifiers.html:23
 msgid "Unverified"
-msgstr ""
+msgstr "Unverified"
 
 #: app/core/templates/users/edit.html:109
 #: app/modules/academic/templates/settings/_tab_identifiers.html:51
 msgid "No academic identifiers yet."
-msgstr ""
+msgstr "No academic identifiers yet."
 
 #: app/core/templates/users/edit.html:118
 #: app/modules/academic/templates/settings/_tab_interests.html:2
 msgid "Research Interests"
-msgstr ""
+msgstr "Research Interests"
 
 #: app/core/templates/users/edit.html:128
 msgid "No keywords yet."
-msgstr ""
+msgstr "No keywords yet."
 
 #: app/core/templates/users/list.html:16
 msgid "Search by username, email, name…"
-msgstr ""
+msgstr "Search by username, email, name…"
 
 #: app/core/templates/users/list.html:22
 msgid "Active only"
-msgstr ""
+msgstr "Active only"
 
 #: app/core/templates/users/list.html:26
 msgid "Filter"
-msgstr ""
+msgstr "Filter"
 
 #: app/core/templates/users/list.html:38
 msgid "Full Name"
-msgstr ""
+msgstr "Full Name"
 
 #: app/core/templates/users/list.html:59
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:37
 msgid "Locked"
-msgstr ""
+msgstr "Locked"
 
 #: app/core/templates/users/list.html:74
 msgid "Unlock"
-msgstr ""
+msgstr "Unlock"
 
 #: app/core/templates/users/list.html:79
 msgid "Lock"
-msgstr ""
+msgstr "Lock"
 
 #: app/core/templates/users/list.html:84
 msgid "Delete this user?"
-msgstr ""
+msgstr "Delete this user?"
 
 #: app/core/templates/users/list.html:92
 msgid "No users yet."
-msgstr ""
+msgstr "No users yet."
 
 #: app/core/users/routes.py:50
 msgid "Username already in use."
-msgstr ""
+msgstr "Username already in use."
 
 #: app/core/users/routes.py:52
 msgid "Email already in use."
-msgstr ""
+msgstr "Email already in use."
 
 #: app/core/users/routes.py:83
 msgid "User created."
-msgstr ""
+msgstr "User created."
 
 #: app/core/users/routes.py:108
 msgid "You cannot remove your own superuser flag."
-msgstr ""
+msgstr "You cannot remove your own superuser flag."
 
 #: app/core/users/routes.py:135
 msgid "User updated."
-msgstr ""
+msgstr "User updated."
 
 #: app/core/users/routes.py:163
 msgid "You cannot lock your own account."
-msgstr ""
+msgstr "You cannot lock your own account."
 
 #: app/core/users/routes.py:167
 msgid "User locked."
-msgstr ""
+msgstr "User locked."
 
 #: app/core/users/routes.py:180
 msgid "User unlocked."
-msgstr ""
+msgstr "User unlocked."
 
 #: app/core/users/routes.py:192
 msgid "You cannot delete your own account."
-msgstr ""
+msgstr "You cannot delete your own account."
 
 #: app/core/users/routes.py:195
 msgid "The admin user cannot be deleted."
-msgstr ""
+msgstr "The admin user cannot be deleted."
 
 #: app/core/users/routes.py:199
 msgid "User deleted."
-msgstr ""
+msgstr "User deleted."
 
 #: app/modules/academic/routes.py:68
 msgid "Verification link is invalid or expired."
-msgstr ""
+msgstr "Verification link is invalid or expired."
 
 #: app/modules/academic/routes.py:76
 msgid "Email verified."
-msgstr ""
+msgstr "Email verified."
 
 #: app/modules/academic/routes.py:121 app/modules/academic/routes.py:180
 #, python-format
 msgid "Dev mode: verification link → %(url)s"
-msgstr ""
+msgstr "Dev mode: verification link → %(url)s"
 
 #: app/modules/academic/routes.py:127
 msgid "Identifier added — a verification link has been sent."
-msgstr ""
+msgstr "Identifier added — a verification link has been sent."
 
 #: app/modules/academic/routes.py:133
 msgid "Identifier added."
-msgstr ""
+msgstr "Identifier added."
 
 #: app/modules/academic/routes.py:156
 msgid "Identifier removed."
-msgstr ""
+msgstr "Identifier removed."
 
 #: app/modules/academic/routes.py:186
 msgid "Verification link re-sent."
-msgstr ""
+msgstr "Verification link re-sent."
 
 #: app/modules/academic/routes.py:210
 msgid "No valid keywords found."
-msgstr ""
+msgstr "No valid keywords found."
 
 #: app/modules/academic/routes.py:217
 #, python-format
 msgid "%(n)d keywords added."
-msgstr ""
+msgstr "%(n)d keywords added."
 
 #: app/modules/academic/routes.py:217
 msgid "Keyword added."
-msgstr ""
+msgstr "Keyword added."
 
 #: app/modules/academic/routes.py:221
 #, python-format
 msgid "%(n)d added, %(s)d already following."
-msgstr ""
+msgstr "%(n)d added, %(s)d already following."
 
 #: app/modules/academic/routes.py:240
 msgid "Keyword removed."
-msgstr ""
+msgstr "Keyword removed."
 
 #: app/modules/academic/templates/settings/_tab_identifiers.html:5
 msgid ""
@@ -1318,560 +1330,577 @@ msgid ""
 " affiliation, or institutional email has changed — old papers stay linked"
 " through these. This is separate from your login email."
 msgstr ""
+"Your historical and alternate academic identities. Useful when your name,"
+" affiliation, or institutional email has changed — old papers stay linked"
+" through these. This is separate from your login email."
 
 #: app/modules/academic/templates/settings/_tab_identifiers.html:31
 msgid "Resend verification link"
-msgstr ""
+msgstr "Resend verification link"
 
 #: app/modules/academic/templates/settings/_tab_identifiers.html:38
 msgid "Remove this identifier?"
-msgstr ""
+msgstr "Remove this identifier?"
 
 #: app/modules/academic/templates/settings/_tab_identifiers.html:40
 #: app/modules/academic/templates/settings/_tab_interests.html:17
 msgid "Remove"
-msgstr ""
+msgstr "Remove"
 
 #: app/modules/academic/templates/settings/_tab_identifiers.html:57
 msgid "Add identifier"
-msgstr ""
+msgstr "Add identifier"
 
 #: app/modules/academic/templates/settings/_tab_identifiers.html:63
 msgid "value (email / ORCID / etc.)"
-msgstr ""
+msgstr "value (email / ORCID / etc.)"
 
 #: app/modules/academic/templates/settings/_tab_identifiers.html:66
 #: app/modules/academic/templates/settings/_tab_interests.html:37
 msgid "Add"
-msgstr ""
+msgstr "Add"
 
 #: app/modules/academic/templates/settings/_tab_identifiers.html:70
 msgid ""
 "Email type sends a verification link. Other types are stored as-is for "
 "now."
 msgstr ""
+"Email type sends a verification link. Other types are stored as-is for "
+"now."
 
 #: app/modules/academic/templates/settings/_tab_interests.html:5
 msgid ""
 "Keywords used to personalise your scraping feed. Pick what you actually "
 "follow — the scraper will lean on these when ranking new papers and news."
 msgstr ""
+"Keywords used to personalise your scraping feed. Pick what you actually "
+"follow — the scraper will lean on these when ranking new papers and news."
 
 #: app/modules/academic/templates/settings/_tab_interests.html:25
 msgid "No keywords yet — add one below to start shaping your feed."
-msgstr ""
+msgstr "No keywords yet — add one below to start shaping your feed."
 
 #: app/modules/academic/templates/settings/_tab_interests.html:32
 msgid "Add a keyword"
-msgstr ""
+msgstr "Add a keyword"
 
 #: app/modules/academic/templates/settings/_tab_interests.html:35
 msgid "e.g. Yapay Zeka ; Makine Öğrenmesi , Modelleme"
-msgstr ""
+msgstr "e.g. Yapay Zeka ; Makine Öğrenmesi , Modelleme"
 
 #: app/modules/academic/templates/settings/_tab_interests.html:40
 msgid ""
 "Separate multiple keywords with comma or semicolon. Each term is "
 "normalised to lowercase."
 msgstr ""
+"Separate multiple keywords with comma or semicolon. Each term is "
+"normalised to lowercase."
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:2
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:6
 msgid "Admin Overview"
-msgstr ""
+msgstr "Overview"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:59
 #: app/modules/dashboard/templates/dashboard/index.html:94
 msgid "Recent activity"
-msgstr ""
+msgstr "Recent activity"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:80
 #: app/modules/dashboard/templates/dashboard/for_you.html:334
 #: app/modules/dashboard/templates/dashboard/index.html:112
 #: app/modules/scrape/templates/library/_timeline.html:52
 msgid "No activity yet."
-msgstr ""
+msgstr "No activity yet."
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:88
 #: app/modules/dashboard/templates/dashboard/for_you.html:342
 #: app/modules/dashboard/templates/dashboard/index.html:119
 msgid "See full audit log"
-msgstr ""
+msgstr "See full audit log"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:107
 #: app/modules/dashboard/templates/dashboard/for_you.html:300
 msgid "Top Research Topics"
-msgstr ""
+msgstr "Top Research Topics"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:114
 #: app/modules/dashboard/templates/dashboard/for_you.html:308
 msgid "users"
-msgstr ""
+msgstr "users"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:119
 #: app/modules/dashboard/templates/dashboard/for_you.html:270
 #: app/modules/dashboard/templates/dashboard/for_you.html:313
 msgid "No topics followed yet."
-msgstr ""
+msgstr "No topics followed yet."
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:125
 #: app/modules/dashboard/templates/dashboard/for_you.html:350
 #: app/modules/dashboard/templates/dashboard/index.html:139
 msgid "Quick actions"
-msgstr ""
+msgstr "Quick actions"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:129
 #: app/modules/dashboard/templates/dashboard/for_you.html:355
 #: app/modules/dashboard/templates/dashboard/index.html:143
 msgid "Manage users"
-msgstr ""
+msgstr "Manage users"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:134
 #: app/modules/dashboard/templates/dashboard/for_you.html:358
 #: app/modules/dashboard/templates/dashboard/index.html:148
 msgid "Manage roles"
-msgstr ""
+msgstr "Manage roles"
 
 #: app/modules/dashboard/templates/dashboard/admin_overview.html:139
 #: app/modules/dashboard/templates/dashboard/for_you.html:361
 msgid "Audit log"
-msgstr ""
+msgstr "Audit Log"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:2
 #: app/modules/dashboard/templates/dashboard/for_you.html:9
 #: app/modules/dashboard/templates/dashboard/index.html:59
 msgid "For you"
-msgstr ""
+msgstr "For you"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:12
 #: app/modules/dashboard/templates/dashboard/index.html:7
 #, python-format
 msgid "Welcome, %(name)s"
-msgstr ""
+msgstr "Welcome, %(name)s"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:20
 #: app/modules/dashboard/templates/dashboard/for_you.html:192
 #: app/modules/dashboard/templates/dashboard/for_you.html:288
 #: app/modules/scrape/templates/scrape/feed.html:24
 msgid "Scrape now"
-msgstr ""
+msgstr "Scrape now"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:82
 msgid "Followed Interests"
-msgstr ""
+msgstr "Followed Interests"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:93
 msgid "Favorite Papers"
-msgstr ""
+msgstr "Favorite Papers"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:104
 msgid "Academic Notes"
-msgstr ""
+msgstr "Academic Notes"
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:184
 #: app/modules/dashboard/templates/dashboard/index.html:83
 msgid "No personalised papers yet."
-msgstr ""
+msgstr "No personalised papers yet."
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:186
 msgid "Run a scrape to fill your feed — or check the Discover page."
-msgstr ""
+msgstr "Run a scrape to fill your feed — or check the Discover page."
 
 #: app/modules/dashboard/templates/dashboard/for_you.html:196
 #: app/modules/scrape/templates/library/_notes.html:28
 #: app/modules/scrape/templates/library/_timeline.html:57
 msgid "Open discover"
-msgstr ""
+msgstr "Discover"
 
 #: app/modules/dashboard/templates/dashboard/index.html:2
 #: app/modules/dashboard/templates/dashboard/index.html:6
 msgid "Dashboard"
-msgstr ""
+msgstr "Dashboard"
 
 #: app/modules/dashboard/templates/dashboard/index.html:60
 msgid "All papers"
-msgstr ""
+msgstr "All papers"
 
 #: app/modules/dashboard/templates/dashboard/index.html:85
 #: app/modules/scrape/templates/scrape/feed.html:79
 msgid "Add interests"
-msgstr ""
+msgstr "Add interests"
 
 #: app/modules/dashboard/templates/dashboard/index.html:153
 msgid "Manage menu"
-msgstr ""
+msgstr "Manage menu"
 
 #: app/modules/dashboard/templates/dashboard/index.html:162
 msgid "Scraping modules will populate this dashboard in Phase 2."
-msgstr ""
+msgstr "Scraping modules will populate this dashboard in Phase 2."
 
 #: app/modules/scrape/routes.py:191
 msgid "Paper not found."
-msgstr ""
+msgstr "Paper not found."
 
 #: app/modules/scrape/routes.py:217
 msgid "Saved to favorites."
-msgstr ""
+msgstr "Saved to favorites."
 
 #: app/modules/scrape/routes.py:217
 msgid "Removed from favorites."
-msgstr ""
+msgstr "Removed from favorites."
 
 #: app/modules/scrape/routes.py:233
 #: app/modules/scrape/templates/scrape/_dismissed_undo.html:6
 msgid "Hidden from your feed."
-msgstr ""
+msgstr "Your feed"
 
 #: app/modules/scrape/routes.py:270 app/modules/scrape/routes.py:273
 #: app/modules/scrape/routes.py:331
 msgid "Empty notes are not saved."
-msgstr ""
+msgstr "Empty notes are not saved."
 
 #: app/modules/scrape/routes.py:360
 msgid "Scrape queued — papers will appear here once the worker finishes."
-msgstr ""
+msgstr "Scrape queued — papers will appear here once the worker finishes."
 
 #: app/modules/scrape/templates/library/_notes.html:23
 msgid "No notes yet."
-msgstr ""
+msgstr "No roles yet."
 
 #: app/modules/scrape/templates/library/_notes.html:25
 msgid ""
 "Open any paper and write a note — it will appear here across all your "
 "reading."
 msgstr ""
+"Open any paper and write a note — it will appear here across all your "
+"reading."
 
 #: app/modules/scrape/templates/library/_timeline.html:31
 msgid "Scrape run"
-msgstr ""
+msgstr "Scrape now"
 
 #: app/modules/scrape/templates/library/_timeline.html:32
 msgid "Favorited"
-msgstr ""
+msgstr "Status"
 
 #: app/modules/scrape/templates/library/_timeline.html:33
 msgid "Note added"
-msgstr ""
+msgstr "Note added"
 
 #: app/modules/scrape/templates/library/_timeline.html:34
 #: app/modules/scrape/templates/library/index.html:31
 #: app/modules/scrape/templates/scrape/feed.html:52
 msgid "Hidden"
-msgstr ""
+msgstr "Hidden"
 
 #: app/modules/scrape/templates/library/_timeline.html:35
 msgid "New interest"
-msgstr ""
+msgstr "Add interests"
 
 #: app/modules/scrape/templates/library/_timeline.html:54
 msgid ""
 "Run a scrape, favorite a paper, or write a note — events will collect "
 "here."
 msgstr ""
+"Run a scrape, favorite a paper, or write a note — events will collect "
+"here."
 
 #: app/modules/scrape/templates/library/index.html:2
 #: app/modules/scrape/templates/library/index.html:7
 msgid "My library"
-msgstr ""
+msgstr "My library"
 
 #: app/modules/scrape/templates/library/index.html:10
 msgid "favorites"
-msgstr ""
+msgstr "favorites"
 
 #: app/modules/scrape/templates/library/index.html:10
 msgid "notes"
-msgstr ""
+msgstr "No matches."
 
 #: app/modules/scrape/templates/library/index.html:17
 msgid "Timeline"
-msgstr ""
+msgstr "Time"
 
 #: app/modules/scrape/templates/library/index.html:21
 #: app/modules/scrape/templates/scrape/feed.html:47
 msgid "Favorites"
-msgstr ""
+msgstr "Favorites"
 
 #: app/modules/scrape/templates/library/index.html:26
 msgid "Notes"
-msgstr ""
+msgstr "No matches."
 
 #: app/modules/scrape/templates/library/index.html:51
 #: app/modules/scrape/templates/scrape/feed.html:64
 msgid "No favorites yet."
-msgstr ""
+msgstr "No roles yet."
 
 #: app/modules/scrape/templates/library/index.html:52
 #: app/modules/scrape/templates/scrape/feed.html:65
 msgid "Nothing hidden."
-msgstr ""
+msgstr "Nothing active."
 
 #: app/modules/scrape/templates/library/index.html:56
 #: app/modules/scrape/templates/scrape/feed.html:70
 msgid "Star papers from the discover feed — they will collect here."
-msgstr ""
+msgstr "Star papers from the discover feed — they will collect here."
 
 #: app/modules/scrape/templates/library/index.html:58
 #: app/modules/scrape/templates/scrape/feed.html:72
 msgid "Papers you hide will be listed here so you can recover them."
-msgstr ""
+msgstr "Papers you hide will be listed here so you can recover them."
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:15
 msgid "30-second summary"
-msgstr ""
+msgstr "30-second summary"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:26
 msgid "Method"
-msgstr ""
+msgstr "Method"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:38
 msgid "Findings"
-msgstr ""
+msgstr "Findings"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:50
 msgid "Limitations"
-msgstr ""
+msgstr "Actions"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:62
 msgid "Why this matters for you"
-msgstr ""
+msgstr "Why this matters for you"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:71
 msgid "Generated by"
-msgstr ""
+msgstr "Generated by"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:78
 msgid "Regenerate analysis"
-msgstr ""
+msgstr "Regenerate analysis"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:85
 msgid "AI analysis for this paper"
-msgstr ""
+msgstr "AI analysis for this paper"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:87
 msgid ""
 "30-second summary plus method / findings / limitations breakdown, in "
 "Turkish. Cached — runs only on demand."
 msgstr ""
+"30-second summary plus method / findings / limitations breakdown, in "
+"Turkish. Cached — runs only on demand."
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:95
 msgid "Analyze now"
-msgstr ""
+msgstr "Analyze now"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:98
 #: app/modules/scrape/templates/scrape/_ai_translation.html:56
 msgid "Asking Claude…"
-msgstr ""
+msgstr "Asking Claude…"
 
 #: app/modules/scrape/templates/scrape/_ai_disabled.html:5
 msgid "AI is not configured"
-msgstr ""
+msgstr "AI is not configured"
 
 #: app/modules/scrape/templates/scrape/_ai_disabled.html:7
 #, python-format
 msgid "Set %(var)s in your .env to unlock paper analysis and Turkish translation."
-msgstr ""
+msgstr "Set %(var)s in your .env to unlock paper analysis and Turkish translation."
 
 #: app/modules/scrape/templates/scrape/_ai_disabled.html:10
 msgid "Until then the original abstract is the only view."
-msgstr ""
+msgstr "Until then the original abstract is the only view."
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:11
 msgid "Translated title"
-msgstr ""
+msgstr "Translated title"
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:18
 msgid "Translated abstract"
-msgstr ""
+msgstr "Translated abstract"
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:23
 msgid "No abstract to translate."
-msgstr ""
+msgstr "No abstract to translate."
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:28
 msgid "Translated by"
-msgstr ""
+msgstr "Translated by"
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:36
 msgid "Regenerate translation"
-msgstr ""
+msgstr "Regenerate translation"
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:43
 msgid "Translate this paper to Turkish"
-msgstr ""
+msgstr "Translate this paper to Turkish"
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:45
 msgid ""
 "Title and abstract translated by Claude. Cached after first run — no "
 "repeated cost."
 msgstr ""
+"Title and abstract translated by Claude. Cached after first run — no "
+"repeated cost."
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:53
 msgid "Translate now"
-msgstr ""
+msgstr "Scrape now"
 
 #: app/modules/scrape/templates/scrape/_dismissed_undo.html:11
 msgid "Undo"
-msgstr ""
+msgstr "Unlock"
 
 #: app/modules/scrape/templates/scrape/_favorite_button.html:8
 #: app/modules/scrape/templates/scrape/_paper_card.html:54
 msgid "Toggle favorite"
-msgstr ""
+msgstr "Toggle Theme"
 
 #: app/modules/scrape/templates/scrape/_mode_original.html:3
 msgid "Abstract"
-msgstr ""
+msgstr "Abstract"
 
 #: app/modules/scrape/templates/scrape/_mode_original.html:8
 msgid "No abstract available."
-msgstr ""
+msgstr "No abstract available."
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:20
 #: app/modules/scrape/templates/scrape/_notes_list.html:30
 msgid "No tag"
-msgstr ""
+msgstr "No tag"
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:21
 #: app/modules/scrape/templates/scrape/_notes_list.html:33
 msgid "experiment"
-msgstr ""
+msgstr "Parent"
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:22
 #: app/modules/scrape/templates/scrape/_notes_list.html:36
 msgid "question"
-msgstr ""
+msgstr "Description"
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:23
 #: app/modules/scrape/templates/scrape/_notes_list.html:39
 msgid "finding"
-msgstr ""
+msgstr "finding"
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:39
 msgid "Cancel edit"
-msgstr ""
+msgstr "Cancel edit"
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:43
 #: app/modules/scrape/templates/scrape/_notes_list.html:42
 msgid "Save"
-msgstr ""
+msgstr "Active"
 
 #: app/modules/scrape/templates/scrape/_note_view.html:14
 msgid "Edit note"
-msgstr ""
+msgstr "Edit note"
 
 #: app/modules/scrape/templates/scrape/_note_view.html:21
 msgid "Delete this note?"
-msgstr ""
+msgstr "Delete this role?"
 
 #: app/modules/scrape/templates/scrape/_note_view.html:22
 msgid "Delete note"
-msgstr ""
+msgstr "Delete this user?"
 
 #: app/modules/scrape/templates/scrape/_notes_list.html:5
 msgid "My notes"
-msgstr ""
+msgstr "My notes"
 
 #: app/modules/scrape/templates/scrape/_notes_list.html:7
 #: app/modules/scrape/templates/scrape/_paper_card.html:45
 msgid "note"
-msgstr ""
+msgstr "note"
 
 #: app/modules/scrape/templates/scrape/_notes_list.html:17
 msgid "No notes yet — add the first one below."
-msgstr ""
+msgstr "No notes yet — add the first one below."
 
 #: app/modules/scrape/templates/scrape/_notes_list.html:26
 msgid "New note — Cmd+Enter to save"
-msgstr ""
+msgstr "New note — Cmd+Enter to save"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:17
 msgid "Favorite"
-msgstr ""
+msgstr "Favorite"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:19
 msgid "Seen"
-msgstr ""
+msgstr "Seen"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:21
 msgid "New"
-msgstr ""
+msgstr "new"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:32
 #: app/modules/scrape/templates/scrape/detail.html:47
 msgid "more"
-msgstr ""
+msgstr "core"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:59
 msgid "Open notes"
-msgstr ""
+msgstr "Menu Items"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:65
 msgid "Open PDF"
-msgstr ""
+msgstr "Open PDF"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:73
 msgid "Hide"
-msgstr ""
+msgstr "Hide"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:73
 msgid "Hide — undo available"
-msgstr ""
+msgstr "Hide — undo available"
 
 #: app/modules/scrape/templates/scrape/detail.html:8
 msgid "Back"
-msgstr ""
+msgstr "Back"
 
 #: app/modules/scrape/templates/scrape/detail.html:11
 #: app/modules/scrape/templates/scrape/feed.html:2
 #: app/modules/scrape/templates/scrape/feed.html:7
 #: app/modules/scrape/templates/scrape/feed.html:42
 msgid "Discover"
-msgstr ""
+msgstr "Discover"
 
 #: app/modules/scrape/templates/scrape/detail.html:17
 msgid "Copy BibTeX"
-msgstr ""
+msgstr "Copy BibTeX"
 
 #: app/modules/scrape/templates/scrape/detail.html:18
 msgid "Cite"
-msgstr ""
+msgstr "Cite"
 
 #: app/modules/scrape/templates/scrape/detail.html:27
 msgid "Source"
-msgstr ""
+msgstr "Source"
 
 #: app/modules/scrape/templates/scrape/detail.html:66
 msgid "Original"
-msgstr ""
+msgstr "Login Email"
 
 #: app/modules/scrape/templates/scrape/detail.html:70
 msgid "Turkish"
-msgstr ""
+msgstr "Turkish"
 
 #: app/modules/scrape/templates/scrape/detail.html:74
 msgid "AI analysis"
-msgstr ""
+msgstr "AI analysis"
 
 #: app/modules/scrape/templates/scrape/feed.html:9
 msgid "Papers matched against your research interests."
-msgstr ""
+msgstr "Papers matched against your research interests."
 
 #: app/modules/scrape/templates/scrape/feed.html:17
 msgid "Filter — title, abstract, keyword"
-msgstr ""
+msgstr "Filter — title, abstract, keyword"
 
 #: app/modules/scrape/templates/scrape/feed.html:32
 #, python-format
 msgid "Filtering: %(term)s"
-msgstr ""
+msgstr "Filtering: %(term)s"
 
 #: app/modules/scrape/templates/scrape/feed.html:66
 msgid "Nothing here yet."
-msgstr ""
+msgstr "Nothing here yet."
 
 #: app/modules/scrape/templates/scrape/feed.html:74
 msgid "Add some research interests in your profile, then hit \"Scrape now\"."
-msgstr ""
+msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
 
 #~ msgid "Username or Email"
 #~ msgstr "Username"

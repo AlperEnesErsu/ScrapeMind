@@ -17,6 +17,10 @@ def create_app() -> Flask:
     app.config.from_object(get_config())
     _validate_production_config(app)
 
+    from app.core.audit.labels import humanize_action
+
+    app.jinja_env.globals["humanize_action"] = humanize_action
+
     _init_extensions(app)
     _init_logging(app)
     _init_celery(app)
