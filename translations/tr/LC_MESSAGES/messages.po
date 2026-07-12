@@ -1913,6 +1913,12 @@ msgstr "Henüz bir şey yok."
 msgid "Add some research interests in your profile, then hit \"Scrape now\"."
 msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
 
+msgid "Copy"
+msgstr "Kopyala"
+
+msgid "Copied"
+msgstr "Kopyalandı"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
