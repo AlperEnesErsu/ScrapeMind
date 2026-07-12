@@ -358,7 +358,7 @@
               <tr>
                 <td class="text-muted text-nowrap px-3 py-2" style="font-size: 0.8rem;">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
                 <td class="fw-semibold px-2 py-2">{{ log.user_id or '—' }}</td>
-                <td class="text-muted px-3 py-2"><code class="small text-danger">{{ log.action }}</code></td>
+                <td class="text-muted px-3 py-2">{{ humanize_action(log.action) }}</td>
               </tr>
               {% else %}
               <tr>

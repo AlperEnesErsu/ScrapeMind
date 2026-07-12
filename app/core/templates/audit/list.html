@@ -60,7 +60,7 @@
         <tr>
           <td class="text-muted small">{{ log.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
           <td>{{ log.user_id or '—' }}</td>
-          <td><code>{{ log.action }}</code></td>
+          <td>{{ humanize_action(log.action) }} <code class="small text-muted">{{ log.action }}</code></td>
           <td>{{ log.entity_type }}{% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>
           <td class="text-muted small">{{ log.ip_address or '—' }}</td>
         </tr>
