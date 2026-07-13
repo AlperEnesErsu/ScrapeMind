@@ -1,51 +1,26 @@
 """arXiv API adapter.
 
-Thin wrapper around the `arxiv` PyPI client. Exposes:
+Thin wrapper around the `arxiv` PyPI client. Exposes the common source
+interface:
 
+  SOURCE_NAME
   search(query, max_results) -> list[PaperPayload]
+  search_for_keywords(keywords, max_results) -> list[PaperPayload]
 
-where each PaperPayload is a plain dict ready to be diffed against the
-`papers` table — no Celery, no DB, no Flask. Pure I/O. The scrape task
-above this layer handles dedupe + persistence.
+Pure I/O — no Celery, no DB, no Flask. The scrape service above this layer
+handles dedupe + persistence.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any
-
 import arxiv
 import structlog
+
+from app.modules.scrape.sources.payload import PaperPayload
 
 logger = structlog.get_logger()
 
 SOURCE_NAME = "arxiv"
-
-
-@dataclass(frozen=True)
-class PaperPayload:
-    source: str
-    external_id: str  # e.g. "2401.12345v2"
-    title: str
-    abstract: str | None
-    authors: list[str]
-    url: str | None
-    pdf_url: str | None
-    published_at: Any  # datetime.datetime, kept as Any to avoid tight coupling
-    categories: list[str]
-
-    def as_dict(self) -> dict:
-        return {
-            "source": self.source,
-            "external_id": self.external_id,
-            "title": self.title,
-            "abstract": self.abstract,
-            "authors": self.authors,
-            "url": self.url,
-            "pdf_url": self.pdf_url,
-            "published_at": self.published_at,
-            "categories": self.categories,
-        }
 
 
 def _entry_external_id(entry: arxiv.Result) -> str:
@@ -91,3 +66,17 @@ def search(query: str, *, max_results: int = 25) -> list[PaperPayload]:
         )
     logger.info("arxiv_search_done", query=query, hits=len(out))
     return out
+
+
+def search_for_keywords(keywords: list[str], *, max_results: int = 25) -> list[PaperPayload]:
+    """Common source interface: one OR-combined full-text query per run.
+
+    arXiv supports boolean expressions natively, so all keywords fit in a
+    single request (the client also enforces a 3s inter-request delay —
+    one call is the cheap path).
+    """
+    keywords = [kw.strip() for kw in keywords if kw and kw.strip()]
+    if not keywords:
+        return []
+    query = " OR ".join(f'all:"{kw}"' for kw in keywords)
+    return search(query, max_results=max_results)

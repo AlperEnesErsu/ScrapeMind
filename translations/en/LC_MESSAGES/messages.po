@@ -1942,6 +1942,9 @@ msgstr "Retention: %(days)s days"
 msgid "Older entries are purged automatically by the nightly retention task."
 msgstr "Older entries are purged automatically by the nightly retention task."
 
+msgid "Active sources:"
+msgstr "Active sources:"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

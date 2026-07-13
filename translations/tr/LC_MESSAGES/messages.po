@@ -1953,6 +1953,9 @@ msgstr "Saklama süresi: %(days)s gün"
 msgid "Older entries are purged automatically by the nightly retention task."
 msgstr "Daha eski kayıtlar gecelik saklama görevi tarafından otomatik silinir."
 
+msgid "Active sources:"
+msgstr "Aktif kaynaklar:"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
