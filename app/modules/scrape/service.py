@@ -15,10 +15,10 @@ from sqlalchemy import desc
 
 from app.core.models.user import User
 from app.extensions import db
-from app.modules.academic.service import list_user_identifiers, list_user_keywords
+from app.modules.academic.service import list_user_keywords
 from app.modules.scrape.models import Paper, PaperNote, UserPaper
-from app.modules.scrape.sources.arxiv_source import PaperPayload
-from app.modules.scrape.sources.arxiv_source import search as arxiv_search
+from app.modules.scrape.sources import enabled_sources
+from app.modules.scrape.sources.payload import PaperPayload
 
 logger = structlog.get_logger()
 
@@ -48,46 +48,55 @@ def link_user_paper(
     return link, True
 
 
-def _build_arxiv_query(keywords: list[str], orcid_values: list[str]) -> str:
-    """Compose an arXiv search expression from user interests + identifiers."""
-    parts: list[str] = []
-    # Keywords go into the full-text search ("all:")
-    for kw in keywords:
-        parts.append(f'all:"{kw}"')
-    # ORCID isn't supported by arXiv search directly; fall back to nothing for
-    # now. (Later slices might match by author name strings from user_identifiers.)
-    _ = orcid_values  # placeholder until author-name identifiers land
-    return " OR ".join(parts)
+def _match_keyword(title: str, keywords: list[str]) -> str:
+    """Best-effort attribution: first keyword whose tokens all appear in the
+    title — good enough for analytics, perfect for v1."""
+    lowered = title.lower()
+    return next(
+        (kw for kw in keywords if all(tok in lowered for tok in kw.lower().split())),
+        keywords[0],
+    )
 
 
-def scrape_arxiv_for_user(user: User, *, max_results: int = 25) -> dict:
-    """Run an arXiv search using this user's keywords; persist + link the
-    results back to them. Returns a summary dict for the calling task."""
+def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
+    """Run every enabled source with this user's keywords; persist + link the
+    results back to them.
+
+    Sources are isolated: one source raising (rate limit, network, API change)
+    is logged and skipped so the remaining sources still land. Returns a
+    summary dict with per-source hit counts for the calling task.
+    """
     keywords = [kw.value for kw in list_user_keywords(user)]
-    orcid_idents = [
-        i.value for i in list_user_identifiers(user, type_code="orcid") if i.is_verified
-    ]
     if not keywords:
         logger.info("scrape_skip_no_keywords", user_id=user.id)
         return {"hits": 0, "linked": 0, "reason": "no_keywords"}
 
-    query = _build_arxiv_query(keywords, orcid_idents)
-    payloads = arxiv_search(query, max_results=max_results)
-
+    sources = enabled_sources()
+    hits = 0
     linked = 0
-    for payload in payloads:
-        paper = upsert_paper(payload)
-        # Best-effort keyword match: pick the first keyword whose tokens all
-        # appear in the title — good enough for analytics, perfect for v1.
-        matched_kw = next(
-            (kw for kw in keywords if all(tok in paper.title.lower() for tok in kw.split())),
-            keywords[0],
-        )
-        _, created = link_user_paper(user, paper, matched_keyword=matched_kw)
-        if created:
-            linked += 1
-    logger.info("scrape_done", user_id=user.id, hits=len(payloads), linked=linked)
-    return {"hits": len(payloads), "linked": linked, "query": query}
+    per_source: dict[str, int] = {}
+    for name, source in sources.items():
+        try:
+            payloads = source.search_for_keywords(keywords, max_results=max_results)
+        except Exception:  # noqa: BLE001 — a flaky source must not kill the run
+            logger.exception("scrape_source_failed", source=name, user_id=user.id)
+            per_source[name] = -1  # sentinel: this source errored
+            continue
+        per_source[name] = len(payloads)
+        hits += len(payloads)
+        for payload in payloads:
+            paper = upsert_paper(payload)
+            _, created = link_user_paper(
+                user, paper, matched_keyword=_match_keyword(paper.title, keywords)
+            )
+            if created:
+                linked += 1
+    logger.info("scrape_done", user_id=user.id, hits=hits, linked=linked, sources=per_source)
+    return {"hits": hits, "linked": linked, "sources": per_source}
+
+
+# Backward-compatible alias — pre-multi-source callers used the arXiv name.
+scrape_arxiv_for_user = scrape_for_user
 
 
 def _user_papers_query(user: User, view: str):

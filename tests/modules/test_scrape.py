@@ -1,12 +1,13 @@
 """Scrape module — unit tests + a stubbed end-to-end through the Celery task.
 
-We never hit the real arXiv API in tests. The adapter is monkey-patched at
-the `arxiv_search` symbol to return a fixed payload list.
+We never hit real source APIs in tests. `enabled_sources` is monkey-patched
+in the service to a single fake adapter returning a fixed payload list.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import text
@@ -18,10 +19,19 @@ from app.modules.scrape.models import Paper, UserPaper
 from app.modules.scrape.service import (
     link_user_paper,
     list_user_papers,
-    scrape_arxiv_for_user,
+    scrape_for_user,
     upsert_paper,
 )
-from app.modules.scrape.sources.arxiv_source import PaperPayload
+from app.modules.scrape.sources.payload import PaperPayload
+
+
+def _fake_sources(payloads):
+    """A single fake source module exposing search_for_keywords."""
+    fake = SimpleNamespace(
+        SOURCE_NAME="fake",
+        search_for_keywords=lambda keywords, *, max_results=25: payloads,
+    )
+    return lambda: {"fake": fake}
 
 
 def _payload(ext_id: str, *, title="A Title", keyword="transformer") -> PaperPayload:
@@ -101,7 +111,7 @@ def test_link_user_paper_dedupes(db, clean):
 
 
 def test_scrape_skips_when_no_keywords(db, clean):
-    result = scrape_arxiv_for_user(clean)
+    result = scrape_for_user(clean)
     assert result == {"hits": 0, "linked": 0, "reason": "no_keywords"}
 
 
@@ -113,18 +123,21 @@ def test_scrape_persists_and_links(db, clean, monkeypatch):
     db.session.add(UserKeyword(user_id=clean.id, keyword_id=kw.id))
     db.session.commit()
 
-    # Stub arXiv: two results
-    def fake_search(query, *, max_results=25):  # noqa: ARG001
-        return [
-            _payload("2401.10001", title="On transformer architectures for vision"),
-            _payload("2401.10002", title="A new optimizer"),
-        ]
+    # Stub the source registry: one fake source, two results
+    monkeypatch.setattr(
+        "app.modules.scrape.service.enabled_sources",
+        _fake_sources(
+            [
+                _payload("2401.10001", title="On transformer architectures for vision"),
+                _payload("2401.10002", title="A new optimizer"),
+            ]
+        ),
+    )
 
-    monkeypatch.setattr("app.modules.scrape.service.arxiv_search", fake_search)
-
-    result = scrape_arxiv_for_user(clean)
+    result = scrape_for_user(clean)
     assert result["hits"] == 2
     assert result["linked"] == 2
+    assert result["sources"] == {"fake": 2}
 
     rows = list_user_papers(clean)
     assert len(rows) == 2
@@ -142,17 +155,44 @@ def test_scrape_run_idempotent(db, clean, monkeypatch):
     db.session.add(UserKeyword(user_id=clean.id, keyword_id=kw.id))
     db.session.commit()
 
-    def fake_search(query, *, max_results=25):  # noqa: ARG001
-        return [_payload("2401.55555", title="An RL paper")]
+    monkeypatch.setattr(
+        "app.modules.scrape.service.enabled_sources",
+        _fake_sources([_payload("2401.55555", title="An RL paper")]),
+    )
 
-    monkeypatch.setattr("app.modules.scrape.service.arxiv_search", fake_search)
-
-    r1 = scrape_arxiv_for_user(clean)
-    r2 = scrape_arxiv_for_user(clean)
+    r1 = scrape_for_user(clean)
+    r2 = scrape_for_user(clean)
     assert r1["linked"] == 1
     assert r2["linked"] == 0  # no new links second time around
     assert Paper.query.count() == 1
     assert UserPaper.query.count() == 1
+
+
+def test_scrape_isolates_failing_source(db, clean, monkeypatch):
+    """One source raising must not kill the run — the healthy source still
+    lands and the failed one is marked with -1 in the summary."""
+    kw = Keyword(value="rl")
+    db.session.add(kw)
+    db.session.commit()
+    db.session.add(UserKeyword(user_id=clean.id, keyword_id=kw.id))
+    db.session.commit()
+
+    def _boom(keywords, *, max_results=25):
+        raise RuntimeError("rate limited")
+
+    broken = SimpleNamespace(SOURCE_NAME="broken", search_for_keywords=_boom)
+    healthy = SimpleNamespace(
+        SOURCE_NAME="healthy",
+        search_for_keywords=lambda keywords, *, max_results=25: [_payload("2401.88888")],
+    )
+    monkeypatch.setattr(
+        "app.modules.scrape.service.enabled_sources",
+        lambda: {"broken": broken, "healthy": healthy},
+    )
+
+    result = scrape_for_user(clean)
+    assert result["linked"] == 1
+    assert result["sources"] == {"broken": -1, "healthy": 1}
 
 
 def test_celery_task_through_eager(db, clean, monkeypatch):
@@ -166,8 +206,8 @@ def test_celery_task_through_eager(db, clean, monkeypatch):
     db.session.commit()
 
     monkeypatch.setattr(
-        "app.modules.scrape.service.arxiv_search",
-        lambda q, *, max_results=25: [_payload("2401.77777")],
+        "app.modules.scrape.service.enabled_sources",
+        _fake_sources([_payload("2401.77777")]),
     )
     result = run_for_user.delay(clean.id).get()
     assert result["linked"] == 1

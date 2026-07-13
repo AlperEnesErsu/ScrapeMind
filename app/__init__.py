@@ -167,6 +167,17 @@ def _register_context_processors(app: Flask) -> None:
             return {"menu_nodes": nodes, "current_user_permissions": perms}
         return {"menu_nodes": [], "current_user_permissions": frozenset()}
 
+    @app.context_processor
+    def inject_active_sources() -> dict:
+        """Expose the enabled scrape source names to templates (scraper widget)."""
+        try:
+            from app.modules.scrape.sources import enabled_sources
+
+            return {"active_sources": list(enabled_sources())}
+        except Exception:  # noqa: BLE001 — never let this break a page render
+            logger.exception("active_sources_load_failed")
+            return {"active_sources": []}
+
 
 def _register_blueprints(app: Flask) -> None:
     from app.api.v1 import api_v1_bp
