@@ -1946,6 +1946,13 @@ msgstr "PNG, JPG veya WEBP, en fazla 2 MB. Kare olarak kırpılır."
 msgid "or paste an image URL"
 msgstr "veya bir görsel bağlantısı yapıştırın"
 
+#, python-format
+msgid "Retention: %(days)s days"
+msgstr "Saklama süresi: %(days)s gün"
+
+msgid "Older entries are purged automatically by the nightly retention task."
+msgstr "Daha eski kayıtlar gecelik saklama görevi tarafından otomatik silinir."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

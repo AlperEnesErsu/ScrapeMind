@@ -29,3 +29,13 @@ def heartbeat(self) -> dict:
     now = datetime.now(UTC).isoformat()
     logger.info("task_heartbeat", worker=self.request.hostname, at=now)
     return {"worker": self.request.hostname, "at": now}
+
+
+@celery_app.task(name="core.purge_audit_logs")
+def purge_audit_logs() -> dict:
+    """Nightly retention sweep — drop audit rows older than
+    AUDIT_RETENTION_DAYS (0 disables). See app/core/audit/retention.py."""
+    from app.core.audit.retention import purge_expired
+
+    deleted = purge_expired()
+    return {"deleted": deleted}

@@ -18,4 +18,10 @@ BEAT_SCHEDULE = {
         "task": "scrape.run_for_all_users",
         "schedule": crontab(hour=3, minute=15),
     },
+    # Audit retention sweep — after the nightly scrape so the two never
+    # contend. AUDIT_RETENTION_DAYS=0 turns the sweep into a no-op.
+    "audit-purge-nightly": {
+        "task": "core.purge_audit_logs",
+        "schedule": crontab(hour=4, minute=0),
+    },
 }

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, current_app, render_template, request
 from flask_login import login_required
 from sqlalchemy import distinct
 
@@ -67,6 +67,7 @@ def log_list():
         actions=actions,
         entity_types=entity_types,
         users=users,
+        retention_days=current_app.config.get("AUDIT_RETENTION_DAYS", 0),
         filters={
             "user_id": user_id,
             "action": action,

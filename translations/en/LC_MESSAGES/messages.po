@@ -1935,6 +1935,13 @@ msgstr "PNG, JPG or WEBP, up to 2 MB. Cropped to a square."
 msgid "or paste an image URL"
 msgstr "or paste an image URL"
 
+#, python-format
+msgid "Retention: %(days)s days"
+msgstr "Retention: %(days)s days"
+
+msgid "Older entries are purged automatically by the nightly retention task."
+msgstr "Older entries are purged automatically by the nightly retention task."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
