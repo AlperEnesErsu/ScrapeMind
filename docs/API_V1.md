@@ -1,0 +1,106 @@
+# ScrapeMind API v1
+
+JSON API under `/api/v1`. Stateless **JWT bearer-token** auth (no session
+cookie, CSRF-exempt). Signed HS256 via Authlib.
+
+## Authentication
+
+Two token types share one signing key:
+
+| Token   | Lifetime (default) | Use                                              |
+|---------|--------------------|--------------------------------------------------|
+| access  | 15 min             | `Authorization: Bearer <token>` on every request |
+| refresh | 30 days            | Exchange at `/auth/refresh` for a new access token |
+
+There is **no server-side revocation list** in v1 — a refresh token is valid
+until it expires. Deactivating or deleting a user is still honoured: every
+request re-loads the user and rejects inactive/deleted accounts.
+
+### `POST /api/v1/auth/token`
+
+Password grant. Body (JSON or form):
+
+```json
+{ "username": "alice", "password": "…", "otp_code": "123456" }
+```
+
+`otp_code` is **required only if the account has 2FA enabled** (authenticator
+code or a one-shot recovery code). `username` accepts username or email.
+
+`200` →
+```json
+{
+  "token_type": "Bearer",
+  "access_token": "…",
+  "refresh_token": "…",
+  "expires_in": 900
+}
+```
+
+Failure codes: `422 missing_credentials`, `401 invalid_credentials`,
+`401 otp_required`, `401 invalid_otp`. Rate-limited to 10/min.
+Brute-force lockout is shared with the web login (5 failures → 15-min lock).
+
+### `POST /api/v1/auth/refresh`
+
+Body: `{ "refresh_token": "…" }` → `200 { "token_type", "access_token", "expires_in" }`.
+Failure: `422 missing_token`, `401 invalid_token`, `401 user_inactive`.
+Rate-limited to 30/min.
+
+## Resources
+
+All require a valid access token unless noted.
+
+| Method & path               | Description                                        |
+|-----------------------------|----------------------------------------------------|
+| `GET /api/v1/health`        | Liveness probe. **No auth.** `{ "status": "ok" }`  |
+| `GET /api/v1/me`            | The authenticated user.                            |
+| `GET /api/v1/papers`        | Global paper catalog, newest first. Paginated.     |
+| `GET /api/v1/papers/<id>`   | A single paper, or `404 not_found`.                |
+| `GET /api/v1/me/papers`     | Papers surfaced to the caller (excludes dismissed).|
+
+### Pagination
+
+List endpoints accept `?page=` (default 1) and `?per_page=` (default 20, max
+100) and return:
+
+```json
+{
+  "data": [ … ],
+  "pagination": { "page": 1, "per_page": 20, "total": 46, "pages": 3 }
+}
+```
+
+## Error format
+
+Every error is:
+
+```json
+{ "error": { "code": "machine_readable_code", "message": "Human text." } }
+```
+
+Common codes: `authorization_required`, `invalid_token`, `user_inactive`,
+`not_found`, `method_not_allowed`, `forbidden`, `server_error`.
+
+## Configuration
+
+| Env var           | Default      | Meaning                                        |
+|-------------------|--------------|------------------------------------------------|
+| `JWT_SECRET_KEY`  | `SECRET_KEY` | Signing key. Falls back to the session key.    |
+| `JWT_ISSUER`      | `scrapemind` | `iss` claim, validated on decode.              |
+| `JWT_ACCESS_TTL`  | `900`        | Access token lifetime, seconds.                |
+| `JWT_REFRESH_TTL` | `2592000`    | Refresh token lifetime, seconds (30 days).     |
+
+Set `JWT_SECRET_KEY` separately from `SECRET_KEY` to rotate API tokens without
+invalidating web sessions.
+
+## Example
+
+```bash
+TOKEN=$(curl -s localhost:5050/api/v1/auth/token \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","password":"secret"}' | jq -r .access_token)
+
+curl -s localhost:5050/api/v1/me -H "Authorization: Bearer $TOKEN"
+curl -s "localhost:5050/api/v1/papers?per_page=5" -H "Authorization: Bearer $TOKEN"
+```

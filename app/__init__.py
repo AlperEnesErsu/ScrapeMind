@@ -169,6 +169,7 @@ def _register_context_processors(app: Flask) -> None:
 
 
 def _register_blueprints(app: Flask) -> None:
+    from app.api.v1 import api_v1_bp
     from app.core.audit.routes import audit_bp
     from app.core.auth import auth_bp
     from app.core.menu.routes import menu_bp
@@ -195,18 +196,42 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(search_bp, url_prefix="/")
     app.register_blueprint(dashboard_bp, url_prefix="/")
 
+    # JSON API — token auth, so exempt from the session-cookie CSRF guard.
+    app.register_blueprint(api_v1_bp, url_prefix="/api/v1")
+    csrf.exempt(api_v1_bp)
+
 
 def _register_error_handlers(app: Flask) -> None:
-    from flask import render_template
+    from flask import jsonify, render_template, request
+
+    def _wants_json() -> bool:
+        return request.path.startswith("/api/")
 
     @app.errorhandler(403)
     def forbidden(e):
+        if _wants_json():
+            return jsonify({"error": {"code": "forbidden", "message": "Forbidden."}}), 403
         return render_template("errors/403.html"), 403
 
     @app.errorhandler(404)
     def not_found(e):
+        if _wants_json():
+            return jsonify({"error": {"code": "not_found", "message": "Resource not found."}}), 404
         return render_template("errors/404.html"), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        if _wants_json():
+            return (
+                jsonify(
+                    {"error": {"code": "method_not_allowed", "message": "Method not allowed."}}
+                ),
+                405,
+            )
+        return render_template("errors/404.html"), 405
 
     @app.errorhandler(500)
     def server_error(e):
+        if _wants_json():
+            return jsonify({"error": {"code": "server_error", "message": "Internal error."}}), 500
         return render_template("errors/500.html"), 500

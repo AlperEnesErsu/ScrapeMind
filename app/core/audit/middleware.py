@@ -13,9 +13,15 @@ def log_action(
     entity_type: str | None = None,
     entity_id: str | None = None,
     changes: dict | None = None,
+    user_id: int | None = None,
 ) -> None:
-    """Write a structured audit entry. Safe to call outside request context."""
-    user_id = current_user.id if current_user.is_authenticated else None
+    """Write a structured audit entry. Safe to call outside request context.
+
+    `user_id` overrides the actor — pass it for token-authenticated API calls
+    where flask-login's current_user is anonymous. Falls back to current_user.
+    """
+    if user_id is None:
+        user_id = current_user.id if current_user.is_authenticated else None
     entry = AuditLog(
         user_id=user_id,
         action=action,
