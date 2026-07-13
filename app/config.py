@@ -68,6 +68,16 @@ class BaseConfig:
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
     ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
+    # API v1 — JWT bearer auth for the JSON API under /api/v1.
+    # JWT_SECRET_KEY is resolved at runtime with a fallback to SECRET_KEY (see
+    # app/api/v1/tokens.py), so leaving it empty still works out of the box;
+    # set it to rotate API tokens independently of the session cookie key.
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "")
+    JWT_ALGORITHM = "HS256"
+    JWT_ISSUER = os.getenv("JWT_ISSUER", "scrapemind")
+    JWT_ACCESS_TTL = int(os.getenv("JWT_ACCESS_TTL", "900"))  # access token: 15 min
+    JWT_REFRESH_TTL = int(os.getenv("JWT_REFRESH_TTL", "2592000"))  # refresh token: 30 days
+
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
@@ -97,6 +107,9 @@ class TestingConfig(BaseConfig):
     # Run Celery tasks inline so tests don't need a worker process.
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
+    # Disable rate limiting in tests — otherwise repeated hits to limited
+    # endpoints (e.g. /api/v1/auth/token) accumulate across tests and 429.
+    RATELIMIT_ENABLED = False
 
 
 _config_map = {
