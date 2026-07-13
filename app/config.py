@@ -68,6 +68,10 @@ class BaseConfig:
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
     ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
+    # Audit log retention — rows older than this many days are purged by the
+    # nightly `core.purge_audit_logs` task. 0 disables purging (keep forever).
+    AUDIT_RETENTION_DAYS = int(os.getenv("AUDIT_RETENTION_DAYS", "180"))
+
     # API v1 — JWT bearer auth for the JSON API under /api/v1.
     # JWT_SECRET_KEY is resolved at runtime with a fallback to SECRET_KEY (see
     # app/api/v1/tokens.py), so leaving it empty still works out of the box;
