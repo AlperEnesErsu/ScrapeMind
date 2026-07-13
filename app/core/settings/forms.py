@@ -1,7 +1,11 @@
 from flask_babel import lazy_gettext as _l
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField, FileSize
 from wtforms import PasswordField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
+
+# Keep in sync with avatar_service.ALLOWED_EXTENSIONS.
+_AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
 
 SUPPORTED_LOCALES = [("tr", "Türkçe"), ("en", "English")]
 COMMON_TIMEZONES = [
@@ -18,6 +22,17 @@ THEMES = [("light", _l("Light")), ("dark", _l("Dark"))]
 
 class PersonalInfoForm(FlaskForm):
     full_name = StringField(_l("Full Name"), validators=[DataRequired(), Length(min=2, max=128)])
+    avatar_file = FileField(
+        _l("Upload avatar"),
+        validators=[
+            Optional(),
+            FileAllowed(
+                ["png", "jpg", "jpeg", "webp"],
+                _l("Only PNG, JPG or WEBP images are allowed."),
+            ),
+            FileSize(max_size=_AVATAR_MAX_BYTES, message=_l("Image must be 2 MB or smaller.")),
+        ],
+    )
     avatar_url = StringField(_l("Avatar URL"), validators=[Optional(), Length(max=512)])
     submit = SubmitField(_l("Save"))
 

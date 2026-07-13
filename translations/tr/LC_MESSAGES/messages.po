@@ -1919,6 +1919,33 @@ msgstr "Kopyala"
 msgid "Copied"
 msgstr "Kopyalandı"
 
+msgid "Upload avatar"
+msgstr "Avatar yükle"
+
+msgid "Only PNG, JPG or WEBP images are allowed."
+msgstr "Yalnızca PNG, JPG veya WEBP görselleri kabul edilir."
+
+msgid "Image must be 2 MB or smaller."
+msgstr "Görsel en fazla 2 MB olmalıdır."
+
+msgid "That file is not a valid image."
+msgstr "Bu dosya geçerli bir görsel değil."
+
+msgid "Could not save the image. Try again."
+msgstr "Görsel kaydedilemedi. Tekrar deneyin."
+
+msgid "Avatar"
+msgstr "Avatar"
+
+msgid "Current avatar"
+msgstr "Mevcut avatar"
+
+msgid "PNG, JPG or WEBP, up to 2 MB. Cropped to a square."
+msgstr "PNG, JPG veya WEBP, en fazla 2 MB. Kare olarak kırpılır."
+
+msgid "or paste an image URL"
+msgstr "veya bir görsel bağlantısı yapıştırın"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

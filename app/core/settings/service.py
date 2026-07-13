@@ -52,7 +52,10 @@ def validate_url_safety(url: str | None) -> tuple[bool, str | None]:
 
 
 def update_personal_info(user: User, full_name: str, avatar_url: str | None) -> None:
-    if avatar_url:
+    # A locally-uploaded avatar is a same-site relative path we generated
+    # ourselves — it must skip the SSRF check (which only makes sense for
+    # user-supplied external URLs).
+    if avatar_url and not avatar_url.startswith("/"):
         ok, err = validate_url_safety(avatar_url)
         if not ok:
             raise ValueError(err)

@@ -1908,6 +1908,33 @@ msgstr "Copy"
 msgid "Copied"
 msgstr "Copied"
 
+msgid "Upload avatar"
+msgstr "Upload avatar"
+
+msgid "Only PNG, JPG or WEBP images are allowed."
+msgstr "Only PNG, JPG or WEBP images are allowed."
+
+msgid "Image must be 2 MB or smaller."
+msgstr "Image must be 2 MB or smaller."
+
+msgid "That file is not a valid image."
+msgstr "That file is not a valid image."
+
+msgid "Could not save the image. Try again."
+msgstr "Could not save the image. Try again."
+
+msgid "Avatar"
+msgstr "Avatar"
+
+msgid "Current avatar"
+msgstr "Current avatar"
+
+msgid "PNG, JPG or WEBP, up to 2 MB. Cropped to a square."
+msgstr "PNG, JPG or WEBP, up to 2 MB. Cropped to a square."
+
+msgid "or paste an image URL"
+msgstr "or paste an image URL"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
