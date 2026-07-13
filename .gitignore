@@ -31,3 +31,6 @@ translations/messages.pot
 *.db
 celerybeat-schedule*
 /messages.pot
+
+# User-uploaded avatars (served from static, not version-controlled)
+app/core/static/uploads/

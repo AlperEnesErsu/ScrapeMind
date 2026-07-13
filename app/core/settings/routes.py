@@ -195,7 +195,28 @@ def profile_tab(tab: str):
 def submit_personal():
     form = PersonalInfoForm()
     if form.validate_on_submit():
-        update_personal_info(current_user, form.full_name.data, form.avatar_url.data)
+        from app.core.settings.avatar_service import (
+            delete_avatar_file,
+            is_local_avatar,
+            save_avatar,
+        )
+
+        # An uploaded file wins over the URL field — we re-encode it and point
+        # avatar_url at the served copy.
+        old_avatar = current_user.avatar_url
+        avatar_url = form.avatar_url.data
+        upload = form.avatar_file.data
+        if upload and getattr(upload, "filename", ""):
+            rel_url, err = save_avatar(current_user, upload)
+            if err:
+                return _render_tab("personal", form=form, flash_msg=_(err), flash_kind="danger")
+            avatar_url = rel_url
+
+        update_personal_info(current_user, form.full_name.data, avatar_url)
+        # If the user replaced a locally-uploaded avatar with an external URL
+        # (or cleared it), the old file on disk is now orphaned — drop it.
+        if is_local_avatar(old_avatar) and not is_local_avatar(avatar_url):
+            delete_avatar_file(current_user)
         log_action("user.update_personal", entity_type="user", entity_id=current_user.id)
         return _render_tab(
             "personal", flash_msg=_("Profile updated."), flash_kind="success", **_personal_ctx()

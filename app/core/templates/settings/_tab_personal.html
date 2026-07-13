@@ -1,16 +1,45 @@
 {% include 'settings/_flash_partial.html' %}
 <h6 class="text-muted mb-3">{{ _('Personal Info') }}</h6>
-<form hx-post="{{ url_for('settings.submit_personal') }}" hx-target="#tab-content" hx-swap="innerHTML">
+{# hx-encoding is required for HTMX to send the file as multipart/form-data. #}
+<form hx-post="{{ url_for('settings.submit_personal') }}" hx-target="#tab-content"
+      hx-swap="innerHTML" hx-encoding="multipart/form-data">
   {{ form.csrf_token }}
+
+  <div class="mb-3 d-flex align-items-center gap-3">
+    {% if current_user.avatar_url %}
+      <img src="{{ current_user.avatar_url }}" alt="{{ _('Avatar') }}"
+           class="rounded-circle border" width="64" height="64"
+           style="object-fit: cover;">
+    {% else %}
+      <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center"
+           style="width:64px;height:64px;">
+        <i class="bi bi-person fs-3 text-secondary"></i>
+      </div>
+    {% endif %}
+    <div class="small text-muted">{{ _('Current avatar') }}</div>
+  </div>
+
   <div class="mb-3">
     <label class="form-label">{{ form.full_name.label.text }}</label>
     {{ form.full_name(class="form-control", required=True) }}
     {% for err in form.full_name.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
   </div>
+
   <div class="mb-3">
-    <label class="form-label">{{ form.avatar_url.label.text }}</label>
+    <label class="form-label">{{ form.avatar_file.label.text }}</label>
+    {{ form.avatar_file(class="form-control" + (" is-invalid" if form.avatar_file.errors else ""),
+                        accept="image/png,image/jpeg,image/webp") }}
+    <div class="form-text">{{ _('PNG, JPG or WEBP, up to 2 MB. Cropped to a square.') }}</div>
+    {% for err in form.avatar_file.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">{{ form.avatar_url.label.text }}
+      <span class="text-muted small">({{ _('or paste an image URL') }})</span>
+    </label>
     {{ form.avatar_url(class="form-control" + (" is-invalid" if form.avatar_url.errors else ""), placeholder="https://...") }}
     {% for err in form.avatar_url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
   </div>
+
   <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
 </form>
