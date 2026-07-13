@@ -177,8 +177,8 @@ ScrapeMind/
 
 - ✅ **Faz 0** — Repo + Docker + pyproject + pre-commit + CI iskeleti
 - ✅ **Faz 1** — Auth (Local+OAuth), Register/Reset, RBAC, Menu, Profile, Audit, i18n (TR/EN), UI shell
-- ⏳ **Faz 2** — Celery + Redis, **ScrapeMind iş modülleri** (Scrapy/Playwright/LLM), 2FA, SMTP, API v1 (JWT)
-- 🔮 **Faz 3** — LDAP, JWT API auth, Audit partition, Redis cache, Sentry, Prometheus
+- ⏳ **Faz 2** *(son düzlük)* — ✅ Celery + Redis · ✅ arXiv scraping + Discover/Library UI · ✅ AI analiz & TR çeviri (Claude API) · ✅ 2FA (TOTP) · ✅ SMTP · ✅ Avatar upload · ✅ [API v1 (JWT)](docs/API_V1.md) · ✅ Audit retention · ⏳ ek scraping source'ları (Semantic Scholar, PubMed)
+- 🔮 **Faz 3** — LDAP, API yazma endpoint'leri + token revocation, Audit partition, Redis cache, Sentry, Prometheus
 
 Detaylı plan: [PROJECT.md](PROJECT.md)
 
