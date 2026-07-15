@@ -11,4 +11,4 @@ api_v1_bp = Blueprint("api_v1", __name__)
 # Import route modules for their side effect of registering handlers on the
 # blueprint. Kept at the bottom to avoid a circular import (the modules import
 # api_v1_bp from here).
-from app.api.v1 import auth, routes  # noqa: E402,F401
+from app.api.v1 import auth, routes, writes  # noqa: E402,F401

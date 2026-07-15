@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any
 
 from app.core.models.user import User
-from app.modules.scrape.models import Paper, UserPaper
+from app.modules.scrape.models import Paper, PaperNote, UserPaper
 
 
 def _iso(dt: datetime | None) -> str | None:
@@ -57,6 +57,18 @@ def user_paper_to_dict(up: UserPaper) -> dict[str, Any]:
             "read_later": up.read_later,
             "matched_keyword": up.matched_keyword,
             "seen_at": _iso(up.seen_at),
+            "dismissed_at": _iso(up.dismissed_at),
         }
     )
     return data
+
+
+def note_to_dict(note: PaperNote) -> dict[str, Any]:
+    return {
+        "id": note.id,
+        "user_paper_id": note.user_paper_id,
+        "body": note.body,
+        "tag": note.tag,
+        "created_at": _iso(note.created_at),
+        "updated_at": _iso(note.updated_at),
+    }

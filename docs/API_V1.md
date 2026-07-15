@@ -95,6 +95,41 @@ All require a valid access token unless noted.
 | `GET /api/v1/papers/<id>`   | A single paper, or `404 not_found`.                |
 | `GET /api/v1/me/papers`     | Papers surfaced to the caller (excludes dismissed).|
 
+## Writes
+
+`<id>` below is a **`user_paper_id`** (from `GET /me/papers`), not a paper id.
+
+These are **idempotent by design**: the web UI toggles on click, but an API
+client that retries must not flip state back — so each flag is `PUT` (set) /
+`DELETE` (unset) rather than a single toggle endpoint.
+
+| Method & path                              | Description                          |
+|--------------------------------------------|--------------------------------------|
+| `PUT`/`DELETE` `/me/papers/<id>/favorite`   | Star / unstar.                       |
+| `PUT`/`DELETE` `/me/papers/<id>/read-later` | Bookmark / un-bookmark.              |
+| `PUT`/`DELETE` `/me/papers/<id>/dismissed`  | Hide from feed / restore.            |
+| `POST /me/papers/<id>/seen`                 | Stamp `seen_at` (only the first time).|
+| `GET /me/papers/<id>/notes`                 | Notes on that paper.                 |
+| `POST /me/papers/<id>/notes`                | Create a note → `201`.               |
+| `PATCH /notes/<note_id>`                    | Update a note (omitted fields kept). |
+| `DELETE /notes/<note_id>`                   | Delete → `{ "deleted": true }`.      |
+
+Flag endpoints return the updated paper: `{ "data": { …, "is_favorite": true } }`.
+
+### Notes
+
+`POST` body: `{ "body": "…", "tag": "soru" }`. `body` is required and must not
+be blank (`422 empty_body`). `tag` is optional; allowed values are `deney`,
+`soru`, `sonuç`, `okuma` — **an unrecognised tag is dropped, not rejected**,
+and the response echoes what was actually stored.
+
+`PATCH` follows PATCH semantics: omit a field to keep its current value.
+
+### Ownership
+
+Acting on another user's paper or note returns **`404 not_found`**, not `403` —
+the API never confirms that an id it doesn't own exists.
+
 ### Pagination
 
 List endpoints accept `?page=` (default 1) and `?per_page=` (default 20, max
@@ -116,7 +151,7 @@ Every error is:
 ```
 
 Common codes: `authorization_required`, `invalid_token`, `token_revoked`,
-`user_inactive`, `not_found`, `method_not_allowed`, `forbidden`,
+`user_inactive`, `not_found`, `empty_body`, `method_not_allowed`, `forbidden`,
 `server_error`.
 
 ## Configuration

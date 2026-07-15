@@ -76,7 +76,7 @@ pybabel compile -d translations
 
 ## Bilinen Kısıtlar
 - Email gönderimi `MAIL_SUPPRESS_SEND=true` ise dev modu — link `flash` ile gösteriliyor
-- API v1 salt-okunur (auth + me/papers endpoint'leri); yazma endpoint'leri Faz 3'te bekliyor
+- API v1: auth (token/refresh/logout) + okuma + yazma (favorite, read-later, dismiss, notlar) — bkz. `docs/API_V1.md`
 - Scraping source'u yalnızca arXiv; Semantic Scholar/PubMed bekliyor (#8)
 
 ## Açık Kaynak Kuralları

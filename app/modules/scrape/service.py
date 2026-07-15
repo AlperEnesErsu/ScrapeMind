@@ -211,19 +211,31 @@ def get_user_paper(user: User, user_paper_id: int) -> UserPaper | None:
 # ----------------------------------------------------------------------------
 
 
-def toggle_favorite(link: UserPaper) -> bool:
-    """Flip the favorite flag. Returns the new value so the caller can pick
-    the right flash/UI state without re-querying."""
-    link.is_favorite = not link.is_favorite
+def set_favorite(link: UserPaper, value: bool) -> bool:
+    """Set the favorite flag to an explicit value. Idempotent — this is the
+    primitive the API wants, since a retried request must not flip state
+    back. Returns the new value."""
+    link.is_favorite = bool(value)
     db.session.commit()
     return link.is_favorite
 
 
-def toggle_read_later(link: UserPaper) -> bool:
-    """Flip the read later (bookmark) flag."""
-    link.read_later = not link.read_later
+def toggle_favorite(link: UserPaper) -> bool:
+    """Flip the favorite flag. Returns the new value so the caller can pick
+    the right flash/UI state without re-querying."""
+    return set_favorite(link, not link.is_favorite)
+
+
+def set_read_later(link: UserPaper, value: bool) -> bool:
+    """Set the read-later flag explicitly. See set_favorite."""
+    link.read_later = bool(value)
     db.session.commit()
     return link.read_later
+
+
+def toggle_read_later(link: UserPaper) -> bool:
+    """Flip the read later (bookmark) flag."""
+    return set_read_later(link, not link.read_later)
 
 
 def set_dismissed(link: UserPaper, dismissed: bool) -> None:
