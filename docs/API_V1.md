@@ -10,11 +10,30 @@ Two token types share one signing key:
 | Token   | Lifetime (default) | Use                                              |
 |---------|--------------------|--------------------------------------------------|
 | access  | 15 min             | `Authorization: Bearer <token>` on every request |
-| refresh | 30 days            | Exchange at `/auth/refresh` for a new access token |
+| refresh | 30 days            | Exchange at `/auth/refresh` for a fresh token pair |
 
-There is **no server-side revocation list** in v1 — a refresh token is valid
-until it expires. Deactivating or deleting a user is still honoured: every
-request re-loads the user and rejects inactive/deleted accounts.
+### Revocation
+
+Revocation is split by token type so the hot path stays cheap:
+
+- **Access tokens** carry a `ver` claim mirroring the user's `token_version`.
+  The auth guard already loads the user, so the check costs no extra query.
+  Bumping `token_version` retires every outstanding token at once — this is
+  what a **password change** and a **password reset** do.
+- **Refresh tokens** carry a unique `jti` checked against a denylist. That
+  lookup only happens on `/auth/refresh` and `/auth/logout`, never on a normal
+  API call.
+
+**Refresh tokens rotate on every use**: `/auth/refresh` burns the token you
+present and returns a new one. A stolen refresh token is therefore usable only
+until the legitimate client next refreshes — whichever copy is used second is
+rejected as revoked.
+
+Deactivating or deleting a user is also honoured: every request re-loads the
+user and rejects inactive/deleted accounts.
+
+Denylist rows are dropped once the token would have expired anyway, by the
+nightly `core.purge_revoked_tokens` task.
 
 ### `POST /api/v1/auth/token`
 
@@ -43,9 +62,26 @@ Brute-force lockout is shared with the web login (5 failures → 15-min lock).
 
 ### `POST /api/v1/auth/refresh`
 
-Body: `{ "refresh_token": "…" }` → `200 { "token_type", "access_token", "expires_in" }`.
-Failure: `422 missing_token`, `401 invalid_token`, `401 user_inactive`.
-Rate-limited to 30/min.
+Body: `{ "refresh_token": "…" }` →
+`200 { "token_type", "access_token", "refresh_token", "expires_in" }`.
+
+Returns a **new refresh token** — the presented one is revoked (rotation).
+Store the new one; reusing the old one returns `401 token_revoked`.
+
+Failure: `422 missing_token`, `401 invalid_token`, `401 token_revoked`,
+`401 user_inactive`. Rate-limited to 30/min.
+
+### `POST /api/v1/auth/logout`
+
+Body: `{ "refresh_token": "…" }` → `200 { "revoked": true }`.
+
+Revokes that refresh token. **Idempotent**: an already-revoked, expired, or
+unparseable token still returns `{"revoked": true}` — the caller's goal holds
+either way, and reporting otherwise would leak token state. Access tokens
+issued from it stay valid until they expire (≤15 min); to kill those
+immediately, change the password.
+
+Failure: `422 missing_token`. Rate-limited to 30/min.
 
 ## Resources
 
@@ -79,8 +115,9 @@ Every error is:
 { "error": { "code": "machine_readable_code", "message": "Human text." } }
 ```
 
-Common codes: `authorization_required`, `invalid_token`, `user_inactive`,
-`not_found`, `method_not_allowed`, `forbidden`, `server_error`.
+Common codes: `authorization_required`, `invalid_token`, `token_revoked`,
+`user_inactive`, `not_found`, `method_not_allowed`, `forbidden`,
+`server_error`.
 
 ## Configuration
 

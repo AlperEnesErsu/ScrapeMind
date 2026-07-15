@@ -93,6 +93,9 @@ def change_password(
     if not LocalAuthStrategy.verify_password(current_password, user.password_hash):
         return False, "Current password is incorrect."
     user.password_hash = LocalAuthStrategy.hash_password(new_password)
+    # A password change must not leave API tokens minted under the old one
+    # alive — same reasoning as killing the web sessions.
+    user.bump_token_version()
     db.session.commit()
     return True, None
 

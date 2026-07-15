@@ -142,6 +142,7 @@ def auth_client(app, db):
         "user_settings",
         "oauth_accounts",
         "user_sessions",
+        "revoked_tokens",
     ):
         db.session.execute(text(f"DELETE FROM {tbl} WHERE user_id = :uid"), {"uid": uid})
     db.session.execute(text("DELETE FROM user_roles WHERE user_id = :uid"), {"uid": uid})

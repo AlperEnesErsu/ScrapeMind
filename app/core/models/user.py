@@ -36,6 +36,11 @@ class User(UserMixin, BaseModel):
     totp_enabled_at = db.Column(db.DateTime(timezone=True), nullable=True)
     totp_recovery_codes = db.Column(db.JSON, nullable=True)
 
+    # Bumped to invalidate every outstanding API token at once (password
+    # change, "sign out everywhere"). Access tokens carry it as the `ver`
+    # claim, so revocation costs no extra query on the hot path.
+    token_version = db.Column(db.Integer, nullable=False, default=0, server_default=db.text("0"))
+
     roles = db.relationship("Role", secondary=user_roles, lazy="select")
     oauth_accounts = db.relationship("OAuthAccount", back_populates="user", lazy="select")
     settings = db.relationship("UserSettings", back_populates="user", uselist=False, lazy="select")
@@ -59,3 +64,12 @@ class User(UserMixin, BaseModel):
     @property
     def is_totp_enabled(self) -> bool:
         return self.totp_enabled_at is not None and bool(self.totp_secret)
+
+    def bump_token_version(self) -> None:
+        """Retire every outstanding API token for this user.
+
+        Lives on the model (not in app/api) so core code — password change,
+        password reset — can invalidate tokens without importing the API
+        layer. Caller owns the commit.
+        """
+        self.token_version = (self.token_version or 0) + 1

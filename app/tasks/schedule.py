@@ -24,4 +24,9 @@ BEAT_SCHEDULE = {
         "task": "core.purge_audit_logs",
         "schedule": crontab(hour=4, minute=0),
     },
+    # Drop revoked-token rows whose JWT has expired anyway.
+    "revoked-tokens-purge-nightly": {
+        "task": "core.purge_revoked_tokens",
+        "schedule": crontab(hour=4, minute=15),
+    },
 }
