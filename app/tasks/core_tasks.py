@@ -39,3 +39,21 @@ def purge_audit_logs() -> dict:
 
     deleted = purge_expired()
     return {"deleted": deleted}
+
+
+@celery_app.task(name="core.purge_revoked_tokens")
+def purge_revoked_tokens() -> dict:
+    """Drop denylist rows whose token has expired anyway — past `exp` the
+    JWT fails validation on its own, so the row stops carrying weight."""
+    from datetime import UTC, datetime
+
+    from app.core.models.revoked_token import RevokedToken
+    from app.extensions import db
+
+    deleted = RevokedToken.query.filter(RevokedToken.expires_at < datetime.now(UTC)).delete(
+        synchronize_session=False
+    )
+    db.session.commit()
+    if deleted:
+        logger.info("revoked_tokens_purged", deleted=deleted)
+    return {"deleted": deleted}

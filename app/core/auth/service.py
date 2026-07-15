@@ -63,6 +63,9 @@ def reset_password(user: User, new_password: str) -> None:
     user.failed_login_count = 0
     user.is_locked = False
     user.locked_until = None
+    # Same reasoning as the session kill below: outstanding API tokens are
+    # another way back in, so a reset must retire them too.
+    user.bump_token_version()
     db.session.commit()
     # Kill every existing session for this user. A password reset is the
     # user's way of locking out whoever might currently be signed in (e.g.

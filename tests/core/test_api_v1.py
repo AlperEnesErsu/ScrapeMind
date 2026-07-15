@@ -29,6 +29,9 @@ def api_user(db):
     uid = u.id
     yield u
     db.session.rollback()
+    # FK children first — refresh rotation denylists the old token, so these
+    # rows exist even though the test never touched them directly.
+    db.session.execute(text("DELETE FROM revoked_tokens WHERE user_id = :uid"), {"uid": uid})
     db.session.execute(text("DELETE FROM audit_logs WHERE user_id = :uid"), {"uid": uid})
     db.session.query(User).filter_by(id=uid).delete()
     db.session.commit()

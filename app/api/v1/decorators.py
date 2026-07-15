@@ -37,6 +37,10 @@ def jwt_required(f):
         user = User.query.filter_by(id=uid, deleted_at=None).first()
         if user is None or not user.is_active:
             return error_response(401, "user_inactive", "User is inactive or no longer exists.")
+        # Bulk revocation: a bumped token_version retires every token issued
+        # before it. Free — the user row is already loaded.
+        if claims.get("ver", 0) != (user.token_version or 0):
+            return error_response(401, "token_revoked", "Token has been revoked.")
         g.api_user = user
         return f(*args, **kwargs)
 
