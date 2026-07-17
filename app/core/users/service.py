@@ -52,12 +52,15 @@ def update_user(
 
 
 def set_user_roles(user: User, role_ids: list[int]) -> None:
+    from app.core.rbac.service import invalidate_permission_cache
+
     user.roles = (
         Role.query.filter(Role.id.in_(role_ids), Role.deleted_at.is_(None)).all()
         if role_ids
         else []
     )
     db.session.commit()
+    invalidate_permission_cache()
 
 
 def lock_user(user: User) -> None:
