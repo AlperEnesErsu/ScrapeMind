@@ -72,6 +72,13 @@ class BaseConfig:
     # nightly `core.purge_audit_logs` task. 0 disables purging (keep forever).
     AUDIT_RETENTION_DAYS = int(os.getenv("AUDIT_RETENTION_DAYS", "180"))
 
+    # Redis cache for RBAC permission sets (see app/core/cache.py). Purely an
+    # optimisation: with CACHE_ENABLED=false, or Redis unreachable, everything
+    # reads through to Postgres.
+    REDIS_URL = _REDIS_URL
+    CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").lower() == "true"
+    CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))  # seconds
+
     # API v1 — JWT bearer auth for the JSON API under /api/v1.
     # JWT_SECRET_KEY is resolved at runtime with a fallback to SECRET_KEY (see
     # app/api/v1/tokens.py), so leaving it empty still works out of the box;
@@ -114,6 +121,10 @@ class TestingConfig(BaseConfig):
     # Disable rate limiting in tests — otherwise repeated hits to limited
     # endpoints (e.g. /api/v1/auth/token) accumulate across tests and 429.
     RATELIMIT_ENABLED = False
+    # CI has no Redis service, and a cache would make permission assertions
+    # depend on eviction timing. Cache behaviour is tested explicitly with a
+    # fake client instead (tests/core/test_cache.py).
+    CACHE_ENABLED = False
 
 
 _config_map = {
