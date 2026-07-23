@@ -110,6 +110,21 @@ travel over the TLS side.
 - Logs are JSON in production (structlog) — `docker compose … logs` pipes
   cleanly into any aggregator.
 
+### Sentry (optional)
+
+Set `SENTRY_DSN` in `.env.prod` and restart — web errors *and* Celery task
+failures land in the same project. `send_default_pii` is off by design:
+papers and notes are the user's private research data. Performance tracing
+stays off unless you raise `SENTRY_TRACES_SAMPLE_RATE`.
+
+### Prometheus (optional)
+
+Set `METRICS_ENABLED=true` and `/metrics` serves per-endpoint request
+counts + latency histograms. **The endpoint is unauthenticated** (Prometheus
+scrapers don't do login flows), so never proxy it through nginx — scrape it
+over the internal network only. With the prod compose, point Prometheus at
+`127.0.0.1:8000/metrics` from the VM itself.
+
 ## 5. Upgrades
 
 ```bash
