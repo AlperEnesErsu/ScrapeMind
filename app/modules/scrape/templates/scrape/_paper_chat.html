@@ -34,26 +34,62 @@
         </div>
       </div>
       
+      <!-- Preset Prompt Chips -->
+      <div class="chat-preset-chips d-flex flex-wrap gap-1 mb-2">
+        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: 0.75rem;"
+                onclick="setChatQuestion('Özeti 3 ana maddede özetler misin?')">
+          💡 {{ _('Summarize') }}
+        </button>
+        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: 0.75rem;"
+                onclick="setChatQuestion('Bu çalışmada kullanılan temel metodoloji ve yaklaşım nedir?')">
+          🔬 {{ _('Methodology') }}
+        </button>
+        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: 0.75rem;"
+                onclick="setChatQuestion('Makalenin elde ettiği temel bulgular ve sonuçlar nelerdir?')">
+          📊 {{ _('Main findings') }}
+        </button>
+        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: 0.75rem;"
+                onclick="setChatQuestion('Bu araştırmanın sınırlılıkları ve eksik yönleri nelerdir?')">
+          ⚠️ {{ _('Limitations') }}
+        </button>
+      </div>
+
       <form class="chat-input-area" 
             hx-post="{{ url_for('scrape.send_chat_message', user_paper_id=r.id) }}"
             hx-target="#chat-messages-box"
             hx-swap="beforeend"
             hx-indicator="#chat-loading"
-            hx-on::after-request="this.reset(); document.getElementById('chat-messages-box').scrollTop = document.getElementById('chat-messages-box').scrollHeight;">
+            hx-on::after-request="this.reset(); scrollChatToBottom();">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <textarea name="message" placeholder="{{ _('Ask a question...') }}" required 
-                  onkeydown="if(event.keyCode == 13 && !event.shiftKey) { event.preventDefault(); this.form.dispatchEvent(new Event('submit')); }"></textarea>
+        <textarea name="message" placeholder="{{ _('Ask a question...') }}" required autofocus
+                  onkeydown="if(event.keyCode == 13 && !event.shiftKey) { event.preventDefault(); this.form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true})); }"></textarea>
         <button type="submit" class="btn btn-primary btn-sm px-3">
           <i class="bi bi-send-fill"></i>
         </button>
       </form>
     </div>
     <script>
-      // Automatically scroll to bottom of chat
-      var box = document.getElementById('chat-messages-box');
-      if (box) {
-        box.scrollTop = box.scrollHeight;
+      function scrollChatToBottom() {
+        var box = document.getElementById('chat-messages-box');
+        if (box) {
+          box.scrollTop = box.scrollHeight;
+        }
       }
+
+      function setChatQuestion(text) {
+        var textarea = document.querySelector('.chat-input-area textarea[name="message"]');
+        if (textarea) {
+          textarea.value = text;
+          textarea.focus();
+          var form = textarea.closest('form');
+          if (form) {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        }
+      }
+
+      // Automatically scroll to bottom of chat on load
+      scrollChatToBottom();
     </script>
   {% endif %}
 </div>

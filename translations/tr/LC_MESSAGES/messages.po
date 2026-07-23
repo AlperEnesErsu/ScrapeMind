@@ -1956,6 +1956,42 @@ msgstr "Daha eski kayıtlar gecelik saklama görevi tarafından otomatik silinir
 msgid "Active sources:"
 msgstr "Aktif kaynaklar:"
 
+msgid "Activity Heatmap"
+msgstr "Aktivite Isı Haritası"
+
+msgid "Ask a question..."
+msgstr "Bir soru sor..."
+
+msgid "Clear"
+msgstr "Temizle"
+
+msgid "Main findings"
+msgstr "Temel bulgular"
+
+msgid "Methodology"
+msgstr "Metodoloji"
+
+msgid "Publications"
+msgstr "Yayınlar"
+
+msgid "Search papers, authors, topics…"
+msgstr "Makale, yazar, konu ara…"
+
+msgid "Show more"
+msgstr "Daha fazla göster"
+
+msgid "Summarize"
+msgstr "Özetle"
+
+msgid "Toggle search"
+msgstr "Aramayı aç/kapat"
+
+msgid "Topics"
+msgstr "Konular"
+
+msgid "activities"
+msgstr "aktivite"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

@@ -38,7 +38,14 @@
   </div>
 
   {% if r.paper.abstract %}
-  <p class="paper-card__abstract small text-muted mb-2">{{ r.paper.abstract }}</p>
+  <p class="paper-card__abstract small text-muted mb-1 text-truncate-3" id="abstract-{{ r.id }}">{{ r.paper.abstract }}</p>
+  {% if (r.paper.abstract | length) > 200 %}
+    <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-primary small mb-2"
+            style="font-size: 0.75rem;"
+            onclick="toggleAbstract('abstract-{{ r.id }}', this)">
+      {{ _('Show more') }}
+    </button>
+  {% endif %}
   {% endif %}
 
   <div class="paper-card__foot">

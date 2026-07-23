@@ -1945,6 +1945,42 @@ msgstr "Older entries are purged automatically by the nightly retention task."
 msgid "Active sources:"
 msgstr "Active sources:"
 
+msgid "Activity Heatmap"
+msgstr "Activity Heatmap"
+
+msgid "Ask a question..."
+msgstr "Ask a question..."
+
+msgid "Clear"
+msgstr "Clear"
+
+msgid "Main findings"
+msgstr "Main findings"
+
+msgid "Methodology"
+msgstr "Methodology"
+
+msgid "Publications"
+msgstr "Publications"
+
+msgid "Search papers, authors, topics…"
+msgstr "Search papers, authors, topics…"
+
+msgid "Show more"
+msgstr "Show more"
+
+msgid "Summarize"
+msgstr "Summarize"
+
+msgid "Toggle search"
+msgstr "Toggle search"
+
+msgid "Topics"
+msgstr "Topics"
+
+msgid "activities"
+msgstr "activities"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
