@@ -23,6 +23,7 @@ def create_app() -> Flask:
 
     _init_extensions(app)
     _init_logging(app)
+    _init_observability(app)
     _init_celery(app)
     _register_blueprints(app)
     _register_session_guard(app)
@@ -90,6 +91,13 @@ def _init_extensions(app: Flask) -> None:
     from app.core.i18n.utils import init_babel
 
     init_babel(app, babel)
+
+
+def _init_observability(app: Flask) -> None:
+    """Sentry + /metrics — both inert unless configured. See core/observability."""
+    from app.core.observability import init_observability
+
+    init_observability(app)
 
 
 def _init_celery(app: Flask) -> None:

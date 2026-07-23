@@ -11,6 +11,11 @@ Flask-Limiter==4.1.1
 # production image dies on startup.
 gunicorn==23.0.0
 
+# Observability — both are inert without config: Sentry needs SENTRY_DSN,
+# the /metrics endpoint needs METRICS_ENABLED=true.
+sentry-sdk[flask]==2.20.0
+prometheus-flask-exporter==0.23.1
+
 # Auth
 passlib[argon2]==1.7.4
 argon2-cffi==23.1.0
