@@ -130,6 +130,16 @@ MAIL_USE_SSL=false
 
 `MAIL_SUPPRESS_SEND=true` ile staging'de email göndermeyi geçici olarak kapatabilirsin (credential silmeden).
 
+## 🚢 Production Deploy
+
+Resmi hedef: **tek VM + Docker Compose + nginx/TLS**. Adım adım rehber, env
+checklist'i, yedekleme ve secret rotasyonu için [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+```bash
+cp .env.prod.example .env.prod   # doldur: SECRET_KEY, POSTGRES_PASSWORD, MAIL_*
+docker compose -f docker/docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
 ## 🧪 Test
 
 ```bash

@@ -12,7 +12,8 @@ Flask 3.1 · SQLAlchemy 2 · PostgreSQL 17 · Bootstrap 5 + HTMX · Flask-Babel 
 
 ## Veritabanı (yerel geliştirme)
 - Postgres + Redis: `docker compose -f docker/docker-compose.yml up -d db redis` (container'lar: `docker-db-1`, `docker-redis-1`)
-- Docker Desktop kararsız kapanırsa `docker-db-1` port mapping'ini kaybedebilir (`docker ps`'te `0.0.0.0:5432->5432` yerine sadece `5432/tcp` görünür). Çözüm: `docker rm -f docker-db-1 && docker compose -f docker/docker-compose.yml up -d db` (veri named volume'da, kaybolmaz)
+- **Bu makinede ScrapeMind DB 5433'te** — 5432'yi başka bir projenin Postgres'i (`aisigner_db`, ona dokunma) tutuyor. `docker/.env` içinde `SCRAPEMIND_DB_PORT=5433`; kökteki `.env`'de `DATABASE_URL` ve `TEST_DATABASE_URL` 5433'ü gösterir. `TEST_DATABASE_URL` şart: `create_app()` conftest override'ından önce TestingConfig default'uyla (5432) bağlanmaya kalkar.
+- Docker Desktop kararsız kapanırsa `docker-db-1` port mapping'ini kaybedebilir (`docker ps`'te mapping görünmez). Çözüm: `docker rm -f docker-db-1 && docker compose -f docker/docker-compose.yml up -d db` (veri named volume'da, kaybolmaz)
 - `.env.local` → `.env`'e kopyalanarak aktif edilir
 
 ## Kritik Mimari Kurallar
