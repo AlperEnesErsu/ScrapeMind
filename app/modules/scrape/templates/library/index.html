@@ -14,14 +14,23 @@
 <!-- Activity Heatmap Widget (U10) -->
 <div class="card shadow-sm border-0 mb-4 bg-body">
   <div class="card-body p-3">
-    <h6 class="fw-semibold mb-2 d-flex align-items-center gap-2" style="font-size: 0.9rem;">
-      <i class="bi bi-calendar3 text-primary"></i>{{ _('Activity Heatmap') }}
-    </h6>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="fw-semibold m-0 d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+        <i class="bi bi-calendar3 text-primary"></i>{{ _('Activity Heatmap') }}
+      </h6>
+      <div id="heatmap-filter-indicator" class="alert alert-info py-0 px-2 m-0 d-none align-items-center gap-2 small" style="font-size: 0.75rem;">
+        <span><i class="bi bi-funnel me-1"></i><strong id="heatmap-filter-date"></strong></span>
+        <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-info fw-bold" onclick="clearHeatmapDateFilter()">✕ {{ _('Clear') }}</button>
+      </div>
+    </div>
     <div class="heatmap-wrapper overflow-auto">
       <div class="heatmap-grid" style="grid-auto-flow: column; grid-template-rows: repeat(7, 10px); min-width: 700px;">
         {% for day in heatmap_days %}
-          <div class="heatmap-day" 
+          <div class="heatmap-day{% if day.date %} cursor-pointer{% endif %}" 
                data-level="{{ day.level }}" 
+               data-date="{{ day.date }}"
+               style="cursor: {% if day.date %}pointer{% else %}default{% endif %};"
+               {% if day.date %}onclick="filterByHeatmapDate('{{ day.date }}')"{% endif %}
                title="{% if day.date %}{{ day.date }}: {{ day.count }} {{ _('activities') }}{% endif %}"
                data-bs-toggle="tooltip">
           </div>
