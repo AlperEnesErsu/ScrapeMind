@@ -219,6 +219,9 @@ document.body.addEventListener('htmx:afterRequest', function(evt) {
         showToast('Favori durumu güncellendi', 'success');
       } else if (url.includes('/read-later/toggle')) {
         showToast('Sonra Oku listesi güncellendi', 'success');
+      } else if (url.includes('/undismiss')) {
+        // Must be checked BEFORE '/dismiss' — "undismiss" contains it.
+        showToast('Makale geri getirildi', 'success');
       } else if (url.includes('/dismiss')) {
         showToast('Makale gizlendi', 'warning');
       }

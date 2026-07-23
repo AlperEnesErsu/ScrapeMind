@@ -10,7 +10,10 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Host port is overridable so ScrapeMind can coexist with another local
+      # Postgres on 5432 (set SCRAPEMIND_DB_PORT in .env and match it in
+      # DATABASE_URL). Container side stays 5432.
+      - "${SCRAPEMIND_DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U scrapemind"]
       interval: 5s
