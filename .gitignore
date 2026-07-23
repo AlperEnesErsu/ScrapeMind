@@ -3,6 +3,7 @@ __pycache__/
 venv/
 .env
 .env.local
+.env.prod
 *.log
 logs/
 uploads/*
