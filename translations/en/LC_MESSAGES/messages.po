@@ -1981,6 +1981,46 @@ msgstr "Topics"
 msgid "activities"
 msgstr "activities"
 
+msgid "Manual triggers"
+msgstr "Manual triggers"
+
+msgid "Run all scrapes"
+msgstr "Run all scrapes"
+
+msgid "Run audit cleanup"
+msgstr "Run audit cleanup"
+
+msgid "Queue a scrape for every active user?"
+msgstr "Queue a scrape for every active user?"
+
+msgid "Purge audit logs past the retention window now?"
+msgstr "Purge audit logs past the retention window now?"
+
+msgid "See all notifications"
+msgstr "See all notifications"
+
+msgid "unread"
+msgstr "unread"
+
+msgid "Mark all as read"
+msgstr "Mark all as read"
+
+msgid "Scrape queued for all users."
+msgstr "Scrape queued for all users."
+
+msgid "Audit log cleanup queued."
+msgstr "Audit log cleanup queued."
+
+msgid "Unknown task."
+msgstr "Unknown task."
+
+msgid "Scrape results and system messages will appear here."
+msgstr "Scrape results and system messages will appear here."
+
+#, python-format
+msgid "Marked %(n)s notifications as read."
+msgstr "Marked %(n)s notifications as read."
+
 msgid "Export"
 msgstr "Export"
 

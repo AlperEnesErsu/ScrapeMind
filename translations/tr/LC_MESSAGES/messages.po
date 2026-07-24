@@ -1992,6 +1992,46 @@ msgstr "Konular"
 msgid "activities"
 msgstr "aktivite"
 
+msgid "Manual triggers"
+msgstr "Manuel tetikleyiciler"
+
+msgid "Run all scrapes"
+msgstr "Tüm Taramaları Çalıştır"
+
+msgid "Run audit cleanup"
+msgstr "Audit Temizliği Başlat"
+
+msgid "Queue a scrape for every active user?"
+msgstr "Her aktif kullanıcı için tarama kuyruğa alınsın mı?"
+
+msgid "Purge audit logs past the retention window now?"
+msgstr "Saklama süresini geçen audit kayıtları şimdi silinsin mi?"
+
+msgid "See all notifications"
+msgstr "Tüm bildirimleri gör"
+
+msgid "unread"
+msgstr "okunmamış"
+
+msgid "Mark all as read"
+msgstr "Tümünü okundu işaretle"
+
+msgid "Scrape queued for all users."
+msgstr "Tüm kullanıcılar için tarama kuyruğa alındı."
+
+msgid "Audit log cleanup queued."
+msgstr "Audit log temizliği kuyruğa alındı."
+
+msgid "Unknown task."
+msgstr "Bilinmeyen görev."
+
+msgid "Scrape results and system messages will appear here."
+msgstr "Tarama sonuçları ve sistem mesajları burada görünecek."
+
+#, python-format
+msgid "Marked %(n)s notifications as read."
+msgstr "%(n)s bildirim okundu olarak işaretlendi."
+
 msgid "Export"
 msgstr "Dışa Aktar"
 
