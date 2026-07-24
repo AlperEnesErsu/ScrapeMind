@@ -1,4 +1,5 @@
 from flask import render_template
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app.core.auth.decorators import permission_required
@@ -291,3 +292,44 @@ def list_notifications():
     db.session.commit()
 
     return render_template("core/_notifications_dropdown.html", notifications=notifications)
+
+
+@dashboard_bp.route("/notifications/all")
+@login_required
+def all_notifications():
+    """Full, paginated notification history — the dropdown only shows 10.
+
+    Opening the page does NOT mark everything read (unlike the dropdown); the
+    user marks read explicitly, so the unread badge survives a glance.
+    """
+    from flask import request
+
+    from app.core.models.notification import Notification
+
+    page = request.args.get("page", 1, type=int)
+    notifications = (
+        Notification.query.filter_by(user_id=current_user.id)
+        .order_by(Notification.created_at.desc())
+        .paginate(page=page, per_page=20, error_out=False)
+    )
+    unread = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+    return render_template(
+        "core/notifications_all.html", notifications=notifications, unread=unread
+    )
+
+
+@dashboard_bp.route("/notifications/read-all", methods=["POST"])
+@login_required
+def mark_all_notifications_read():
+    """Mark every notification for this user as read. Bulk UPDATE, no row load."""
+    from flask import flash, redirect, url_for
+
+    from app.core.models.notification import Notification
+    from app.extensions import db
+
+    updated = Notification.query.filter_by(user_id=current_user.id, is_read=False).update(
+        {Notification.is_read: True}, synchronize_session=False
+    )
+    db.session.commit()
+    flash(_("Marked %(n)s notifications as read.", n=updated), "success")
+    return redirect(url_for("dashboard.all_notifications"))
