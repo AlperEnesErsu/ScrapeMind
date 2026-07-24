@@ -2059,6 +2059,33 @@ msgstr ".bib indir"
 msgid "Close"
 msgstr "Kapat"
 
+msgid "Search library"
+msgstr "Kütüphanede ara"
+
+msgid "Back to library"
+msgstr "Kütüphaneye dön"
+
+msgid "Text"
+msgstr "Metin"
+
+msgid "Title, abstract, author, keyword…"
+msgstr "Başlık, özet, yazar, anahtar kelime…"
+
+msgid "Only papers with notes"
+msgstr "Yalnızca notu olan makaleler"
+
+msgid "results"
+msgstr "sonuç"
+
+msgid "No matching papers."
+msgstr "Eşleşen makale yok."
+
+msgid "Try a broader query or clear some filters."
+msgstr "Daha geniş bir sorgu dene veya bazı filtreleri temizle."
+
+msgid "Search"
+msgstr "Ara"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

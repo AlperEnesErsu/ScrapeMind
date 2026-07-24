@@ -160,6 +160,67 @@ def count_user_papers(user: User, view: str = "discover") -> int:
     return q.scalar() or 0
 
 
+def search_user_papers_query(
+    user: User,
+    *,
+    q: str | None = None,
+    source: str | None = None,
+    date_from=None,
+    date_to=None,
+    has_notes: bool = False,
+):
+    """Return a SQLAlchemy query for the user's papers matching the filters.
+
+    Returns a query (not a list) so the caller can `.paginate()`. Scoped to the
+    user and hides dismissed papers — search is over the live library. All
+    filters are ANDed; each is skipped when empty.
+    """
+    from sqlalchemy.orm import selectinload
+
+    query = (
+        UserPaper.query.filter(UserPaper.user_id == user.id, UserPaper.dismissed_at.is_(None))
+        .join(Paper)
+        .options(selectinload(UserPaper.notes))
+    )
+
+    q = (q or "").strip()
+    if q:
+        like = f"%{q.lower()}%"
+        query = query.filter(
+            db.or_(
+                db.func.lower(Paper.title).like(like),
+                db.func.lower(Paper.abstract).like(like),
+                db.func.lower(UserPaper.matched_keyword).like(like),
+                db.func.lower(db.cast(Paper.authors, db.String)).like(like),
+            )
+        )
+    if source:
+        query = query.filter(Paper.source == source)
+    if date_from is not None:
+        query = query.filter(Paper.published_at >= date_from)
+    if date_to is not None:
+        query = query.filter(Paper.published_at <= date_to)
+    if has_notes:
+        # Only papers the user has written at least one note on.
+        query = query.filter(UserPaper.notes.any())
+
+    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at))
+
+
+def distinct_user_sources(user: User) -> list[str]:
+    """The sources present in this user's library — powers the filter dropdown
+    so it never offers a source the user has no papers from."""
+    rows = (
+        db.session.query(Paper.source)
+        .join(UserPaper, UserPaper.paper_id == Paper.id)
+        .filter(UserPaper.user_id == user.id, UserPaper.dismissed_at.is_(None))
+        .distinct()
+        .order_by(Paper.source)
+        .all()
+    )
+    return [s for (s,) in rows]
+
+
 def to_bibtex(paper: Paper) -> str:
     """Render a paper as a BibTeX entry. arXiv → @misc, anything else → @article.
 

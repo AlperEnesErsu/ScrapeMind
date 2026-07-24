@@ -10,9 +10,13 @@
     {{ counts.favorites }} {{ _('favorites') }} · {{ counts.notes }} {{ _('notes') }}
   </span>
 
+  <a href="{{ url_for('library.search') }}" class="btn btn-sm btn-outline-secondary ms-auto">
+    <i class="bi bi-search me-1"></i>{{ _('Search') }}
+  </a>
+
   {# Bulk export — the slice follows the current tab where it maps, else all #}
   {% set export_view = 'favorites' if view == 'favorites' else ('read_later' if view == 'read_later' else 'all') %}
-  <div class="dropdown ms-auto">
+  <div class="dropdown">
     <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
             data-bs-toggle="dropdown" aria-expanded="false">
       <i class="bi bi-download me-1"></i>{{ _('Export') }}

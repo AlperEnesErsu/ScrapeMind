@@ -21,10 +21,12 @@ from app.modules.scrape.service import (
     build_timeline,
     count_all_notes,
     count_user_papers,
+    distinct_user_sources,
     list_all_notes,
     list_user_papers,
     papers_to_bibtex,
     papers_to_csv,
+    search_user_papers_query,
 )
 
 library_bp = Blueprint("library", __name__, template_folder="templates")
@@ -144,6 +146,58 @@ def index():
         ctx["rows"] = list_user_papers(current_user, limit=100, view="dismissed")
 
     return render_template("library/index.html", **ctx)
+
+
+def _parse_date(value: str | None):
+    """Parse a YYYY-MM-DD query param to a datetime, or None on empty/invalid."""
+    from datetime import datetime
+
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value.strip(), "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+@library_bp.route("/search")
+@login_required
+def search():
+    """Filtered, paginated search over the user's own library."""
+    from datetime import timedelta
+
+    q = (request.args.get("q") or "").strip()
+    source = (request.args.get("source") or "").strip() or None
+    has_notes = request.args.get("has_notes") == "1"
+    date_from = _parse_date(request.args.get("from"))
+    date_to = _parse_date(request.args.get("to"))
+    # Make the "to" date inclusive of the whole day.
+    if date_to is not None:
+        date_to = date_to + timedelta(days=1) - timedelta(seconds=1)
+    page = request.args.get("page", 1, type=int)
+
+    query = search_user_papers_query(
+        current_user,
+        q=q,
+        source=source,
+        date_from=date_from,
+        date_to=date_to,
+        has_notes=has_notes,
+    )
+    results = query.paginate(page=page, per_page=20, error_out=False)
+
+    return render_template(
+        "library/search.html",
+        results=results,
+        sources=distinct_user_sources(current_user),
+        filters={
+            "q": q,
+            "source": source or "",
+            "from": request.args.get("from", ""),
+            "to": request.args.get("to", ""),
+            "has_notes": has_notes,
+        },
+    )
 
 
 @library_bp.route("/export.<fmt>")
