@@ -91,27 +91,28 @@ document.addEventListener('click', async (e) => {
   }, 1500);
 });
 
-// BibTeX copy-to-clipboard — Cite button on paper detail.
+// Cite button → open the BibTeX modal, fetch the entry, show a live preview.
+// Copy is handled by the generic [data-copy-target] handler above; this just
+// populates the modal and wires the download link.
 document.getElementById('cite-btn')?.addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   const url = btn.dataset.citeUrl;
-  if (!url) return;
-  const original = btn.innerHTML;
+  const modalEl = document.getElementById('citeModal');
+  const body = document.getElementById('cite-modal-body');
+  if (!url || !modalEl || !body || typeof bootstrap === 'undefined') return;
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  body.textContent = '…';
+  const dl = document.getElementById('cite-modal-download');
+  if (dl) dl.href = url + (url.includes('?') ? '&' : '?') + 'download=1';
+  modal.show();
+
   try {
     const r = await fetch(url, { credentials: 'same-origin' });
-    const text = await r.text();
-    await navigator.clipboard.writeText(text);
-    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
-    btn.classList.add('btn-success');
-    btn.classList.remove('btn-outline-secondary');
+    body.textContent = await r.text();
   } catch (err) {
-    btn.innerHTML = '<i class="bi bi-x me-1"></i>Failed';
+    body.textContent = 'Failed to load citation.';
   }
-  setTimeout(() => {
-    btn.innerHTML = original;
-    btn.classList.remove('btn-success');
-    btn.classList.add('btn-outline-secondary');
-  }, 1500);
 });
 
 

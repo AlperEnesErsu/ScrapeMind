@@ -1981,6 +1981,33 @@ msgstr "Topics"
 msgid "activities"
 msgstr "activities"
 
+msgid "Export"
+msgstr "Export"
+
+msgid "BibTeX (Zotero, Mendeley, EndNote)"
+msgstr "BibTeX (Zotero, Mendeley, EndNote)"
+
+msgid "Current view"
+msgstr "Current view"
+
+msgid "Entire library"
+msgstr "Entire library"
+
+msgid "CSV (spreadsheet)"
+msgstr "CSV (spreadsheet)"
+
+msgid "BibTeX citation"
+msgstr "BibTeX citation"
+
+msgid "Loading…"
+msgstr "Loading…"
+
+msgid "Download .bib"
+msgstr "Download .bib"
+
+msgid "Close"
+msgstr "Close"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

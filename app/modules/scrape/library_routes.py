@@ -23,11 +23,23 @@ from app.modules.scrape.service import (
     count_user_papers,
     list_all_notes,
     list_user_papers,
+    papers_to_bibtex,
+    papers_to_csv,
 )
 
 library_bp = Blueprint("library", __name__, template_folder="templates")
 
 _VALID_VIEWS = {"timeline", "favorites", "read_later", "notes", "hidden"}
+
+# Which library views can be exported, mapped to the service-layer view name.
+# "all" is everything not dismissed — the whole personal library.
+_EXPORT_VIEWS = {
+    "all": "discover",
+    "favorites": "favorites",
+    "read_later": "read_later",
+}
+# Cap the export so a runaway library can't materialise unbounded rows.
+_EXPORT_LIMIT = 5000
 
 
 def _build_heatmap_data(user):
@@ -132,3 +144,37 @@ def index():
         ctx["rows"] = list_user_papers(current_user, limit=100, view="dismissed")
 
     return render_template("library/index.html", **ctx)
+
+
+@library_bp.route("/export.<fmt>")
+@login_required
+def export(fmt: str):
+    """Bulk-export the user's library as BibTeX (.bib) or CSV (.csv).
+
+    `?view=all|favorites|read_later` picks the slice (default: all). Only the
+    caller's own papers are ever exported — list_user_papers is user-scoped.
+    """
+    from flask import Response, abort
+
+    if fmt not in ("bib", "csv"):
+        abort(404)
+    view = request.args.get("view", "all")
+    service_view = _EXPORT_VIEWS.get(view)
+    if service_view is None:
+        abort(404)
+
+    rows = list_user_papers(current_user, limit=_EXPORT_LIMIT, view=service_view)
+
+    if fmt == "bib":
+        body = papers_to_bibtex(rows)
+        mimetype = "application/x-bibtex"
+    else:
+        body = papers_to_csv(rows)
+        mimetype = "text/csv"
+
+    filename = f"scrapemind-{view}.{fmt}"
+    return Response(
+        body,
+        mimetype=f"{mimetype}; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

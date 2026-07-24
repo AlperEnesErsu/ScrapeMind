@@ -1992,6 +1992,33 @@ msgstr "Konular"
 msgid "activities"
 msgstr "aktivite"
 
+msgid "Export"
+msgstr "Dışa Aktar"
+
+msgid "BibTeX (Zotero, Mendeley, EndNote)"
+msgstr "BibTeX (Zotero, Mendeley, EndNote)"
+
+msgid "Current view"
+msgstr "Bu görünüm"
+
+msgid "Entire library"
+msgstr "Tüm kütüphane"
+
+msgid "CSV (spreadsheet)"
+msgstr "CSV (elektronik tablo)"
+
+msgid "BibTeX citation"
+msgstr "BibTeX alıntısı"
+
+msgid "Loading…"
+msgstr "Yükleniyor…"
+
+msgid "Download .bib"
+msgstr ".bib indir"
+
+msgid "Close"
+msgstr "Kapat"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
