@@ -2048,6 +2048,33 @@ msgstr "Download .bib"
 msgid "Close"
 msgstr "Close"
 
+msgid "Search library"
+msgstr "Search library"
+
+msgid "Back to library"
+msgstr "Back to library"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "Title, abstract, author, keyword…"
+msgstr "Title, abstract, author, keyword…"
+
+msgid "Only papers with notes"
+msgstr "Only papers with notes"
+
+msgid "results"
+msgstr "results"
+
+msgid "No matching papers."
+msgstr "No matching papers."
+
+msgid "Try a broader query or clear some filters."
+msgstr "Try a broader query or clear some filters."
+
+msgid "Search"
+msgstr "Search"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
