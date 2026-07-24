@@ -188,6 +188,56 @@ def to_bibtex(paper: Paper) -> str:
     return f"@{entry_type}{{{cite_key},\n{body}\n}}\n"
 
 
+def papers_to_bibtex(papers: list[UserPaper]) -> str:
+    """Concatenate BibTeX entries for a set of user_papers — the bulk export
+    a researcher drops into Zotero/Mendeley/EndNote."""
+    return "\n".join(to_bibtex(up.paper) for up in papers)
+
+
+def papers_to_csv(papers: list[UserPaper]) -> str:
+    """CSV export of a user's papers. Uses the csv module so titles/abstracts
+    with commas, quotes, or newlines are quoted correctly (naive f-string
+    joining would corrupt the file on the first comma in a title)."""
+    import csv
+    import io
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        [
+            "source",
+            "external_id",
+            "title",
+            "authors",
+            "published_at",
+            "url",
+            "pdf_url",
+            "categories",
+            "is_favorite",
+            "read_later",
+            "matched_keyword",
+        ]
+    )
+    for up in papers:
+        p = up.paper
+        writer.writerow(
+            [
+                p.source,
+                p.external_id,
+                p.title,
+                "; ".join(p.authors or []),
+                p.published_at.date().isoformat() if p.published_at else "",
+                p.url or "",
+                p.pdf_url or "",
+                "; ".join(p.categories or []),
+                up.is_favorite,
+                up.read_later,
+                up.matched_keyword or "",
+            ]
+        )
+    return buf.getvalue()
+
+
 def count_all_notes(user: User) -> int:
     from sqlalchemy import func
 

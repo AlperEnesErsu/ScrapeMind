@@ -65,4 +65,30 @@
   </div>
 </div>
 
+{# BibTeX cite modal — the Cite button fetches the entry and shows it here #}
+<div class="modal fade" id="citeModal" tabindex="-1" aria-labelledby="citeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="citeModalLabel">
+          <i class="bi bi-quote me-1"></i>{{ _('BibTeX citation') }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <div class="modal-body">
+        <pre id="cite-modal-body" class="bg-body-secondary rounded p-3 mb-0" style="white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow-y: auto; font-size: 0.85rem;">{{ _('Loading…') }}</pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-copy-target="#cite-modal-body"
+                data-copied-label="{{ _('Copied') }}">
+          <i class="bi bi-clipboard me-1"></i>{{ _('Copy') }}
+        </button>
+        <a id="cite-modal-download" class="btn btn-primary" href="#">
+          <i class="bi bi-download me-1"></i>{{ _('Download .bib') }}
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
