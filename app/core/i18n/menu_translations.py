@@ -4,6 +4,8 @@ from flask_babel import lazy_gettext
 # These keys are loaded dynamically from the MenuItem table and rendered in _sidebar.html.
 lazy_gettext("menu.dashboard")
 lazy_gettext("menu.feed")
+lazy_gettext("menu.discover")
+lazy_gettext("menu.library")
 lazy_gettext("menu.admin")
 lazy_gettext("menu.profile")
 lazy_gettext("menu.users")
@@ -64,3 +66,4 @@ lazy_gettext("Failed to add interest.")
 lazy_gettext("Interest name cannot be empty.")
 lazy_gettext("Interest removed successfully.")
 lazy_gettext("Failed to remove interest.")
+lazy_gettext("Add your own RSS source")

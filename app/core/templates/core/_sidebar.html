@@ -38,6 +38,9 @@
     {% endfor %}
   </ul>
 
+  {# `mb-auto` on the nav above pushes this to the bottom of the sidebar. #}
+  {% include 'core/_sidebar_footer.html' %}
+
   <button class="btn btn-sm btn-outline-secondary mt-2 w-100" id="sidebar-collapse-btn" title="{{ _('Collapse') }}">
     <i class="bi bi-chevron-double-left sidebar-label"></i>
     <i class="bi bi-chevron-double-right sidebar-icon-only d-none"></i>

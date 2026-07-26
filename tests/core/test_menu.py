@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy import text
 
+from app.core.menu.builder import build_menu_for_user
 from app.core.menu.service import (
     create_item,
     get_item,
@@ -12,6 +13,7 @@ from app.core.menu.service import (
     update_item,
 )
 from app.core.models.menu import MenuItem
+from app.core.models.user import User
 
 
 @pytest.fixture
@@ -90,3 +92,81 @@ def test_is_critical_known_codes():
 def test_menu_list_route_requires_login(client):
     r = client.get("/admin/menu/", follow_redirects=False)
     assert r.status_code in (302, 401)
+
+
+@pytest.fixture
+def menu_builder_users(db):
+    """A regular user (no roles/permissions) and a superuser.
+
+    Not reusing `auth_client` — build_menu_for_user() takes a plain User
+    instance and doesn't need a logged-in test client.
+    """
+    db.session.query(User).filter(
+        User.username.in_(["menu_regular", "menu_super"])
+    ).delete(synchronize_session=False)
+    db.session.commit()
+
+    regular = User(
+        username="menu_regular",
+        email="menu_regular@example.test",
+        full_name="Menu Regular",
+    )
+    superuser = User(
+        username="menu_super",
+        email="menu_super@example.test",
+        full_name="Menu Super",
+        is_superuser=True,
+    )
+    db.session.add_all([regular, superuser])
+    db.session.commit()
+
+    yield regular, superuser
+
+    db.session.query(User).filter(User.id.in_([regular.id, superuser.id])).delete(
+        synchronize_session=False
+    )
+    db.session.commit()
+
+
+def test_build_menu_prunes_empty_admin_group_for_regular_user(
+    db, clean_menu, menu_builder_users
+):
+    """`admin_group` (menu.admin) has no required_permission of its own — its
+    children are permission-gated and get filtered out for a user with no
+    admin perms, which used to leave a dead, childless accordion header in
+    the sidebar. build_menu_for_user() must prune that empty group, while
+    still surfacing it (with its children) for a superuser."""
+    regular, superuser = menu_builder_users
+
+    admin_group = create_item(
+        _payload("admin_group", label_key="menu.admin", endpoint=None, order_index=80)
+    )
+    create_item(
+        _payload(
+            "admin_users",
+            label_key="menu.users",
+            endpoint="users.user_list",
+            parent_id=admin_group.id,
+            required_permission="users.view",
+            order_index=10,
+        )
+    )
+    create_item(
+        _payload(
+            "dashboard_root",
+            label_key="menu.dashboard",
+            endpoint="dashboard.index",
+            order_index=10,
+        )
+    )
+
+    regular_tree = build_menu_for_user(regular)
+    regular_codes = {node.item.code for node in regular_tree}
+    assert "admin_group" not in regular_codes
+    assert "dashboard_root" in regular_codes
+
+    superuser_tree = build_menu_for_user(superuser)
+    superuser_codes = {node.item.code for node in superuser_tree}
+    assert "admin_group" in superuser_codes
+    admin_node = next(n for n in superuser_tree if n.item.code == "admin_group")
+    assert {c.item.code for c in admin_node.children} == {"admin_users"}
