@@ -285,7 +285,7 @@ pybabel compile -d translations    # .po değiştiyse
 > ekle — reçete: [CLAUDE.md](CLAUDE.md) "Çeviri İş Akışı" bölümünde.
 
 Projeye yeni katılıyorsan: **[docs/HANDOVER.md](docs/HANDOVER.md)** ile başla —
-kurulum, commit'lenmemiş iş, tuzaklar ve sıradaki görevler orada.
+kurulum, commit geçmişi, tuzaklar ve sıradaki görevler orada.
 
 ## 📄 Lisans
 

@@ -524,8 +524,8 @@ Startup'ta `app/modules/__init__.py` tüm klasörleri tarar, manifest'leri DB'ye
 - [ ] OpenAlex + Crossref adaptörleri
 - [ ] RSS'siz sitelerden scrape + alan seçici (robots.txt uyumu dahil)
 
-> Faz 3'ün büyük kısmı `feat/homepage-source-selection` branch'inde **commit'lenmemiş**
-> durumda. Devir notları ve önerilen commit bölünmesi: [docs/HANDOVER.md](docs/HANDOVER.md).
+> Faz 3'ün büyük kısmı `feat/homepage-source-selection` branch'inde, `main`'in
+> **17 commit** önünde. Commit listesi ve devir notları: [docs/HANDOVER.md](docs/HANDOVER.md).
 
 ### 🟧 Faz 4 — İleri Auth & Ölçek
 - [ ] pgvector + semantik arama / gerçek RAG

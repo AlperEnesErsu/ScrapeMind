@@ -73,7 +73,7 @@ pybabel compile -d translations
 - **Faz 0** ✅ tam
 - **Faz 1** ✅ tam (email servisi, password policy, session yönetimi `ed5d4ac` ile geldi)
 - **Faz 2** ✅ tam — Semantic Scholar + PubMed `#27` ile kapandı
-- **Faz 3** 🔶 devam ediyor — büyük bir dilim **commit'lenmemiş**, aşağıya bak
+- **Faz 3** 🔶 devam ediyor — 17 commit `feat/homepage-source-selection`'da, aşağıya bak
 
 ### Faz 2 — merge'lenenler
 | PR    | Konu |
@@ -93,9 +93,10 @@ pybabel compile -d translations
 | #27   | **Semantic Scholar + PubMed** — çok kaynaklı tarama (Faz 2 kapandı) |
 | #28-#30 | Refresh-token revocation · API yazma endpoint'leri · RBAC izin cache'i |
 
-### Faz 3 — commit'lenmemiş (branch `feat/homepage-source-selection`)
-~5.200 satır, 42 değişmiş + 32 yeni dosya. Önerilen commit bölünmesi
-`docs/HANDOVER.md §3`'te. Kapsam: RSS beslemeler (küratörlü + kullanıcı) ·
+### Faz 3 — branch `feat/homepage-source-selection` (main'in 17 commit önünde)
+~9.968 satır, 78 dosya. Commit listesi `docs/HANDOVER.md §3`'te.
+⚠️ Ara commit'ler tek tek test-yeşil değil, yalnızca dalın ucu doğrulandı —
+`git bisect` bu aralıkta güvenilir değil. Kapsam: RSS beslemeler (küratörlü + kullanıcı) ·
 SSRF guard · Redis rate limit · TR→EN anahtar kelime çevirisi · konu sınıflandırma +
 ilgi-farkında kaynak seçici · ScanRun geçmişi + durum paneli · digest ·
 çok sağlayıcılı LLM + kullanıcı bazlı şifreli anahtar · worker ayrımı + deterministik

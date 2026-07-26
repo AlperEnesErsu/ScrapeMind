@@ -3,15 +3,15 @@
 > **Tarih:** 26 Temmuz 2026 · **Branch:** `feat/homepage-source-selection` · **Hedef:** `main`
 >
 > Bu dosya projeyi devralan geliştirici için yazıldı. Sırayla oku: §1 durum → §2 kurulum
-> → §3 commit'lenmemiş iş → §4 tuzaklar → §5 sıradaki iş.
+> → §3 commit geçmişi → §4 tuzaklar → §5 sıradaki iş.
 
 ---
 
 ## 1. Nerede Duruyoruz
 
 **Faz 0 ve Faz 1 tam.** Faz 2 fiilen tamamlandı; README'de "bekliyor" görünen
-Semantic Scholar/PubMed işi bitti ve testli. Onun üzerine, henüz commit'lenmemiş
-büyük bir Faz 3 dilimi var (§3).
+Semantic Scholar/PubMed işi bitti ve testli. Onun üzerine, `main`'in 17 commit
+önünde duran bir Faz 3 dilimi var (§3).
 
 Çalışan özellikler, kabaca:
 
@@ -21,12 +21,12 @@ büyük bir Faz 3 dilimi var (§3).
 | 2FA (TOTP + recovery kodları), oturum yönetimi, avatar upload | ✅ |
 | API v1 (JWT, okuma + yazma, token revocation) | ✅ [docs/API_V1.md](API_V1.md) |
 | Akademik kaynaklar: arXiv, Semantic Scholar, PubMed | ✅ |
-| RSS: 4 küratörlü besleme + kullanıcının kendi beslemeleri | ✅ *(commit'lenmemiş)* |
-| Konu sınıflandırma + ilgi-farkında kaynak seçici | ✅ *(commit'lenmemiş)* |
-| TR→EN anahtar kelime çevirisi | ✅ *(commit'lenmemiş)* |
-| Tarama geçmişi (`ScanRun`) + canlı durum paneli | ✅ *(commit'lenmemiş)* |
-| Günlük/haftalık LLM özeti (digest) | ✅ *(commit'lenmemiş)* |
-| Çok sağlayıcılı LLM (OpenRouter/Ollama/Anthropic) + kullanıcı bazlı şifreli anahtar | ✅ *(commit'lenmemiş)* |
+| RSS: 4 küratörlü besleme + kullanıcının kendi beslemeleri | ✅ |
+| Konu sınıflandırma + ilgi-farkında kaynak seçici | ✅ |
+| TR→EN anahtar kelime çevirisi | ✅ |
+| Tarama geçmişi (`ScanRun`) + canlı durum paneli | ✅ |
+| Günlük/haftalık LLM özeti (digest) | ✅ |
+| Çok sağlayıcılı LLM (OpenRouter/Ollama/Anthropic) + kullanıcı bazlı şifreli anahtar | ✅ |
 
 **Doğrulama durumu (26 Temmuz 2026, bu dokümanın yazıldığı an):**
 
@@ -90,41 +90,54 @@ Test DB ayrı (`scrapemind_test`), her oturumda `create_all`/`drop_all`.
 
 ---
 
-## 3. Commit'lenmemiş İş — Önerilen Bölünme
+## 3. Commit Geçmişi
 
-Çalışma ağacında **42 değişmiş + 32 yeni dosya, ~5.200 satır** var. Tek commit'e
-sıkıştırmak yerine aşağıdaki sırayla bölmeni öneririm. Migration'ları kendi
-özelliğiyle aynı commit'te tut; `flask db upgrade` sırası commit sırasına değil,
-Alembic'in `down_revision` zincirine bağlı.
+Dal `main`'in **17 commit** önünde ve `origin` ile senkron. İş tek bir 9.968
+satırlık blok halinde commit'lenmişti; okunabilir olsun diye konularına bölündü.
+Yeniden yazımdan sonra ağaç hash'i orijinaliyle **birebir aynı** doğrulandı
+(`108ba6f8…`) — tek satır kaybolmadı veya değişmedi.
 
-| # | Commit | Ana dosyalar |
-|---|---|---|
-| 1 | `feat(llm): multi-provider LLM layer with per-user encrypted keys` | `ai_service.py`, `forms.py`, `templates/settings/_tab_ai.html`, `config.py`, `requirements.txt` |
-| 2 | `feat(scrape): shared Redis rate limiting for external APIs` | `ratelimit.py`, 3 adaptör, `SCRAPE_RATE_*` |
-| 3 | `feat(scrape): keyword translation so Turkish interests match English corpora` | `academic/models.py`, `e7d3b5a1c9f2_*`, `ensure_keyword_translations` |
-| 4 | `feat(scrape): RSS/Atom ingestion with SSRF-guarded fetching` | `rss_source.py`, `net_guard.py`, `feed_tasks.py`, `f7c4b8e1a2d9_*` |
-| 5 | `feat(scrape): topic classification and interest-aware source picker` | `sources/__init__.py`, `b7e2f9a1c3d4_*`, `_sources_card.html` |
-| 6 | `feat(scrape): scan run history and live status UI` | `c3e5f7a9b1d2_*`, `record_scan_run`, `_scan_status.html` |
-| 7 | `feat(scrape): daily and weekly LLM digests` | `d4a8c1f29b3e_*`, `digest_tasks.py`, `_digest_card.html` |
-| 8 | `perf(tasks): queue routing, worker split, and deterministic fan-out` | `fanout.py`, `tasks/__init__.py`, `docker-compose.yml` |
-| 9 | `feat(core): infrastructure health panel` | `core/health.py`, `_sidebar_footer.html` |
-| 10 | `feat(admin): resolve beat schedule into concrete next-run times` | `schedule_info.py`, `tasks_admin/` |
-| 11 | `fix(menu): prune permission-emptied accordion groups` | `menu/builder.py`, 2 migration |
-| 12 | `feat(scrape): news/paper distinction and wider external ids` | `payload.py`, `cd6dd3da4bba_*`, `e5f1a2b3c4d6_*` |
-| 13 | `feat(ui): Discover feed, dashboard cards, bulk actions` | `for_you.html`, `feed.html`, `theme.css` |
-| 14 | `refactor(users): hoist function-local imports to module level` | `core/users/forms.py` |
-| 15 | `docs: scraping architecture + handover; sync README/CLAUDE/PROJECT` | bu dosyalar |
-| 16 | `i18n: TR/EN catalog updates` | `translations/**` |
+| Commit | Konu |
+|---|---|
+| `e263b25` | `chore(config)` — config, bağımlılıklar, `.env.example` |
+| `c30315b` | `feat(scrape)` — veri modeli + 7 migration |
+| `7d400d5` | `feat(llm)` — çok sağlayıcılı LLM + şifreli kullanıcı anahtarı |
+| `91731ab` | `feat(scrape)` — Redis rate limit |
+| `12db967` | `feat(scrape)` — RSS yutma + SSRF guard |
+| `363065d` | `feat(scrape)` — konu taksonomisi + kaynak registry |
+| `e2a7710` | `feat(scrape)` — orkestrasyon, kilit, ScanRun, kelime çevirisi |
+| `f457edf` | `feat(scrape)` — route'lar |
+| `5107430` | `feat(dashboard)` — kartlar |
+| `e3dea7f` | `perf(tasks)` — kuyruk yönlendirme, worker ayrımı, fan-out, digest |
+| `cad9be4` | `feat(core)` — health paneli |
+| `eee6240` | `feat(admin)` — beat zamanlama çözümleme |
+| `3bdec4d` | `fix(menu)` — boş grup pruning + 2 migration |
+| `b6b9570` | `feat(ui)` — Discover feed, widget, kartlar |
+| `9aa289a` | `refactor(users)` — import hoisting |
+| `9d45ff6` | `docs` — SCRAPING.md + HANDOVER.md + bayat iddia düzeltmeleri |
+| `d57c3a2` | `i18n` — TR/EN katalogları |
 
-**11 ve 14 hiçbir şeye bağlı değil** — istersen en başa alıp ayrı, küçük PR yap.
-**16'yı sona bıraktım** çünkü `.po`/`.mo` tek blok değişmiş; özellik başına ayırmak
-elle uğraş gerektirir.
+### İki uyarı
 
-> **Not:** Bu liste hazırlanırken `black app/` çalıştırıldı ve 7 dosya yeniden
-> formatlandı (`ai_service.py`, `service.py`, `routes.py` ×2, `models.py`,
-> `rss_source.py`, `feed_tasks.py`). Yani her commit kendi format düzeltmesini
-> taşıyacak — bu beklenen davranış, ayrı bir "style" commit'i gerekmiyor.
-> Formatlama sonrası 426 test yeniden çalıştırıldı ve geçti.
+**1. Ara commit'ler tek tek yeşil değil.** Yalnızca **dalın ucu** doğrulandı
+(426 test + ruff + black). Bölme dosya bazında yapıldı; `ai_service.py`,
+`service.py` gibi dosyalar birden çok özelliğe hizmet ettiği için hunk bazında
+bölünemezdi. Pratik sonucu: **`git bisect` bu aralıkta güvenilir değil.**
+Gerekirse `main..HEAD` aralığını squash edip yeniden bölmek yerine, ucu referans
+al.
+
+**2. Black formatlaması commit'lere dağılmış.** Bölme öncesi `black app/`
+çalıştırıldı ve 7 dosya yeniden formatlandı, yani her commit kendi format
+düzeltmesini taşıyor. Ayrı bir "style" commit'i yok — bu bilinçli.
+
+### Yerel yedek etiketi
+
+Bölme öncesi hal `backup/pre-split` etiketinde duruyor (yalnızca yerel, push'lanmadı).
+Her şeyin doğru olduğuna kanaat getirince sil:
+
+```bash
+git tag -d backup/pre-split
+```
 
 ---
 
