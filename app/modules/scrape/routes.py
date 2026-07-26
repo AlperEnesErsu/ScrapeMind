@@ -16,11 +16,15 @@ Route layout:
 
 from __future__ import annotations
 
+import time
+
+import structlog
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app.core.audit.middleware import log_action
+from app.modules.scrape.forms import AiSettingsForm, UserFeedForm
 from app.modules.scrape.service import (
     add_note,
     count_user_papers,
@@ -35,11 +39,244 @@ from app.modules.scrape.service import (
     toggle_favorite,
 )
 
+logger = structlog.get_logger()
+
 scrape_bp = Blueprint("scrape", __name__, template_folder="templates")
+
+
+@scrape_bp.app_context_processor
+def _inject_source_meta():
+    """Make SOURCE_META/TOPICS available to every template app-wide —
+    `_paper_card.html`/`_sources_card.html` are included from
+    dashboard/for_you.html and library/index.html too, not just routes owned
+    by this blueprint, so `app_context_processor` (not `context_processor`)
+    is required here."""
+    from app.modules.scrape.sources import SOURCE_META, TOPICS
+
+    return {"source_meta": SOURCE_META, "topics_meta": TOPICS}
+
+
+# ------------------------------------------------------------------ #
+# AI settings profile tab (per-user OpenRouter key)
+# ------------------------------------------------------------------ #
+
+
+def _feed_list_ctx(filter_: str = "all") -> dict:
+    """Context for the `settings/_feed_list.html` partial.
+
+    Deliberately free of `classify_user_topics` / `user_llm_status`: this is
+    what a toggle or delete re-renders, and those two are expensive (the first
+    is an LLM call). `_ai_ctx` adds them for the full-tab render only.
+    """
+    from flask import current_app
+
+    from app.modules.scrape.service import feed_cost_estimate, list_user_feeds
+
+    feeds = list_user_feeds(current_user)
+    if filter_ == "active":
+        shown = [f for f in feeds if f.active]
+    elif filter_ == "paused":
+        shown = [f for f in feeds if not f.active]
+    else:
+        filter_ = "all"
+        shown = feeds
+
+    active_count = sum(1 for f in feeds if f.active)
+    return {
+        "user_feeds": shown,
+        "feed_count": len(feeds),
+        "active_feed_count": active_count,
+        "filter": filter_,
+        "max_user_feeds": current_app.config.get("MAX_USER_FEEDS", 50),
+        # Feed-only cost, so the panel never resolves source prefs (see
+        # service.feed_cost_estimate).
+        "feed_cost_delta": feed_cost_estimate(active_count),
+    }
+
+
+def _ai_ctx():
+    from flask import current_app
+
+    from app.modules.scrape.ai_service import classify_user_topics, user_llm_status
+
+    return {
+        "form": AiSettingsForm(),
+        "feed_form": UserFeedForm(),
+        "status": user_llm_status(current_user),
+        "provider": (current_app.config.get("LLM_PROVIDER") or "openrouter").strip().lower(),
+        "default_model": current_app.config.get("OPENROUTER_MODEL"),
+        "user_topics": classify_user_topics(current_user),
+        **_feed_list_ctx(),
+    }
+
+
+def _register_tabs():
+    """Tab registry'ye scrape modülünün AI Settings tabını ekle — uygulama
+    başlarken (bu modül import edildiğinde) çağrılır."""
+    from app.core.settings.tab_registry import register_profile_tab
+
+    register_profile_tab("ai", "bi-robot", "AI Settings", _ai_ctx)
+
+
+def _render_settings_tab(tab: str, **ctx):
+    return render_template(f"settings/_tab_{tab}.html", active_tab=tab, **ctx)
+
+
+@scrape_bp.route("/profile/ai/save", methods=["POST"])
+@login_required
+def submit_ai_save():
+    from app.modules.scrape.ai_service import set_user_llm_key
+
+    form = AiSettingsForm()
+    if form.validate_on_submit():
+        key = (form.openrouter_api_key.data or "").strip()
+        model = (form.model.data or "").strip()
+        if not key and not model:
+            return _render_settings_tab(
+                "ai",
+                flash_msg=_("Nothing to save — enter a key or a model override."),
+                flash_kind="warning",
+                **_ai_ctx(),
+            )
+        set_user_llm_key(current_user, key or None, model or None)
+        log_action(
+            "user.llm_key_updated",
+            entity_type="user",
+            entity_id=current_user.id,
+            changes={"key_updated": bool(key), "model": model or None},
+        )
+        return _render_settings_tab(
+            "ai", flash_msg=_("AI settings saved."), flash_kind="success", **_ai_ctx()
+        )
+    return _render_settings_tab(
+        "ai",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+        **_ai_ctx(),
+    )
+
+
+@scrape_bp.route("/profile/ai/clear", methods=["POST"])
+@login_required
+def submit_ai_clear():
+    from app.modules.scrape.ai_service import clear_user_llm_key
+
+    clear_user_llm_key(current_user)
+    log_action("user.llm_key_cleared", entity_type="user", entity_id=current_user.id)
+    return _render_settings_tab(
+        "ai", flash_msg=_("Your API key was removed."), flash_kind="success", **_ai_ctx()
+    )
+
+
+# ------------------------------------------------------------------ #
+# Custom RSS feeds (Faz 3 Bölüm D) — same AI/Kaynaklar profile tab
+# ------------------------------------------------------------------ #
+
+
+@scrape_bp.route("/profile/feeds/add", methods=["POST"])
+@login_required
+def submit_feed_add():
+    from app.modules.scrape.service import add_user_feed
+
+    form = UserFeedForm()
+    if form.validate_on_submit():
+        feed, err = add_user_feed(current_user, form.url.data, form.label.data)
+        if feed is not None:
+            log_action(
+                "user.feed_added",
+                entity_type="user_feed",
+                entity_id=str(feed.id),
+                changes={"url": feed.url},
+            )
+            return _render_settings_tab(
+                "ai", flash_msg=_("Feed added."), flash_kind="success", **_ai_ctx()
+            )
+        return _render_settings_tab(
+            "ai",
+            flash_msg=_(err or "Could not add that feed."),
+            flash_kind="danger",
+            **_ai_ctx(),
+        )
+    return _render_settings_tab(
+        "ai",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+        **_ai_ctx(),
+    )
+
+
+@scrape_bp.route("/scan-status", methods=["GET"])
+@login_required
+def scan_status():
+    """The last/next-scan line on its own, so it can poll itself while a scan
+    is actually in flight and then swap in the finished result.
+
+    Lives in the scrape blueprint (scrape owns the data) but renders the
+    dashboard partial, mirroring how `_sources_card.html` is shared.
+    """
+    from app.modules.scrape.service import scan_status_context
+
+    return render_template("dashboard/_scan_status.html", **scan_status_context(current_user))
+
+
+@scrape_bp.route("/profile/feeds", methods=["GET"])
+@login_required
+def feed_list():
+    """The feed list on its own — filter chips and post-mutation swaps target
+    this instead of re-rendering the whole AI tab."""
+    return render_template(
+        "settings/_feed_list.html", **_feed_list_ctx(request.args.get("filter", "all"))
+    )
+
+
+@scrape_bp.route("/profile/feeds/<int:feed_id>/remove", methods=["POST"])
+@login_required
+def submit_feed_remove(feed_id: int):
+    from app.modules.scrape.service import remove_user_feed
+
+    ok = remove_user_feed(current_user, feed_id)
+    if not ok:
+        abort(404)
+    log_action("user.feed_removed", entity_type="user_feed", entity_id=str(feed_id))
+    return render_template("settings/_feed_list.html", **_feed_list_ctx())
+
+
+@scrape_bp.route("/profile/feeds/<int:feed_id>/toggle", methods=["POST"])
+@login_required
+def submit_feed_toggle(feed_id: int):
+    from app.modules.scrape.service import toggle_user_feed
+
+    new_value = toggle_user_feed(current_user, feed_id)
+    if new_value is None:
+        abort(404)
+    log_action(
+        "user.feed_toggled",
+        entity_type="user_feed",
+        entity_id=str(feed_id),
+        changes={"active": new_value},
+    )
+    return render_template("settings/_feed_list.html", **_feed_list_ctx())
 
 
 def _is_htmx() -> bool:
     return request.headers.get("HX-Request") == "true"
+
+
+def _widget_ctx() -> dict:
+    """Everything `_scraper_widget.html` needs when rendered standalone.
+
+    The widget used to read `active_sources` from a global context processor
+    that returned the *deployment's* enabled sources — so a user who had muted
+    arXiv still saw an "arXiv" badge. `scan_status_context` supplies that
+    user's effective set, plus the last/next scan times.
+    """
+    from app.modules.academic.service import list_user_keywords
+    from app.modules.scrape.service import scan_status_context
+
+    return {
+        "has_interests": bool(list_user_keywords(current_user)),
+        **scan_status_context(current_user),
+    }
 
 
 def _render_card(link, *, flash_msg=None, flash_kind=None):
@@ -60,6 +297,9 @@ def _render_card(link, *, flash_msg=None, flash_kind=None):
 @scrape_bp.route("/")
 @login_required
 def feed():
+    from app.modules.academic.service import list_user_keywords
+    from app.modules.scrape.service import scan_status_context, sources_card_context
+
     view = request.args.get("view", "discover")
     if view not in {"discover", "favorites", "dismissed", "all"}:
         view = "discover"
@@ -69,7 +309,19 @@ def feed():
         "discover": count_user_papers(current_user, view="discover"),
         "favorites": count_user_papers(current_user, view="favorites"),
     }
-    return render_template("scrape/feed.html", rows=rows, view=view, counts=counts, q=q)
+    return render_template(
+        "scrape/feed.html",
+        rows=rows,
+        view=view,
+        counts=counts,
+        q=q,
+        user_keywords=list_user_keywords(current_user),
+        # For the sidebar `_sources_card.html`, which shows the next-scan time
+        # and the custom-feed counts. The scrape control itself lives in the
+        # dashboard header, not here.
+        **scan_status_context(current_user),
+        **sources_card_context(current_user),
+    )
 
 
 def _get_similar_papers(link, limit=4):
@@ -145,7 +397,7 @@ def detail(user_paper_id: int):
         template,
         r=link,
         mode=mode,
-        ai_enabled=is_ai_enabled(),
+        ai_enabled=is_ai_enabled(current_user),
         translation=get_translation(link.paper) if mode == "tr" else None,
         analysis=get_analysis(link.paper) if mode == "ai" else None,
         chat_messages=chat_messages,
@@ -164,7 +416,7 @@ def send_chat_message(user_paper_id: int):
     link = get_user_paper(current_user, user_paper_id)
     if link is None:
         abort(404)
-    if not is_ai_enabled():
+    if not is_ai_enabled(current_user):
         abort(400, "AI not enabled")
 
     question = request.form.get("message", "").strip()
@@ -184,8 +436,8 @@ def send_chat_message(user_paper_id: int):
     )
     history = [{"role": m.role, "content": m.content} for m in history_rows[:-1]]
 
-    # 3. Call Claude to get answer
-    answer = ask_paper(link.paper, question, history=history)
+    # 3. Call the resolved LLM to get an answer
+    answer = ask_paper(link.paper, question, history=history, user=current_user)
     if not answer:
         answer = _(
             "Claude did not return a response. Please check your credentials or try again later."
@@ -227,10 +479,10 @@ def generate_analysis_route(user_paper_id: int):
     link = get_user_paper(current_user, user_paper_id)
     if link is None:
         abort(404)
-    if not is_ai_enabled():
+    if not is_ai_enabled(current_user):
         return render_template("scrape/_ai_disabled.html", kind="analysis")
     force = request.args.get("force") == "1"
-    analysis = get_or_generate_analysis(link.paper, force=force)
+    analysis = get_or_generate_analysis(link.paper, force=force, user=current_user)
     log_action(
         "paper.analysis_generated",
         entity_type="paper",
@@ -253,10 +505,10 @@ def generate_translation_route(user_paper_id: int):
     link = get_user_paper(current_user, user_paper_id)
     if link is None:
         abort(404)
-    if not is_ai_enabled():
+    if not is_ai_enabled(current_user):
         return render_template("scrape/_ai_disabled.html", kind="translation")
     force = request.args.get("force") == "1"
-    translation = get_or_generate_translation(link.paper, force=force)
+    translation = get_or_generate_translation(link.paper, force=force, user=current_user)
     log_action(
         "paper.translation_generated",
         entity_type="paper",
@@ -459,39 +711,141 @@ def edit_note_route(note_id: int):
 @scrape_bp.route("/run", methods=["POST"])
 @login_required
 def run_now():
+    from app.modules.scrape.service import acquire_scrape_lock
     from app.tasks.scrape_tasks import run_for_user
 
-    async_result = run_for_user.delay(current_user.id)
+    # Collapse duplicate presses: if a scrape is already queued/running for this
+    # user, don't stack another task — just tell them it's already in progress.
+    if not acquire_scrape_lock(current_user.id):
+        msg = _("A scrape is already running for you — you'll be notified when it finishes.")
+        if _is_htmx():
+            return render_template(
+                "scrape/_scraper_widget.html",
+                already_running=True,
+                **_widget_ctx(),
+            )
+        flash(msg, "info")
+        return redirect(url_for("scrape.feed"))
+
+    # lock_held: the lock was just claimed above, so the task must not try to
+    # claim it again (and must still release it when it finishes).
+    async_result = run_for_user.delay(current_user.id, trigger="manual", lock_held=True)
+
+    # RSS is a separate pipeline (global ingest + per-user relevance linking),
+    # so pressing "Scrape now" used to refresh the academic sources only and
+    # silently leave the news feeds at last night's state — "I just scanned,
+    # there's nothing new" was wrong rather than empty. Queue the feed task
+    # too. It takes its own "feeds" lock, so an already-running feed pass makes
+    # this a no-op instead of a double fetch + double LLM spend. Failure to
+    # queue it must not cost the user their scrape, which is already away.
+    feed_task_id = None
+    try:
+        from app.tasks.feed_tasks import link_for_user
+
+        feed_task_id = getattr(link_for_user.delay(current_user.id), "id", None)
+    except Exception:  # noqa: BLE001
+        logger.exception("manual_feed_refresh_enqueue_failed", user_id=current_user.id)
+
     log_action(
         "scrape.manual_run",
         entity_type="user",
         entity_id=str(current_user.id),
-        changes={"task_id": getattr(async_result, "id", None)},
+        changes={
+            "task_id": getattr(async_result, "id", None),
+            "feed_task_id": feed_task_id,
+        },
     )
     if _is_htmx():
-        return render_template("scrape/_scrape_spinner.html", task_id=async_result.id)
+        return render_template(
+            "scrape/_scrape_spinner.html",
+            task_id=async_result.id,
+            since=int(time.time()),
+            phase="queued",
+        )
     flash(_("Scrape queued — papers will appear here once the worker finishes."), "info")
     return redirect(url_for("scrape.feed"))
+
+
+#: How long a manually-triggered scrape may sit in the queue before we stop
+#: spinning and say so. Anything longer means nothing is consuming the queue —
+#: almost always "the Celery worker isn't running" — and an endless spinner is
+#: the least useful way to communicate that.
+_QUEUE_WAIT_LIMIT = 90
+
+
+def _celery_task_finished(task_id: str) -> bool | None:
+    """Has this Celery task finished? None when we can't tell.
+
+    `AsyncResult(task_id)` without an explicit app resolves through
+    `celery.current_app`, which in a web process can be a bare default Celery
+    app whose backend is `DisabledBackend` — calling `.ready()` on that raises
+    AttributeError and 500s the poll. Bind our configured app explicitly, and
+    treat any backend failure as "unknown" so the DB fallback decides.
+    """
+    from celery.result import AsyncResult
+
+    from app.tasks import celery_app
+
+    try:
+        return bool(AsyncResult(task_id, app=celery_app).ready())
+    except Exception:  # noqa: BLE001 — no/unreachable result backend
+        logger.warning("scrape_status_backend_unavailable", task_id=task_id)
+        return None
 
 
 @scrape_bp.route("/status/<task_id>", methods=["GET"])
 @login_required
 def scrape_status_poll(task_id: str):
-    from celery.result import AsyncResult
+    """Drive the manual-scrape spinner.
+
+    Celery's result backend is treated as a hint, not the source of truth: the
+    ScanRun rows say what actually happened, and they exist even when no result
+    backend is configured. That also lets us distinguish "queued" from
+    "scanning", and give up honestly when nothing ever picks the task up.
+    """
     from flask import Response
 
-    from app.modules.academic.service import list_user_keywords
+    from app.modules.scrape.service import (
+        aware,
+        last_scan_run,
+        open_scan_run,
+        reap_stale_runs,
+    )
 
-    res = AsyncResult(task_id)
-    if res.ready():
-        has_interests = bool(list_user_keywords(current_user))
-        response = Response(
-            render_template("scrape/_scraper_widget.html", has_interests=has_interests)
-        )
+    since = request.args.get("since", type=int) or int(time.time())
+    waited = max(0, int(time.time()) - since)
+
+    reap_stale_runs(current_user)
+    active = open_scan_run(current_user, "scrape")
+    finished = last_scan_run(current_user, "scrape")
+
+    # 5s of slack: the row is written a moment after we stamped `since`, and
+    # clock resolution between the two shouldn't decide whether we say "done".
+    started_since_request = (
+        finished is not None and aware(finished.started_at).timestamp() >= since - 5
+    )
+    done = _celery_task_finished(task_id) is True or started_since_request
+
+    if done:
+        response = Response(render_template("scrape/_scraper_widget.html", **_widget_ctx()))
         response.headers["HX-Refresh"] = "true"
         return response
-    else:
-        return render_template("scrape/_scrape_spinner.html", task_id=task_id)
+
+    if active is None and waited > _QUEUE_WAIT_LIMIT:
+        # Nothing claimed the task within the window: stop spinning and say so
+        # rather than implying work is happening.
+        return render_template(
+            "scrape/_scraper_widget.html",
+            worker_stalled=True,
+            **_widget_ctx(),
+        )
+
+    return render_template(
+        "scrape/_scrape_spinner.html",
+        task_id=task_id,
+        since=since,
+        phase="running" if active is not None else "queued",
+    )
 
 
 @scrape_bp.route("/bulk-action", methods=["POST"])
@@ -608,3 +962,8 @@ def export_notes_route(user_paper_id: int):
         mimetype="text/markdown",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# Side-effect: registers the "AI Settings" profile tab. Runs when this module
+# is imported (app/__init__.py imports scrape_bp from here at startup).
+_register_tabs()
