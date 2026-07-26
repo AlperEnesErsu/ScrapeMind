@@ -16,6 +16,7 @@ from __future__ import annotations
 import arxiv
 import structlog
 
+from app.modules.scrape.ratelimit import SourceThrottledError, arxiv_slot
 from app.modules.scrape.sources.payload import PaperPayload
 
 logger = structlog.get_logger()
@@ -40,6 +41,13 @@ def search(query: str, *, max_results: int = 25) -> list[PaperPayload]:
     """
     if not query or not query.strip():
         return []
+
+    # `delay_seconds` below throttles this client instance only; arXiv's limit
+    # applies to the deployment. The Redis bucket is what actually holds it
+    # when several per-user scans run concurrently.
+    if not arxiv_slot():
+        logger.warning("arxiv_rate_limited", query=query)
+        raise SourceThrottledError("arxiv rate limit")
 
     client = arxiv.Client(page_size=min(max_results, 50), delay_seconds=3.0, num_retries=3)
     search = arxiv.Search(
