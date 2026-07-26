@@ -1956,6 +1956,420 @@ msgstr "Daha eski kayıtlar gecelik saklama görevi tarafından otomatik silinir
 msgid "Active sources:"
 msgstr "Aktif kaynaklar:"
 
+msgid ""
+"You do not need to — the nightly scan covers this. Use it to fetch right "
+"now."
+msgstr ""
+"Gerekmiyor — gece taraması bunu zaten yapıyor. Hemen çekmek istersen "
+"kullan."
+
+#, python-format
+msgid "%(n)s interests"
+msgstr "%(n)s ilgi alanı"
+
+#, python-format
+msgid "%(n)s active sources"
+msgstr "%(n)s aktif kaynak"
+
+#, python-format
+msgid "%(n)s verified identifiers"
+msgstr "%(n)s doğrulanmış kimlik"
+
+msgid "Sources to scan"
+msgstr "Taranacak kaynaklar"
+
+msgid "No sources configured."
+msgstr "Yapılandırılmış kaynak yok."
+
+msgid "All sources are off — turn at least one on to get papers."
+msgstr "Tüm kaynaklar kapalı — makale almak için en az birini aç."
+
+msgid "Papers get collected for you"
+msgstr "Makaleler senin için toplanıyor"
+
+msgid ""
+"ScrapeMind scans your selected sources (arXiv, Semantic Scholar, PubMed) "
+"every night and files matching papers here. In a hurry? Use \"Scrape "
+"now\" to fetch immediately."
+msgstr ""
+"ScrapeMind seçtiğin kaynakları (arXiv, Semantic Scholar, PubMed) her gece"
+" tarar ve eşleşen makaleleri buraya ekler. Acelen mi var? Hemen çekmek "
+"için \"Scrape now\"a bas."
+
+msgid "Physics, CS and mathematics preprints"
+msgstr "Fizik, bilgisayar bilimi ve matematik ön baskıları"
+
+msgid "Multi-field corpus with citation graph"
+msgstr "Atıf grafiğiyle çok alanlı külliyat"
+
+msgid "Biomedical and life sciences literature"
+msgstr "Biyomedikal ve yaşam bilimleri literatürü"
+
+msgid "A scrape is already running for you — you'll be notified when it finishes."
+msgstr "Senin için zaten bir tarama sürüyor — bittiğinde haber vereceğiz."
+
+msgid "AI Settings"
+msgstr "AI Ayarları"
+
+msgid ""
+"ScrapeMind uses an LLM for paper analysis, translation, chat, and your "
+"daily/weekly briefing. Bring your own free OpenRouter key to keep costs "
+"at zero — it is stored encrypted and only used for your own requests."
+msgstr ""
+"ScrapeMind, makale analizi, çeviri, sohbet ve günlük/haftalık brifing "
+"için bir LLM kullanır. Maliyeti sıfırda tutmak için kendi ücretsiz "
+"OpenRouter anahtarını girebilirsin — şifreli saklanır ve yalnızca senin "
+"isteklerin için kullanılır."
+
+#, python-format
+msgid ""
+"This deployment is configured to use the \"%(provider)s\" provider — your"
+" OpenRouter key (if set) is ignored until an admin switches LLM_PROVIDER "
+"back to openrouter."
+msgstr ""
+"Bu kurulum \"%(provider)s\" sağlayıcısını kullanacak şekilde "
+"yapılandırılmış — bir yönetici LLM_PROVIDER'ı tekrar openrouter'a "
+"çevirene kadar OpenRouter anahtarın (girilmişse) kullanılmaz."
+
+msgid "Key configured"
+msgstr "Anahtar tanımlı"
+
+msgid "No key set — using deployment default (if any)"
+msgstr "Anahtar girilmemiş — kurulumun varsayılanı kullanılıyor (varsa)"
+
+msgid "Model override:"
+msgstr "Model geçersiz kılma:"
+
+msgid "Default model:"
+msgstr "Varsayılan model:"
+
+msgid "Leave blank to keep your current key."
+msgstr "Mevcut anahtarını korumak için boş bırak."
+
+msgid "Get a free OpenRouter key"
+msgstr "Ücretsiz bir OpenRouter anahtarı al"
+
+msgid "Optional — overrides the deployment default model for your requests only."
+msgstr ""
+"Opsiyonel — yalnızca senin isteklerin için kurulumun varsayılan modelini "
+"geçersiz kılar."
+
+msgid "Nothing to save — enter a key or a model override."
+msgstr "Kaydedilecek bir şey yok — bir anahtar ya da model geçersiz kılma gir."
+
+msgid "AI settings saved."
+msgstr "AI ayarları kaydedildi."
+
+msgid "Your API key was removed."
+msgstr "API anahtarın kaldırıldı."
+
+msgid "Remove your stored API key?"
+msgstr "Kayıtlı API anahtarını kaldırmak istiyor musun?"
+
+msgid "Remove key"
+msgstr "Anahtarı kaldır"
+
+msgid "Your Briefing"
+msgstr "Brifingin"
+
+msgid "Daily"
+msgstr "Günlük"
+
+msgid "Weekly"
+msgstr "Haftalık"
+
+#, python-format
+msgid "%(n)s papers summarised"
+msgstr "%(n)s makale özetlendi"
+
+msgid ""
+"No briefing yet — generate one from your latest papers, or wait for "
+"tonight's automatic run."
+msgstr ""
+"Henüz bir brifing yok — en son makalelerinden birini oluştur, ya da bu "
+"geceki otomatik çalışmayı bekle."
+
+msgid "Generate briefing now"
+msgstr "Şimdi brifing oluştur"
+
+msgid "Your briefing is being generated — it'll show up here shortly."
+msgstr "Brifingin oluşturuluyor — kısa süre içinde burada görünecek."
+
+msgid "OpenRouter API Key"
+msgstr "OpenRouter API Anahtarı"
+
+msgid "Model override (optional)"
+msgstr "Model geçersiz kılma (opsiyonel)"
+
+msgid "News"
+msgstr "Haber"
+
+msgid "Product and research announcements from OpenAI"
+msgstr "OpenAI'dan ürün ve araştırma duyuruları"
+
+msgid "AI news and product updates from Google"
+msgstr "Google'dan yapay zekâ haberleri ve ürün güncellemeleri"
+
+msgid "Research announcements from Google DeepMind"
+msgstr "Google DeepMind'dan araştırma duyuruları"
+
+msgid "Open-source ML models, libraries, and community posts"
+msgstr "Açık kaynak ML modelleri, kütüphaneler ve topluluk yazıları"
+
+msgid "Artificial Intelligence"
+msgstr "Yapay Zeka"
+
+msgid "Machine Learning"
+msgstr "Makine Öğrenmesi"
+
+msgid "Computer Science"
+msgstr "Bilgisayar Bilimi"
+
+msgid "Physics"
+msgstr "Fizik"
+
+msgid "Mathematics"
+msgstr "Matematik"
+
+msgid "Biomedicine"
+msgstr "Biyomedikal"
+
+msgid "Social Sciences"
+msgstr "Sosyal Bilimler"
+
+msgid "Humanities"
+msgstr "Beşeri Bilimler"
+
+msgid "General"
+msgstr "Genel"
+
+msgid "Suggested (matches your interests)"
+msgstr "Önerilen (ilgine uygun)"
+
+msgid "Other sources"
+msgstr "Diğer kaynaklar"
+
+msgid "Your topics"
+msgstr "Konuların"
+
+msgid ""
+"Classified from your research interests — used to suggest and default-"
+"enable relevant sources."
+msgstr ""
+"Araştırma ilgi alanlarından sınıflandırıldı — ilgili kaynakları önermek "
+"ve varsayılan olarak açmak için kullanılır."
+
+msgid "Your own RSS feeds"
+msgstr "Kendi RSS kaynakların"
+
+msgid ""
+"Add any RSS/Atom feed — its relevant items are scored against your "
+"interests and flow into your feed and briefing just like the curated "
+"sources."
+msgstr ""
+"Herhangi bir RSS/Atom kaynağı ekle — ilgili öğeleri ilgi alanlarına göre "
+"puanlanır ve küratörlü kaynaklar gibi akışına ve brifingine dahil olur."
+
+msgid "No custom feeds yet — add one below."
+msgstr "Henüz kendi RSS kaynağın yok — aşağıdan ekleyebilirsin."
+
+msgid "Remove this feed?"
+msgstr "Bu kaynağı kaldır?"
+
+msgid "Leave blank to use the feed's own title."
+msgstr "Kaynağın kendi başlığını kullanmak için boş bırak."
+
+msgid "Feed URL"
+msgstr "Kaynak URL'si"
+
+msgid "Label (optional)"
+msgstr "Etiket (opsiyonel)"
+
+msgid "Add feed"
+msgstr "Kaynak ekle"
+
+msgid "Please enter a valid feed URL (starting with http:// or https://)."
+msgstr ""
+"Lütfen geçerli bir kaynak URL'si girin (http:// veya https:// ile "
+"başlamalı)."
+
+msgid "Could not read that feed — check the URL and try again."
+msgstr "Bu kaynak okunamadı — URL'yi kontrol edip tekrar deneyin."
+
+msgid "Could not add that feed."
+msgstr "Bu kaynak eklenemedi."
+
+msgid "Feed added."
+msgstr "Kaynak eklendi."
+
+msgid "Feed removed."
+msgstr "Kaynak kaldırıldı."
+
+msgid "menu.discover"
+msgstr "Keşfet"
+
+msgid "menu.library"
+msgstr "Kütüphanem"
+
+msgid "Add your own RSS source"
+msgstr "Kendi RSS kaynağını ekle"
+
+msgid "Your interests"
+msgstr "İlgi alanların"
+
+msgid "Manage"
+msgstr "Yönet"
+
+msgid "Last scan"
+msgstr "Son tarama"
+
+msgid "Next scan"
+msgstr "Sonraki tarama"
+
+msgid "Never scanned yet"
+msgstr "Henüz taranmadı"
+
+msgid "Runs automatically"
+msgstr "Otomatik çalışır"
+
+#, python-format
+msgid "%(n)s new"
+msgstr "%(n)s yeni"
+
+msgid "Some sources failed on the last scan."
+msgstr "Son taramada bazı kaynaklar hata verdi."
+
+msgid "The last scan failed."
+msgstr "Son tarama başarısız oldu."
+
+#, python-format
+msgid "Runs automatically. Next scan: %(when)s"
+msgstr "Otomatik çalışır. Sonraki tarama: %(when)s"
+
+msgid "Trigger it manually only when you want fresh results right away."
+msgstr "Sadece hemen taze sonuç istediğinde elle çalıştır."
+
+msgid ""
+"This runs automatically. Trigger it manually only when you want fresh "
+"results right away."
+msgstr "Bu otomatik çalışır. Sadece hemen taze sonuç istediğinde elle çalıştır."
+
+#, python-format
+msgid ""
+"Choose which databases ScrapeMind scans for you. Changes apply on the "
+"next scan (%(when)s)."
+msgstr ""
+"ScrapeMind'in senin için hangi veritabanlarını tarayacağını seç. "
+"Değişiklikler sonraki taramada geçerli olur (%(when)s)."
+
+msgid ""
+"Choose which databases ScrapeMind scans for you. Changes apply on the "
+"next scan."
+msgstr ""
+"ScrapeMind'in senin için hangi veritabanlarını tarayacağını seç. "
+"Değişiklikler sonraki taramada geçerli olur."
+
+msgid "Your feeds"
+msgstr "Kaynakların"
+
+#, python-format
+msgid "%(n)s paused"
+msgstr "%(n)s duraklatıldı"
+
+msgid "Manage your feeds"
+msgstr "Kaynaklarını yönet"
+
+#, python-format
+msgid "%(used)s / %(cap)s feeds"
+msgstr "%(used)s / %(cap)s kaynak"
+
+msgid "Filter feeds"
+msgstr "Kaynakları filtrele"
+
+msgid "All"
+msgstr "Tümü"
+
+msgid "Paused"
+msgstr "Duraklatıldı"
+
+msgid "Feed limit reached. Remove one before adding another."
+msgstr "Kaynak sınırına ulaştın. Yeni bir tane eklemeden önce birini kaldır."
+
+msgid "That address can't be used (private or internal host)."
+msgstr "Bu adres kullanılamaz (özel veya iç ağ adresi)."
+
+msgid "No feeds match this filter."
+msgstr "Bu filtreye uyan kaynak yok."
+
+#, python-format
+msgid "adds about %(d)s to each scan"
+msgstr "her taramaya yaklaşık %(d)s ekliyor"
+
+msgid "Scanning your sources…"
+msgstr "Kaynakların taranıyor…"
+
+#, python-format
+msgid "(%(s)ss)"
+msgstr "(%(s)s sn)"
+
+#, python-format
+msgid "usually takes about %(d)s"
+msgstr "genelde yaklaşık %(d)s sürer"
+
+msgid "Queued — waiting for a worker to pick it up…"
+msgstr "Sıraya alındı — bir işçinin almasını bekliyor…"
+
+msgid ""
+"Your scan is queued but no worker has picked it up. It will run as soon "
+"as one is available."
+msgstr ""
+"Taraman sıraya alındı ama henüz bir işçi almadı. Müsait bir işçi olur "
+"olmaz çalışacak."
+
+msgid "System"
+msgstr "Sistem"
+
+msgid "All systems normal"
+msgstr "Tüm sistemler normal"
+
+msgid "Something needs attention"
+msgstr "İlgilenilmesi gereken bir şey var"
+
+msgid "Database"
+msgstr "Veritabanı"
+
+msgid "Redis"
+msgstr "Redis"
+
+msgid "Worker"
+msgstr "İşçi"
+
+msgid "up"
+msgstr "açık"
+
+msgid "down"
+msgstr "kapalı"
+
+msgid "unknown"
+msgstr "bilinmiyor"
+
+msgid "Queued"
+msgstr "Kuyrukta"
+
+#, python-format
+msgid "Last heartbeat: %(when)s"
+msgstr "Son sinyal: %(when)s"
+
+msgid "Scans stay queued until a worker is running."
+msgstr "Bir işçi çalışana kadar taramalar kuyrukta bekler."
+
+msgid "Audit"
+msgstr "Denetim"
+
+#, python-format
+msgid "Searched in English as: %(term)s"
+msgstr "İngilizce olarak şu terimle aranıyor: %(term)s"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
