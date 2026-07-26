@@ -45,6 +45,16 @@ def overview():
 
     workers = sorted(set(active) | set(scheduled) | set(reserved) | set(registered) | set(stats))
 
+    # Resolved next-run times + queue per entry, so the schedule can be read
+    # without mentally evaluating crontabs in the app timezone.
+    try:
+        from app.tasks.schedule_info import schedule_overview
+
+        schedule_rows = schedule_overview()
+    except Exception:  # noqa: BLE001 — never let this break the admin page
+        logger.exception("schedule_overview_failed")
+        schedule_rows = []
+
     return render_template(
         "tasks_admin/overview.html",
         workers=workers,
@@ -54,4 +64,5 @@ def overview():
         registered=registered,
         stats=stats,
         beat_schedule=celery_app.conf.beat_schedule,
+        schedule_rows=schedule_rows,
     )
