@@ -1,0 +1,63 @@
+{# LLM daily/weekly briefing card — Faz 1 digest. Shows the user's most
+   recent UserDigest (any period) plus a manual "generate now" trigger. #}
+<div class="card mb-3 shadow-sm border-0 bg-body" id="digest-card">
+  <div class="card-header py-2 bg-transparent border-bottom d-flex justify-content-between align-items-center">
+    <strong><i class="bi bi-newspaper me-2 text-primary"></i>{{ _('Your Briefing') }}</strong>
+    {% if latest_digest %}
+      <span class="badge bg-secondary-subtle text-secondary rounded-pill">
+        {{ _('Daily') if latest_digest.period == 'daily' else _('Weekly') }}
+      </span>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if latest_digest %}
+      <p class="small text-muted mb-2">
+        {{ latest_digest.created_at.strftime('%d.%m.%Y %H:%M') }}
+        · {{ _('%(n)s papers summarised', n=latest_digest.item_count) }}
+      </p>
+      {% if latest_digest.summary %}
+        <p class="mb-3">{{ latest_digest.summary }}</p>
+      {% endif %}
+      {% if latest_digest.themes %}
+      <div class="mb-3">
+        {% for t in latest_digest.themes %}
+          <span class="badge rounded-pill bg-info-subtle text-info-emphasis me-1 mb-1">{{ t }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {# Titles only, one line each. The per-item "why" used to render as a
+         second line under every highlight, which made an 8-item briefing tall
+         enough to push the actual surfaced papers below the fold — the feed
+         read as empty until you scrolled. The reasoning is still there, as the
+         row's tooltip, and the full text lives on the paper detail page. #}
+      {% if latest_digest.highlights %}
+      <ul class="list-unstyled small mb-3">
+        {% for h in latest_digest.highlights %}
+        <li class="d-flex align-items-baseline gap-2 py-1 border-bottom border-body-tertiary">
+          <i class="bi bi-dot text-primary flex-shrink-0"></i>
+          {% if h.user_paper_id %}
+            <a href="{{ url_for('scrape.detail', user_paper_id=h.user_paper_id) }}"
+               class="fw-medium text-decoration-none text-truncate"
+               {% if h.why %}title="{{ h.why }}"{% endif %}>{{ h.title }}</a>
+          {% else %}
+            <span class="fw-medium text-truncate" {% if h.why %}title="{{ h.why }}"{% endif %}>{{ h.title }}</span>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    {% else %}
+      <div class="empty-state py-3 text-center">
+        <i class="bi bi-newspaper" style="font-size: 28px; color: var(--bs-secondary-color);"></i>
+        <div class="mt-2 small text-muted">{{ _('No briefing yet — generate one from your latest papers, or wait for tonight\'s automatic run.') }}</div>
+      </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('dashboard.run_digest_now') }}" class="m-0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="period" value="daily">
+      <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+        <i class="bi bi-magic me-1"></i>{{ _('Generate briefing now') }}
+      </button>
+    </form>
+  </div>
+</div>

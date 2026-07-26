@@ -22,7 +22,7 @@ def index():
 
     from app.extensions import db
     from app.modules.academic.models import Keyword, UserKeyword
-    from app.modules.academic.service import list_user_keywords
+    from app.modules.academic.service import list_user_identifiers, list_user_keywords
     from app.modules.scrape.models import PaperNote, UserPaper
     from app.modules.scrape.service import count_all_notes, count_user_papers, list_user_papers
 
@@ -30,6 +30,19 @@ def index():
     user_keywords = list_user_keywords(current_user)
     has_interests = bool(user_keywords)
     user_keyword_values = {kw.value for kw in user_keywords}
+
+    # Source selection — interest-aware suggested/other grouping (Faz 3).
+    sources_ctx = _sources_context()
+
+    # Profile summary strip
+    identifiers = list_user_identifiers(current_user)
+    verified_identifier_count = sum(1 for i in identifiers if i.is_verified)
+
+    # Real scan history + the next scheduled run for this user. Replaces the
+    # old max(UserPaper.created_at) proxy, which reported "last update" as the
+    # last time a paper happened to be linked — stale after any scan that
+    # legitimately found nothing new.
+    scan_ctx = _scan_context()
 
     # Query trending keywords for all users to show recommendations
     top_keywords = (
@@ -65,6 +78,14 @@ def index():
         .count()
     )
 
+    from app.modules.scrape.models import UserDigest
+
+    latest_digest = (
+        UserDigest.query.filter_by(user_id=current_user.id)
+        .order_by(UserDigest.created_at.desc())
+        .first()
+    )
+
     top_keyword_row = (
         db.session.query(UserPaper.matched_keyword, func.count(UserPaper.id).label("count"))
         .filter(
@@ -97,7 +118,46 @@ def index():
         onboarding_complete=onboarding_complete,
         weekly_insights=weekly_insights,
         top_keywords=top_keywords,
+        identifiers=identifiers,
+        verified_identifier_count=verified_identifier_count,
+        latest_digest=latest_digest,
+        **scan_ctx,
+        **sources_ctx,
     )
+
+
+def _render_interests_manager():
+    """Re-render just the interests manager card (HTMX partial swaps)."""
+    from app.modules.academic.service import list_user_keywords
+
+    user_keywords = list_user_keywords(current_user)
+    return render_template(
+        "dashboard/_interests_manager.html",
+        user_keywords=user_keywords,
+    )
+
+
+def _sources_context() -> dict:
+    """Dashboard-side wrapper around the shared source-picker context (Faz 3
+    Bölüm C) — used by the dashboard index and its HTMX partial re-render.
+    The actual grouping logic lives in `scrape.service.sources_card_context`
+    (scrape owns sources; dashboard just renders the card)."""
+    from app.modules.scrape.service import sources_card_context
+
+    return sources_card_context(current_user)
+
+
+def _scan_context() -> dict:
+    """Last/next scan + estimated duration for the current user. Same wrapper
+    pattern as `_sources_context` — scrape owns the data, dashboard renders."""
+    from app.modules.scrape.service import scan_status_context
+
+    return scan_status_context(current_user)
+
+
+def _render_sources_card():
+    """Re-render just the sources selection card (HTMX partial swaps)."""
+    return render_template("dashboard/_sources_card.html", **_scan_context(), **_sources_context())
 
 
 @dashboard_bp.route("/interests/add", methods=["POST"])
@@ -124,13 +184,15 @@ def add_interest():
             flash(_(err or "Failed to add interest."), "danger")
     else:
         flash(_("Interest name cannot be empty."), "danger")
+    if request.headers.get("HX-Request"):
+        return _render_interests_manager()
     return redirect(url_for("dashboard.index"))
 
 
 @dashboard_bp.route("/interests/<int:keyword_id>/delete", methods=["POST"])
 @login_required
 def delete_interest(keyword_id: int):
-    from flask import flash, redirect, url_for
+    from flask import flash, redirect, request, url_for
     from flask_babel import gettext as _
 
     from app.core.audit.middleware import log_action
@@ -142,6 +204,64 @@ def delete_interest(keyword_id: int):
         flash(_("Interest removed successfully."), "success")
     else:
         flash(_(err or "Failed to remove interest."), "danger")
+    if request.headers.get("HX-Request"):
+        return _render_interests_manager()
+    return redirect(url_for("dashboard.index"))
+
+
+@dashboard_bp.route("/sources/toggle", methods=["POST"])
+@login_required
+def toggle_source():
+    """Enable/disable one scrape source for the current user (opt-out model).
+    Returns the re-rendered sources card for HTMX swaps."""
+    from flask import abort, redirect, request, url_for
+
+    from app.core.audit.middleware import log_action
+    from app.modules.scrape.service import set_user_source
+    from app.modules.scrape.sources import enabled_sources
+
+    source_name = (request.form.get("source_name") or "").strip()
+    if source_name not in enabled_sources():
+        abort(400)
+    enabled = request.form.get("enabled", "").lower() in ("true", "on", "1", "yes")
+    set_user_source(current_user, source_name, enabled)
+    log_action(
+        "scrape.source_toggled",
+        entity_type="source",
+        entity_id=source_name,
+        changes={"enabled": enabled},
+    )
+    if request.headers.get("HX-Request"):
+        return _render_sources_card()
+    return redirect(url_for("dashboard.index"))
+
+
+@dashboard_bp.route("/digest/run", methods=["POST"])
+@login_required
+def run_digest_now():
+    """Dev/manual trigger for the LLM digest — lets a user (or a developer
+    testing the feature) get a briefing without waiting for Beat's nightly
+    04:00 UTC run. Still requires a Celery worker to actually process it."""
+    from flask import flash, redirect, request, url_for
+    from flask_babel import gettext as _
+
+    from app.core.audit.middleware import log_action
+    from app.tasks.digest_tasks import run_for_user
+
+    period = request.form.get("period", "daily")
+    if period not in ("daily", "weekly"):
+        period = "daily"
+
+    async_result = run_for_user.delay(current_user.id, period)
+    log_action(
+        "digest.manual_run",
+        entity_type="user",
+        entity_id=str(current_user.id),
+        changes={"period": period, "task_id": getattr(async_result, "id", None)},
+    )
+    if request.headers.get("HX-Request"):
+        return "", 202
+    flash(_("Your briefing is being generated — it'll show up here shortly."), "info")
     return redirect(url_for("dashboard.index"))
 
 
@@ -159,8 +279,15 @@ ACTION_LABELS = {
     "paper.translation_generated": "Türkçe Çeviri Üretildi",
     "paper.chat_message_sent": "Yapay Zekaya Soru Soruldu",
     "scrape.manual_run": "Taramayı Tetikledi",
+    "scrape.source_toggled": "Kaynak Tercihi Değiştirildi",
     "user.keyword_added": "İlgi Alanı Eklendi",
     "user.keyword_removed": "İlgi Alanı Kaldırıldı",
+    "digest.manual_run": "Brifing Tetiklendi",
+    "user.llm_key_updated": "AI Anahtarı Güncellendi",
+    "user.llm_key_cleared": "AI Anahtarı Kaldırıldı",
+    "user.feed_added": "RSS Kaynağı Eklendi",
+    "user.feed_removed": "RSS Kaynağı Kaldırıldı",
+    "user.feed_toggled": "RSS Kaynağı Aç/Kapat",
 }
 
 

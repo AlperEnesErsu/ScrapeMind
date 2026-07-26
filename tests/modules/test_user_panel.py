@@ -282,10 +282,10 @@ def test_chat_message_persists_and_answers(auth_client, clean_papers, monkeypatc
     paper = _make_paper()
     link = _link(uid, paper)
 
-    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda: True)
+    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda user=None: True)
     monkeypatch.setattr(
         "app.modules.scrape.ai_service.ask_paper",
-        lambda paper, question, history=None: "Bu bir test cevabıdır.",
+        lambda paper, question, history=None, user=None: "Bu bir test cevabıdır.",
     )
 
     r = client.post(f"/papers/{link.id}/chat", data={"message": "Bu makale ne anlatıyor?"})
@@ -303,7 +303,7 @@ def test_chat_empty_message_no_content(auth_client, clean_papers, monkeypatch):
     client, uid = auth_client
     paper = _make_paper()
     link = _link(uid, paper)
-    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda: True)
+    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda user=None: True)
     r = client.post(f"/papers/{link.id}/chat", data={"message": "   "})
     assert r.status_code == 204
 
@@ -312,7 +312,7 @@ def test_chat_blocked_when_ai_disabled(auth_client, clean_papers, monkeypatch):
     client, uid = auth_client
     paper = _make_paper()
     link = _link(uid, paper)
-    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda: False)
+    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda user=None: False)
     r = client.post(f"/papers/{link.id}/chat", data={"message": "Merhaba"})
     assert r.status_code == 400
 
@@ -324,10 +324,10 @@ def test_chat_escapes_user_input(auth_client, clean_papers, monkeypatch):
     paper = _make_paper()
     link = _link(uid, paper)
 
-    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda: True)
+    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda user=None: True)
     monkeypatch.setattr(
         "app.modules.scrape.ai_service.ask_paper",
-        lambda paper, question, history=None: "cevap",
+        lambda paper, question, history=None, user=None: "cevap",
     )
 
     r = client.post(
@@ -381,3 +381,355 @@ def test_dashboard_interest_add_and_remove(auth_client, clean_papers):
     kw_id = next(k.id for k in kws if k.value == "graph neural networks")
     client.post(f"/interests/{kw_id}/delete", follow_redirects=False)
     assert not any(k.value == "graph neural networks" for k in list_user_keywords(user))
+
+
+def test_interest_add_htmx_returns_partial(auth_client, clean_papers):
+    """HX-Request add returns the interests-manager partial (no full redirect)."""
+    client, _uid = auth_client
+    r = client.post(
+        "/interests/add",
+        data={"value": "diffusion models"},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert 'id="interests-manager"' in body
+    assert "diffusion models" in body
+
+
+def test_scrape_now_collapses_duplicate_presses(auth_client, clean_papers, monkeypatch):
+    """Second 'Scrape now' while one is in flight returns the already-running
+    widget instead of queuing another task."""
+    client, _uid = auth_client
+
+    # First press: lock free → spinner (task queued; user has no keywords so the
+    # eager task no-ops without hitting any external API).
+    monkeypatch.setattr("app.modules.scrape.service.acquire_scrape_lock", lambda user_id: True)
+    r1 = client.post("/papers/run", headers={"HX-Request": "true"})
+    assert r1.status_code == 200
+
+    # Duplicate press: lock held → already-running widget, no new task.
+    monkeypatch.setattr("app.modules.scrape.service.acquire_scrape_lock", lambda user_id: False)
+    r2 = client.post("/papers/run", headers={"HX-Request": "true"})
+    assert r2.status_code == 200
+    assert 'id="scraper-widget"' in r2.get_data(as_text=True)
+
+
+def test_toggle_source_mutes_and_persists(auth_client, clean_papers):
+    client, uid = auth_client
+    from app.core.models.user import User
+    from app.modules.scrape.service import list_user_source_prefs
+
+    user = User.query.get(uid)
+
+    # Mute arxiv via HTMX toggle → get the sources-card partial back
+    r = client.post(
+        "/sources/toggle",
+        data={"source_name": "arxiv", "enabled": "false"},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    assert 'id="sources-card"' in r.get_data(as_text=True)
+    assert list_user_source_prefs(user).get("arxiv") is False
+
+    # Unknown source is rejected
+    r = client.post(
+        "/sources/toggle",
+        data={"source_name": "not_a_source", "enabled": "false"},
+    )
+    assert r.status_code == 400
+
+
+def test_toggle_source_works_for_rss_feed_source(auth_client, clean_papers):
+    """RSS feeds (Faz 2) register into the same opt-out source registry as
+    the academic adapters — muting one must not require special-casing."""
+    client, uid = auth_client
+    from app.core.models.user import User
+    from app.modules.scrape.service import list_user_source_prefs
+
+    user = User.query.get(uid)
+    r = client.post(
+        "/sources/toggle",
+        data={"source_name": "openai_blog", "enabled": "false"},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    assert list_user_source_prefs(user).get("openai_blog") is False
+
+
+def test_dashboard_sources_card_lists_feed_sources(auth_client, clean_papers):
+    client, _uid = auth_client
+    r = client.get("/")
+    body = r.get_data(as_text=True)
+    assert "OpenAI Blog" in body
+
+
+# --------------------------------------------------------------------------
+# Faz 3 — interest-aware sources-card grouping render
+# --------------------------------------------------------------------------
+
+
+def test_sources_card_groups_feed_into_other_without_matching_interest(auth_client, clean_papers):
+    """httptester has no interests -> topics=["general"] -> no feed overlaps
+    -> every curated RSS feed lands in "Diğer kaynaklar" (Other sources),
+    after the "Önerilen" (Suggested) heading (if present) rather than before
+    it. Section headers render in Turkish (BABEL_DEFAULT_LOCALE=tr in tests)."""
+    client, _uid = auth_client
+    r = client.get("/")
+    body = r.get_data(as_text=True)
+    assert "Diğer kaynaklar" in body
+    other_idx = body.index("Diğer kaynaklar")
+    openai_idx = body.index("OpenAI Blog")
+    assert openai_idx > other_idx
+
+
+def test_sources_card_suggests_feed_for_matching_interest(auth_client, clean_papers):
+    """Adding an AI-lexicon interest reclassifies the user to topic "ai" ->
+    the curated AI feeds should now render inside the "Önerilen" (Suggested)
+    section, ahead of the "Diğer kaynaklar" (Other sources) heading."""
+    client, uid = auth_client
+    from app.core.models.user import User
+
+    user = User.query.get(uid)
+    client.post("/interests/add", data={"value": "yapay zeka"}, follow_redirects=False)
+
+    from app.modules.scrape import ai_service
+
+    assert ai_service.classify_user_topics(user) == ["ai"]
+
+    r = client.get("/")
+    body = r.get_data(as_text=True)
+    assert "Önerilen (ilgine uygun)" in body
+    suggested_idx = body.index("Önerilen (ilgine uygun)")
+    openai_idx = body.index("OpenAI Blog")
+    other_idx = body.index("Diğer kaynaklar") if "Diğer kaynaklar" in body else len(body)
+    assert suggested_idx < openai_idx < other_idx
+
+
+# --------------------------------------------------------------------------
+# Papers feed (/papers) — sources panel + read-only interests strip
+# --------------------------------------------------------------------------
+
+
+def test_papers_feed_renders_sources_panel_and_interests_strip(auth_client, clean_papers):
+    """scrape.feed (`sources_card_context` extracted from dashboard's
+    `_sources_context`) shows the same sources card as the dashboard, plus a
+    read-only strip of the user's interest keywords."""
+    client, _uid = auth_client
+    client.post("/interests/add", data={"value": "transformer"}, follow_redirects=False)
+
+    r = client.get("/papers/")
+    body = r.get_data(as_text=True)
+
+    # Interest keyword shows up as an info pill.
+    assert "transformer" in body
+    # Sources card rendered (an always-on academic source shows its label).
+    assert "arXiv" in body
+    assert 'id="sources-card"' in body
+
+
+# --------------------------------------------------------------------------
+# Faz 3 — AI/Kaynaklar profile tab: custom RSS feed CRUD over HTTP
+# --------------------------------------------------------------------------
+
+
+def test_ai_tab_renders_topics_and_empty_feed_state(auth_client, clean_papers):
+    client, _uid = auth_client
+    r = client.get("/settings/profile?tab=ai")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    # Turkish translations (BABEL_DEFAULT_LOCALE=tr in tests) —
+    # "Your own RSS feeds" / "No custom feeds yet — add one below."
+    assert "Kendi RSS kaynakların" in body
+    assert "Henüz kendi RSS kaynağın yok" in body
+
+
+def _stub_feed_fetch(monkeypatch, result):
+    """`add_user_feed` validates by fetching once — stub that fetch."""
+    monkeypatch.setattr(
+        "app.modules.scrape.service.fetch_feed_conditional", lambda feed, **kw: result
+    )
+
+
+def _ok_fetch_result(title="Example Blog"):
+    from app.modules.scrape.sources.payload import PaperPayload
+    from app.modules.scrape.sources.rss_source import FeedFetchResult
+
+    payload = PaperPayload(
+        source="user_feed",
+        external_id="1",
+        title="Post 1",
+        abstract=None,
+        authors=[],
+        url="https://blog.example.test/1",
+        pdf_url=None,
+        published_at=None,
+        categories=["announcement"],
+        kind="news",
+    )
+    return FeedFetchResult([payload], "ok", title=title)
+
+
+def test_feed_add_remove_toggle_cycle_over_http(auth_client, clean_papers, monkeypatch):
+    client, uid = auth_client
+    _stub_feed_fetch(monkeypatch, _ok_fetch_result())
+
+    r = client.post(
+        "/papers/profile/feeds/add",
+        data={"url": "https://blog.example.test/feed.xml", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "Example Blog" in body
+
+    from app.core.models.user import User
+    from app.modules.scrape.service import list_user_feeds
+
+    user = User.query.get(uid)
+    feeds = list_user_feeds(user)
+    assert len(feeds) == 1
+    feed_id = feeds[0].id
+
+    # Toggle off
+    r = client.post(
+        f"/papers/profile/feeds/{feed_id}/toggle",
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    assert list_user_feeds(user)[0].active is False
+
+    # Remove
+    r = client.post(
+        f"/papers/profile/feeds/{feed_id}/remove",
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    assert list_user_feeds(user) == []
+
+    # Removing again -> 404
+    r = client.post(f"/papers/profile/feeds/{feed_id}/remove")
+    assert r.status_code == 404
+
+
+def test_feed_add_rejects_invalid_url_over_http(auth_client, clean_papers, monkeypatch):
+    """A scheme-only URL (no host) fails normalization before any fetch
+    attempt — guard the fetch with an assertion so this never risks a
+    real network call even if normalization regresses. (A blank/whitespace
+    field would instead fail WTForms' DataRequired at the form level, a
+    different — also valid — rejection path exercised implicitly by the
+    "Please correct the errors below" flow, not this one.)"""
+    client, _uid = auth_client
+
+    def _boom(*a, **k):
+        raise AssertionError("must not fetch for an unparseable URL")
+
+    monkeypatch.setattr("app.modules.scrape.service.fetch_feed_conditional", _boom)
+
+    r = client.post(
+        "/papers/profile/feeds/add",
+        data={"url": "https://", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    # Turkish translation of "Please enter a valid feed URL (...)."
+    assert "kaynak URL" in body
+
+
+def test_feed_add_rejects_unparseable_feed_over_http(auth_client, clean_papers, monkeypatch):
+    """A syntactically valid URL whose feed can't be fetched (stubbed
+    failure, no real network) is rejected with the "could not read" error."""
+    from app.modules.scrape.sources.rss_source import FeedFetchResult
+
+    client, _uid = auth_client
+    _stub_feed_fetch(monkeypatch, FeedFetchResult([], "timeout"))
+
+    r = client.post(
+        "/papers/profile/feeds/add",
+        data={"url": "https://blog.example.test/broken.xml", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    # Turkish translation of "Could not read that feed — check the URL..."
+    assert "okunamadı" in body
+
+
+def test_feed_toggle_swaps_only_the_feed_list(auth_client, clean_papers, monkeypatch):
+    """A toggle must return the feed-list partial, not the whole AI tab.
+
+    Re-rendering the tab re-runs `_ai_ctx()` -> `classify_user_topics`, i.e. an
+    LLM round trip on a checkbox click. Asserting on the response body is the
+    only way to keep that from creeping back.
+    """
+    from app.core.models.user import User
+    from app.modules.scrape.service import list_user_feeds
+
+    client, uid = auth_client
+    _stub_feed_fetch(monkeypatch, _ok_fetch_result())
+    client.post(
+        "/papers/profile/feeds/add",
+        data={"url": "https://blog.example.test/feed.xml", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    feed_id = list_user_feeds(User.query.get(uid))[0].id
+
+    def _boom(user):
+        raise AssertionError("a feed toggle must not trigger topic classification")
+
+    monkeypatch.setattr("app.modules.scrape.ai_service.classify_user_topics", _boom)
+
+    r = client.post(f"/papers/profile/feeds/{feed_id}/toggle", headers={"HX-Request": "true"})
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert 'id="feed-list"' in body
+    # The API-key section belongs to the full tab and must not come back here
+    assert "OpenRouter" not in body
+
+
+def test_feed_list_filter_chips(auth_client, clean_papers, monkeypatch):
+    from app.core.models.user import User
+    from app.modules.scrape.service import list_user_feeds
+
+    client, uid = auth_client
+    _stub_feed_fetch(monkeypatch, _ok_fetch_result())
+    for i in range(2):
+        client.post(
+            "/papers/profile/feeds/add",
+            data={"url": f"https://blog.example.test/{i}.xml", "label": f"Feed {i}"},
+            headers={"HX-Request": "true"},
+        )
+    feeds = list_user_feeds(User.query.get(uid))
+    assert len(feeds) == 2
+    client.post(f"/papers/profile/feeds/{feeds[0].id}/toggle", headers={"HX-Request": "true"})
+
+    active = client.get("/papers/profile/feeds?filter=active").get_data(as_text=True)
+    paused = client.get("/papers/profile/feeds?filter=paused").get_data(as_text=True)
+    assert feeds[1].label in active and feeds[0].label not in active
+    assert feeds[0].label in paused and feeds[1].label not in paused
+
+
+def test_feed_add_rejects_over_the_cap(auth_client, clean_papers, monkeypatch, app):
+    """The cap is what keeps "hundreds of RSS feeds" from becoming hundreds of
+    HTTP requests per user per night."""
+    client, _uid = auth_client
+    _stub_feed_fetch(monkeypatch, _ok_fetch_result())
+    monkeypatch.setitem(app.config, "MAX_USER_FEEDS", 2)
+
+    for i in range(2):
+        r = client.post(
+            "/papers/profile/feeds/add",
+            data={"url": f"https://blog.example.test/{i}.xml", "label": ""},
+            headers={"HX-Request": "true"},
+        )
+        assert r.status_code == 200
+
+    r = client.post(
+        "/papers/profile/feeds/add",
+        data={"url": "https://blog.example.test/too-many.xml", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    # Turkish translation of "Feed limit reached. Remove one before adding another."
+    assert "sınırına ulaştın" in r.get_data(as_text=True)

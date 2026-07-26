@@ -1,0 +1,49 @@
+<div id="interests-manager" class="card mb-3 shadow-sm border-0 bg-body">
+  <div class="card-header py-2 bg-transparent border-bottom d-flex justify-content-between align-items-center">
+    <strong><i class="bi bi-tags me-2 text-primary"></i>{{ _('My Research Interests') }}</strong>
+    <span class="badge bg-secondary-subtle text-secondary rounded-pill">{{ user_keywords|length }}</span>
+  </div>
+  <div class="card-body">
+    <!-- In-place keyword creation (HTMX — no page reload) -->
+    <form hx-post="{{ url_for('dashboard.add_interest') }}"
+          hx-target="#interests-manager" hx-swap="outerHTML"
+          hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+          class="mb-3">
+      <div class="input-group input-group-sm">
+        <input type="text" name="value" class="form-control" placeholder="{{ _('Add keyword...') }}" required>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+    </form>
+
+    {% if user_keywords %}
+      <div class="d-flex flex-wrap gap-2">
+        {% for kw in user_keywords %}
+          <span class="badge rounded-pill bg-body-secondary text-body d-inline-flex align-items-center gap-2 py-2 px-3 border border-dark-subtle">
+            {# The English form the scan actually queries with. Shown only when
+               it differs from what the user typed, so English keywords stay
+               clean — it's there to explain why a Turkish interest returns
+               English papers, not to decorate every chip. Filled lazily on the
+               first scan (service.ensure_keyword_translations), so a brand-new
+               keyword simply shows nothing here until then. #}
+            <span>{{ kw.value }}</span>
+            {% if kw.value_en and kw.value_en|lower != kw.value|lower %}
+              <span class="text-body-tertiary fw-normal"
+                    title="{{ _('Searched in English as: %(term)s', term=kw.value_en) }}">
+                <i class="bi bi-arrow-right-short"></i>{{ kw.value_en }}
+              </span>
+            {% endif %}
+            <button class="btn-close" style="font-size: 0.65rem;"
+                    hx-post="{{ url_for('dashboard.delete_interest', keyword_id=kw.id) }}"
+                    hx-target="#interests-manager" hx-swap="outerHTML"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+                    aria-label="{{ _('Remove interest') }}" title="{{ _('Remove interest') }}"></button>
+          </span>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted small text-center my-3">{{ _('No followed keywords yet.') }}</p>
+    {% endif %}
+  </div>
+</div>
