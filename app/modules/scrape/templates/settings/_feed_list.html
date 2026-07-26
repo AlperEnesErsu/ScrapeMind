@@ -1,0 +1,73 @@
+{# The user's custom feeds — the real management surface (the dashboard card
+   only shows counts).
+
+   Swaps target this partial (#feed-list), not #tab-content. Re-rendering the
+   whole AI tab on every toggle meant re-running `_ai_ctx()`, which calls
+   `classify_user_topics` — an LLM round trip for a checkbox click.
+
+   `filter` is one of: all | active | paused. #}
+<div id="feed-list">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    {# The cost of "I added 40 feeds", shown to the person who added them:
+       every active feed is one more HTTP fetch per nightly scan. #}
+    <div class="small text-muted">
+      {{ _('%(used)s / %(cap)s feeds', used=feed_count, cap=max_user_feeds) }}
+      {% if active_feed_count %}
+        · {{ _('adds about %(d)s to each scan', d=feed_cost_delta | timedeltaformat(granularity='second')) }}
+      {% endif %}
+    </div>
+    {% if feed_count %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('Filter feeds') }}">
+        {% for key, label in [('all', _('All')), ('active', _('Active')), ('paused', _('Paused'))] %}
+          <button type="button"
+                  class="btn btn-outline-secondary {% if filter == key %}active{% endif %}"
+                  hx-get="{{ url_for('scrape.feed_list', filter=key) }}"
+                  hx-target="#feed-list" hx-swap="outerHTML">{{ label }}</button>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if feed_count >= max_user_feeds %}
+    <div class="alert alert-warning py-2 px-3 small">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ _('Feed limit reached. Remove one before adding another.') }}
+    </div>
+  {% endif %}
+
+  {% for f in user_feeds %}
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-2 p-2 border rounded">
+      <div class="flex-grow-1 text-truncate">
+        <span class="fw-medium">{{ f.label or f.url }}</span>
+        {% if not f.active %}
+          <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">{{ _('Paused') }}</span>
+        {% endif %}
+        {% if f.label %}<div class="small text-muted text-truncate">{{ f.url }}</div>{% endif %}
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <form hx-post="{{ url_for('scrape.submit_feed_toggle', feed_id=f.id) }}"
+              hx-target="#feed-list" hx-swap="outerHTML" class="form-check form-switch mb-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 onchange="this.form.requestSubmit()" {% if f.active %}checked{% endif %}>
+        </form>
+        <form hx-post="{{ url_for('scrape.submit_feed_remove', feed_id=f.id) }}"
+              hx-target="#feed-list" hx-swap="outerHTML"
+              hx-confirm="{{ _('Remove this feed?') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger border-0">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-muted small">
+      {% if feed_count %}
+        {{ _('No feeds match this filter.') }}
+      {% else %}
+        {{ _('No custom feeds yet — add one below.') }}
+      {% endif %}
+    </p>
+  {% endfor %}
+</div>
