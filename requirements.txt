@@ -28,6 +28,9 @@ redis==5.2.0
 # Scraping sources (Phase 2)
 arxiv==2.1.3
 
+# Industry RSS/Atom feeds — global ingestion (Faz 2 slice 4)
+feedparser==6.0.12
+
 # Email
 Flask-Mail==0.10.0
 
@@ -37,6 +40,12 @@ qrcode[pil]==7.4.2
 
 # Claude API — paper AI analysis + TR translation (Faz 2 slice 3)
 anthropic==0.46.0
+
+# OpenAI-compatible client — powers OpenRouter + Ollama LLM providers (Faz 2 digest)
+openai==2.48.0
+
+# Per-user LLM API key encryption at rest (Fernet)
+cryptography==48.0.0
 
 # Logging
 structlog==24.4.0
