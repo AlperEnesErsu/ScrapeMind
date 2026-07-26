@@ -1,0 +1,105 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('AI Settings') }}</h6>
+
+<p class="small text-muted">
+  {{ _('ScrapeMind uses an LLM for paper analysis, translation, chat, and your daily/weekly briefing. Bring your own free OpenRouter key to keep costs at zero — it is stored encrypted and only used for your own requests.') }}
+</p>
+
+{% if provider != 'openrouter' %}
+<div class="alert alert-info py-2 px-3 small mb-3">
+  <i class="bi bi-info-circle me-1"></i>
+  {{ _('This deployment is configured to use the "%(provider)s" provider — your OpenRouter key (if set) is ignored until an admin switches LLM_PROVIDER back to openrouter.', provider=provider) }}
+</div>
+{% endif %}
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  {% if status.has_key %}
+    <span class="badge rounded-pill text-bg-success-subtle text-success">
+      <i class="bi bi-key-fill me-1"></i>{{ _('Key configured') }}
+    </span>
+    <code class="small">{{ status.masked }}</code>
+  {% else %}
+    <span class="badge rounded-pill text-bg-secondary-subtle text-secondary">
+      <i class="bi bi-key me-1"></i>{{ _('No key set — using deployment default (if any)') }}
+    </span>
+  {% endif %}
+</div>
+
+{% if status.model %}
+<p class="small text-muted mb-3">
+  {{ _('Model override:') }} <code>{{ status.model }}</code>
+</p>
+{% elif default_model %}
+<p class="small text-muted mb-3">
+  {{ _('Default model:') }} <code>{{ default_model }}</code>
+</p>
+{% endif %}
+
+<form hx-post="{{ url_for('scrape.submit_ai_save') }}" hx-target="#tab-content" hx-swap="innerHTML">
+  {{ form.csrf_token }}
+  <div class="mb-3">
+    <label class="form-label">{{ form.openrouter_api_key.label.text }}</label>
+    {{ form.openrouter_api_key(class="form-control", placeholder="sk-or-v1-...", autocomplete="off") }}
+    {% for err in form.openrouter_api_key.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    <div class="form-text">
+      {{ _('Leave blank to keep your current key.') }}
+      <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">{{ _('Get a free OpenRouter key') }} <i class="bi bi-box-arrow-up-right"></i></a>
+    </div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.model.label.text }}</label>
+    {{ form.model(class="form-control", placeholder="qwen/qwen-2.5-72b-instruct:free") }}
+    {% for err in form.model.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    <div class="form-text">{{ _('Optional — overrides the deployment default model for your requests only.') }}</div>
+  </div>
+  <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+</form>
+
+{% if status.has_key %}
+<form hx-post="{{ url_for('scrape.submit_ai_clear') }}" hx-target="#tab-content" hx-swap="innerHTML"
+      hx-confirm="{{ _('Remove your stored API key?') }}" class="mt-2">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn btn-outline-danger btn-sm">
+    <i class="bi bi-trash me-1"></i>{{ _('Remove key') }}
+  </button>
+</form>
+{% endif %}
+
+<hr class="my-4">
+<h6 class="text-muted mb-3">{{ _('Your topics') }}</h6>
+<p class="small text-muted">
+  {{ _('Classified from your research interests — used to suggest and default-enable relevant sources.') }}
+</p>
+<div class="mb-4">
+  {% for t in user_topics %}
+    <span class="badge rounded-pill text-bg-primary-subtle text-primary me-1 mb-1">{{ _(topics_meta.get(t, t)) }}</span>
+  {% endfor %}
+</div>
+
+<hr class="my-4">
+<h6 class="text-muted mb-3">{{ _('Your own RSS feeds') }}</h6>
+<p class="small text-muted">
+  {{ _('Add any RSS/Atom feed — its relevant items are scored against your interests and flow into your feed and briefing just like the curated sources.') }}
+</p>
+
+<div class="mb-3">
+  {% include 'settings/_feed_list.html' %}
+</div>
+
+{# Adding a feed can fail with a message (bad URL, blocked host, cap reached),
+   which the tab renders as a flash — so this one still swaps the whole tab. #}
+<form hx-post="{{ url_for('scrape.submit_feed_add') }}" hx-target="#tab-content" hx-swap="innerHTML">
+  {{ feed_form.csrf_token }}
+  <div class="mb-2">
+    <label class="form-label">{{ feed_form.url.label.text }}</label>
+    {{ feed_form.url(class="form-control", placeholder="https://example.com/feed.xml") }}
+    {% for err in feed_form.url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+  </div>
+  <div class="mb-2">
+    <label class="form-label">{{ feed_form.label.label.text }}</label>
+    {{ feed_form.label(class="form-control") }}
+    {% for err in feed_form.label.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    <div class="form-text">{{ _('Leave blank to use the feed\'s own title.') }}</div>
+  </div>
+  <button type="submit" class="btn btn-primary">{{ feed_form.submit.label.text }}</button>
+</form>

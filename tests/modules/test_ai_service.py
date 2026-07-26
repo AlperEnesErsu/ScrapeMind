@@ -80,8 +80,8 @@ _FAKE_ANALYSIS = {
 
 
 def test_generate_analysis_persists(app, a_paper, monkeypatch):
-    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda: True)
-    monkeypatch.setattr(ai_service, "_call_claude", lambda **kw: (_FAKE_ANALYSIS, "{}"))
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (_FAKE_ANALYSIS, "{}"))
     with app.app_context():
         result = ai_service.generate_analysis(a_paper)
         assert result is not None
@@ -93,41 +93,41 @@ def test_generate_analysis_persists(app, a_paper, monkeypatch):
 
 
 def test_generate_analysis_disabled_returns_none(app, a_paper, monkeypatch):
-    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda: False)
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: False)
     with app.app_context():
         assert ai_service.generate_analysis(a_paper) is None
         assert PaperAnalysis.query.filter_by(paper_id=a_paper.id).count() == 0
 
 
 def test_generate_analysis_claude_failure_no_cache(app, a_paper, monkeypatch):
-    """A failed Claude call returns None and must not persist a partial row."""
-    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda: True)
-    monkeypatch.setattr(ai_service, "_call_claude", lambda **kw: (None, None))
+    """A failed LLM call returns None and must not persist a partial row."""
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (None, None))
     with app.app_context():
         assert ai_service.generate_analysis(a_paper) is None
         assert PaperAnalysis.query.filter_by(paper_id=a_paper.id).count() == 0
 
 
 def test_get_or_generate_analysis_cache_hit_skips_claude(app, a_paper, monkeypatch):
-    """When a row already exists, Claude must not be called again."""
-    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda: True)
+    """When a row already exists, the LLM must not be called again."""
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
     with app.app_context():
         _db.session.add(PaperAnalysis(paper_id=a_paper.id, target_lang="tr", tldr="mevcut"))
         _db.session.commit()
 
         def _boom(**kw):
-            raise AssertionError("Claude should not be called on a cache hit")
+            raise AssertionError("LLM should not be called on a cache hit")
 
-        monkeypatch.setattr(ai_service, "_call_claude", _boom)
+        monkeypatch.setattr(ai_service, "_call_llm", _boom)
         result = ai_service.get_or_generate_analysis(a_paper)
         assert result.tldr == "mevcut"
 
 
 def test_generate_translation_persists(app, a_paper, monkeypatch):
-    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda: True)
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
     monkeypatch.setattr(
         ai_service,
-        "_call_claude",
+        "_call_llm",
         lambda **kw: ({"title_translated": "Bir Makale", "abstract_translated": "Bir özet."}, "{}"),
     )
     with app.app_context():
@@ -138,7 +138,7 @@ def test_generate_translation_persists(app, a_paper, monkeypatch):
 
 
 def test_get_or_generate_translation_cache_hit(app, a_paper, monkeypatch):
-    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda: True)
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
     with app.app_context():
         _db.session.add(
             PaperTranslation(paper_id=a_paper.id, target_lang="tr", title_translated="Önbellek")
@@ -146,8 +146,8 @@ def test_get_or_generate_translation_cache_hit(app, a_paper, monkeypatch):
         _db.session.commit()
 
         def _boom(**kw):
-            raise AssertionError("Claude should not be called on a cache hit")
+            raise AssertionError("LLM should not be called on a cache hit")
 
-        monkeypatch.setattr(ai_service, "_call_claude", _boom)
+        monkeypatch.setattr(ai_service, "_call_llm", _boom)
         result = ai_service.get_or_generate_translation(a_paper)
         assert result.title_translated == "Önbellek"
