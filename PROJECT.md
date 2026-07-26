@@ -61,9 +61,15 @@ Bu mimari **iki şapkalı** geliştirilecek:
 | Config | **python-dotenv** | |
 | Logging | **structlog** | JSON log |
 | Container | **Docker + docker-compose** | |
-| Task queue (Faz 2) | **Celery + Redis** | Scraping işleri için kritik |
+| Task queue | **Celery 5.4 + Redis** | Scraping işleri için kritik |
+| Scraping | `arxiv` SDK · `feedparser` · `requests` | `app/modules/scrape/`, core'a sızmaz |
+| LLM | OpenRouter (varsayılan) · Ollama · Anthropic | Çok sağlayıcılı, kullanıcı bazlı şifreli anahtar |
 
-> **Not (ScrapeMind için ileride):** Scraping kütüphaneleri (Playwright, Scrapy, BeautifulSoup) `app/modules/`'da modüllerin kendi `requirements`'larına yazılacak — core'a sızmayacak.
+> **Güncelleme (Temmuz 2026):** Bu dokümanın önceki hali scraping stack'i olarak
+> Playwright/Scrapy/BeautifulSoup yazıyordu. **Hiçbiri kurulu değil ve kullanılmıyor.**
+> Veri toplama resmî API'ler (arXiv/S2/PubMed) ve `feedparser` üzerinden yapılıyor;
+> tarayıcı otomasyonu bilinçli olarak kapsam dışı (imaj boyutu + worker maliyeti).
+> Güncel mimari: [docs/SCRAPING.md](docs/SCRAPING.md).
 
 ---
 
@@ -498,18 +504,34 @@ Startup'ta `app/modules/__init__.py` tüm klasörleri tarar, manifest'leri DB'ye
 - [ ] Seed script (ilk admin, default rol, default menü)
 - [ ] Testler
 
-### 🟨 Faz 2 — ScrapeMind Modülleri + Altyapı Ekleri
-- [ ] Celery + Redis (scraping job queue)
-- [ ] 2FA (TOTP)
-- [ ] SMTP / email
-- [ ] API v1 (JWT)
-- [ ] **ScrapeMind iş modülleri** (ayrı `SCRAPEMIND.md`'de planlanacak)
+### ✅ Faz 2 — ScrapeMind Modülleri + Altyapı Ekleri *(tamamlandı)*
+- [x] Celery + Redis (scraping job queue)
+- [x] 2FA (TOTP) + recovery kodları
+- [x] SMTP / email
+- [x] API v1 (JWT) + token revocation
+- [x] **ScrapeMind iş modülleri** — arXiv, Semantic Scholar, PubMed; mimari
+      [docs/SCRAPING.md](docs/SCRAPING.md)'de belgelendi
 
-### 🟧 Faz 3 — İleri Auth & Ölçek
+### 🔶 Faz 3 — Kaynak Zenginleştirme & Kişiselleştirme *(devam ediyor)*
+- [x] RSS/Atom beslemeler (küratörlü + kullanıcının kendi beslemeleri, SSRF korumalı)
+- [x] Konu sınıflandırma + ilgi-farkında kaynak seçici
+- [x] TR→EN anahtar kelime çevirisi
+- [x] Tarama geçmişi (`ScanRun`) + canlı durum paneli
+- [x] Günlük/haftalık LLM özeti (digest)
+- [x] Çok sağlayıcılı LLM + kullanıcı bazlı şifreli anahtar
+- [x] Redis cache (permission) · worker ayrımı · deterministik fan-out
+- [ ] **DOI tekilleştirmesi** — yeni kaynak eklemeden önce şart
+- [ ] OpenAlex + Crossref adaptörleri
+- [ ] RSS'siz sitelerden scrape + alan seçici (robots.txt uyumu dahil)
+
+> Faz 3'ün büyük kısmı `feat/homepage-source-selection` branch'inde **commit'lenmemiş**
+> durumda. Devir notları ve önerilen commit bölünmesi: [docs/HANDOVER.md](docs/HANDOVER.md).
+
+### 🟧 Faz 4 — İleri Auth & Ölçek
+- [ ] pgvector + semantik arama / gerçek RAG
+- [ ] Yazar takibi (ORCID → OpenAlex) + atıf grafiği
 - [ ] `LdapAuthStrategy` (gerçek implementation)
-- [ ] `JwtApiStrategy` (gerçek implementation)
 - [ ] Audit log partition
-- [ ] Redis cache (permission, menu)
 - [ ] Sentry, Prometheus
 - [ ] Deploy hedefini netleştir + production guide
 
@@ -567,8 +589,11 @@ flask db upgrade
 - ✅ Audit log her kritik aksiyonda
 - ✅ Secrets `.env`, asla commit yok
 - ✅ Soft delete → veri silmek yerine işaretle
-- ⏳ 2FA (Faz 2)
-- ⏳ Password policy (Faz 1 sonu)
+- ✅ 2FA (TOTP) + recovery kodları
+- ✅ Password policy
+- ✅ SSRF guard — kullanıcının verdiği her URL, ekleme anında ve **her redirect
+  hop'unda** çözülen IP'leriyle denetlenir (`app/modules/scrape/net_guard.py`)
+- ✅ Dağıtım geneli rate limit — dış API'ler Redis token bucket'ıyla korunur
 
 ---
 
@@ -578,7 +603,10 @@ flask db upgrade
 2. **Avatar yükleme** — local storage mı, S3-compatible mı? (Faz 1 sonu)
 3. **Email servisi** — SMTP relay mi, SendGrid/Resend gibi servis mi? (Faz 2)
 4. **2FA türü** — TOTP / SMS / Email (Faz 2)
-5. **ScrapeMind** — scraping kütüphanesi, proxy, scheduling, export formatları (ayrı `SCRAPEMIND.md`)
+5. ~~**ScrapeMind** — scraping kütüphanesi, proxy, scheduling, export formatları~~
+   → **Karara bağlandı ve belgelendi:** [docs/SCRAPING.md](docs/SCRAPING.md).
+   Resmî API + RSS; proxy yok; zamanlama Celery Beat + deterministik fan-out;
+   export BibTeX (Zotero/Mendeley entegrasyonu yol haritasında).
 
 ---
 
@@ -588,8 +616,9 @@ Bu doküman aşağıdaki kararlarla onay bekliyor:
 
 - ✅ ScrapeMind = ilk proje, ama `flask-core-base` yeniden kullanılabilir iskelet olarak yapılandırılacak
 - ✅ Faz 1'de: Auth (Local+OAuth) + RBAC + Dinamik Menü + Soft Delete + i18n (TR/EN) + Sol Sidebar UI
-- ✅ Faz 2'de: Celery, ScrapeMind modülleri, 2FA, Email, API
-- ✅ Faz 3'te: LDAP, JWT, Cache, Monitoring
+- ✅ Faz 2'de: Celery, ScrapeMind modülleri, 2FA, Email, API — **tamamlandı**
+- 🔶 Faz 3'te: kaynak zenginleştirme, kişiselleştirme, digest, çok sağlayıcılı LLM — **devam ediyor**
+- ⏳ Faz 4'te: pgvector/RAG, yazar takibi, LDAP, Monitoring
 
 | Kişi | Onay | Tarih |
 |---|---|---|

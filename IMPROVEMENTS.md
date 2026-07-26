@@ -26,4 +26,15 @@
 |------|-------|
 | Admin overview | ✅ Split multi-pane, metrik kartları, top keywords |
 | Kullanıcı yönetimi | ✅ Liste + arama + create paneli (güçlü şifre validasyonu) |
-| RBAC | 
+| RBAC | *(kayıt burada kesilmiş — aşağıya bak)* |
+
+---
+
+> ⚠️ **Bu dosya eksik.** Yukarıdaki tablo "RBAC" satırının ortasında kesilmiş ve
+> maddelendirilmiş punch list (U-1, U-2, … / admin maddeleri) hiç yazılmamış — dosyanın
+> başındaki "madde numaraları referans alınabilir" cümlesinin işaret ettiği liste yok.
+>
+> Devralan geliştirici için: bu dosyayı **yeniden oluşturmak, kurtarmaya çalışmaktan
+> daha hızlı** olacaktır. Güncel UI durumu için [docs/UI_REVIEW.md](docs/UI_REVIEW.md),
+> öncelikli teknik iş listesi için [docs/HANDOVER.md §5](docs/HANDOVER.md) zaten güncel —
+> bu dosya yalnızca UI/UX punch list'i için gerekiyor. 
