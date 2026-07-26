@@ -43,7 +43,10 @@ services:
       redis:
         condition: service_healthy
 
-  # Celery worker — runs background tasks pulled from the Redis broker.
+  # Celery worker — DB/LLM-heavy queues, prefork pool.
+  # `celery` MUST stay in the -Q list: it's the default queue, so anything not
+  # named in TASK_ROUTES (core.heartbeat, the purge sweeps, future tasks) only
+  # runs because this worker consumes it.
   # Profile: `tasks` so it's only spun up when you explicitly ask
   # (`docker compose --profile tasks up`). The web container stays
   # cheap for everyday dev.
@@ -55,7 +58,34 @@ services:
     environment:
       DATABASE_URL: postgresql://scrapemind:scrapemind@db:5432/scrapemind
       REDIS_URL: redis://redis:6379/0
-    command: celery -A app.tasks worker --loglevel=info
+    command: >
+      celery -A app.tasks worker
+      -Q celery,scrape,llm -c 4
+      --max-tasks-per-child=200 --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles: ["tasks"]
+
+  # Celery worker — feed/HTTP fetching only. Threads, not prefork: this queue
+  # is pure network wait and both requests and psycopg2 release the GIL while
+  # blocked, so 16 threads overlap 16 slow feeds in one process. (Not gevent:
+  # psycopg2 is a C extension that blocks the hub, and these tasks do write to
+  # the DB — it would add monkeypatch-ordering risk for no throughput.)
+  worker-io:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://scrapemind:scrapemind@db:5432/scrapemind
+      REDIS_URL: redis://redis:6379/0
+    command: >
+      celery -A app.tasks worker
+      -Q io -P threads -c 16
+      --max-tasks-per-child=500 --loglevel=info
     depends_on:
       db:
         condition: service_healthy
@@ -64,6 +94,10 @@ services:
     profiles: ["tasks"]
 
   # Celery beat scheduler — kicks periodic tasks into the broker.
+  # Run exactly ONE replica: the schedule lives in a local file
+  # (beat_schedule_filename), so a second beat would double-fire everything.
+  # The per-user locks in scrape/feed tasks limit the damage, but they are a
+  # safety net, not a licence to scale this service.
   beat:
     build:
       context: ..

@@ -20,6 +20,39 @@ celery_app = Celery("scrapemind")
 
 _flask_app = None
 
+# Queue routing. Three pools with genuinely different shapes:
+#   "io"     — feed/HTTP fetching. Network-bound, safe to run wide (threads).
+#   "scrape" — academic adapters. Network-bound too, but throttled against
+#              shared external quotas, so widening it buys nothing.
+#   "llm"    — one paid model call per user per run; deliberately narrow.
+# Anything unrouted lands on the default "celery" queue — a worker started with
+# an explicit -Q list must therefore always include it, or `core.heartbeat` and
+# every future task silently stops running.
+TASK_ROUTES = {
+    "feeds.ingest_all": {"queue": "io"},
+    "scrape.run_for_user": {"queue": "scrape"},
+    "scrape.run_for_all_users": {"queue": "scrape"},
+    "feeds.link_for_user": {"queue": "llm"},
+    "digest.run_for_user": {"queue": "llm"},
+}
+
+
+def _common_conf(soft_limit: int, hard_limit: int) -> dict:
+    """Settings that must be identical whether Celery was configured through
+    `create_app()` or through the worker bootstrap below."""
+    return {
+        "task_routes": TASK_ROUTES,
+        "task_soft_time_limit": soft_limit,
+        "task_time_limit": hard_limit,
+        # Every task here is idempotent (upserts + existence-checked links), so
+        # re-delivering one after a worker dies is safe — and much better than
+        # losing a night's scan.
+        "task_acks_late": True,
+        # With acks_late, prefetching would let one slow worker sit on a queue
+        # of tasks another worker could have started.
+        "worker_prefetch_multiplier": 1,
+    }
+
 
 class LazyContextTask(celery_app.Task):
     """Run task inside Flask app context, initializing the app on demand."""
@@ -53,6 +86,10 @@ def init_celery(flask_app) -> Celery:
         enable_utc=True,
         # Periodic schedule lives in app/tasks/schedule.py
         beat_schedule_filename="celerybeat-schedule",  # local file for dev; redbeat in Phase 3
+        **_common_conf(
+            flask_app.config.get("CELERY_TASK_SOFT_TIME_LIMIT", 600),
+            flask_app.config.get("CELERY_TASK_TIME_LIMIT", 900),
+        ),
     )
 
     # Apply the beat schedule lazily (so an empty schedule today doesn't
@@ -74,7 +111,7 @@ def init_celery(flask_app) -> Celery:
 
 # Side-effect: importing this module registers tasks via decorators.
 # Keep at the bottom to avoid circular imports.
-from app.tasks import core_tasks, scrape_tasks  # noqa: E402, F401
+from app.tasks import core_tasks, digest_tasks, feed_tasks, scrape_tasks  # noqa: E402, F401
 
 
 def _bootstrap_for_worker() -> None:
@@ -113,6 +150,10 @@ def _bootstrap_for_worker() -> None:
             timezone=timezone,
             enable_utc=True,
             beat_schedule_filename="celerybeat-schedule",
+            **_common_conf(
+                int(getattr(config_cls, "CELERY_TASK_SOFT_TIME_LIMIT", 600)),
+                int(getattr(config_cls, "CELERY_TASK_TIME_LIMIT", 900)),
+            ),
         )
 
         from app.tasks.schedule import BEAT_SCHEDULE
