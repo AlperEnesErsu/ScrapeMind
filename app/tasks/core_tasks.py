@@ -25,8 +25,17 @@ def heartbeat(self) -> dict:
 
     Returns the worker hostname and ISO timestamp; useful for the admin
     /admin/tasks/ panel to confirm a worker is alive without a real job.
+
+    Also stamps a Redis key (`app/core/health.py`). That stamp is what the
+    sidebar status panel reads: because this task only runs when Beat schedules
+    it *and* a worker consumes it, a fresh stamp proves both halves — for one
+    O(1) lookup, instead of a broadcast `celery inspect ping` that blocks for
+    its whole timeout exactly when nothing is listening.
     """
+    from app.core.health import record_heartbeat
+
     now = datetime.now(UTC).isoformat()
+    record_heartbeat(self.request.hostname)
     logger.info("task_heartbeat", worker=self.request.hostname, at=now)
     return {"worker": self.request.hostname, "at": now}
 
