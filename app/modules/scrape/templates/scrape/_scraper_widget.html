@@ -1,26 +1,38 @@
-<div id="scraper-widget" class="card shadow-sm border-0 bg-body">
-  <div class="card-header py-2 bg-transparent border-bottom">
-    <strong><i class="bi bi-arrow-clockwise me-2 text-success"></i>{{ _('Data Scraper') }}</strong>
+{# Manual scrape control — lives inline in the dashboard header.
+
+   It used to be a full card in the sidebar *and* a plain form-POST button in
+   the header: two controls for one action, only one of which had progress
+   feedback, and both answering to #scraper-widget so only one could ever win
+   an HTMX swap. This is the single one.
+
+   No "next scan" / "active sources" copy here on purpose: `_scan_status.html`
+   sits directly beside it and states the schedule, and `_sources_card.html`
+   lists the sources. Repeating either would just be noise in a page header.
+
+   `id="scraper-widget"` is the swap target for the widget -> spinner -> widget
+   chain; `_scrape_spinner.html` keeps the same root id and shape. #}
+<div id="scraper-widget" class="text-end">
+  {% if already_running %}
+  <div class="small text-info-emphasis mb-1">
+    <i class="bi bi-hourglass-split me-1"></i>{{ _('A scrape is already running for you — you\'ll be notified when it finishes.') }}
   </div>
-  <div class="card-body">
-    <p class="text-muted small mb-2">
-      {{ _('Scraping queries ArXiv and other databases using your research interest keywords to find matching papers.') }}
-    </p>
-    {% if active_sources %}
-    <p class="small mb-3">
-      <span class="text-muted">{{ _('Active sources:') }}</span>
-      {% for s in active_sources %}<span class="badge source-badge source-{{ s }} me-1">{{ s.replace('_', ' ') }}</span>{% endfor %}
-    </p>
-    {% endif %}
-    <div class="d-grid">
-      <button class="btn btn-sm btn-primary"
-              hx-post="{{ url_for('scrape.run_now') }}"
-              hx-target="#scraper-widget"
-              hx-swap="outerHTML"
-              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
-              {% if not has_interests %}disabled{% endif %}>
-        <i class="bi bi-arrow-clockwise me-2"></i>{{ _('Scrape now') }}
-      </button>
-    </div>
+  {% endif %}
+
+  {# Queued, but nothing consumed it. Almost always "no Celery worker": say
+     that instead of spinning forever as if work were happening. #}
+  {% if worker_stalled %}
+  <div class="small text-warning-emphasis mb-1" data-testid="worker-stalled" style="max-width: 22rem;">
+    <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Your scan is queued but no worker has picked it up. It will run as soon as one is available.') }}
   </div>
+  {% endif %}
+
+  <button class="btn btn-sm btn-outline-secondary"
+          hx-post="{{ url_for('scrape.run_now') }}"
+          hx-target="#scraper-widget"
+          hx-swap="outerHTML"
+          hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+          {% if not has_interests %}disabled{% endif %}
+          title="{{ _('You do not need to — the nightly scan covers this. Use it to fetch right now.') }}">
+    <i class="bi bi-arrow-clockwise me-1"></i>{{ _('Scrape now') }}
+  </button>
 </div>
