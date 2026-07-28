@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}{{ collection.name }} — ScrapeMind{% endblock %}
+{% block content %}
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <h4 class="m-0 d-inline-flex align-items-center gap-2">
+    <i class="bi bi-folder2 text-primary"></i>{{ collection.name }}
+  </h4>
+  <span class="small text-muted">{{ rows|length }} {{ _('papers') }}</span>
+
+  <div class="ms-auto d-flex gap-2">
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-download me-1"></i>{{ _('Export') }}
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{{ url_for('library.export_collection', collection_id=collection.id, fmt='bib') }}">{{ _('BibTeX') }} (.bib)</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('library.export_collection', collection_id=collection.id, fmt='csv') }}">{{ _('CSV') }} (.csv)</a></li>
+      </ul>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#renameModal">
+      <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
+    </button>
+    <a href="{{ url_for('library.collections') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+  </div>
+</div>
+
+{% if collection.description %}
+  <p class="text-muted">{{ collection.description }}</p>
+{% endif %}
+
+{% if rows %}
+  {% for r in rows %}
+    <div class="d-flex align-items-start gap-2">
+      <div class="flex-grow-1">{% include 'scrape/_paper_card.html' %}</div>
+      <form method="post" action="{{ url_for('library.remove_from_collection', collection_id=collection.id, user_paper_id=r.id) }}" class="pt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remove from collection') }}">
+          <i class="bi bi-folder-minus"></i>
+        </button>
+      </form>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="empty-state py-5 text-center">
+    <i class="bi bi-folder2" style="font-size: 36px; color: var(--bs-secondary-color);"></i>
+    <div class="mt-2 fw-medium">{{ _('This collection is empty.') }}</div>
+    <p class="small text-muted mt-2">{{ _('Use the folder icon on any paper to add it here.') }}</p>
+  </div>
+{% endif %}
+
+{# Rename / delete modal #}
+<div class="modal fade" id="renameModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('library.rename_collection', collection_id=collection.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ _('Edit collection') }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label small">{{ _('Name') }}</label>
+          <input type="text" name="name" value="{{ collection.name }}" maxlength="120" required class="form-control form-control-sm mb-2">
+          <label class="form-label small">{{ _('Description') }}</label>
+          <input type="text" name="description" value="{{ collection.description or '' }}" maxlength="500" class="form-control form-control-sm">
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-danger"
+                  onclick="if(confirm('{{ _('Delete this collection? The papers stay in your library.') }}')) document.getElementById('deleteCollectionForm').submit();">
+            <i class="bi bi-trash3 me-1"></i>{{ _('Delete') }}
+          </button>
+          <div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-sm btn-primary">{{ _('Save') }}</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<form method="post" action="{{ url_for('library.delete_collection', collection_id=collection.id) }}" id="deleteCollectionForm" class="d-none">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+{% endblock %}

@@ -2500,6 +2500,77 @@ msgstr "Daha geniş bir sorgu dene veya bazı filtreleri temizle."
 msgid "Search"
 msgstr "Ara"
 
+msgid "Collections"
+msgstr "Koleksiyonlar"
+
+msgid "Collection created."
+msgstr "Koleksiyon oluşturuldu."
+
+msgid "Collection updated."
+msgstr "Koleksiyon güncellendi."
+
+msgid "Collection deleted."
+msgstr "Koleksiyon silindi."
+
+msgid "Added to collection."
+msgstr "Koleksiyona eklendi."
+
+msgid "Removed from collection."
+msgstr "Koleksiyondan çıkarıldı."
+
+msgid "Collection name is required."
+msgstr "Koleksiyon adı gerekli."
+
+msgid "Collection name is too long."
+msgstr "Koleksiyon adı çok uzun."
+
+msgid "A collection with that name already exists."
+msgstr "Bu isimde bir koleksiyon zaten var."
+
+msgid "New collection"
+msgstr "Yeni koleksiyon"
+
+msgid "e.g. Thesis references"
+msgstr "örn. Tez kaynakları"
+
+msgid "optional"
+msgstr "opsiyonel"
+
+msgid "Manage collections"
+msgstr "Koleksiyonları yönet"
+
+msgid "No collections yet."
+msgstr "Henüz koleksiyon yok."
+
+msgid "Group papers by project or topic — create your first collection above."
+msgstr ""
+"Makaleleri proje veya konuya göre grupla — ilk koleksiyonunu yukarıdan "
+"oluştur."
+
+msgid "papers"
+msgstr "makale"
+
+msgid "Add to collection"
+msgstr "Koleksiyona ekle"
+
+msgid "Remove from collection"
+msgstr "Koleksiyondan çıkar"
+
+msgid "This collection is empty."
+msgstr "Bu koleksiyon boş."
+
+msgid "Use the folder icon on any paper to add it here."
+msgstr "Buraya eklemek için herhangi bir makaledeki klasör simgesini kullan."
+
+msgid "Edit collection"
+msgstr "Koleksiyonu düzenle"
+
+msgid "Delete this collection? The papers stay in your library."
+msgstr "Bu koleksiyon silinsin mi? Makaleler kütüphanende kalır."
+
+msgid "e.g. Thesis references "
+msgstr "örn. Tez kaynakları "
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

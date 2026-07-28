@@ -127,6 +127,7 @@ def test_semantic_scholar_raises_when_every_keyword_failed(monkeypatch):
     empty when it never got to ask. Raising lets the service flag the source
     and mark the run "partial".
     """
+
     def fake_search(query, *, max_results):  # noqa: ARG001
         raise requests.HTTPError("429 Client Error")
 
@@ -373,7 +374,9 @@ def test_rss_fetch_sends_conditional_headers(monkeypatch):
     of an unchanged feed free."""
     seen: dict = {}
     _serve(monkeypatch, _FakeResponse(_RSS_FIXTURE), capture=seen)
-    rss_source.fetch_feed_conditional(_FAKE_FEED, etag='W/"abc"', last_modified="Thu, 23 Jul 2026 12:00:00 GMT")
+    rss_source.fetch_feed_conditional(
+        _FAKE_FEED, etag='W/"abc"', last_modified="Thu, 23 Jul 2026 12:00:00 GMT"
+    )
     assert seen["headers"]["If-None-Match"] == 'W/"abc"'
     assert seen["headers"]["If-Modified-Since"] == "Thu, 23 Jul 2026 12:00:00 GMT"
     # A read timeout must always be set — this is the whole point of the rewrite
@@ -393,7 +396,8 @@ def test_rss_fetch_returns_new_validators(monkeypatch):
     _serve(
         monkeypatch,
         _FakeResponse(
-            _RSS_FIXTURE, headers={"ETag": 'W/"new"', "Last-Modified": "Fri, 24 Jul 2026 00:00:00 GMT"}
+            _RSS_FIXTURE,
+            headers={"ETag": 'W/"new"', "Last-Modified": "Fri, 24 Jul 2026 00:00:00 GMT"},
         ),
     )
     res = rss_source.fetch_feed_conditional(_FAKE_FEED)

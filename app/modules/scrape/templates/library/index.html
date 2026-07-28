@@ -10,7 +10,10 @@
     {{ counts.favorites }} {{ _('favorites') }} · {{ counts.notes }} {{ _('notes') }}
   </span>
 
-  <a href="{{ url_for('library.search') }}" class="btn btn-sm btn-outline-secondary ms-auto">
+  <a href="{{ url_for('library.collections') }}" class="btn btn-sm btn-outline-secondary ms-auto">
+    <i class="bi bi-folder2-open me-1"></i>{{ _('Collections') }}
+  </a>
+  <a href="{{ url_for('library.search') }}" class="btn btn-sm btn-outline-secondary">
     <i class="bi bi-search me-1"></i>{{ _('Search') }}
   </a>
 

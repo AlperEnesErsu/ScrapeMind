@@ -136,9 +136,7 @@ def test_unresolved_terms_go_to_one_batched_call(app, monkeypatch):
     monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
     monkeypatch.setattr(ai_service, "_call_llm", _fake)
     with app.app_context():
-        out = ai_service.translate_keywords(
-            ["yapay zeka", "miyokard perfüzyonu", "safra kesesi"]
-        )
+        out = ai_service.translate_keywords(["yapay zeka", "miyokard perfüzyonu", "safra kesesi"])
 
     # One call for both unresolved terms; the lexicon term is not in the prompt.
     assert len(calls) == 1
@@ -169,9 +167,7 @@ def test_overlong_translation_is_rejected(app, monkeypatch):
     not reach the insert."""
 
     def _fake(**_kwargs):
-        return {
-            "translations": [{"term": "safra kesesi", "en": "x" * 200, "variants": []}]
-        }, "raw"
+        return {"translations": [{"term": "safra kesesi", "en": "x" * 200, "variants": []}]}, "raw"
 
     monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
     monkeypatch.setattr(ai_service, "_call_llm", _fake)
@@ -335,9 +331,7 @@ def test_match_keyword_falls_back_to_the_first_term():
 # ----------------------------------------------------------------------------
 
 
-def test_scrape_queries_the_english_term_and_attributes_it_back(
-    db, clean_user, monkeypatch
-):
+def test_scrape_queries_the_english_term_and_attributes_it_back(db, clean_user, monkeypatch):
     (kw,) = _follow(db, clean_user, "kalp yetmezliği")
     kw.value_en = "heart failure"
     kw.translated_at = datetime.now(UTC)

@@ -84,7 +84,9 @@ def clean_user(db):
     db.session.commit()
 
 
-def _news_payload(ext_id: str, *, source: str = "user_feed", title: str = "News Title") -> PaperPayload:
+def _news_payload(
+    ext_id: str, *, source: str = "user_feed", title: str = "News Title"
+) -> PaperPayload:
     return PaperPayload(
         source=source,
         external_id=ext_id,
@@ -132,7 +134,9 @@ def test_classify_user_topics_lexicon_multiple_keywords(app, db, clean_user, mon
         assert set(result) == {"humanities", "biomed"}
 
 
-def test_classify_user_topics_ai_term_does_not_false_match_substring(app, db, clean_user, monkeypatch):
+def test_classify_user_topics_ai_term_does_not_false_match_substring(
+    app, db, clean_user, monkeypatch
+):
     """'ai' must be matched as a whole word, not as a substring of e.g.
     'explainability' — otherwise every keyword containing those two letters
     would falsely classify as AI."""
@@ -360,7 +364,9 @@ def test_add_user_feed_succeeds_and_autofills_label(app, db, clean_user, monkeyp
 def test_add_user_feed_uses_explicit_label(app, db, clean_user, monkeypatch):
     _serve_feed(monkeypatch, _OK_FEED)
     with app.app_context():
-        feed, err = add_user_feed(clean_user, "https://blog.example.test/feed.xml", label="My Label")
+        feed, err = add_user_feed(
+            clean_user, "https://blog.example.test/feed.xml", label="My Label"
+        )
         assert err is None
         assert feed.label == "My Label"
 
@@ -547,15 +553,15 @@ def test_link_relevant_feed_items_includes_custom_feed_candidates(app, db, clean
 
         # With extra_candidates, it's included and gets scored/linked.
         monkeypatch.setattr(ai_service, "score_feed_relevance", lambda user, papers: fake_scores)
-        result = link_relevant_feed_items(
-            clean_user, threshold=60, extra_candidates=[custom_paper]
-        )
+        result = link_relevant_feed_items(clean_user, threshold=60, extra_candidates=[custom_paper])
         assert result["linked"] == 1
         linked_ids = {up.paper_id for up in UserPaper.query.filter_by(user_id=clean_user.id).all()}
         assert custom_paper.id in linked_ids
 
 
-def test_link_relevant_feed_items_extra_candidates_dedupe_already_linked(app, db, clean_user, monkeypatch):
+def test_link_relevant_feed_items_extra_candidates_dedupe_already_linked(
+    app, db, clean_user, monkeypatch
+):
     with app.app_context():
         add_user_keyword(clean_user, "x")
         custom_paper = upsert_paper(_news_payload("cf-already-linked", source="user_feed"))
@@ -567,9 +573,7 @@ def test_link_relevant_feed_items_extra_candidates_dedupe_already_linked(app, db
             raise AssertionError("an already-linked paper must not be re-scored")
 
         monkeypatch.setattr(ai_service, "score_feed_relevance", _boom)
-        result = link_relevant_feed_items(
-            clean_user, threshold=60, extra_candidates=[custom_paper]
-        )
+        result = link_relevant_feed_items(clean_user, threshold=60, extra_candidates=[custom_paper])
         assert result == {"scored": 0, "linked": 0, "reason": "no_candidates"}
 
 

@@ -76,6 +76,20 @@
          aria-label="{{ _('Open notes') }}" title="{{ _('Open notes') }}">
         <i class="bi bi-journal-text"></i>
       </a>
+      <div class="dropdown d-inline-block">
+        <button type="button" class="btn btn-sm action-btn" data-bs-toggle="dropdown"
+                data-bs-auto-close="outside" aria-expanded="false"
+                hx-get="{{ url_for('library.collections_menu', user_paper_id=r.id) }}"
+                hx-target="#colmenu-{{ r.id }}" hx-swap="outerHTML" hx-trigger="click once"
+                aria-label="{{ _('Add to collection') }}" title="{{ _('Add to collection') }}">
+          <i class="bi bi-folder-plus"></i>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end p-1" style="min-width: 220px;">
+          <div class="collection-menu-body" id="colmenu-{{ r.id }}">
+            <span class="dropdown-item-text small text-muted">{{ _('Loading…') }}</span>
+          </div>
+        </div>
+      </div>
       {% if r.paper.pdf_url %}
       <a href="{{ r.paper.pdf_url }}" target="_blank" rel="noopener"
          class="btn btn-sm action-btn"
