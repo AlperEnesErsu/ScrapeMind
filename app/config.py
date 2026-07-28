@@ -132,6 +132,12 @@ class BaseConfig:
     CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").lower() == "true"
     CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))  # seconds
 
+    # Observability (see app/core/observability.py). Both fully optional:
+    # empty SENTRY_DSN = no Sentry; METRICS_ENABLED=false = no /metrics.
+    SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+    SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.0"))
+    METRICS_ENABLED = os.getenv("METRICS_ENABLED", "false").lower() == "true"
+
     # API v1 — JWT bearer auth for the JSON API under /api/v1.
     # JWT_SECRET_KEY is resolved at runtime with a fallback to SECRET_KEY (see
     # app/api/v1/tokens.py), so leaving it empty still works out of the box;

@@ -12,3 +12,8 @@
     {{ _('No notifications yet.') }}
   </li>
 {% endfor %}
+<li class="text-center border-top">
+  <a class="dropdown-item small text-primary py-2" href="{{ url_for('dashboard.all_notifications') }}">
+    <i class="bi bi-collection me-1"></i>{{ _('See all notifications') }}
+  </a>
+</li>

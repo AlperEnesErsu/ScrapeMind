@@ -2370,6 +2370,136 @@ msgstr "Denetim"
 msgid "Searched in English as: %(term)s"
 msgstr "İngilizce olarak şu terimle aranıyor: %(term)s"
 
+msgid "Activity Heatmap"
+msgstr "Aktivite Isı Haritası"
+
+msgid "Ask a question..."
+msgstr "Bir soru sor..."
+
+msgid "Clear"
+msgstr "Temizle"
+
+msgid "Main findings"
+msgstr "Temel bulgular"
+
+msgid "Methodology"
+msgstr "Metodoloji"
+
+msgid "Publications"
+msgstr "Yayınlar"
+
+msgid "Search papers, authors, topics…"
+msgstr "Makale, yazar, konu ara…"
+
+msgid "Show more"
+msgstr "Daha fazla göster"
+
+msgid "Summarize"
+msgstr "Özetle"
+
+msgid "Toggle search"
+msgstr "Aramayı aç/kapat"
+
+msgid "Topics"
+msgstr "Konular"
+
+msgid "activities"
+msgstr "aktivite"
+
+msgid "Manual triggers"
+msgstr "Manuel tetikleyiciler"
+
+msgid "Run all scrapes"
+msgstr "Tüm Taramaları Çalıştır"
+
+msgid "Run audit cleanup"
+msgstr "Audit Temizliği Başlat"
+
+msgid "Queue a scrape for every active user?"
+msgstr "Her aktif kullanıcı için tarama kuyruğa alınsın mı?"
+
+msgid "Purge audit logs past the retention window now?"
+msgstr "Saklama süresini geçen audit kayıtları şimdi silinsin mi?"
+
+msgid "See all notifications"
+msgstr "Tüm bildirimleri gör"
+
+msgid "unread"
+msgstr "okunmamış"
+
+msgid "Mark all as read"
+msgstr "Tümünü okundu işaretle"
+
+msgid "Scrape queued for all users."
+msgstr "Tüm kullanıcılar için tarama kuyruğa alındı."
+
+msgid "Audit log cleanup queued."
+msgstr "Audit log temizliği kuyruğa alındı."
+
+msgid "Unknown task."
+msgstr "Bilinmeyen görev."
+
+msgid "Scrape results and system messages will appear here."
+msgstr "Tarama sonuçları ve sistem mesajları burada görünecek."
+
+#, python-format
+msgid "Marked %(n)s notifications as read."
+msgstr "%(n)s bildirim okundu olarak işaretlendi."
+
+msgid "Export"
+msgstr "Dışa Aktar"
+
+msgid "BibTeX (Zotero, Mendeley, EndNote)"
+msgstr "BibTeX (Zotero, Mendeley, EndNote)"
+
+msgid "Current view"
+msgstr "Bu görünüm"
+
+msgid "Entire library"
+msgstr "Tüm kütüphane"
+
+msgid "CSV (spreadsheet)"
+msgstr "CSV (elektronik tablo)"
+
+msgid "BibTeX citation"
+msgstr "BibTeX alıntısı"
+
+msgid "Loading…"
+msgstr "Yükleniyor…"
+
+msgid "Download .bib"
+msgstr ".bib indir"
+
+msgid "Close"
+msgstr "Kapat"
+
+msgid "Search library"
+msgstr "Kütüphanede ara"
+
+msgid "Back to library"
+msgstr "Kütüphaneye dön"
+
+msgid "Text"
+msgstr "Metin"
+
+msgid "Title, abstract, author, keyword…"
+msgstr "Başlık, özet, yazar, anahtar kelime…"
+
+msgid "Only papers with notes"
+msgstr "Yalnızca notu olan makaleler"
+
+msgid "results"
+msgstr "sonuç"
+
+msgid "No matching papers."
+msgstr "Eşleşen makale yok."
+
+msgid "Try a broader query or clear some filters."
+msgstr "Daha geniş bir sorgu dene veya bazı filtreleri temizle."
+
+msgid "Search"
+msgstr "Ara"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

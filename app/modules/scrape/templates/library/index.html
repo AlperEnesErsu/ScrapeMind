@@ -9,19 +9,54 @@
   <span class="small text-muted">
     {{ counts.favorites }} {{ _('favorites') }} · {{ counts.notes }} {{ _('notes') }}
   </span>
+
+  <a href="{{ url_for('library.search') }}" class="btn btn-sm btn-outline-secondary ms-auto">
+    <i class="bi bi-search me-1"></i>{{ _('Search') }}
+  </a>
+
+  {# Bulk export — the slice follows the current tab where it maps, else all #}
+  {% set export_view = 'favorites' if view == 'favorites' else ('read_later' if view == 'read_later' else 'all') %}
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+            data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="bi bi-download me-1"></i>{{ _('Export') }}
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li><h6 class="dropdown-header">{{ _('BibTeX (Zotero, Mendeley, EndNote)') }}</h6></li>
+      <li><a class="dropdown-item" href="{{ url_for('library.export', fmt='bib', view=export_view) }}">
+        <i class="bi bi-filetype-txt me-2"></i>{{ _('Current view') }} (.bib)</a></li>
+      <li><a class="dropdown-item" href="{{ url_for('library.export', fmt='bib', view='all') }}">
+        <i class="bi bi-collection me-2"></i>{{ _('Entire library') }} (.bib)</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><h6 class="dropdown-header">{{ _('CSV (spreadsheet)') }}</h6></li>
+      <li><a class="dropdown-item" href="{{ url_for('library.export', fmt='csv', view=export_view) }}">
+        <i class="bi bi-filetype-csv me-2"></i>{{ _('Current view') }} (.csv)</a></li>
+      <li><a class="dropdown-item" href="{{ url_for('library.export', fmt='csv', view='all') }}">
+        <i class="bi bi-collection me-2"></i>{{ _('Entire library') }} (.csv)</a></li>
+    </ul>
+  </div>
 </div>
 
 <!-- Activity Heatmap Widget (U10) -->
 <div class="card shadow-sm border-0 mb-4 bg-body">
   <div class="card-body p-3">
-    <h6 class="fw-semibold mb-2 d-flex align-items-center gap-2" style="font-size: 0.9rem;">
-      <i class="bi bi-calendar3 text-primary"></i>{{ _('Activity Heatmap') }}
-    </h6>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="fw-semibold m-0 d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+        <i class="bi bi-calendar3 text-primary"></i>{{ _('Activity Heatmap') }}
+      </h6>
+      <div id="heatmap-filter-indicator" class="alert alert-info py-0 px-2 m-0 d-none align-items-center gap-2 small" style="font-size: 0.75rem;">
+        <span><i class="bi bi-funnel me-1"></i><strong id="heatmap-filter-date"></strong></span>
+        <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-info fw-bold" onclick="clearHeatmapDateFilter()">✕ {{ _('Clear') }}</button>
+      </div>
+    </div>
     <div class="heatmap-wrapper overflow-auto">
       <div class="heatmap-grid" style="grid-auto-flow: column; grid-template-rows: repeat(7, 10px); min-width: 700px;">
         {% for day in heatmap_days %}
-          <div class="heatmap-day" 
+          <div class="heatmap-day{% if day.date %} cursor-pointer{% endif %}" 
                data-level="{{ day.level }}" 
+               data-date="{{ day.date }}"
+               style="cursor: {% if day.date %}pointer{% else %}default{% endif %};"
+               {% if day.date %}onclick="filterByHeatmapDate('{{ day.date }}')"{% endif %}
                title="{% if day.date %}{{ day.date }}: {{ day.count }} {{ _('activities') }}{% endif %}"
                data-bs-toggle="tooltip">
           </div>

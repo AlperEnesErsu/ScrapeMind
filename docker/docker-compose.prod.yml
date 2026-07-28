@@ -1,0 +1,110 @@
+# Production Docker Compose — the official deploy target for v1.
+#
+# Single-VM deployment: web + worker + beat + postgres + redis, fronted by an
+# nginx reverse proxy on the host (TLS via certbot). See docs/DEPLOYMENT.md
+# for the full guide, including first-boot steps and the env checklist.
+#
+# Differences from the dev compose (docker-compose.yml):
+#   * NO host ports for Postgres/Redis — they are reachable only on the
+#     internal network. Only the web app is published, and only on loopback
+#     (nginx is the public face).
+#   * All secrets come from .env.prod (never committed) — no defaults here,
+#     the app fails fast in production when SECRET_KEY/DATABASE_URL are empty.
+#   * restart: unless-stopped everywhere, and a real healthcheck on web.
+#
+# Usage (from the repo root):
+#   docker compose -f docker/docker-compose.prod.yml --env-file .env.prod up -d --build
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env.prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env.prod}
+      POSTGRES_DB: ${POSTGRES_DB:-scrapemind}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file: ../.env.prod
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-scrapemind}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      # Loopback only — nginx on the host proxies 443 → 127.0.0.1:8000.
+      - "127.0.0.1:8000:5000"
+    volumes:
+      # User-uploaded avatars must outlive container rebuilds.
+      - uploads:/app/app/core/static/uploads
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # /api/v1/health is unauthenticated and hits no external service.
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/v1/health', timeout=3)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file: ../.env.prod
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-scrapemind}
+      REDIS_URL: redis://redis:6379/0
+    # Overrides the entrypoint's migrate+gunicorn: the web service owns
+    # migrations, the worker just consumes the queue.
+    entrypoint: []
+    command: celery -A app.tasks worker --loglevel=info --concurrency=2
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file: ../.env.prod
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-scrapemind}
+      REDIS_URL: redis://redis:6379/0
+    entrypoint: []
+    command: celery -A app.tasks beat --loglevel=info
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+  uploads:

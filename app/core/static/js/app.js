@@ -91,27 +91,28 @@ document.addEventListener('click', async (e) => {
   }, 1500);
 });
 
-// BibTeX copy-to-clipboard — Cite button on paper detail.
+// Cite button → open the BibTeX modal, fetch the entry, show a live preview.
+// Copy is handled by the generic [data-copy-target] handler above; this just
+// populates the modal and wires the download link.
 document.getElementById('cite-btn')?.addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   const url = btn.dataset.citeUrl;
-  if (!url) return;
-  const original = btn.innerHTML;
+  const modalEl = document.getElementById('citeModal');
+  const body = document.getElementById('cite-modal-body');
+  if (!url || !modalEl || !body || typeof bootstrap === 'undefined') return;
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  body.textContent = '…';
+  const dl = document.getElementById('cite-modal-download');
+  if (dl) dl.href = url + (url.includes('?') ? '&' : '?') + 'download=1';
+  modal.show();
+
   try {
     const r = await fetch(url, { credentials: 'same-origin' });
-    const text = await r.text();
-    await navigator.clipboard.writeText(text);
-    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied';
-    btn.classList.add('btn-success');
-    btn.classList.remove('btn-outline-secondary');
+    body.textContent = await r.text();
   } catch (err) {
-    btn.innerHTML = '<i class="bi bi-x me-1"></i>Failed';
+    body.textContent = 'Failed to load citation.';
   }
-  setTimeout(() => {
-    btn.innerHTML = original;
-    btn.classList.remove('btn-success');
-    btn.classList.add('btn-outline-secondary');
-  }, 1500);
 });
 
 
@@ -172,3 +173,110 @@ document.getElementById('cite-btn')?.addEventListener('click', async (e) => {
     }
   });
 })();
+
+
+// Global Toast Notification System
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1090';
+    document.body.appendChild(container);
+  }
+
+  const toastEl = document.createElement('div');
+  const bgClass = (type === 'error' || type === 'danger') ? 'bg-danger text-white' : (type === 'warning' ? 'bg-warning text-dark' : 'bg-success text-white');
+  const icon = (type === 'error' || type === 'danger') ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill';
+  
+  toastEl.className = `toast align-items-center ${bgClass} border-0 shadow show`;
+  toastEl.setAttribute('role', 'alert');
+  toastEl.setAttribute('aria-live', 'assertive');
+  toastEl.setAttribute('aria-atomic', 'true');
+  toastEl.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2">
+        <i class="bi ${icon}"></i> ${message}
+      </div>
+      <button type="button" class="btn-close ${type === 'warning' ? '' : 'btn-close-white'} me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  `;
+
+  container.appendChild(toastEl);
+  setTimeout(() => {
+    toastEl.classList.remove('show');
+    toastEl.remove();
+  }, 3500);
+}
+
+// Wire up HTMX response triggers for toast notifications
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+  if (evt.detail.successful) {
+    const elt = evt.detail.elt;
+    if (elt && elt.getAttribute('hx-post')) {
+      const url = elt.getAttribute('hx-post');
+      if (url.includes('/favorite/toggle')) {
+        showToast('Favori durumu güncellendi', 'success');
+      } else if (url.includes('/read-later/toggle')) {
+        showToast('Sonra Oku listesi güncellendi', 'success');
+      } else if (url.includes('/undismiss')) {
+        // Must be checked BEFORE '/dismiss' — "undismiss" contains it.
+        showToast('Makale geri getirildi', 'success');
+      } else if (url.includes('/dismiss')) {
+        showToast('Makale gizlendi', 'warning');
+      }
+    }
+  }
+});
+
+// Toggle long paper abstracts
+function toggleAbstract(id, btn) {
+  const el = document.getElementById(id);
+  if (el) {
+    const isClamped = el.classList.contains('text-truncate-3');
+    if (isClamped) {
+      el.classList.remove('text-truncate-3');
+      btn.textContent = 'Daralt';
+    } else {
+      el.classList.add('text-truncate-3');
+      btn.textContent = 'Devamını Oku';
+    }
+  }
+}
+
+// Heatmap Date Filtering Helper
+function filterByHeatmapDate(dateStr) {
+  if (!dateStr) return;
+  const indicator = document.getElementById('heatmap-filter-indicator');
+  const dateSpan = document.getElementById('heatmap-filter-date');
+  if (indicator && dateSpan) {
+    dateSpan.textContent = dateStr;
+    indicator.classList.remove('d-none');
+    indicator.classList.add('d-flex');
+  }
+  
+  document.querySelectorAll('.heatmap-day').forEach(el => el.style.outline = '');
+  const clicked = document.querySelector(`.heatmap-day[data-date="${dateStr}"]`);
+  if (clicked) clicked.style.outline = '2px solid var(--bs-primary)';
+
+  const items = document.querySelectorAll('.paper-card, .timeline-event, .note-card');
+  items.forEach(item => {
+    const text = item.innerText || '';
+    if (text.includes(dateStr)) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+function clearHeatmapDateFilter() {
+  const indicator = document.getElementById('heatmap-filter-indicator');
+  if (indicator) {
+    indicator.classList.add('d-none');
+    indicator.classList.remove('d-flex');
+  }
+  document.querySelectorAll('.heatmap-day').forEach(el => el.style.outline = '');
+  document.querySelectorAll('.paper-card, .timeline-event, .note-card').forEach(item => item.style.display = '');
+}

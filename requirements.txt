@@ -7,6 +7,14 @@ Flask-WTF==1.2.2
 email-validator==2.2.0
 Flask-Babel==4.0.0
 Flask-Limiter==4.1.1
+# Production WSGI server — docker/entrypoint.sh execs this; without it the
+# production image dies on startup.
+gunicorn==23.0.0
+
+# Observability — both are inert without config: Sentry needs SENTRY_DSN,
+# the /metrics endpoint needs METRICS_ENABLED=true.
+sentry-sdk[flask]==2.20.0
+prometheus-flask-exporter==0.23.1
 
 # Auth
 passlib[argon2]==1.7.4
