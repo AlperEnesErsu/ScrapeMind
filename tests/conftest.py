@@ -30,6 +30,16 @@ def app():
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
 
+    # No LLM by default. Without this, a developer with a real key in their
+    # .env turns any code path that calls `_call_llm` behind `is_ai_enabled`
+    # into a live, billed network call during the test run — keyword
+    # translation inside `scrape_for_user` is one such path. Tests that
+    # exercise AI set what they need with `monkeypatch.setitem(app.config, …)`
+    # or by stubbing `is_ai_enabled`, which still works over these.
+    app.config["LLM_PROVIDER"] = "openrouter"
+    app.config["ANTHROPIC_API_KEY"] = ""
+    app.config["OPENROUTER_API_KEY"] = ""
+
     import os
 
     from app.config import get_config
@@ -137,7 +147,12 @@ def auth_client(app, db):
     )
     for tbl in (
         "audit_logs",
+        "user_digests",
         "user_papers",
+        "user_sources",
+        "user_feeds",
+        "scan_runs",
+        "user_keywords",
         "notifications",
         "user_settings",
         "oauth_accounts",

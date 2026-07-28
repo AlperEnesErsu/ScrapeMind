@@ -275,6 +275,11 @@ table code {
 [data-bs-theme="dark"] .source-semantic_scholar { background: #4a1f10; color: #f5c4b3; }
 [data-bs-theme="dark"] .source-pubmed     { background: #1c3a0a; color: #c0dd97; }
 
+/* RSS/industry-announcement feeds (Paper.kind == "news") share one accent —
+   distinct from the academic sources above — regardless of which feed. */
+.source-badge--news { background: #f3e8ff; color: #6b21a8; }
+[data-bs-theme="dark"] .source-badge--news { background: #3b1264; color: #dcc4f7; }
+
 /* Discover view tabs (Discover / Favorites / Hidden) */
 .view-tabs {
   border-bottom: 1px solid var(--paper-card-border);
@@ -926,6 +931,48 @@ a.timeline-event__title:hover {
 .stat-card--favorites { background: var(--stat-favorites-bg) !important; }
 .stat-card--notes { background: var(--stat-notes-bg) !important; }
 .stat-card--read-later { background: var(--stat-readlater-bg) !important; }
+
+/* Compact stat strip — slim pills instead of tall stat cards (regular-user
+   dashboard). Same per-metric gradient palette as .stat-card, just far less
+   vertical space so "My Research Interests" / "Sources to scan" can sit
+   above the fold. */
+.stat-strip {
+  min-width: 0;
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  color: #ffffff !important;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.stat-pill i {
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.stat-pill__value {
+  font-weight: 700;
+}
+
+.stat-pill__label {
+  opacity: 0.9;
+}
+
+.stat-pill--interests { background: var(--stat-interests-bg) !important; }
+.stat-pill--favorites { background: var(--stat-favorites-bg) !important; }
+.stat-pill--notes { background: var(--stat-notes-bg) !important; }
+.stat-pill--read-later { background: var(--stat-readlater-bg) !important; }
+
+@media (max-width: 575.98px) {
+  .stat-pill__label { display: none; }
+}
 
 /* Abstract soft fade */
 .paper-card__abstract {

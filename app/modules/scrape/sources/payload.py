@@ -21,6 +21,10 @@ class PaperPayload:
     pdf_url: str | None
     published_at: Any  # datetime.datetime, kept as Any to avoid tight coupling
     categories: list[str]
+    # "news" for RSS/industry-announcement sources; None ("paper") for the
+    # academic search adapters (arxiv/semantic_scholar/pubmed) — kept
+    # optional with a default so existing adapters don't need to change.
+    kind: str | None = None
 
     def as_dict(self) -> dict:
         return {
@@ -33,4 +37,5 @@ class PaperPayload:
             "pdf_url": self.pdf_url,
             "published_at": self.published_at,
             "categories": self.categories,
+            "kind": self.kind,
         }

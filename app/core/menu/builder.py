@@ -34,7 +34,8 @@ def build_menu_for_user(user: User) -> list[MenuNode]:
         or m.required_permission in user_perms
     ]
 
-    return _build_tree(filtered)
+    tree = _build_tree(filtered)
+    return _prune_empty_groups(tree)
 
 
 def _build_tree(items: list[MenuItem]) -> list[MenuNode]:
@@ -47,3 +48,21 @@ def _build_tree(items: list[MenuItem]) -> list[MenuNode]:
         else:
             roots.append(node)
     return roots
+
+
+def _prune_empty_groups(nodes: list[MenuNode]) -> list[MenuNode]:
+    """Drop any node that has no endpoint, no url, AND no visible children.
+
+    A menu item with none of those is just an accordion header (e.g.
+    `admin_group`) whose children were all filtered out by the permission
+    check above — it renders as a dead, unclickable link, so it should not
+    appear at all. Recurses bottom-up so a group left empty by pruning its
+    own children is itself pruned. Plain links (endpoint- or url-backed) are
+    always kept regardless of children.
+    """
+    kept: list[MenuNode] = []
+    for node in nodes:
+        node.children = _prune_empty_groups(node.children)
+        if node.item.endpoint or node.item.url or node.children:
+            kept.append(node)
+    return kept

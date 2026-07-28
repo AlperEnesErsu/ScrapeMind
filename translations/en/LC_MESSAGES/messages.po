@@ -1945,6 +1945,418 @@ msgstr "Older entries are purged automatically by the nightly retention task."
 msgid "Active sources:"
 msgstr "Active sources:"
 
+msgid ""
+"You do not need to — the nightly scan covers this. Use it to fetch right "
+"now."
+msgstr ""
+"You do not need to — the nightly scan covers this. Use it to fetch right "
+"now."
+
+#, python-format
+msgid "%(n)s interests"
+msgstr "%(n)s interests"
+
+#, python-format
+msgid "%(n)s active sources"
+msgstr "%(n)s active sources"
+
+#, python-format
+msgid "%(n)s verified identifiers"
+msgstr "%(n)s verified identifiers"
+
+msgid "Sources to scan"
+msgstr "Sources to scan"
+
+msgid "No sources configured."
+msgstr "No sources configured."
+
+msgid "All sources are off — turn at least one on to get papers."
+msgstr "All sources are off — turn at least one on to get papers."
+
+msgid "Papers get collected for you"
+msgstr "Papers get collected for you"
+
+msgid ""
+"ScrapeMind scans your selected sources (arXiv, Semantic Scholar, PubMed) "
+"every night and files matching papers here. In a hurry? Use \"Scrape "
+"now\" to fetch immediately."
+msgstr ""
+"ScrapeMind scans your selected sources (arXiv, Semantic Scholar, PubMed) "
+"every night and files matching papers here. In a hurry? Use \"Scrape "
+"now\" to fetch immediately."
+
+msgid "Physics, CS and mathematics preprints"
+msgstr "Physics, CS and mathematics preprints"
+
+msgid "Multi-field corpus with citation graph"
+msgstr "Multi-field corpus with citation graph"
+
+msgid "Biomedical and life sciences literature"
+msgstr "Biomedical and life sciences literature"
+
+msgid "A scrape is already running for you — you'll be notified when it finishes."
+msgstr "A scrape is already running for you — you'll be notified when it finishes."
+
+msgid "AI Settings"
+msgstr "AI Settings"
+
+msgid ""
+"ScrapeMind uses an LLM for paper analysis, translation, chat, and your "
+"daily/weekly briefing. Bring your own free OpenRouter key to keep costs "
+"at zero — it is stored encrypted and only used for your own requests."
+msgstr ""
+"ScrapeMind uses an LLM for paper analysis, translation, chat, and your "
+"daily/weekly briefing. Bring your own free OpenRouter key to keep costs "
+"at zero — it is stored encrypted and only used for your own requests."
+
+#, python-format
+msgid ""
+"This deployment is configured to use the \"%(provider)s\" provider — your"
+" OpenRouter key (if set) is ignored until an admin switches LLM_PROVIDER "
+"back to openrouter."
+msgstr ""
+"This deployment is configured to use the \"%(provider)s\" provider — your"
+" OpenRouter key (if set) is ignored until an admin switches LLM_PROVIDER "
+"back to openrouter."
+
+msgid "Key configured"
+msgstr "Key configured"
+
+msgid "No key set — using deployment default (if any)"
+msgstr "No key set — using deployment default (if any)"
+
+msgid "Model override:"
+msgstr "Model override:"
+
+msgid "Default model:"
+msgstr "Default model:"
+
+msgid "Leave blank to keep your current key."
+msgstr "Leave blank to keep your current key."
+
+msgid "Get a free OpenRouter key"
+msgstr "Get a free OpenRouter key"
+
+msgid "Optional — overrides the deployment default model for your requests only."
+msgstr "Optional — overrides the deployment default model for your requests only."
+
+msgid "Nothing to save — enter a key or a model override."
+msgstr "Nothing to save — enter a key or a model override."
+
+msgid "AI settings saved."
+msgstr "AI settings saved."
+
+msgid "Your API key was removed."
+msgstr "Your API key was removed."
+
+msgid "Remove your stored API key?"
+msgstr "Remove your stored API key?"
+
+msgid "Remove key"
+msgstr "Remove key"
+
+msgid "Your Briefing"
+msgstr "Your Briefing"
+
+msgid "Daily"
+msgstr "Daily"
+
+msgid "Weekly"
+msgstr "Weekly"
+
+#, python-format
+msgid "%(n)s papers summarised"
+msgstr "%(n)s papers summarised"
+
+msgid ""
+"No briefing yet — generate one from your latest papers, or wait for "
+"tonight's automatic run."
+msgstr ""
+"No briefing yet — generate one from your latest papers, or wait for "
+"tonight's automatic run."
+
+msgid "Generate briefing now"
+msgstr "Generate briefing now"
+
+msgid "Your briefing is being generated — it'll show up here shortly."
+msgstr "Your briefing is being generated — it'll show up here shortly."
+
+msgid "OpenRouter API Key"
+msgstr "OpenRouter API Key"
+
+msgid "Model override (optional)"
+msgstr "Model override (optional)"
+
+msgid "News"
+msgstr "News"
+
+msgid "Product and research announcements from OpenAI"
+msgstr "Product and research announcements from OpenAI"
+
+msgid "AI news and product updates from Google"
+msgstr "AI news and product updates from Google"
+
+msgid "Research announcements from Google DeepMind"
+msgstr "Research announcements from Google DeepMind"
+
+msgid "Open-source ML models, libraries, and community posts"
+msgstr "Open-source ML models, libraries, and community posts"
+
+msgid "Artificial Intelligence"
+msgstr "Artificial Intelligence"
+
+msgid "Machine Learning"
+msgstr "Machine Learning"
+
+msgid "Computer Science"
+msgstr "Computer Science"
+
+msgid "Physics"
+msgstr "Physics"
+
+msgid "Mathematics"
+msgstr "Mathematics"
+
+msgid "Biomedicine"
+msgstr "Biomedicine"
+
+msgid "Social Sciences"
+msgstr "Social Sciences"
+
+msgid "Humanities"
+msgstr "Humanities"
+
+msgid "General"
+msgstr "General"
+
+msgid "Suggested (matches your interests)"
+msgstr "Suggested (matches your interests)"
+
+msgid "Other sources"
+msgstr "Other sources"
+
+msgid "Your topics"
+msgstr "Your topics"
+
+msgid ""
+"Classified from your research interests — used to suggest and default-"
+"enable relevant sources."
+msgstr ""
+"Classified from your research interests — used to suggest and default-"
+"enable relevant sources."
+
+msgid "Your own RSS feeds"
+msgstr "Your own RSS feeds"
+
+msgid ""
+"Add any RSS/Atom feed — its relevant items are scored against your "
+"interests and flow into your feed and briefing just like the curated "
+"sources."
+msgstr ""
+"Add any RSS/Atom feed — its relevant items are scored against your "
+"interests and flow into your feed and briefing just like the curated "
+"sources."
+
+msgid "No custom feeds yet — add one below."
+msgstr "No custom feeds yet — add one below."
+
+msgid "Remove this feed?"
+msgstr "Remove this feed?"
+
+msgid "Leave blank to use the feed's own title."
+msgstr "Leave blank to use the feed's own title."
+
+msgid "Feed URL"
+msgstr "Feed URL"
+
+msgid "Label (optional)"
+msgstr "Label (optional)"
+
+msgid "Add feed"
+msgstr "Add feed"
+
+msgid "Please enter a valid feed URL (starting with http:// or https://)."
+msgstr "Please enter a valid feed URL (starting with http:// or https://)."
+
+msgid "Could not read that feed — check the URL and try again."
+msgstr "Could not read that feed — check the URL and try again."
+
+msgid "Could not add that feed."
+msgstr "Could not add that feed."
+
+msgid "Feed added."
+msgstr "Feed added."
+
+msgid "Feed removed."
+msgstr "Feed removed."
+
+msgid "menu.discover"
+msgstr "Discover"
+
+msgid "menu.library"
+msgstr "My Library"
+
+msgid "Add your own RSS source"
+msgstr "Add your own RSS source"
+
+msgid "Your interests"
+msgstr "Your interests"
+
+msgid "Manage"
+msgstr "Manage"
+
+msgid "Last scan"
+msgstr "Last scan"
+
+msgid "Next scan"
+msgstr "Next scan"
+
+msgid "Never scanned yet"
+msgstr "Never scanned yet"
+
+msgid "Runs automatically"
+msgstr "Runs automatically"
+
+#, python-format
+msgid "%(n)s new"
+msgstr "%(n)s new"
+
+msgid "Some sources failed on the last scan."
+msgstr "Some sources failed on the last scan."
+
+msgid "The last scan failed."
+msgstr "The last scan failed."
+
+#, python-format
+msgid "Runs automatically. Next scan: %(when)s"
+msgstr "Runs automatically. Next scan: %(when)s"
+
+msgid "Trigger it manually only when you want fresh results right away."
+msgstr "Trigger it manually only when you want fresh results right away."
+
+msgid ""
+"This runs automatically. Trigger it manually only when you want fresh "
+"results right away."
+msgstr ""
+"This runs automatically. Trigger it manually only when you want fresh "
+"results right away."
+
+#, python-format
+msgid ""
+"Choose which databases ScrapeMind scans for you. Changes apply on the "
+"next scan (%(when)s)."
+msgstr ""
+"Choose which databases ScrapeMind scans for you. Changes apply on the "
+"next scan (%(when)s)."
+
+msgid ""
+"Choose which databases ScrapeMind scans for you. Changes apply on the "
+"next scan."
+msgstr ""
+"Choose which databases ScrapeMind scans for you. Changes apply on the "
+"next scan."
+
+msgid "Your feeds"
+msgstr "Your feeds"
+
+#, python-format
+msgid "%(n)s paused"
+msgstr "%(n)s paused"
+
+msgid "Manage your feeds"
+msgstr "Manage your feeds"
+
+#, python-format
+msgid "%(used)s / %(cap)s feeds"
+msgstr "%(used)s / %(cap)s feeds"
+
+msgid "Filter feeds"
+msgstr "Filter feeds"
+
+msgid "All"
+msgstr "All"
+
+msgid "Paused"
+msgstr "Paused"
+
+msgid "Feed limit reached. Remove one before adding another."
+msgstr "Feed limit reached. Remove one before adding another."
+
+msgid "That address can't be used (private or internal host)."
+msgstr "That address can't be used (private or internal host)."
+
+msgid "No feeds match this filter."
+msgstr "No feeds match this filter."
+
+#, python-format
+msgid "adds about %(d)s to each scan"
+msgstr "adds about %(d)s to each scan"
+
+msgid "Scanning your sources…"
+msgstr "Scanning your sources…"
+
+#, python-format
+msgid "(%(s)ss)"
+msgstr "(%(s)ss)"
+
+#, python-format
+msgid "usually takes about %(d)s"
+msgstr "usually takes about %(d)s"
+
+msgid "Queued — waiting for a worker to pick it up…"
+msgstr "Queued — waiting for a worker to pick it up…"
+
+msgid ""
+"Your scan is queued but no worker has picked it up. It will run as soon "
+"as one is available."
+msgstr ""
+"Your scan is queued but no worker has picked it up. It will run as soon "
+"as one is available."
+
+msgid "System"
+msgstr "System"
+
+msgid "All systems normal"
+msgstr "All systems normal"
+
+msgid "Something needs attention"
+msgstr "Something needs attention"
+
+msgid "Database"
+msgstr "Database"
+
+msgid "Redis"
+msgstr "Redis"
+
+msgid "Worker"
+msgstr "Worker"
+
+msgid "up"
+msgstr "up"
+
+msgid "down"
+msgstr "down"
+
+msgid "unknown"
+msgstr "unknown"
+
+msgid "Queued"
+msgstr "Queued"
+
+#, python-format
+msgid "Last heartbeat: %(when)s"
+msgstr "Last heartbeat: %(when)s"
+
+msgid "Scans stay queued until a worker is running."
+msgstr "Scans stay queued until a worker is running."
+
+msgid "Audit"
+msgstr "Audit"
+
+#, python-format
+msgid "Searched in English as: %(term)s"
+msgstr "Searched in English as: %(term)s"
+
 msgid "Activity Heatmap"
 msgstr "Activity Heatmap"
 

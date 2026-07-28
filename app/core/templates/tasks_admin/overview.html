@@ -126,13 +126,27 @@
 
   <div class="col-md-6">
     <div class="card h-100">
-      <div class="card-header py-2 small text-uppercase text-muted">{{ _('Beat schedule') }}</div>
+      <div class="card-header py-2 small text-uppercase text-muted">
+        {{ _('Beat schedule') }}
+        {# Crontabs are matched in the app timezone, not UTC — spelling it out
+           here because that has already caused one round of wrong comments. #}
+        <span class="text-body-tertiary text-lowercase">({{ config.BABEL_DEFAULT_TIMEZONE }})</span>
+      </div>
       <ul class="list-group list-group-flush small">
-        {% for entry_name, entry in beat_schedule.items() %}
+        {% for row in schedule_rows %}
         <li class="list-group-item">
-          <strong>{{ entry_name }}</strong>
-          <div class="text-muted">→ <code>{{ entry.task }}</code></div>
-          <div class="text-muted">schedule: <code>{{ entry.schedule }}</code></div>
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <strong>{{ row.name }}</strong>
+            {% if row.next_run_at %}
+              <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis flex-shrink-0">
+                {{ row.next_run_at | datetimeformat('dd.MM HH:mm') }}
+              </span>
+            {% endif %}
+          </div>
+          <div class="text-muted">→ <code>{{ row.task }}</code>
+            <span class="badge rounded-pill text-bg-light text-secondary border fw-normal">{{ row.queue }}</span>
+          </div>
+          <div class="text-muted">schedule: <code>{{ row.schedule }}</code></div>
         </li>
         {% else %}
         <li class="list-group-item text-muted text-center">{{ _('No periodic tasks.') }}</li>

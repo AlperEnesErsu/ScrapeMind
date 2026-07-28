@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 import requests
 import structlog
 
+from app.modules.scrape.ratelimit import SourceThrottledError, pubmed_slot
 from app.modules.scrape.sources.payload import PaperPayload
 
 logger = structlog.get_logger()
@@ -116,6 +117,12 @@ def search(query: str, *, max_results: int = 25) -> list[PaperPayload]:
     query = (query or "").strip()
     if not query:
         return []
+
+    # NCBI's 3/s (10/s with a key) is per-IP, so it is a deployment-wide budget
+    # even though each call here belongs to one user's scan.
+    if not pubmed_slot():
+        logger.warning("pubmed_rate_limited", query=query)
+        raise SourceThrottledError("pubmed rate limit")
 
     es = requests.get(
         _ESEARCH_URL,

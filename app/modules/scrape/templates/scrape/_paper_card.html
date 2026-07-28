@@ -9,8 +9,14 @@
     <div class="alert alert-{{ flash_kind or 'info' }} py-2 mb-2 small">{{ flash_msg }}</div>
     {% endif %}
 
+  {% set _meta = source_meta.get(r.paper.source, {}) if source_meta is defined else {} %}
   <div class="paper-card__head">
-    <span class="badge source-badge source-{{ r.paper.source }}">{{ r.paper.source }}</span>
+    <span class="badge source-badge {% if r.paper.kind == 'news' %}source-badge--news{% else %}source-{{ r.paper.source }}{% endif %}">
+      {% if _meta.icon %}<i class="bi {{ _meta.icon }} me-1"></i>{% endif %}{{ _meta.label or r.paper.source }}
+    </span>
+    {% if r.paper.kind == 'news' %}
+      <span class="badge bg-info-subtle text-info-emphasis"><i class="bi bi-broadcast me-1"></i>{{ _('News') }}</span>
+    {% endif %}
     {% if r.paper.categories %}
       <span class="small text-muted">{{ (r.paper.categories or [])[:2] | join(' · ') }}</span>
     {% endif %}

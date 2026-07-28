@@ -1,0 +1,76 @@
+{# Last scan / next scan, from real data.
+
+   Replaces a hardcoded "every night at 03:15" string and a "last update"
+   that was really max(user_papers.created_at). Everything here comes from
+   scrape.service:scan_status_context — a ScanRun row for the past, and the
+   resolved beat schedule plus this user's fan-out offset for the future.
+
+   The "scanning" pill is driven by an actually-open ScanRun row, never by the
+   presence of a lock: the lock is claimed by the HTTP route before a worker
+   picks the task up, so keying on it announced "scanning" for 15 minutes even
+   when nothing ran. While a run is open this block re-fetches itself every
+   5s and shows elapsed time, so it visibly progresses and then replaces
+   itself with the finished result. The idle version carries no hx-trigger, so
+   polling stops on its own.
+
+   Degrades cleanly: no runs yet -> "not scanned yet"; no beat configured ->
+   the next-scan half falls back to "runs automatically". #}
+<div id="scan-status" class="small text-muted mt-1 d-flex flex-wrap align-items-center gap-2"
+     {% if is_running %}
+     hx-get="{{ url_for('scrape.scan_status') }}"
+     hx-trigger="every 5s"
+     hx-target="#scan-status"
+     hx-swap="outerHTML"
+     {% endif %}>
+  {% if is_running %}
+    <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis" data-testid="scan-running">
+      <span class="spinner-border spinner-border-sm me-1" style="width:.65rem;height:.65rem;" role="status" aria-hidden="true"></span>
+      {{ _('Scanning your sources…') }}
+      {% if running_seconds is not none %}
+        <span class="fw-normal">{{ _('(%(s)ss)', s=running_seconds) }}</span>
+      {% endif %}
+    </span>
+    {% if estimated_seconds %}
+      <span class="text-body-tertiary">
+        {{ _('usually takes about %(d)s', d=estimated_delta | timedeltaformat(granularity='second')) }}
+      </span>
+    {% endif %}
+  {% else %}
+    {# datetimeformat (Flask-Babel) not strftime: these are aware UTC values, and
+       Babel renders them in BABEL_DEFAULT_TIMEZONE — the same timezone Beat
+       matches its crontabs in, so the displayed hour is the one that fires. #}
+    <span data-testid="last-scan">
+      <i class="bi bi-clock-history me-1"></i>
+      {% if last_run %}
+        {{ _('Last scan') }}: {{ last_run.finished_at | datetimeformat('dd.MM.yyyy HH:mm') }}
+        {%- if last_run.new_items %}
+          <span class="badge rounded-pill bg-success-subtle text-success-emphasis ms-1">
+            {{ _('%(n)s new', n=last_run.new_items) }}
+          </span>
+        {%- endif %}
+        {%- if last_run.status == 'partial' %}
+          <i class="bi bi-exclamation-triangle text-warning ms-1"
+             title="{{ _('Some sources failed on the last scan.') }}"></i>
+        {%- elif last_run.status == 'error' %}
+          <i class="bi bi-x-circle text-danger ms-1" title="{{ _('The last scan failed.') }}"></i>
+        {%- endif %}
+      {% else %}
+        {{ _('Never scanned yet') }}
+      {% endif %}
+    </span>
+
+    <span data-testid="next-scan">
+      <i class="bi bi-moon-stars me-1"></i>
+      {# No duration estimate here on purpose: how long the scan will take is
+         not something you act on before it starts, and it sat next to the time
+         looking like part of it. The estimate is still shown where it is
+         actionable — while a scan is running (above), and per-feed in the
+         settings panel, where it tells you what adding feeds costs. #}
+      {% if next_run_at %}
+        {{ _('Next scan') }}: {{ next_run_at | datetimeformat('dd.MM.yyyy HH:mm') }}
+      {% else %}
+        {{ _('Runs automatically') }}
+      {% endif %}
+    </span>
+  {% endif %}
+</div>

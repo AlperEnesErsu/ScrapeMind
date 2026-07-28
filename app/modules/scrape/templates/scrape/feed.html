@@ -26,6 +26,23 @@
   </form>
 </div>
 
+{% if user_keywords %}
+<div id="interests-strip" class="interests-strip d-flex flex-wrap align-items-center gap-2 mb-3">
+  <span class="small text-uppercase text-muted fw-semibold">
+    <i class="bi bi-tags me-1"></i>{{ _('Your interests') }}
+  </span>
+  {% for kw in user_keywords %}
+    <a href="{{ url_for('scrape.feed', q=kw.value) }}"
+       class="badge rounded-pill text-bg-light text-secondary border small fw-normal text-decoration-none">
+      {{ kw.value }}
+    </a>
+  {% endfor %}
+  <a href="{{ url_for('dashboard.index') }}#interests-manager" class="small text-decoration-none ms-auto">
+    <i class="bi bi-pencil-square me-1"></i>{{ _('Manage') }}
+  </a>
+</div>
+{% endif %}
+
 {% if q %}
 <div class="small text-muted mb-2 d-flex align-items-center gap-2">
   <i class="bi bi-funnel"></i>
@@ -36,85 +53,97 @@
 </div>
 {% endif %}
 
-<div class="view-tabs mb-3 d-flex flex-wrap gap-1">
-  <a class="view-tab{% if view == 'discover' %} view-tab--active{% endif %}"
-     href="{{ url_for('scrape.feed') }}">
-    <i class="bi bi-compass me-1"></i>{{ _('Discover') }}
-    <span class="view-tab__count">{{ counts.discover }}</span>
-  </a>
-  <a class="view-tab{% if view == 'favorites' %} view-tab--active{% endif %}"
-     href="{{ url_for('scrape.feed', view='favorites') }}">
-    <i class="bi bi-heart me-1"></i>{{ _('Favorites') }}
-    <span class="view-tab__count">{{ counts.favorites }}</span>
-  </a>
-  <a class="view-tab{% if view == 'dismissed' %} view-tab--active{% endif %}"
-     href="{{ url_for('scrape.feed', view='dismissed') }}">
-    <i class="bi bi-eye-slash me-1"></i>{{ _('Hidden') }}
-  </a>
-</div>
-
-<!-- Bulk Action Panel -->
-<div id="bulk-action-panel" class="card shadow-sm border border-primary-subtle bg-body-tertiary mb-3 d-none">
-  <div class="card-body py-2 px-3 d-flex align-items-center justify-content-between gap-3">
-    <div class="d-flex align-items-center gap-2">
-      <span class="badge bg-primary text-white rounded-pill" id="selected-count">0</span>
-      <span class="small fw-semibold text-muted">{{ _('papers selected') }}</span>
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="view-tabs mb-3 d-flex flex-wrap gap-1">
+      <a class="view-tab{% if view == 'discover' %} view-tab--active{% endif %}"
+         href="{{ url_for('scrape.feed') }}">
+        <i class="bi bi-compass me-1"></i>{{ _('Discover') }}
+        <span class="view-tab__count">{{ counts.discover }}</span>
+      </a>
+      <a class="view-tab{% if view == 'favorites' %} view-tab--active{% endif %}"
+         href="{{ url_for('scrape.feed', view='favorites') }}">
+        <i class="bi bi-heart me-1"></i>{{ _('Favorites') }}
+        <span class="view-tab__count">{{ counts.favorites }}</span>
+      </a>
+      <a class="view-tab{% if view == 'dismissed' %} view-tab--active{% endif %}"
+         href="{{ url_for('scrape.feed', view='dismissed') }}">
+        <i class="bi bi-eye-slash me-1"></i>{{ _('Hidden') }}
+      </a>
     </div>
-    <div class="d-flex align-items-center gap-2">
-      <button type="submit" form="bulk-actions-form" name="action" value="favorite" class="btn btn-sm btn-outline-danger py-1 px-2">
-        <i class="bi bi-heart-fill me-1"></i>{{ _('Favorite') }}
-      </button>
-      <button type="submit" form="bulk-actions-form" name="action" value="read_later" class="btn btn-sm btn-outline-warning py-1 px-2">
-        <i class="bi bi-bookmark-heart-fill me-1"></i>{{ _('Read Later') }}
-      </button>
-      <button type="submit" form="bulk-actions-form" name="action" value="dismiss" class="btn btn-sm btn-outline-secondary py-1 px-2">
-        <i class="bi bi-eye-slash-fill me-1"></i>{{ _('Hide') }}
-      </button>
-      <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none py-1" onclick="clearAllSelections()">
-        {{ _('Cancel') }}
-      </button>
-    </div>
-  </div>
-</div>
 
-<form id="bulk-actions-form" method="post" action="{{ url_for('scrape.bulk_action') }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  {% if rows %}
-    {% for r in rows %}
-      {% include 'scrape/_paper_card.html' %}
-    {% endfor %}
-  {% else %}
-<div class="empty-state py-5 text-center">
-  <i class="bi bi-newspaper" style="font-size: 36px; color: var(--bs-secondary-color);"></i>
-  <div class="mt-2 fw-medium">
-    {% if view == 'favorites' %}{{ _('No favorites yet.') }}
-    {% elif view == 'dismissed' %}{{ _('Nothing hidden.') }}
-    {% else %}{{ _('Nothing here yet.') }}{% endif %}
-  </div>
-  <p class="small text-muted mt-2 mb-3">
-    {% if view == 'favorites' %}
-      {{ _('Star papers from the discover feed — they will collect here.') }}
-    {% elif view == 'dismissed' %}
-      {{ _('Papers you hide will be listed here so you can recover them.') }}
-    {% else %}
-      {{ _('Add some research interests in your profile, then hit "Scrape now".') }}
+    <!-- Bulk Action Panel -->
+    <div id="bulk-action-panel" class="card shadow-sm border border-primary-subtle bg-body-tertiary mb-3 d-none">
+      <div class="card-body py-2 px-3 d-flex align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary text-white rounded-pill" id="selected-count">0</span>
+          <span class="small fw-semibold text-muted">{{ _('papers selected') }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="submit" form="bulk-actions-form" name="action" value="favorite" class="btn btn-sm btn-outline-danger py-1 px-2">
+            <i class="bi bi-heart-fill me-1"></i>{{ _('Favorite') }}
+          </button>
+          <button type="submit" form="bulk-actions-form" name="action" value="read_later" class="btn btn-sm btn-outline-warning py-1 px-2">
+            <i class="bi bi-bookmark-heart-fill me-1"></i>{{ _('Read Later') }}
+          </button>
+          <button type="submit" form="bulk-actions-form" name="action" value="dismiss" class="btn btn-sm btn-outline-secondary py-1 px-2">
+            <i class="bi bi-eye-slash-fill me-1"></i>{{ _('Hide') }}
+          </button>
+          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none py-1" onclick="clearAllSelections()">
+            {{ _('Cancel') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <form id="bulk-actions-form" method="post" action="{{ url_for('scrape.bulk_action') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if rows %}
+        {% for r in rows %}
+          {% include 'scrape/_paper_card.html' %}
+        {% endfor %}
+      {% else %}
+    <div class="empty-state py-5 text-center">
+      <i class="bi bi-newspaper" style="font-size: 36px; color: var(--bs-secondary-color);"></i>
+      <div class="mt-2 fw-medium">
+        {% if view == 'favorites' %}{{ _('No favorites yet.') }}
+        {% elif view == 'dismissed' %}{{ _('Nothing hidden.') }}
+        {% else %}{{ _('Nothing here yet.') }}{% endif %}
+      </div>
+      <p class="small text-muted mt-2 mb-3">
+        {% if view == 'favorites' %}
+          {{ _('Star papers from the discover feed — they will collect here.') }}
+        {% elif view == 'dismissed' %}
+          {{ _('Papers you hide will be listed here so you can recover them.') }}
+        {% else %}
+          {{ _('Add some research interests in your profile, then hit "Scrape now".') }}
+        {% endif %}
+      </p>
+      {% if view != 'favorites' and view != 'dismissed' %}
+      <a href="{{ url_for('settings.profile', tab='interests') }}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-tags me-1"></i>{{ _('Add interests') }}
+      </a>
+      {% endif %}
+    </div>
     {% endif %}
-  </p>
-  {% if view != 'favorites' and view != 'dismissed' %}
-  <a href="{{ url_for('settings.profile', tab='interests') }}" class="btn btn-sm btn-outline-primary">
-    <i class="bi bi-tags me-1"></i>{{ _('Add interests') }}
-  </a>
-  {% endif %}
+    </form>
+
+    <div class="shortcuts-hint mt-4 text-center">
+      <i class="bi bi-keyboard me-2"></i><strong>{{ _('Keyboard Shortcuts') }}:</strong> <kbd>j</kbd>/<kbd>k</kbd> {{ _('select papers') }} · <kbd>f</kbd> {{ _('toggle favorite') }} · <kbd>n</kbd> {{ _('open details') }}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    {% include 'dashboard/_sources_card.html' %}
+  </div>
 </div>
-{% endif %}
-</form>
 
 <script>
   function toggleBulkPanel() {
     const checkboxes = document.querySelectorAll('.bulk-select-checkbox:checked');
     const panel = document.getElementById('bulk-action-panel');
     const countBadge = document.getElementById('selected-count');
-    
+
     if (checkboxes.length > 0) {
       panel.classList.remove('d-none');
       countBadge.textContent = checkboxes.length;
@@ -129,8 +158,4 @@
     toggleBulkPanel();
   }
 </script>
-
-<div class="shortcuts-hint mt-4 text-center">
-  <i class="bi bi-keyboard me-2"></i><strong>{{ _('Keyboard Shortcuts') }}:</strong> <kbd>j</kbd>/<kbd>k</kbd> {{ _('select papers') }} · <kbd>f</kbd> {{ _('toggle favorite') }} · <kbd>n</kbd> {{ _('open details') }}
-</div>
 {% endblock %}

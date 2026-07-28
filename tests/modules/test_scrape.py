@@ -57,6 +57,7 @@ def clean(db):
     db.session.execute(text("DELETE FROM papers"))
     db.session.execute(text("DELETE FROM user_keywords"))
     db.session.execute(text("DELETE FROM keywords"))
+    db.session.execute(text("DELETE FROM user_sources"))
     db.session.execute(text("DELETE FROM user_identifiers"))
     db.session.execute(text("DELETE FROM identifier_types"))
     db.session.execute(text("DELETE FROM user_settings"))
@@ -89,6 +90,8 @@ def clean(db):
     db.session.execute(text("DELETE FROM papers"))
     db.session.execute(text("DELETE FROM user_keywords"))
     db.session.execute(text("DELETE FROM keywords"))
+    db.session.execute(text("DELETE FROM user_sources"))
+    db.session.execute(text("DELETE FROM scan_runs"))
     db.session.execute(text("DELETE FROM identifier_types"))
     db.session.query(User).delete()
     db.session.commit()
@@ -213,6 +216,52 @@ def test_celery_task_through_eager(db, clean, monkeypatch):
     assert result["linked"] == 1
 
 
+def test_manual_run_also_refreshes_rss_feeds(auth_client, monkeypatch):
+    """"Scrape now" must queue the feed pipeline too.
+
+    RSS lives in a separate pipeline (global ingest + per-user relevance
+    linking) that only Beat used to drive, so a manual scan refreshed the
+    academic sources and silently left the news feeds at last night's state.
+    """
+    from app.tasks import feed_tasks, scrape_tasks
+
+    queued: dict[str, tuple] = {}
+    monkeypatch.setattr(
+        scrape_tasks.run_for_user,
+        "delay",
+        lambda *a, **kw: queued.setdefault("scrape", (a, kw)) or SimpleNamespace(id="s1"),
+    )
+    monkeypatch.setattr(
+        feed_tasks.link_for_user,
+        "delay",
+        lambda *a, **kw: queued.setdefault("feeds", (a, kw)) or SimpleNamespace(id="f1"),
+    )
+
+    client, uid = auth_client
+    r = client.post("/papers/run", follow_redirects=False)
+    assert r.status_code in (200, 302)
+    assert queued["scrape"][1]["trigger"] == "manual"
+    assert queued["feeds"][0] == (uid,)
+
+
+def test_manual_run_survives_a_feed_task_that_cannot_be_queued(auth_client, monkeypatch):
+    """The scrape is already away by then — a broker hiccup on the second
+    enqueue must not turn the user's button press into a 500."""
+    from app.tasks import feed_tasks, scrape_tasks
+
+    def _boom(*_a, **_kw):
+        raise RuntimeError("broker down")
+
+    monkeypatch.setattr(
+        scrape_tasks.run_for_user, "delay", lambda *a, **kw: SimpleNamespace(id="s1")
+    )
+    monkeypatch.setattr(feed_tasks.link_for_user, "delay", _boom)
+
+    client, _uid = auth_client
+    r = client.post("/papers/run", follow_redirects=False)
+    assert r.status_code in (200, 302)
+
+
 def test_feed_route_requires_login(client):
     r = client.get("/papers/", follow_redirects=False)
     assert r.status_code in (302, 401)
@@ -237,6 +286,73 @@ def test_read_later_toggling(db, clean):
     new_status = toggle_read_later(link)
     assert new_status is False
     assert link.read_later is False
+
+
+def test_user_enabled_sources_defaults_to_all(db, clean, monkeypatch):
+    """A user with no UserSource rows scans every enabled source (opt-out)."""
+    from app.modules.scrape.service import user_enabled_sources
+
+    a = SimpleNamespace(SOURCE_NAME="a")
+    b = SimpleNamespace(SOURCE_NAME="b")
+    monkeypatch.setattr(
+        "app.modules.scrape.service.enabled_sources", lambda: {"a": a, "b": b}
+    )
+    assert set(user_enabled_sources(clean).keys()) == {"a", "b"}
+
+
+def test_set_user_source_mutes_and_reenables(db, clean, monkeypatch):
+    from app.modules.scrape.service import (
+        list_user_source_prefs,
+        set_user_source,
+        user_enabled_sources,
+    )
+
+    a = SimpleNamespace(SOURCE_NAME="a")
+    b = SimpleNamespace(SOURCE_NAME="b")
+    monkeypatch.setattr(
+        "app.modules.scrape.service.enabled_sources", lambda: {"a": a, "b": b}
+    )
+
+    # Mute "b"
+    set_user_source(clean, "b", False)
+    assert list_user_source_prefs(clean) == {"b": False}
+    assert set(user_enabled_sources(clean).keys()) == {"a"}
+
+    # Re-enable "b" (idempotent upsert — no duplicate row)
+    set_user_source(clean, "b", True)
+    assert list_user_source_prefs(clean) == {"b": True}
+    assert set(user_enabled_sources(clean).keys()) == {"a", "b"}
+    from app.modules.scrape.models import UserSource
+
+    assert UserSource.query.filter_by(user_id=clean.id, source_name="b").count() == 1
+
+
+def test_scrape_respects_muted_source(db, clean, monkeypatch):
+    """A muted source is not queried during a scrape run."""
+    from app.modules.scrape.service import set_user_source
+
+    kw = Keyword(value="rl")
+    db.session.add(kw)
+    db.session.commit()
+    db.session.add(UserKeyword(user_id=clean.id, keyword_id=kw.id))
+    db.session.commit()
+
+    healthy = SimpleNamespace(
+        SOURCE_NAME="healthy",
+        search_for_keywords=lambda keywords, *, max_results=25: [_payload("2401.99991")],
+    )
+    muted = SimpleNamespace(
+        SOURCE_NAME="muted",
+        search_for_keywords=lambda keywords, *, max_results=25: [_payload("2401.99992")],
+    )
+    monkeypatch.setattr(
+        "app.modules.scrape.service.enabled_sources",
+        lambda: {"healthy": healthy, "muted": muted},
+    )
+
+    set_user_source(clean, "muted", False)
+    result = scrape_for_user(clean)
+    assert result["sources"] == {"healthy": 1}  # muted source absent
 
 
 def test_notifications_creation(db, clean):

@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 import requests
 import structlog
 
+from app.modules.scrape.ratelimit import SourceThrottledError, semantic_scholar_slot
 from app.modules.scrape.sources.payload import PaperPayload
 
 logger = structlog.get_logger()
@@ -76,6 +77,11 @@ def search(query: str, *, max_results: int = 25) -> list[PaperPayload]:
     query = (query or "").strip()
     if not query:
         return []
+    # The published quota is per API key / per IP, i.e. shared by every worker.
+    # Without this, N concurrent per-user scans multiply it by N.
+    if not semantic_scholar_slot():
+        logger.warning("semantic_scholar_rate_limited", query=query)
+        raise SourceThrottledError("semantic scholar rate limit")
     resp = requests.get(
         _API_URL,
         params={"query": query, "limit": min(max_results, 100), "fields": _FIELDS},
@@ -92,21 +98,35 @@ def search(query: str, *, max_results: int = 25) -> list[PaperPayload]:
 def search_for_keywords(keywords: list[str], *, max_results: int = 25) -> list[PaperPayload]:
     """One request per keyword (the API has no OR operator), budget split
     evenly. A keyword that 429s/fails is logged and skipped so the other
-    keywords still land."""
+    keywords still land.
+
+    But if *every* keyword failed and we collected nothing, the failure is
+    raised instead of being reported as an empty result. This endpoint is
+    unauthenticated by default and shares a ~100 req / 5 min pool with every
+    other caller on the same IP, so 429 is the normal outcome of pressing
+    "Scrape now" twice in a row — and swallowing it made the scan record
+    `status="ok", hits=0`, i.e. told the user "there are no papers on your
+    topic" when the truth was "we never got to ask". Set
+    SEMANTIC_SCHOLAR_API_KEY for a dedicated quota.
+    """
     keywords = [kw.strip() for kw in keywords if kw and kw.strip()]
     if not keywords:
         return []
     per_kw = max(3, max_results // len(keywords))
     out: list[PaperPayload] = []
     seen: set[str] = set()
+    last_error: Exception | None = None
     for kw in keywords:
         try:
             hits = search(kw, max_results=per_kw)
-        except requests.RequestException:
-            logger.warning("semantic_scholar_keyword_failed", keyword=kw)
+        except (requests.RequestException, SourceThrottledError) as exc:
+            logger.warning("semantic_scholar_keyword_failed", keyword=kw, error=str(exc))
+            last_error = exc
             continue
         for p in hits:
             if p.external_id not in seen:
                 seen.add(p.external_id)
                 out.append(p)
+    if last_error is not None and not out:
+        raise last_error
     return out[:max_results]

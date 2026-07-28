@@ -18,7 +18,12 @@ from types import ModuleType
 
 import structlog
 
-from app.modules.scrape.sources import arxiv_source, pubmed_source, semantic_scholar_source
+from app.modules.scrape.sources import (
+    arxiv_source,
+    pubmed_source,
+    rss_source,
+    semantic_scholar_source,
+)
 
 logger = structlog.get_logger()
 
@@ -27,8 +32,74 @@ AVAILABLE_SOURCES: dict[str, ModuleType] = {
     semantic_scholar_source.SOURCE_NAME: semantic_scholar_source,
     pubmed_source.SOURCE_NAME: pubmed_source,
 }
+# Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
+# under its own key, sharing the one `rss_source` module — the module's
+# `search_for_keywords` is a no-op (feeds are ingested globally, not via the
+# per-user keyword-search flow) so this stays safe if a source loop ever
+# hits it.
+for _feed in rss_source.FEEDS:
+    AVAILABLE_SOURCES[_feed["key"]] = rss_source
 
-_DEFAULT = "arxiv,semantic_scholar,pubmed"
+# Topic taxonomy (Faz 3 Bölüm A) — a small, easily-extended set of domain
+# keys used to (a) tag every curated source and (b) classify a user's
+# interests (see ai_service.classify_user_topics). Values are English msgids;
+# templates wrap them in `_()` for translation — keep this dict flat so a new
+# domain is a one-line addition.
+TOPICS: dict[str, str] = {
+    "ai": "Artificial Intelligence",
+    "ml": "Machine Learning",
+    "cs": "Computer Science",
+    "physics": "Physics",
+    "math": "Mathematics",
+    "biomed": "Biomedicine",
+    "social": "Social Sciences",
+    "humanities": "Humanities",
+    "general": "General",
+}
+
+# UI-facing metadata for each source. Kept here — not on the adapter modules —
+# so adapters stay pure I/O. `label`/`desc` are English msgids; templates wrap
+# them in `_()` for translation. `icon` is a bootstrap-icons class.
+# `topics` (list of TOPICS keys) + `category` ("academic"|"feed") drive the
+# interest-aware source picker (Faz 3 Bölüm C) — `category` distinguishes the
+# always-on-by-default academic databases from the topic-gated RSS feeds.
+SOURCE_META: dict[str, dict] = {
+    "arxiv": {
+        "label": "arXiv",
+        "icon": "bi-file-earmark-text",
+        "desc": "Physics, CS and mathematics preprints",
+        "url": "https://arxiv.org",
+        "topics": ["cs", "physics", "math", "general"],
+        "category": "academic",
+    },
+    "semantic_scholar": {
+        "label": "Semantic Scholar",
+        "icon": "bi-diagram-3",
+        "desc": "Multi-field corpus with citation graph",
+        "url": "https://www.semanticscholar.org",
+        "topics": ["general"],
+        "category": "academic",
+    },
+    "pubmed": {
+        "label": "PubMed",
+        "icon": "bi-heart-pulse",
+        "desc": "Biomedical and life sciences literature",
+        "url": "https://pubmed.ncbi.nlm.nih.gov",
+        "topics": ["biomed"],
+        "category": "academic",
+    },
+}
+for _feed in rss_source.FEEDS:
+    SOURCE_META[_feed["key"]] = {
+        "label": _feed["label"],
+        "icon": _feed["icon"],
+        "desc": _feed["desc"],
+        "url": _feed["url"],
+        "topics": ["ai", "ml"],
+        "category": "feed",
+    }
+
+_DEFAULT = "arxiv,semantic_scholar,pubmed," + ",".join(f["key"] for f in rss_source.FEEDS)
 
 
 def enabled_sources() -> dict[str, ModuleType]:
@@ -42,4 +113,48 @@ def enabled_sources() -> dict[str, ModuleType]:
             logger.warning("scrape_source_unknown", name=name)
             continue
         out[name] = mod
+    return out
+
+
+def source_options() -> list[dict]:
+    """UI-ready list of the deployment's enabled sources, each merged with its
+    display metadata. Unknown sources (no SOURCE_META row) fall back to the raw
+    name as label so the UI never breaks on a new adapter."""
+    out: list[dict] = []
+    for name in enabled_sources():
+        meta = SOURCE_META.get(name, {})
+        out.append(
+            {
+                "name": name,
+                "label": meta.get("label", name.replace("_", " ").title()),
+                "icon": meta.get("icon", "bi-database"),
+                "desc": meta.get("desc", ""),
+                "url": meta.get("url", ""),
+                "topics": meta.get("topics", []),
+                "category": meta.get("category", "academic"),
+            }
+        )
+    return out
+
+
+def suggested_sources(user_topics: list[str]) -> set[str]:
+    """Names of the deployment's enabled sources whose `topics` intersect
+    `user_topics` — the "suggested for you" set used by the source picker
+    grouping and by `service.user_enabled_sources`'s topic-aware default.
+
+    A user classified only as `["general"]` does NOT get every feed marked
+    suggested — none of the curated RSS feeds carry the "general" topic (see
+    SOURCE_META above), so only a *real* domain overlap counts. Broad
+    academic catalogs (arXiv, Semantic Scholar) do carry "general", which is
+    intentional — they're relevant regardless of specialty.
+    """
+    topics = {t for t in (user_topics or []) if t}
+    if not topics:
+        return set()
+    out: set[str] = set()
+    for name in enabled_sources():
+        meta = SOURCE_META.get(name, {})
+        src_topics = set(meta.get("topics") or [])
+        if src_topics & topics:
+            out.add(name)
     return out

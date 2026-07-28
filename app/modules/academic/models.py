@@ -57,11 +57,44 @@ class UserIdentifier(BaseModel):
 
 
 class Keyword(BaseModel):
-    """Global research-interest dictionary. One row per normalised term."""
+    """Global research-interest dictionary. One row per normalised term.
+
+    The three translation columns exist because the sources we scrape (arXiv,
+    Semantic Scholar, PubMed) are English corpora while users type their
+    interests in Turkish — "kalp yetmezliği" matched nothing at all. They are
+    filled lazily, once per term, by `scrape.service.ensure_keyword_translations`
+    (lexicon fast-path, LLM fallback). This table is global and deduplicated,
+    so a term is translated once for the whole deployment and every later user
+    who follows it pays nothing.
+
+      value_en      — canonical English form. Equal to `value` for terms that
+                      are already English; NULL only until first translated.
+      variants      — extra English synonyms ("cardiac failure"), used to widen
+                      the OR-combined queries. NULL/[] when there are none.
+      translated_at — set on every fill, including the no-op "already English"
+                      one, so an untranslatable term isn't retried every scan.
+    """
 
     __tablename__ = "keywords"
 
     value = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    value_en = db.Column(db.String(128), nullable=True)
+    variants = db.Column(db.JSON, nullable=True)
+    translated_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    @property
+    def search_terms(self) -> list[str]:
+        """Every English-ish term this keyword should be searched under, the
+        canonical form first. Deduplicated case-insensitively; falls back to
+        just `value` when nothing has been translated yet."""
+        out: list[str] = []
+        seen: set[str] = set()
+        for term in [self.value_en, self.value, *(self.variants or [])]:
+            cleaned = (term or "").strip()
+            if cleaned and cleaned.lower() not in seen:
+                seen.add(cleaned.lower())
+                out.append(cleaned)
+        return out
 
 
 class UserKeyword(BaseModel):

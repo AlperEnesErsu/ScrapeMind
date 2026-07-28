@@ -1,14 +1,23 @@
-<div id="scraper-widget" class="card shadow-sm border-0 bg-body"
-     hx-get="{{ url_for('scrape.scrape_status_poll', task_id=task_id) }}"
+{# Manual-scrape progress — same inline shape and swap target as
+   `_scraper_widget.html`, so starting a scrape doesn't reflow the page header.
+
+   `phase` distinguishes "sitting in the queue" from "a worker is actually
+   scanning". The two used to look identical, so a task nothing ever picked up
+   spun forever and looked like work in progress. `since` is carried through
+   each poll so the route can give up and say so (see _QUEUE_WAIT_LIMIT). #}
+<div id="scraper-widget" class="text-end small text-muted"
+     hx-get="{{ url_for('scrape.scrape_status_poll', task_id=task_id, since=since) }}"
      hx-trigger="every 3s"
      hx-swap="outerHTML">
-  <div class="card-header py-2 bg-transparent border-bottom">
-    <strong><i class="bi bi-arrow-clockwise me-2 text-success"></i>{{ _('Data Scraper') }}</strong>
-  </div>
-  <div class="card-body text-center py-4">
-    <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;">
+  <span class="d-inline-flex align-items-center gap-2" data-testid="scrape-phase-{{ phase }}">
+    <span class="spinner-border spinner-border-sm text-primary" role="status"
+          style="width:.85rem;height:.85rem;">
       <span class="visually-hidden">Loading...</span>
-    </div>
-    <div class="small text-muted">{{ _('Scraping in progress...') }}</div>
-  </div>
+    </span>
+    {% if phase == 'running' %}
+      {{ _('Scanning your sources…') }}
+    {% else %}
+      {{ _('Queued — waiting for a worker to pick it up…') }}
+    {% endif %}
+  </span>
 </div>

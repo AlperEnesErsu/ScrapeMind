@@ -176,15 +176,22 @@ def _register_context_processors(app: Flask) -> None:
         return {"menu_nodes": [], "current_user_permissions": frozenset()}
 
     @app.context_processor
-    def inject_active_sources() -> dict:
-        """Expose the enabled scrape source names to templates (scraper widget)."""
-        try:
-            from app.modules.scrape.sources import enabled_sources
+    def inject_health_probe() -> dict:
+        """Expose `system_health` as a callable, not a computed value.
 
-            return {"active_sources": list(enabled_sources())}
-        except Exception:  # noqa: BLE001 — never let this break a page render
-            logger.exception("active_sources_load_failed")
-            return {"active_sources": []}
+        The sidebar status panel is admin-only, so this must not cost anything
+        for the users who never see it — passing the function lets the template
+        call it *inside* the permission guard. It runs at most once per render.
+        """
+        from app.core.health import system_health
+
+        return {"system_health": system_health}
+
+    # Note: there used to be an `inject_active_sources` context processor here
+    # exposing the *deployment's* enabled sources. Its only consumer was the
+    # scraper widget, which needs this user's effective set instead — a source
+    # they muted must not be advertised as one that will be scanned. That now
+    # comes from `scrape.service.scan_status_context` via `_widget_ctx()`.
 
 
 def _register_blueprints(app: Flask) -> None:

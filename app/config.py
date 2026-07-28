@@ -54,6 +54,12 @@ class BaseConfig:
     CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", _REDIS_URL)
     CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", _REDIS_URL)
     CELERY_TASK_ALWAYS_EAGER = False  # overridden in TestingConfig
+    # Global task time limits. Without these a single hung network call pins a
+    # worker slot forever; soft raises SoftTimeLimitExceeded (catchable, lets a
+    # task commit what it has), hard SIGKILLs the child. Per-task decorators
+    # override these where a tighter budget makes sense (e.g. feed fetching).
+    CELERY_TASK_SOFT_TIME_LIMIT = int(os.getenv("CELERY_TASK_SOFT_TIME_LIMIT", "600"))
+    CELERY_TASK_TIME_LIMIT = int(os.getenv("CELERY_TASK_TIME_LIMIT", "900"))
 
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
@@ -68,9 +74,56 @@ class BaseConfig:
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
     ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
+    # LLM provider abstraction (Faz 1 digest) — "openrouter" | "ollama" | "anthropic".
+    # Default is openrouter because it has genuinely free (":free" suffixed) models,
+    # so a fresh deployment can turn AI features on at zero cost. Per-user keys
+    # (see UserSettings.settings["llm"]) take priority over the global fallback
+    # below; Ollama needs no key at all (local inference).
+    LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openrouter")
+
+    # OpenRouter — https://openrouter.ai/keys. OPENROUTER_API_KEY is an optional
+    # *global* fallback used when a user hasn't set their own key yet.
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen-2.5-72b-instruct:free")
+    OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+
+    # Ollama — local inference, no API key required.
+    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5")
+
+    # Fernet key encrypting per-user LLM API keys at rest (UserSettings JSON).
+    # If empty, derived from SECRET_KEY (sha256 -> urlsafe base64) so dev/test
+    # never need a separate secret — production should still set one explicitly
+    # so rotating SECRET_KEY doesn't strand every stored key.
+    LLM_ENC_KEY = os.getenv("LLM_ENC_KEY", "")
+
     # Audit log retention — rows older than this many days are purged by the
     # nightly `core.purge_audit_logs` task. 0 disables purging (keep forever).
     AUDIT_RETENTION_DAYS = int(os.getenv("AUDIT_RETENTION_DAYS", "180"))
+
+    # ---- Scanning: history, fan-out, feed fetching -------------------------
+    # ScanRun rows older than this are purged by `scrape.purge_scan_runs`.
+    # 0 disables purging (keep forever), same contract as AUDIT_RETENTION_DAYS.
+    SCAN_RUN_RETENTION_DAYS = int(os.getenv("SCAN_RUN_RETENTION_DAYS", "30"))
+    # Nightly fan-out spreads users deterministically over this many seconds
+    # instead of enqueueing every user at the same instant. Deterministic (not
+    # random) so the "next scan at 03:27" we show a user is actually true.
+    SCAN_FANOUT_WINDOW_SECONDS = int(os.getenv("SCAN_FANOUT_WINDOW_SECONDS", "1800"))
+    # Custom RSS feeds a single user may register. Each active feed costs one
+    # HTTP fetch per nightly run, so this is the main per-user cost knob.
+    MAX_USER_FEEDS = int(os.getenv("MAX_USER_FEEDS", "50"))
+    # Read timeout (seconds) and hard body cap (bytes) for a feed fetch.
+    FEED_FETCH_TIMEOUT = int(os.getenv("FEED_FETCH_TIMEOUT", "15"))
+    FEED_FETCH_MAX_BYTES = int(os.getenv("FEED_FETCH_MAX_BYTES", "5242880"))  # 5 MiB
+    # SSRF guard escape hatch — only for local development against a feed
+    # served from localhost. Never enable in production.
+    FEED_ALLOW_PRIVATE_HOSTS = os.getenv("FEED_ALLOW_PRIVATE_HOSTS", "false").lower() == "true"
+    # Shared external API budgets. These are per-deployment, enforced through
+    # Redis, because the per-user architecture otherwise multiplies each
+    # adapter's own client-side throttle by the number of concurrent workers.
+    SCRAPE_RATE_ARXIV_PER_MIN = int(os.getenv("SCRAPE_RATE_ARXIV_PER_MIN", "20"))
+    SCRAPE_RATE_S2_PER_5MIN = int(os.getenv("SCRAPE_RATE_S2_PER_5MIN", "100"))
+    SCRAPE_RATE_PUBMED_PER_SEC = int(os.getenv("SCRAPE_RATE_PUBMED_PER_SEC", "3"))
 
     # Redis cache for RBAC permission sets (see app/core/cache.py). Purely an
     # optimisation: with CACHE_ENABLED=false, or Redis unreachable, everything
@@ -131,6 +184,20 @@ class TestingConfig(BaseConfig):
     # depend on eviction timing. Cache behaviour is tested explicitly with a
     # fake client instead (tests/core/test_cache.py).
     CACHE_ENABLED = False
+    # CI has no outbound network, so a DNS-resolving SSRF guard would reject
+    # every fixture URL. The guard is tested directly instead (it takes the
+    # flag as an explicit argument), and the tests that assert rejection flip
+    # this back to False with literal-IP URLs that need no resolution.
+    FEED_ALLOW_PRIVATE_HOSTS = True
+    # Point the lock/rate-limit Redis at a closed port so `_lock_client()`
+    # fails open, same reasoning as CACHE_ENABLED=False above. A live Redis
+    # here makes tests order-dependent: the test DB is recreated each session
+    # so user ids restart at 1, but a 900s per-user lock from the previous run
+    # is still in Redis and would silently skip the next run's scan. Lock
+    # behaviour is asserted directly by stubbing acquire_scrape_lock instead.
+    REDIS_URL = "redis://127.0.0.1:1/0"
+    CELERY_BROKER_URL = "redis://127.0.0.1:1/0"
+    CELERY_RESULT_BACKEND = "redis://127.0.0.1:1/0"
 
 
 _config_map = {
