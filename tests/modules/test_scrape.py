@@ -217,7 +217,7 @@ def test_celery_task_through_eager(db, clean, monkeypatch):
 
 
 def test_manual_run_also_refreshes_rss_feeds(auth_client, monkeypatch):
-    """"Scrape now" must queue the feed pipeline too.
+    """ "Scrape now" must queue the feed pipeline too.
 
     RSS lives in a separate pipeline (global ingest + per-user relevance
     linking) that only Beat used to drive, so a manual scan refreshed the
@@ -294,9 +294,7 @@ def test_user_enabled_sources_defaults_to_all(db, clean, monkeypatch):
 
     a = SimpleNamespace(SOURCE_NAME="a")
     b = SimpleNamespace(SOURCE_NAME="b")
-    monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources", lambda: {"a": a, "b": b}
-    )
+    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"a": a, "b": b})
     assert set(user_enabled_sources(clean).keys()) == {"a", "b"}
 
 
@@ -309,9 +307,7 @@ def test_set_user_source_mutes_and_reenables(db, clean, monkeypatch):
 
     a = SimpleNamespace(SOURCE_NAME="a")
     b = SimpleNamespace(SOURCE_NAME="b")
-    monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources", lambda: {"a": a, "b": b}
-    )
+    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"a": a, "b": b})
 
     # Mute "b"
     set_user_source(clean, "b", False)

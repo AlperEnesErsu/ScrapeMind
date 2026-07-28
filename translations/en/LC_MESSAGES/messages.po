@@ -2487,6 +2487,75 @@ msgstr "Try a broader query or clear some filters."
 msgid "Search"
 msgstr "Search"
 
+msgid "Collections"
+msgstr "Collections"
+
+msgid "Collection created."
+msgstr "Collection created."
+
+msgid "Collection updated."
+msgstr "Collection updated."
+
+msgid "Collection deleted."
+msgstr "Collection deleted."
+
+msgid "Added to collection."
+msgstr "Added to collection."
+
+msgid "Removed from collection."
+msgstr "Removed from collection."
+
+msgid "Collection name is required."
+msgstr "Collection name is required."
+
+msgid "Collection name is too long."
+msgstr "Collection name is too long."
+
+msgid "A collection with that name already exists."
+msgstr "A collection with that name already exists."
+
+msgid "New collection"
+msgstr "New collection"
+
+msgid "e.g. Thesis references"
+msgstr "e.g. Thesis references"
+
+msgid "optional"
+msgstr "optional"
+
+msgid "Manage collections"
+msgstr "Manage collections"
+
+msgid "No collections yet."
+msgstr "No collections yet."
+
+msgid "Group papers by project or topic — create your first collection above."
+msgstr "Group papers by project or topic — create your first collection above."
+
+msgid "papers"
+msgstr "papers"
+
+msgid "Add to collection"
+msgstr "Add to collection"
+
+msgid "Remove from collection"
+msgstr "Remove from collection"
+
+msgid "This collection is empty."
+msgstr "This collection is empty."
+
+msgid "Use the folder icon on any paper to add it here."
+msgstr "Use the folder icon on any paper to add it here."
+
+msgid "Edit collection"
+msgstr "Edit collection"
+
+msgid "Delete this collection? The papers stay in your library."
+msgstr "Delete this collection? The papers stay in your library."
+
+msgid "e.g. Thesis references "
+msgstr "e.g. Thesis references "
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

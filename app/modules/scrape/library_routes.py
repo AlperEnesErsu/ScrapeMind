@@ -14,9 +14,12 @@ URL layout:
 
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
+from app.core.audit.middleware import log_action
+from app.modules.scrape import collections_service as cs
 from app.modules.scrape.service import (
     build_timeline,
     count_all_notes,
@@ -231,4 +234,130 @@ def export(fmt: str):
         body,
         mimetype=f"{mimetype}; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Collections
+# ---------------------------------------------------------------------------
+
+
+def _get_own_collection_or_404(collection_id: int):
+    coll = cs.get_collection(current_user, collection_id)
+    if coll is None:
+        abort(404)
+    return coll
+
+
+@library_bp.route("/collections")
+@login_required
+def collections():
+    return render_template(
+        "library/collections.html", collections=cs.list_collections(current_user)
+    )
+
+
+@library_bp.route("/collections", methods=["POST"])
+@login_required
+def create_collection():
+    coll, err = cs.create_collection(
+        current_user, request.form.get("name", ""), request.form.get("description", "")
+    )
+    if err:
+        flash(_(err), "danger")
+        return redirect(url_for("library.collections"))
+    log_action("collection.created", entity_type="collection", entity_id=str(coll.id))
+    flash(_("Collection created."), "success")
+    return redirect(url_for("library.collection_detail", collection_id=coll.id))
+
+
+@library_bp.route("/collections/<int:collection_id>")
+@login_required
+def collection_detail(collection_id: int):
+    coll = _get_own_collection_or_404(collection_id)
+    return render_template("library/collection_detail.html", collection=coll, rows=coll.papers)
+
+
+@library_bp.route("/collections/<int:collection_id>/rename", methods=["POST"])
+@login_required
+def rename_collection(collection_id: int):
+    coll = _get_own_collection_or_404(collection_id)
+    ok, err = cs.rename_collection(
+        coll, request.form.get("name", ""), request.form.get("description", "")
+    )
+    flash(_(err) if err else _("Collection updated."), "danger" if err else "success")
+    return redirect(url_for("library.collection_detail", collection_id=coll.id))
+
+
+@library_bp.route("/collections/<int:collection_id>/delete", methods=["POST"])
+@login_required
+def delete_collection(collection_id: int):
+    coll = _get_own_collection_or_404(collection_id)
+    cs.delete_collection(coll)
+    log_action("collection.deleted", entity_type="collection", entity_id=str(collection_id))
+    flash(_("Collection deleted."), "success")
+    return redirect(url_for("library.collections"))
+
+
+@library_bp.route("/collections/<int:collection_id>/add/<int:user_paper_id>", methods=["POST"])
+@login_required
+def add_to_collection(collection_id: int, user_paper_id: int):
+    coll = _get_own_collection_or_404(collection_id)
+    ok, err = cs.add_paper(coll, current_user, user_paper_id)
+    if not ok:
+        abort(404)  # the paper isn't the caller's
+    if _is_htmx():
+        return _collection_menu(user_paper_id)
+    flash(_("Added to collection."), "success")
+    return redirect(request.referrer or url_for("library.collection_detail", collection_id=coll.id))
+
+
+@library_bp.route("/collections/<int:collection_id>/remove/<int:user_paper_id>", methods=["POST"])
+@login_required
+def remove_from_collection(collection_id: int, user_paper_id: int):
+    coll = _get_own_collection_or_404(collection_id)
+    cs.remove_paper(coll, user_paper_id)
+    if _is_htmx():
+        return _collection_menu(user_paper_id)
+    flash(_("Removed from collection."), "success")
+    return redirect(request.referrer or url_for("library.collection_detail", collection_id=coll.id))
+
+
+@library_bp.route("/paper/<int:user_paper_id>/collections-menu")
+@login_required
+def collections_menu(user_paper_id: int):
+    """HTMX partial: the 'add to collection' checkbox menu for one paper."""
+    return _collection_menu(user_paper_id)
+
+
+def _is_htmx() -> bool:
+    return request.headers.get("HX-Request") == "true"
+
+
+def _collection_menu(user_paper_id: int):
+    return render_template(
+        "library/_collection_menu.html",
+        collections=cs.list_collections(current_user),
+        member_ids=cs.collection_ids_for_paper(current_user, user_paper_id),
+        user_paper_id=user_paper_id,
+    )
+
+
+@library_bp.route("/collections/<int:collection_id>/export.<fmt>")
+@login_required
+def export_collection(collection_id: int, fmt: str):
+    from flask import Response
+
+    if fmt not in ("bib", "csv"):
+        abort(404)
+    coll = _get_own_collection_or_404(collection_id)
+    rows = coll.papers
+    body = papers_to_bibtex(rows) if fmt == "bib" else papers_to_csv(rows)
+    mimetype = "application/x-bibtex" if fmt == "bib" else "text/csv"
+    # Slugify the collection name for the filename.
+    slug = "".join(c if c.isalnum() else "-" for c in coll.name.lower()).strip("-") or "collection"
+    return Response(
+        body,
+        mimetype=f"{mimetype}; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{slug}.{fmt}"'},
     )

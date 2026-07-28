@@ -29,7 +29,9 @@ from app.modules.scrape.sources.payload import PaperPayload
 from app.tasks import feed_tasks
 
 
-def _news_payload(ext_id: str, *, source: str = "openai_blog", title: str = "News Title") -> PaperPayload:
+def _news_payload(
+    ext_id: str, *, source: str = "openai_blog", title: str = "News Title"
+) -> PaperPayload:
     return PaperPayload(
         source=source,
         external_id=ext_id,

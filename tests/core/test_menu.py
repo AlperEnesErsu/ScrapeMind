@@ -101,9 +101,9 @@ def menu_builder_users(db):
     Not reusing `auth_client` — build_menu_for_user() takes a plain User
     instance and doesn't need a logged-in test client.
     """
-    db.session.query(User).filter(
-        User.username.in_(["menu_regular", "menu_super"])
-    ).delete(synchronize_session=False)
+    db.session.query(User).filter(User.username.in_(["menu_regular", "menu_super"])).delete(
+        synchronize_session=False
+    )
     db.session.commit()
 
     regular = User(
@@ -128,9 +128,7 @@ def menu_builder_users(db):
     db.session.commit()
 
 
-def test_build_menu_prunes_empty_admin_group_for_regular_user(
-    db, clean_menu, menu_builder_users
-):
+def test_build_menu_prunes_empty_admin_group_for_regular_user(db, clean_menu, menu_builder_users):
     """`admin_group` (menu.admin) has no required_permission of its own — its
     children are permission-gated and get filtered out for a user with no
     admin perms, which used to leave a dead, childless accordion header in

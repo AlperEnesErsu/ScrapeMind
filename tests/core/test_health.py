@@ -83,7 +83,7 @@ def test_missing_heartbeat_reads_as_down(app, db, monkeypatch):
 
 
 def test_unreadable_heartbeat_is_unknown_not_down(app, db, monkeypatch):
-    """"We can't tell" must not be reported as "it's broken"."""
+    """ "We can't tell" must not be reported as "it's broken"."""
     _use(monkeypatch, _FakeRedis(fail=True))
     with app.app_context():
         assert system_health()["worker"] == UNKNOWN

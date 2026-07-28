@@ -1,0 +1,23 @@
+{# HTMX partial: 'add to collection' checkbox menu for one paper.
+   Each toggle posts add/remove and swaps this menu back in. #}
+<div class="collection-menu-body" id="colmenu-{{ user_paper_id }}">
+  {% if collections %}
+    {% for c in collections %}
+      {% set is_member = c.id in member_ids %}
+      <button type="button"
+              class="dropdown-item d-flex align-items-center gap-2 px-2 py-1"
+              hx-post="{{ url_for('library.remove_from_collection' if is_member else 'library.add_to_collection', collection_id=c.id, user_paper_id=user_paper_id) }}"
+              hx-target="#colmenu-{{ user_paper_id }}" hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'>
+        <i class="bi {{ 'bi-check-square text-primary' if is_member else 'bi-square' }}"></i>
+        <span class="text-truncate">{{ c.name }}</span>
+      </button>
+    {% endfor %}
+  {% else %}
+    <span class="dropdown-item-text small text-muted">{{ _('No collections yet.') }}</span>
+  {% endif %}
+  <hr class="dropdown-divider my-1">
+  <a class="dropdown-item small text-primary px-2 py-1" href="{{ url_for('library.collections') }}">
+    <i class="bi bi-plus-lg me-1"></i>{{ _('Manage collections') }}
+  </a>
+</div>

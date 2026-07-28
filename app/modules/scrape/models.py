@@ -156,6 +156,50 @@ class ScanRun(BaseModel):
         return None if self.duration_ms is None else self.duration_ms / 1000.0
 
 
+# Junction: which papers sit in which collection. Points at user_papers (not
+# papers) so membership is inherently the owner's — a collection can only ever
+# hold the owner's own library rows.
+collection_papers = db.Table(
+    "collection_papers",
+    db.Column(
+        "collection_id",
+        db.BigInteger,
+        db.ForeignKey("collections.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "user_paper_id",
+        db.BigInteger,
+        db.ForeignKey("user_papers.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
+class Collection(BaseModel):
+    """A user-named folder of papers — organise a library by project/topic,
+    beyond the single favorites/read-later flags.
+
+    Membership is via the collection_papers junction to UserPaper, so a
+    collection only ever contains the owner's own papers.
+    """
+
+    __tablename__ = "collections"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.String(500), nullable=True)
+
+    papers = db.relationship(
+        "UserPaper",
+        secondary=collection_papers,
+        lazy="select",
+        order_by="desc(UserPaper.created_at)",
+    )
+
+    __table_args__ = (db.UniqueConstraint("user_id", "name", name="uq_collection_user_name"),)
+
+
 class PaperNote(BaseModel):
     """Personal note attached to a UserPaper row.
 
