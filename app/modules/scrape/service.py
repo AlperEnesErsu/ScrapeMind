@@ -483,6 +483,12 @@ def set_user_source(user: User, source_name: str, enabled: bool) -> bool:
 def upsert_paper(payload: PaperPayload | dict) -> Paper:
     """Insert a paper if we haven't seen it before, return the row either way."""
     data = payload.as_dict() if isinstance(payload, PaperPayload) else dict(payload)
+    doi = data.get("doi")
+    if doi and isinstance(doi, str) and doi.strip():
+        existing_doi = Paper.query.filter(Paper.doi.ilike(doi.strip())).first()
+        if existing_doi is not None:
+            return existing_doi
+
     existing = Paper.query.filter_by(source=data["source"], external_id=data["external_id"]).first()
     if existing is not None:
         return existing
@@ -902,7 +908,14 @@ def add_user_feed(
     if not clean_label:
         clean_label = parsed_feed.title[:128] if parsed_feed.title else None
 
-    row = UserFeed(user_id=user.id, url=normalized, label=clean_label, active=True)
+    row = UserFeed(
+        user_id=user.id,
+        url=normalized,
+        label=clean_label,
+        active=True,
+        etag=parsed_feed.etag,
+        last_modified=parsed_feed.last_modified,
+    )
     db.session.add(row)
     db.session.commit()
     logger.info("user_feed_added", user_id=user.id, feed_id=row.id, url=normalized)

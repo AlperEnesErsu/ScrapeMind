@@ -328,6 +328,7 @@ def _get_similar_papers(link, limit=4):
     from sqlalchemy import desc
 
     from app.modules.scrape.models import UserPaper
+    from app.modules.scrape.sources.semantic_scholar_source import fetch_similar_papers
 
     q = UserPaper.query.filter(
         UserPaper.user_id == link.user_id, UserPaper.id != link.id, UserPaper.dismissed_at.is_(None)
@@ -352,6 +353,17 @@ def _get_similar_papers(link, limit=4):
                 o_cats = o.paper.categories or []
                 if any(c in o_cats for c in cat_list):
                     similar.append(o)
+
+    # External Semantic Scholar Recommendations API fallback if paper has DOI or S2 paperId
+    paper_id_or_doi = link.paper.doi or (link.paper.external_id if link.paper.source == "semantic_scholar" else None)
+    if paper_id_or_doi:
+        try:
+            s2_recs = fetch_similar_papers(paper_id_or_doi, limit=limit)
+            # Store S2 payloads on link context for UI rendering if needed
+            link.paper._s2_recommendations = s2_recs
+        except Exception:  # noqa: BLE001
+            pass
+
     return similar[:limit]
 
 

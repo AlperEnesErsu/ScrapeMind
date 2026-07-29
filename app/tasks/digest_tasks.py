@@ -67,6 +67,23 @@ def run_for_user(self, user_id: int, period: str = "daily") -> dict:
             title=title,
             message=f"{preview} /dashboard",
         )
+
+        # Dispatch email digest if recipient email is available
+        from app.core.email.service import send_email
+        if user.email:
+            subject = f"ScrapeMind — {title}"
+            body = (
+                f"Merhaba {user.full_name or user.username},\n\n"
+                f"{digest.summary}\n\n"
+                f"Detaylı özetinizi ve yeni makalelerinizi incelemek için ScrapeMind'a giriş yapın:\n"
+                f"http://localhost:5000/dashboard\n\n"
+                f"İyi çalışmalar,\nScrapeMind Ekibi"
+            )
+            try:
+                send_email(user.email, subject, body)
+            except Exception:  # noqa: BLE001
+                logger.exception("digest_email_send_failed", user_id=user.id)
+
         logger.info("digest_done", user_id=user_id, period=period, item_count=digest.item_count)
         return {"digest_id": digest.id, "item_count": digest.item_count}
     except Exception as exc:  # noqa: BLE001

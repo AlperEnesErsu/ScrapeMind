@@ -519,3 +519,14 @@ def test_guard_short_circuits_when_private_hosts_allowed():
 def test_guard_rejects_unresolvable_host():
     # .invalid is reserved by RFC 2606 and never resolves
     assert is_public_http_url("https://nope.invalid/feed.xml")[0] is False
+
+
+def test_fetch_similar_papers_returns_payloads(monkeypatch):
+    fake_resp = SimpleNamespace(
+        status_code=200,
+        json=lambda: {"recommendedPapers": [_SS_ITEM]},
+    )
+    monkeypatch.setattr(requests, "get", lambda *a, **kw: fake_resp)
+    recs = ss.fetch_similar_papers("10.1000/182")
+    assert len(recs) == 1
+    assert recs[0].title == "Attention Is\nAll You Need"

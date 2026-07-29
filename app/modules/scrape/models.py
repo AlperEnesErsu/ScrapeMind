@@ -26,6 +26,7 @@ class Paper(BaseModel):
     pdf_url = db.Column(db.String(512), nullable=True)
     published_at = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
     categories = db.Column(db.JSON, nullable=True)  # arXiv primary + cross-list categories
+    doi = db.Column(db.String(128), nullable=True, index=True)
     # "news" for RSS/industry-announcement feeds; NULL is treated as "paper"
     # (every pre-Faz-2 row + all academic adapters) — no backfill needed.
     kind = db.Column(db.String(16), nullable=True)
@@ -107,6 +108,8 @@ class UserFeed(BaseModel):
     url = db.Column(db.String(512), nullable=False)
     label = db.Column(db.String(128), nullable=True)
     active = db.Column(db.Boolean, nullable=False, default=True)
+    etag = db.Column(db.String(256), nullable=True)
+    last_modified = db.Column(db.String(256), nullable=True)
 
     user = db.relationship("User", backref=db.backref("custom_feeds", lazy="dynamic"))
 
@@ -189,6 +192,8 @@ class Collection(BaseModel):
     user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.String(500), nullable=True)
+    share_token = db.Column(db.String(64), nullable=True, unique=True, index=True)
+    is_public = db.Column(db.Boolean, nullable=False, default=False)
 
     papers = db.relationship(
         "UserPaper",
@@ -198,6 +203,17 @@ class Collection(BaseModel):
     )
 
     __table_args__ = (db.UniqueConstraint("user_id", "name", name="uq_collection_user_name"),)
+
+
+class UserAuthor(BaseModel):
+    """Author followed by a user for tracking newly published papers."""
+
+    __tablename__ = "user_authors"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    author_name = db.Column(db.String(128), nullable=False)
+
+    __table_args__ = (db.UniqueConstraint("user_id", "author_name", name="uq_user_author"),)
 
 
 class PaperNote(BaseModel):

@@ -330,6 +330,26 @@ def collections_menu(user_paper_id: int):
     return _collection_menu(user_paper_id)
 
 
+@library_bp.route("/collections/<int:collection_id>/share", methods=["POST"])
+@login_required
+def share_collection(collection_id: int):
+    coll = _get_own_collection_or_404(collection_id)
+    if not coll.share_token:
+        import uuid
+        coll.share_token = uuid.uuid4().hex
+    coll.is_public = not coll.is_public
+    db.session.commit()
+    log_action("collection.shared", entity_type="collection", entity_id=str(coll.id))
+    flash(_("Collection sharing updated."), "success")
+    return redirect(url_for("library.collection_detail", collection_id=coll.id))
+
+
+@library_bp.route("/c/<share_token>")
+def public_collection(share_token: str):
+    coll = Collection.query.filter_by(share_token=share_token, is_public=True, deleted_at=None).first_or_404()
+    return render_template("library/public_collection.html", collection=coll, rows=coll.papers)
+
+
 def _is_htmx() -> bool:
     return request.headers.get("HX-Request") == "true"
 

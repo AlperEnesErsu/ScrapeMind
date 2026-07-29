@@ -8,7 +8,18 @@
   </h4>
   <span class="small text-muted">{{ rows|length }} {{ _('papers') }}</span>
 
-  <div class="ms-auto d-flex gap-2">
+    <form method="post" action="{{ url_for('library.share_collection', collection_id=collection.id) }}" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm {{ 'btn-success' if collection.is_public else 'btn-outline-secondary' }}" type="submit" title="{{ _('Toggle public link') }}">
+        <i class="bi {{ 'bi-globe2' if collection.is_public else 'bi-share' }} me-1"></i>
+        {{ _('Shared') if collection.is_public else _('Share') }}
+      </button>
+    </form>
+    {% if collection.is_public and collection.share_token %}
+      <button class="btn btn-sm btn-outline-info" onclick="navigator.clipboard.writeText('{{ url_for('library.public_collection', share_token=collection.share_token, _external=True) }}'); alert('{{ _('Public link copied to clipboard!') }}');">
+        <i class="bi bi-link-45deg me-1"></i>{{ _('Copy Link') }}
+      </button>
+    {% endif %}
     <div class="dropdown">
       <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
         <i class="bi bi-download me-1"></i>{{ _('Export') }}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ collection.name }} — ScrapeMind{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <span class="badge bg-primary mb-2"><i class="bi bi-globe me-1"></i>{{ _('Public Collection') }}</span>
+      <h2 class="h3 fw-bold text-gradient mb-1">{{ collection.name }}</h2>
+      {% if collection.description %}
+      <p class="text-muted mb-0">{{ collection.description }}</p>
+      {% endif %}
+    </div>
+    <div class="text-muted small">
+      <i class="bi bi-file-earmark-pdf me-1"></i>{{ rows|length }} {{ _('publications') }}
+    </div>
+  </div>
+
+  {% if rows %}
+  <div class="row g-3">
+    {% for link in rows %}
+    <div class="col-12">
+      <div class="card card-hover shadow-sm border-0 rounded-3">
+        <div class="card-body">
+          <h5 class="card-title fw-bold h6 mb-1">{{ link.paper.title }}</h5>
+          <p class="text-muted small mb-2">
+            <i class="bi bi-people me-1"></i>{{ link.paper.authors|join(', ') if link.paper.authors else _('Unknown Authors') }}
+          </p>
+          {% if link.paper.abstract %}
+          <p class="card-text text-secondary small text-truncate-2 mb-2">{{ link.paper.abstract }}</p>
+          {% endif %}
+          {% if link.paper.url %}
+          <a href="{{ link.paper.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-pill">
+            <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('View Source') }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-folder2-open display-4 text-muted"></i>
+    <p class="mt-3 text-muted">{{ _('This public collection has no papers yet.') }}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

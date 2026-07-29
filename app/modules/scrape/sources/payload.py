@@ -25,6 +25,7 @@ class PaperPayload:
     # academic search adapters (arxiv/semantic_scholar/pubmed) — kept
     # optional with a default so existing adapters don't need to change.
     kind: str | None = None
+    doi: str | None = None
 
     def as_dict(self) -> dict:
         return {
@@ -38,4 +39,5 @@ class PaperPayload:
             "published_at": self.published_at,
             "categories": self.categories,
             "kind": self.kind,
+            "doi": self.doi,
         }

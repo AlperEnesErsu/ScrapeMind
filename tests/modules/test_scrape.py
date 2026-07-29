@@ -363,3 +363,46 @@ def test_notifications_creation(db, clean):
     fetched = Notification.query.filter_by(user_id=clean.id).first()
     assert fetched is not None
     assert fetched.id == noti.id
+
+
+def test_upsert_paper_dedupes_by_doi(db, clean):
+    p1 = upsert_paper({
+        "source": "arxiv",
+        "external_id": "2401.00001",
+        "title": "Paper 1",
+        "authors": ["A. One"],
+        "categories": ["cs.AI"],
+        "doi": "10.1000/182",
+    })
+    p2 = upsert_paper({
+        "source": "pubmed",
+        "external_id": "38123456",
+        "title": "Paper 1 (PubMed variant)",
+        "authors": ["A. One"],
+        "categories": ["cs.AI"],
+        "doi": "10.1000/182",
+    })
+    assert p1.id == p2.id
+    assert Paper.query.count() == 1
+
+
+def test_add_user_feed_stores_etag_and_last_modified(db, clean, monkeypatch):
+    from app.modules.scrape.service import add_user_feed
+    from app.modules.scrape.sources.rss_source import FeedFetchResult
+
+    fake_res = FeedFetchResult(
+        payloads=[_payload("guid-1")],
+        status="ok",
+        etag='"12345"',
+        last_modified="Wed, 21 Oct 2025 07:28:00 GMT",
+        http_status=200,
+        title="Fake Feed",
+    )
+    monkeypatch.setattr(
+        "app.modules.scrape.service.fetch_feed_conditional",
+        lambda feed_dict: fake_res,
+    )
+    feed, err = add_user_feed(clean, "https://example.com/feed.xml")
+    assert err is None
+    assert feed.etag == '"12345"'
+    assert feed.last_modified == "Wed, 21 Oct 2025 07:28:00 GMT"

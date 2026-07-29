@@ -130,3 +130,24 @@ def search_for_keywords(keywords: list[str], *, max_results: int = 25) -> list[P
     if last_error is not None and not out:
         raise last_error
     return out[:max_results]
+
+
+def fetch_similar_papers(paper_id_or_doi: str, limit: int = 5) -> list[PaperPayload]:
+    """Fetch recommended/similar papers via Semantic Scholar Recommendations API."""
+    if not paper_id_or_doi:
+        return []
+    url = f"https://api.semanticscholar.org/recommendations/v1/papers/forpaper/{paper_id_or_doi}"
+    try:
+        resp = requests.get(
+            url,
+            params={"fields": _FIELDS, "limit": limit},
+            headers=_headers(),
+            timeout=_TIMEOUT,
+        )
+        if resp.status_code != 200:
+            return []
+        items = resp.json().get("recommendedPapers") or []
+        return [p for p in (_to_payload(i) for i in items) if p is not None]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("semantic_scholar_recommendations_failed", paper_id=paper_id_or_doi, error=str(exc))
+        return []
