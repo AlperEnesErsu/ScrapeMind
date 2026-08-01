@@ -39,26 +39,14 @@
         {% include 'scrape/_paper_chat.html' %}
       {% endif %}
       
-      {# Similar papers section (UF7) #}
-      {% if mode == 'original' and similar_papers %}
-        <div class="mt-4 pt-4 border-top">
-          <h6 class="fw-semibold mb-3"><i class="bi bi-journal-bookmark me-2 text-primary"></i>{{ _('Similar Papers') }}</h6>
-          <div class="row g-3">
-            {% for sim in similar_papers %}
-              <div class="col-md-6">
-                <div class="card h-100 p-3 shadow-none border rounded-3 card-hover-effect">
-                  <a href="{{ url_for('scrape.detail', user_paper_id=sim.id) }}" class="text-decoration-none text-body fw-medium small d-block mb-1 text-truncate" title="{{ sim.paper.title }}">
-                    {{ sim.paper.title }}
-                  </a>
-                  <div class="d-flex align-items-center gap-2 mt-auto">
-                    <span class="badge source-badge source-{{ sim.paper.source }} py-1" style="font-size: 0.65rem;">{{ sim.paper.source }}</span>
-                    {% if sim.matched_keyword %}
-                      <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-tag-fill me-1"></i>{{ sim.matched_keyword }}</span>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            {% endfor %}
+      {# Similar papers — lazy-loaded on reveal so the Semantic Scholar network
+         call never blocks the detail render (UF7). #}
+      {% if mode == 'original' %}
+        <div hx-get="{{ url_for('scrape.similar', user_paper_id=r.id) }}"
+             hx-trigger="load"
+             hx-swap="outerHTML">
+          <div class="mt-4 pt-4 border-top text-muted small">
+            <span class="spinner-border spinner-border-sm me-2"></span>{{ _('Finding similar papers…') }}
           </div>
         </div>
       {% endif %}

@@ -1,0 +1,59 @@
+{# Similar Papers panel — HTMX-loaded so the S2 network call never blocks the
+   detail page. `internal` = the user's own library; `external` = Semantic
+   Scholar recommendations (PaperPayload, link out to source). #}
+{% if internal or external %}
+<div class="mt-4 pt-4 border-top">
+  <h6 class="fw-semibold mb-3">
+    <i class="bi bi-journal-bookmark me-2 text-primary"></i>{{ _('Similar Papers') }}
+  </h6>
+
+  {% if internal %}
+  <div class="small text-muted mb-2">{{ _('From your library') }}</div>
+  <div class="row g-3 mb-3">
+    {% for sim in internal %}
+      <div class="col-md-6">
+        <div class="card h-100 p-3 shadow-none border rounded-3 card-hover-effect">
+          <a href="{{ url_for('scrape.detail', user_paper_id=sim.id) }}"
+             class="text-decoration-none text-body fw-medium small d-block mb-1 text-truncate"
+             title="{{ sim.paper.title }}">{{ sim.paper.title }}</a>
+          <div class="d-flex align-items-center gap-2 mt-auto">
+            <span class="badge source-badge source-{{ sim.paper.source }} py-1" style="font-size: 0.65rem;">{{ sim.paper.source }}</span>
+            {% if sim.matched_keyword %}
+              <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-tag-fill me-1"></i>{{ sim.matched_keyword }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if external %}
+  <div class="small text-muted mb-2">
+    <i class="bi bi-stars me-1"></i>{{ _('Recommended from Semantic Scholar') }}
+  </div>
+  <div class="row g-3">
+    {% for rec in external %}
+      <div class="col-md-6">
+        <div class="card h-100 p-3 shadow-none border rounded-3 card-hover-effect">
+          {% if rec.url %}
+            <a href="{{ rec.url }}" target="_blank" rel="noopener"
+               class="text-decoration-none text-body fw-medium small d-block mb-1 text-truncate"
+               title="{{ rec.title }}">{{ rec.title }}
+               <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.65rem;"></i></a>
+          {% else %}
+            <span class="fw-medium small d-block mb-1 text-truncate" title="{{ rec.title }}">{{ rec.title }}</span>
+          {% endif %}
+          <div class="d-flex align-items-center gap-2 mt-auto">
+            <span class="badge source-badge source-semantic_scholar py-1" style="font-size: 0.65rem;">semantic scholar</span>
+            {% if rec.authors %}
+              <span class="text-muted text-truncate" style="font-size: 0.7rem; max-width: 60%;">{{ rec.authors[:2] | join(', ') }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
