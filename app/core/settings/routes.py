@@ -32,6 +32,7 @@ from app.core.settings.forms import (
 )
 from app.core.settings.service import (
     change_password,
+    get_digest_pref,
     get_theme,
     update_email,
     update_personal_info,
@@ -83,6 +84,7 @@ def _prefs_ctx():
         form.locale.data = current_user.locale
         form.timezone.data = current_user.timezone
         form.theme.data = get_theme(current_user)
+        form.digest.data = get_digest_pref(current_user)
     return {"form": form}
 
 
@@ -268,7 +270,13 @@ def submit_password():
 def submit_prefs():
     form = PreferencesForm()
     if form.validate_on_submit():
-        update_preferences(current_user, form.locale.data, form.timezone.data, form.theme.data)
+        update_preferences(
+            current_user,
+            form.locale.data,
+            form.timezone.data,
+            form.theme.data,
+            form.digest.data,
+        )
         log_action(
             "user.update_prefs",
             entity_type="user",
@@ -277,6 +285,7 @@ def submit_prefs():
                 "locale": form.locale.data,
                 "timezone": form.timezone.data,
                 "theme": form.theme.data,
+                "digest": form.digest.data,
             },
         )
         return _render_tab(

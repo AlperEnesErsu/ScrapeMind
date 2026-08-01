@@ -18,6 +18,13 @@ COMMON_TIMEZONES = [
     ("Asia/Tokyo", "Asia/Tokyo"),
 ]
 THEMES = [("light", _l("Light")), ("dark", _l("Dark"))]
+# Email digest cadence. "off" is the default — opt-in, we never email a user
+# who didn't ask. Values must match app/tasks/digest_tasks period names.
+DIGEST_CHOICES = [
+    ("off", _l("Off")),
+    ("daily", _l("Daily")),
+    ("weekly", _l("Weekly")),
+]
 
 
 class PersonalInfoForm(FlaskForm):
@@ -70,4 +77,5 @@ class PreferencesForm(FlaskForm):
     locale = SelectField(_l("Language"), choices=SUPPORTED_LOCALES, validators=[DataRequired()])
     timezone = SelectField(_l("Timezone"), choices=COMMON_TIMEZONES, validators=[DataRequired()])
     theme = SelectField(_l("Theme"), choices=THEMES, validators=[DataRequired()])
+    digest = SelectField(_l("Email digest"), choices=DIGEST_CHOICES, validators=[DataRequired()])
     submit = SubmitField(_l("Save"))

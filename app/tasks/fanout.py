@@ -22,7 +22,7 @@ scheduler task that re-enqueues in chunks.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 import structlog
 from flask import current_app
@@ -67,15 +67,21 @@ def fan_out(
     args_for: Callable[[int], tuple] = lambda uid: (uid,),
     kwargs_for: Callable[[int], dict] | None = None,
     window_seconds: int | None = None,
+    user_ids: Iterable[int] | None = None,
 ) -> int:
-    """Queue `task` once per active user, spread over the fan-out window.
+    """Queue `task` once per user, spread over the fan-out window.
+
+    By default fans out over every active user (`active_user_ids`). Pass
+    `user_ids` to restrict to a specific set — e.g. only users who opted into
+    a given email-digest cadence.
 
     Returns the number of tasks queued.
     """
     if window_seconds is None:
         window_seconds = int(current_app.config.get("SCAN_FANOUT_WINDOW_SECONDS", 1800))
+    ids = active_user_ids() if user_ids is None else user_ids
     queued = 0
-    for uid in active_user_ids():
+    for uid in ids:
         task.apply_async(
             args=args_for(uid),
             kwargs=kwargs_for(uid) if kwargs_for else None,

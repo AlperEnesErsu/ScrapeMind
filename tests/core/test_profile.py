@@ -5,6 +5,7 @@ from app.core.auth.strategies.local import LocalAuthStrategy
 from app.core.models.user import User
 from app.core.settings.service import (
     change_password,
+    get_digest_pref,
     get_theme,
     update_email,
     update_personal_info,
@@ -104,6 +105,31 @@ def test_update_preferences_creates_settings(db, user):
 
 def test_get_theme_defaults_light(db, user):
     assert get_theme(user) == "light"
+
+
+def test_digest_pref_defaults_off(db, user):
+    assert get_digest_pref(user) == "off"
+
+
+def test_update_preferences_stores_digest(db, user):
+    update_preferences(user, "en", "UTC", "dark", "weekly")
+    db.session.refresh(user)
+    assert user.settings.settings["digest"] == "weekly"
+    assert get_digest_pref(user) == "weekly"
+
+
+def test_update_preferences_rejects_unknown_digest(db, user):
+    # A hand-crafted POST with a bogus cadence falls back to "off".
+    update_preferences(user, "en", "UTC", "dark", "hourly")
+    db.session.refresh(user)
+    assert user.settings.settings["digest"] == "off"
+
+
+def test_update_preferences_default_digest_is_off(db, user):
+    # Callers that omit the digest arg (older call sites) must not enable it.
+    update_preferences(user, "en", "UTC", "dark")
+    db.session.refresh(user)
+    assert user.settings.settings["digest"] == "off"
 
 
 def test_profile_route_requires_login(client):

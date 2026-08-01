@@ -29,6 +29,30 @@ def _window_bounds(period: str) -> tuple[datetime, datetime]:
     return start, end
 
 
+def _opted_in_user_ids(period: str):
+    """Stream ids of active users whose email-digest preference == `period`.
+
+    The digest is opt-in (default "off"), so unlike the scan fan-out we do NOT
+    reach every active user — only those who chose this exact cadence in their
+    preferences (stored in user_settings.settings["digest"]).
+    """
+    from app.core.models.settings import UserSettings
+    from app.extensions import db
+
+    q = (
+        db.session.query(User.id)
+        .join(UserSettings, UserSettings.user_id == User.id)
+        .filter(
+            User.deleted_at.is_(None),
+            User.is_active.is_(True),
+            UserSettings.settings["digest"].as_string() == period,
+        )
+        .order_by(User.id)
+    )
+    for (uid,) in q.yield_per(1000):
+        yield uid
+
+
 @celery_app.task(name="digest.run_for_user", bind=True, max_retries=2)
 def run_for_user(self, user_id: int, period: str = "daily") -> dict:
     """Build one user's digest for `period` ("daily" | "weekly").
@@ -100,7 +124,14 @@ def run_for_all_users(period: str = "daily") -> dict:
     Spread over SCAN_FANOUT_WINDOW_SECONDS like the other fan-outs — one LLM
     call per user, so queueing them all in the same instant is exactly what a
     shared API key cannot absorb (see app/tasks/fanout.py).
+
+    Unlike the scan fan-out this is opt-in: only users whose digest preference
+    matches `period` receive a task (see `_opted_in_user_ids`).
     """
-    queued = fan_out(run_for_user, args_for=lambda uid: (uid, period))
+    queued = fan_out(
+        run_for_user,
+        args_for=lambda uid: (uid, period),
+        user_ids=_opted_in_user_ids(period),
+    )
     logger.info("digest_fanout", queued=queued, period=period)
     return {"queued": queued}

@@ -2568,6 +2568,15 @@ msgstr "Recommended from Semantic Scholar"
 msgid "Finding similar papers…"
 msgstr "Finding similar papers…"
 
+msgid "Off"
+msgstr "Off"
+
+msgid "Email digest"
+msgstr "Email digest"
+
+msgid "Get an email summary of new papers matching your interests."
+msgstr "Get an email summary of new papers matching your interests."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

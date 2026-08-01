@@ -15,6 +15,11 @@
       <label class="form-label">{{ form.theme.label.text }}</label>
       {{ form.theme(class="form-select") }}
     </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.digest.label.text }}</label>
+      {{ form.digest(class="form-select") }}
+      <p class="form-text">{{ _('Get an email summary of new papers matching your interests.') }}</p>
+    </div>
   </div>
   <button type="submit" class="btn btn-primary mt-3">{{ form.submit.label.text }}</button>
   <p class="form-text mt-2">{{ _('Language and theme changes apply on next page load.') }}</p>
