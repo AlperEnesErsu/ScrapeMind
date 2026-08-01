@@ -200,5 +200,35 @@ def test_route_export_collection(client, ctx):
     assert "@misc" in r.get_data(as_text=True)
 
 
+def test_share_toggles_public_and_serves_public_page(client, ctx, db, app):
+    coll, _ = cs.create_collection(ctx["collector"], "Shared Coll")
+    cs.add_paper(coll, ctx["collector"], ctx["up1"])
+    _login(client, ctx["collector"])
+
+    # Toggle share on → a token is minted and is_public flips true.
+    r = client.post(f"/library/collections/{coll.id}/share", follow_redirects=False)
+    assert r.status_code == 302
+    db.session.refresh(coll)
+    assert coll.is_public is True and coll.share_token
+    token = coll.share_token
+
+    # A brand-new (never-authenticated) client reaches the public page — this
+    # is the audience the share link is for.
+    anon = app.test_client()
+    pub = anon.get(f"/library/c/{token}")
+    assert pub.status_code == 200
+    assert "Paper One" in pub.get_data(as_text=True)
+
+    # Toggle off → the public link 404s for the anonymous visitor.
+    client.post(f"/library/collections/{coll.id}/share")
+    db.session.refresh(coll)
+    assert coll.is_public is False
+    assert anon.get(f"/library/c/{token}").status_code == 404
+
+
+def test_public_page_rejects_unknown_token(client):
+    assert client.get("/library/c/deadbeef").status_code == 404
+
+
 def test_collections_require_login(client):
     assert client.get("/library/collections", follow_redirects=False).status_code in (302, 401)

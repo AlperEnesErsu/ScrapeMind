@@ -91,6 +91,7 @@ def clean(db):
     db.session.execute(text("DELETE FROM user_keywords"))
     db.session.execute(text("DELETE FROM keywords"))
     db.session.execute(text("DELETE FROM user_sources"))
+    db.session.execute(text("DELETE FROM user_feeds"))
     db.session.execute(text("DELETE FROM scan_runs"))
     db.session.execute(text("DELETE FROM identifier_types"))
     db.session.query(User).delete()
@@ -366,22 +367,26 @@ def test_notifications_creation(db, clean):
 
 
 def test_upsert_paper_dedupes_by_doi(db, clean):
-    p1 = upsert_paper({
-        "source": "arxiv",
-        "external_id": "2401.00001",
-        "title": "Paper 1",
-        "authors": ["A. One"],
-        "categories": ["cs.AI"],
-        "doi": "10.1000/182",
-    })
-    p2 = upsert_paper({
-        "source": "pubmed",
-        "external_id": "38123456",
-        "title": "Paper 1 (PubMed variant)",
-        "authors": ["A. One"],
-        "categories": ["cs.AI"],
-        "doi": "10.1000/182",
-    })
+    p1 = upsert_paper(
+        {
+            "source": "arxiv",
+            "external_id": "2401.00001",
+            "title": "Paper 1",
+            "authors": ["A. One"],
+            "categories": ["cs.AI"],
+            "doi": "10.1000/182",
+        }
+    )
+    p2 = upsert_paper(
+        {
+            "source": "pubmed",
+            "external_id": "38123456",
+            "title": "Paper 1 (PubMed variant)",
+            "authors": ["A. One"],
+            "categories": ["cs.AI"],
+            "doi": "10.1000/182",
+        }
+    )
     assert p1.id == p2.id
     assert Paper.query.count() == 1
 

@@ -355,7 +355,9 @@ def _get_similar_papers(link, limit=4):
                     similar.append(o)
 
     # External Semantic Scholar Recommendations API fallback if paper has DOI or S2 paperId
-    paper_id_or_doi = link.paper.doi or (link.paper.external_id if link.paper.source == "semantic_scholar" else None)
+    paper_id_or_doi = link.paper.doi or (
+        link.paper.external_id if link.paper.source == "semantic_scholar" else None
+    )
     if paper_id_or_doi:
         try:
             s2_recs = fetch_similar_papers(paper_id_or_doi, limit=limit)

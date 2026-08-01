@@ -149,5 +149,7 @@ def fetch_similar_papers(paper_id_or_doi: str, limit: int = 5) -> list[PaperPayl
         items = resp.json().get("recommendedPapers") or []
         return [p for p in (_to_payload(i) for i in items) if p is not None]
     except Exception as exc:  # noqa: BLE001
-        logger.warning("semantic_scholar_recommendations_failed", paper_id=paper_id_or_doi, error=str(exc))
+        logger.warning(
+            "semantic_scholar_recommendations_failed", paper_id=paper_id_or_doi, error=str(exc)
+        )
         return []

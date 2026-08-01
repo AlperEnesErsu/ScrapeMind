@@ -2,6 +2,11 @@
 
 {% block title %}{{ collection.name }} — ScrapeMind{% endblock %}
 
+{# A public share link is viewed logged-OUT (the whole point) as often as
+   logged-in. base.html renders `content` only for authenticated users and
+   `auth_content` for anonymous ones, so bind both to the same body. #}
+{% block auth_content %}{{ self.content() }}{% endblock %}
+
 {% block content %}
 <div class="container py-4">
   <div class="d-flex align-items-center justify-content-between mb-4">

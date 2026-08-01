@@ -19,7 +19,9 @@ from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app.core.audit.middleware import log_action
+from app.extensions import db
 from app.modules.scrape import collections_service as cs
+from app.modules.scrape.models import Collection
 from app.modules.scrape.service import (
     build_timeline,
     count_all_notes,
@@ -333,9 +335,10 @@ def collections_menu(user_paper_id: int):
 @library_bp.route("/collections/<int:collection_id>/share", methods=["POST"])
 @login_required
 def share_collection(collection_id: int):
+    import uuid
+
     coll = _get_own_collection_or_404(collection_id)
     if not coll.share_token:
-        import uuid
         coll.share_token = uuid.uuid4().hex
     coll.is_public = not coll.is_public
     db.session.commit()
@@ -346,7 +349,9 @@ def share_collection(collection_id: int):
 
 @library_bp.route("/c/<share_token>")
 def public_collection(share_token: str):
-    coll = Collection.query.filter_by(share_token=share_token, is_public=True, deleted_at=None).first_or_404()
+    coll = Collection.query.filter_by(
+        share_token=share_token, is_public=True, deleted_at=None
+    ).first_or_404()
     return render_template("library/public_collection.html", collection=coll, rows=coll.papers)
 
 
