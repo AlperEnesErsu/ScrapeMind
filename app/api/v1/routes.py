@@ -91,6 +91,7 @@ def my_papers():
 @jwt_required
 def list_collections():
     from app.modules.scrape.models import Collection
+
     colls = Collection.query.filter_by(user_id=g.api_user.id, deleted_at=None).all()
     return {
         "data": [
@@ -110,7 +111,8 @@ def list_collections():
 @api_v1_bp.route("/me/collections", methods=["POST"])
 @jwt_required
 def create_api_collection():
-    from app.modules.scrape.collection_service import create_collection
+    from app.modules.scrape.collections_service import create_collection
+
     payload = request.get_json(silent=True) or {}
     name = payload.get("name", "")
     description = payload.get("description", "")
@@ -132,6 +134,7 @@ def create_api_collection():
 @jwt_required
 def list_api_feeds():
     from app.modules.scrape.service import list_user_feeds
+
     feeds = list_user_feeds(g.api_user)
     return {
         "data": [
@@ -150,6 +153,7 @@ def list_api_feeds():
 @jwt_required
 def add_api_feed():
     from app.modules.scrape.service import add_user_feed
+
     payload = request.get_json(silent=True) or {}
     url = payload.get("url", "")
     label = payload.get("label", "")

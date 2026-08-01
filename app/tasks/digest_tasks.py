@@ -70,6 +70,7 @@ def run_for_user(self, user_id: int, period: str = "daily") -> dict:
 
         # Dispatch email digest if recipient email is available
         from app.core.email.service import send_email
+
         if user.email:
             subject = f"ScrapeMind — {title}"
             body = (

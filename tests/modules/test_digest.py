@@ -413,7 +413,11 @@ def test_digest_task_builds_digest_and_notification(app, db, clean_user, monkeyp
     monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (_FAKE_DIGEST, "{}"))
     with app.app_context():
         paper = upsert_paper(_payload("2401.t0001", title="Bir Makale"))
-        link_user_paper(clean_user, paper, matched_keyword="rl")
+        link, _ = link_user_paper(clean_user, paper, matched_keyword="rl")
+        # Put the link firmly inside the 24h window — creating it at the exact
+        # `now` upper bound races the DB clock and can fall out of [start, end).
+        link.created_at = datetime.now(UTC) - timedelta(hours=1)
+        db.session.commit()
 
         result = run_for_user.delay(clean_user.id, "daily").get()
         assert "digest_id" in result

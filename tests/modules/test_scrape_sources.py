@@ -529,4 +529,4 @@ def test_fetch_similar_papers_returns_payloads(monkeypatch):
     monkeypatch.setattr(requests, "get", lambda *a, **kw: fake_resp)
     recs = ss.fetch_similar_papers("10.1000/182")
     assert len(recs) == 1
-    assert recs[0].title == "Attention Is\nAll You Need"
+    assert recs[0].title == "Attention Is All You Need"  # newline flattened, like search()

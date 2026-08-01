@@ -40,6 +40,23 @@ def _send(subject: str, recipients: list[str], html_body: str, text_body: str) -
         return False
 
 
+def send_email(recipient: str, subject: str, body: str, html_body: str | None = None) -> bool:
+    """Send a plain-text (optionally HTML) email to a single recipient.
+
+    The general-purpose sender for feature emails (e.g. the digest) that don't
+    have a bespoke template. Returns True only when actually delivered — in dev
+    (MAIL_SUPPRESS_SEND) it returns False without raising, so callers can fire
+    it best-effort. Escapes the text into a minimal HTML body when none given.
+    """
+    if not recipient:
+        return False
+    if html_body is None:
+        from markupsafe import escape
+
+        html_body = f'<pre style="font-family:inherit;white-space:pre-wrap">{escape(body)}</pre>'
+    return _send(subject=subject, recipients=[recipient], html_body=html_body, text_body=body)
+
+
 def send_password_reset(user, reset_url: str) -> tuple[bool, str | None]:
     """Şifre sıfırlama emaili gönderir.
 
