@@ -324,11 +324,13 @@ def feed():
     )
 
 
-def _get_similar_papers(link, limit=4):
+def _get_internal_similar(link, limit=4):
+    """Papers already in the user's own library that resemble this one — same
+    matched keyword first, then same-category as a fallback. Cheap (DB only),
+    so it's the always-available half of the Similar Papers panel."""
     from sqlalchemy import desc
 
     from app.modules.scrape.models import UserPaper
-    from app.modules.scrape.sources.semantic_scholar_source import fetch_similar_papers
 
     q = UserPaper.query.filter(
         UserPaper.user_id == link.user_id, UserPaper.id != link.id, UserPaper.dismissed_at.is_(None)
@@ -353,20 +355,26 @@ def _get_similar_papers(link, limit=4):
                 o_cats = o.paper.categories or []
                 if any(c in o_cats for c in cat_list):
                     similar.append(o)
+    return similar[:limit]
 
-    # External Semantic Scholar Recommendations API fallback if paper has DOI or S2 paperId
+
+def _get_external_similar(link, limit=5):
+    """Recommendations from the wider literature via the Semantic Scholar
+    Recommendations API. Network I/O + often rate-limited, so this is only
+    ever called from the lazy-loaded /similar endpoint, never inline in the
+    detail page. Returns [] when the paper has no DOI/S2 id or the API declines.
+    """
+    from app.modules.scrape.sources.semantic_scholar_source import fetch_similar_papers
+
     paper_id_or_doi = link.paper.doi or (
         link.paper.external_id if link.paper.source == "semantic_scholar" else None
     )
-    if paper_id_or_doi:
-        try:
-            s2_recs = fetch_similar_papers(paper_id_or_doi, limit=limit)
-            # Store S2 payloads on link context for UI rendering if needed
-            link.paper._s2_recommendations = s2_recs
-        except Exception:  # noqa: BLE001
-            pass
-
-    return similar[:limit]
+    if not paper_id_or_doi:
+        return []
+    try:
+        return fetch_similar_papers(paper_id_or_doi, limit=limit)
+    except Exception:  # noqa: BLE001
+        return []
 
 
 @scrape_bp.route("/<int:user_paper_id>")
@@ -390,11 +398,6 @@ def detail(user_paper_id: int):
     if mode not in {"original", "tr", "ai", "chat"}:
         mode = "original"
 
-    # Similar papers
-    similar_papers = []
-    if mode == "original":
-        similar_papers = _get_similar_papers(link)
-
     # RAG Chat messages
     chat_messages = []
     if mode == "chat":
@@ -415,7 +418,23 @@ def detail(user_paper_id: int):
         translation=get_translation(link.paper) if mode == "tr" else None,
         analysis=get_analysis(link.paper) if mode == "ai" else None,
         chat_messages=chat_messages,
-        similar_papers=similar_papers,
+    )
+
+
+@scrape_bp.route("/<int:user_paper_id>/similar", methods=["GET"])
+@login_required
+def similar(user_paper_id: int):
+    """HTMX-loaded Similar Papers panel — internal (user's own library) plus
+    external Semantic Scholar recommendations. Lazy so the S2 network call
+    never blocks the detail page render."""
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+    return render_template(
+        "scrape/_similar_papers.html",
+        r=link,
+        internal=_get_internal_similar(link, limit=4),
+        external=_get_external_similar(link, limit=5),
     )
 
 

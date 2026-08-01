@@ -2571,6 +2571,18 @@ msgstr "Bu koleksiyon silinsin mi? Makaleler kütüphanende kalır."
 msgid "e.g. Thesis references "
 msgstr "örn. Tez kaynakları "
 
+msgid "Similar Papers"
+msgstr "Benzer Makaleler"
+
+msgid "From your library"
+msgstr "Kütüphanenden"
+
+msgid "Recommended from Semantic Scholar"
+msgstr "Semantic Scholar önerileri"
+
+msgid "Finding similar papers…"
+msgstr "Benzer makaleler bulunuyor…"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

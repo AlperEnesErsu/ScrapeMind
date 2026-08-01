@@ -2556,6 +2556,18 @@ msgstr "Delete this collection? The papers stay in your library."
 msgid "e.g. Thesis references "
 msgstr "e.g. Thesis references "
 
+msgid "Similar Papers"
+msgstr "Similar Papers"
+
+msgid "From your library"
+msgstr "From your library"
+
+msgid "Recommended from Semantic Scholar"
+msgstr "Recommended from Semantic Scholar"
+
+msgid "Finding similar papers…"
+msgstr "Finding similar papers…"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
