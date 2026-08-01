@@ -2583,6 +2583,15 @@ msgstr "Semantic Scholar önerileri"
 msgid "Finding similar papers…"
 msgstr "Benzer makaleler bulunuyor…"
 
+msgid "Off"
+msgstr "Kapalı"
+
+msgid "Email digest"
+msgstr "E-posta özeti"
+
+msgid "Get an email summary of new papers matching your interests."
+msgstr "İlgi alanlarınıza uyan yeni makalelerin e-posta özetini alın."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

@@ -442,10 +442,20 @@ def test_digest_task_missing_user_is_a_noop(app, db):
         assert result == {"reason": "user_missing"}
 
 
-def test_digest_fanout_queues_active_users(app, db, clean_user, monkeypatch):
+def _set_digest_pref(user_id, cadence):
+    from app.core.settings.service import update_preferences
+
+    # Fetch a fresh user so the settings relationship reflects any row a prior
+    # call inserted (in production each call is its own request).
+    u = User.query.get(user_id)
+    update_preferences(u, u.locale or "tr", u.timezone or "UTC", "light", cadence)
+
+
+def test_digest_fanout_only_queues_opted_in_users(app, db, clean_user, monkeypatch):
     """Fan-out goes through apply_async (not delay) so every user carries a
     countdown — one LLM call per user makes bunching the worst thing we could
-    do with this particular fan-out."""
+    do with this particular fan-out. It is also opt-in: only users whose digest
+    preference matches the period get a task."""
     from app.tasks.digest_tasks import run_for_all_users
 
     calls = []
@@ -454,10 +464,36 @@ def test_digest_fanout_queues_active_users(app, db, clean_user, monkeypatch):
         lambda **kw: calls.append(kw),
     )
     with app.app_context():
+        uid = clean_user.id
+        _set_digest_pref(uid, "daily")
         result = run_for_all_users("daily")
         assert result["queued"] >= 1
-        assert any(c["args"] == (clean_user.id, "daily") for c in calls)
+        assert any(c["args"] == (uid, "daily") for c in calls)
         assert all(0 <= c["countdown"] < app.config["SCAN_FANOUT_WINDOW_SECONDS"] for c in calls)
+
+
+def test_digest_fanout_skips_off_and_mismatched_cadence(app, db, clean_user, monkeypatch):
+    """A user who opted into "daily" must not receive the weekly fan-out, and a
+    user with digest "off" (the default) receives neither."""
+    from app.tasks.digest_tasks import run_for_all_users
+
+    calls = []
+    monkeypatch.setattr(
+        "app.tasks.digest_tasks.run_for_user.apply_async",
+        lambda **kw: calls.append(kw),
+    )
+    with app.app_context():
+        uid = clean_user.id
+        _set_digest_pref(uid, "daily")
+        # Weekly run: the daily-opted user is not in it.
+        run_for_all_users("weekly")
+        assert all(c["args"][0] != uid for c in calls)
+
+        # Turn the preference off entirely — daily run now skips them too.
+        calls.clear()
+        _set_digest_pref(uid, "off")
+        run_for_all_users("daily")
+        assert all(c["args"][0] != uid for c in calls)
 
 
 # ----------------------------------------------------------------------------
