@@ -17,7 +17,7 @@ import json
 import re
 import subprocess
 import sys
-from typing import Any
+from datetime import UTC
 from urllib.parse import quote
 
 import requests
@@ -169,7 +169,7 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
                 if upload_date_raw and len(str(upload_date_raw)) == 8 and str(upload_date_raw).isdigit():
                     try:
                         published_at = datetime.datetime.strptime(str(upload_date_raw), "%Y%m%d").replace(
-                            tzinfo=datetime.timezone.utc
+                            tzinfo=UTC
                         )
                     except ValueError:
                         published_at = None
