@@ -53,6 +53,7 @@ def _generate_external_id(prefix: str, identifier: str) -> str:
 # 1. WEB REACH ADAPTER (HTTP Reader via requests + net_guard)
 # ============================================================================
 
+
 def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
     """Fetch content for a URL or web query via HTTP requests guarded by net_guard."""
     if not query or not query.strip():
@@ -125,6 +126,7 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
 # 2. YOUTUBE REACH ADAPTER (yt-dlp)
 # ============================================================================
 
+
 def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
     """Search YouTube videos and return PaperPayloads with video links and details."""
     keywords = [k.strip() for k in query.split() if k.strip()]
@@ -137,7 +139,15 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
     search_term = f"ytsearch{max_results}:{query.strip()}"
     try:
         res = subprocess.run(
-            [sys.executable, "-m", "yt_dlp", "--dump-json", "--flat-playlist", "--no-warnings", search_term],
+            [
+                sys.executable,
+                "-m",
+                "yt_dlp",
+                "--dump-json",
+                "--flat-playlist",
+                "--no-warnings",
+                search_term,
+            ],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -157,7 +167,11 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
                 if not video_id:
                     continue
 
-                video_url = f"https://www.youtube.com/watch?v={video_id}" if not video_id.startswith("http") else video_id
+                video_url = (
+                    f"https://www.youtube.com/watch?v={video_id}"
+                    if not video_id.startswith("http")
+                    else video_id
+                )
                 raw_title = (item.get("title") or "YouTube Video").strip()
                 uploader = item.get("uploader") or item.get("channel") or "YouTube"
                 description = item.get("description") or f"YouTube Video by {uploader}"
@@ -166,11 +180,15 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
 
                 upload_date_raw = item.get("upload_date")
                 published_at = None
-                if upload_date_raw and len(str(upload_date_raw)) == 8 and str(upload_date_raw).isdigit():
+                if (
+                    upload_date_raw
+                    and len(str(upload_date_raw)) == 8
+                    and str(upload_date_raw).isdigit()
+                ):
                     try:
-                        published_at = datetime.datetime.strptime(str(upload_date_raw), "%Y%m%d").replace(
-                            tzinfo=UTC
-                        )
+                        published_at = datetime.datetime.strptime(
+                            str(upload_date_raw), "%Y%m%d"
+                        ).replace(tzinfo=UTC)
                     except ValueError:
                         published_at = None
 
@@ -203,6 +221,7 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
 # 3. GITHUB REACH ADAPTER (gh / GitHub Search)
 # ============================================================================
 
+
 def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
     """Search GitHub repositories and return PaperPayloads with repo links."""
     if not query or not query.strip():
@@ -214,7 +233,16 @@ def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
     try:
         # Try using gh CLI
         res = subprocess.run(
-            ["gh", "search", "repos", query.strip(), "--limit", str(max_results), "--json", "fullName,description,url,owner,updatedAt"],
+            [
+                "gh",
+                "search",
+                "repos",
+                query.strip(),
+                "--limit",
+                str(max_results),
+                "--json",
+                "fullName,description,url,owner,updatedAt",
+            ],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -233,7 +261,9 @@ def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
                 published_at = None
                 if updated_at_raw:
                     try:
-                        published_at = datetime.datetime.fromisoformat(str(updated_at_raw).replace("Z", "+00:00"))
+                        published_at = datetime.datetime.fromisoformat(
+                            str(updated_at_raw).replace("Z", "+00:00")
+                        )
                     except ValueError:
                         published_at = None
 
@@ -253,7 +283,9 @@ def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
                 )
             return out
         else:
-            logger.warning("github_reach_cli_failed", query=query, returncode=res.returncode, stderr=res.stderr)
+            logger.warning(
+                "github_reach_cli_failed", query=query, returncode=res.returncode, stderr=res.stderr
+            )
     except SourceThrottledError:
         raise
     except FileNotFoundError:
@@ -293,7 +325,9 @@ class YouTubeReachAdapter:
     def search(self, query: str, *, max_results: int = 5) -> list[PaperPayload]:
         return search_youtube(query, max_results=max_results)
 
-    def search_for_keywords(self, keywords: list[str], *, max_results: int = 5) -> list[PaperPayload]:
+    def search_for_keywords(
+        self, keywords: list[str], *, max_results: int = 5
+    ) -> list[PaperPayload]:
         clean_kw = [k.strip() for k in keywords if k and k.strip()]
         if not clean_kw:
             return []
@@ -306,7 +340,9 @@ class GitHubReachAdapter:
     def search(self, query: str, *, max_results: int = 5) -> list[PaperPayload]:
         return search_github(query, max_results=max_results)
 
-    def search_for_keywords(self, keywords: list[str], *, max_results: int = 5) -> list[PaperPayload]:
+    def search_for_keywords(
+        self, keywords: list[str], *, max_results: int = 5
+    ) -> list[PaperPayload]:
         clean_kw = [k.strip() for k in keywords if k and k.strip()]
         if not clean_kw:
             return []
@@ -319,7 +355,9 @@ class WebReachAdapter:
     def search(self, query: str, *, max_results: int = 10) -> list[PaperPayload]:
         return search_web(query, max_results=max_results)
 
-    def search_for_keywords(self, keywords: list[str], *, max_results: int = 10) -> list[PaperPayload]:
+    def search_for_keywords(
+        self, keywords: list[str], *, max_results: int = 10
+    ) -> list[PaperPayload]:
         clean_kw = [k.strip() for k in keywords if k and k.strip()]
         if not clean_kw:
             return []
