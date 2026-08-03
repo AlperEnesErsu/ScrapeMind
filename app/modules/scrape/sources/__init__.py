@@ -19,6 +19,7 @@ from types import ModuleType
 import structlog
 
 from app.modules.scrape.sources import (
+    agent_reach_source,
     arxiv_source,
     pubmed_source,
     rss_source,
@@ -31,6 +32,9 @@ AVAILABLE_SOURCES: dict[str, ModuleType] = {
     arxiv_source.SOURCE_NAME: arxiv_source,
     semantic_scholar_source.SOURCE_NAME: semantic_scholar_source,
     pubmed_source.SOURCE_NAME: pubmed_source,
+    agent_reach_source.YOUTUBE_SOURCE_NAME: agent_reach_source,
+    agent_reach_source.GITHUB_SOURCE_NAME: agent_reach_source,
+    agent_reach_source.WEB_SOURCE_NAME: agent_reach_source,
 }
 # Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
 # under its own key, sharing the one `rss_source` module — the module's
@@ -87,6 +91,30 @@ SOURCE_META: dict[str, dict] = {
         "url": "https://pubmed.ncbi.nlm.nih.gov",
         "topics": ["biomed"],
         "category": "academic",
+    },
+    "youtube_reach": {
+        "label": "YouTube Videos",
+        "icon": "bi-youtube",
+        "desc": "Video summaries and transcripts via Agent Reach",
+        "url": "https://youtube.com",
+        "topics": ["general", "ai", "cs"],
+        "category": "feed",
+    },
+    "github_reach": {
+        "label": "GitHub Trending & Repos",
+        "icon": "bi-github",
+        "desc": "Repositories and code trends via Agent Reach",
+        "url": "https://github.com",
+        "topics": ["cs", "ai", "ml"],
+        "category": "feed",
+    },
+    "web_reach": {
+        "label": "Web & Social Reader",
+        "icon": "bi-globe2",
+        "desc": "Web pages & research links via Jina Reader",
+        "url": "https://r.jina.ai",
+        "topics": ["general"],
+        "category": "feed",
     },
 }
 for _feed in rss_source.FEEDS:

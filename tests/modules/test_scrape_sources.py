@@ -15,6 +15,7 @@ from app.modules.scrape.sources import pubmed_source as pm
 from app.modules.scrape.sources import semantic_scholar_source as ss
 
 _FEED_KEYS = {f["key"] for f in rss_source.FEEDS}
+_REACH_KEYS = {"youtube_reach", "github_reach", "web_reach"}
 
 # ----------------------------------------------------------------------------
 # Registry
@@ -22,7 +23,7 @@ _FEED_KEYS = {f["key"] for f in rss_source.FEEDS}
 
 
 def test_registry_has_academic_adapters_and_feeds():
-    assert {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS == set(AVAILABLE_SOURCES)
+    assert {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS | _REACH_KEYS == set(AVAILABLE_SOURCES)
 
 
 def test_every_feed_key_has_source_meta():
@@ -33,7 +34,7 @@ def test_every_feed_key_has_source_meta():
 
 def test_enabled_sources_defaults_to_all(monkeypatch):
     monkeypatch.delenv("SCRAPE_SOURCES", raising=False)
-    assert set(enabled_sources()) == {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS
+    assert set(enabled_sources()) == {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS | _REACH_KEYS
 
 
 def test_enabled_sources_filters_and_ignores_unknown(monkeypatch):
