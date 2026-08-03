@@ -31,6 +31,11 @@ def test_agent_reach_sources_registered():
     assert "web_reach" in SOURCE_META
     assert SOURCE_META["web_reach"]["icon"] == "bi-globe2"
 
+    enabled = enabled_sources()
+    assert "youtube_reach" in enabled
+    assert "github_reach" in enabled
+    assert "web_reach" in enabled
+
 
 def test_agent_reach_search_youtube_payload_structure(monkeypatch):
     """Test search_youtube returns PaperPayload objects with correct URLs and metadata."""

@@ -127,7 +127,9 @@ for _feed in rss_source.FEEDS:
         "category": "feed",
     }
 
-_DEFAULT = "arxiv,semantic_scholar,pubmed," + ",".join(f["key"] for f in rss_source.FEEDS)
+_DEFAULT = "arxiv,semantic_scholar,pubmed,youtube_reach,github_reach,web_reach," + ",".join(
+    f["key"] for f in rss_source.FEEDS
+)
 
 
 def enabled_sources() -> dict[str, ModuleType]:
