@@ -28,13 +28,13 @@ from app.modules.scrape.sources import (
 
 logger = structlog.get_logger()
 
-AVAILABLE_SOURCES: dict[str, ModuleType] = {
+AVAILABLE_SOURCES: dict[str, Any] = {
     arxiv_source.SOURCE_NAME: arxiv_source,
     semantic_scholar_source.SOURCE_NAME: semantic_scholar_source,
     pubmed_source.SOURCE_NAME: pubmed_source,
-    agent_reach_source.YOUTUBE_SOURCE_NAME: agent_reach_source,
-    agent_reach_source.GITHUB_SOURCE_NAME: agent_reach_source,
-    agent_reach_source.WEB_SOURCE_NAME: agent_reach_source,
+    agent_reach_source.YOUTUBE_SOURCE_NAME: agent_reach_source.youtube_adapter,
+    agent_reach_source.GITHUB_SOURCE_NAME: agent_reach_source.github_adapter,
+    agent_reach_source.WEB_SOURCE_NAME: agent_reach_source.web_adapter,
 }
 # Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
 # under its own key, sharing the one `rss_source` module — the module's

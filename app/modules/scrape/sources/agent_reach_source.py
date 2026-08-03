@@ -16,6 +16,7 @@ import hashlib
 import json
 import subprocess
 from typing import Any
+from urllib.parse import quote
 
 import structlog
 
@@ -56,7 +57,7 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
         target_url = query.strip()
         if not target_url.startswith(("http://", "https://")):
             # If search query, prepend Jina search or fallback URL
-            target_url = f"https://s.jina.ai/{urllib.parse.quote(target_url)}" if "urllib" in locals() else target_url
+            target_url = f"https://s.jina.ai/{quote(target_url)}"
 
         content = web.read(target_url)
         if not content:
@@ -215,3 +216,48 @@ def search_for_keywords(keywords: list[str], *, max_results: int = 10) -> list[P
         return []
     query = " ".join(clean_kw)
     return search(query, max_results=max_results)
+
+
+# Dedicated channel adapter wrappers satisfying ScrapeMind duck-typed adapter contract
+class YouTubeReachAdapter:
+    SOURCE_NAME = YOUTUBE_SOURCE_NAME
+
+    def search(self, query: str, *, max_results: int = 5) -> list[PaperPayload]:
+        return search_youtube(query, max_results=max_results)
+
+    def search_for_keywords(self, keywords: list[str], *, max_results: int = 5) -> list[PaperPayload]:
+        clean_kw = [k.strip() for k in keywords if k and k.strip()]
+        if not clean_kw:
+            return []
+        return search_youtube(" ".join(clean_kw), max_results=max_results)
+
+
+class GitHubReachAdapter:
+    SOURCE_NAME = GITHUB_SOURCE_NAME
+
+    def search(self, query: str, *, max_results: int = 5) -> list[PaperPayload]:
+        return search_github(query, max_results=max_results)
+
+    def search_for_keywords(self, keywords: list[str], *, max_results: int = 5) -> list[PaperPayload]:
+        clean_kw = [k.strip() for k in keywords if k and k.strip()]
+        if not clean_kw:
+            return []
+        return search_github(" ".join(clean_kw), max_results=max_results)
+
+
+class WebReachAdapter:
+    SOURCE_NAME = WEB_SOURCE_NAME
+
+    def search(self, query: str, *, max_results: int = 10) -> list[PaperPayload]:
+        return search_web(query, max_results=max_results)
+
+    def search_for_keywords(self, keywords: list[str], *, max_results: int = 10) -> list[PaperPayload]:
+        clean_kw = [k.strip() for k in keywords if k and k.strip()]
+        if not clean_kw:
+            return []
+        return search_web(" ".join(clean_kw), max_results=max_results)
+
+
+youtube_adapter = YouTubeReachAdapter()
+github_adapter = GitHubReachAdapter()
+web_adapter = WebReachAdapter()
