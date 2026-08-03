@@ -43,7 +43,7 @@ class SourceThrottledError(RuntimeError):
 
 
 def _client():
-    url = current_app.config.get("CELERY_BROKER_URL") or current_app.config.get("REDIS_URL")
+    url = _cfg("CELERY_BROKER_URL", None) or _cfg("REDIS_URL", None)
     if not url:
         return None
     try:
@@ -116,6 +116,18 @@ def semantic_scholar_slot() -> bool:
 
 def pubmed_slot() -> bool:
     return acquire_slot("pubmed", int(_cfg("SCRAPE_RATE_PUBMED_PER_SEC", 3)), 1)
+
+
+def web_reach_slot() -> bool:
+    return acquire_slot("web_reach", int(_cfg("SCRAPE_RATE_WEB_PER_MIN", 30)), 60)
+
+
+def youtube_reach_slot() -> bool:
+    return acquire_slot("youtube_reach", int(_cfg("SCRAPE_RATE_YOUTUBE_PER_MIN", 30)), 60)
+
+
+def github_reach_slot() -> bool:
+    return acquire_slot("github_reach", int(_cfg("SCRAPE_RATE_GITHUB_PER_MIN", 30)), 60)
 
 
 def _cfg(key: str, default):

@@ -140,3 +140,30 @@ def test_agent_reach_search_github_missing_cli(monkeypatch):
 
     payloads = agent_reach_source.search_github("test query")
     assert payloads == []
+
+
+def test_agent_reach_search_web_net_guard_blocking(monkeypatch):
+    """Test search_web blocks SSRF targets like 127.0.0.1 via net_guard."""
+    payloads = agent_reach_source.search_web("http://127.0.0.1:6379/")
+    assert payloads == []
+
+
+def test_agent_reach_search_web_success(monkeypatch):
+    """Test search_web fetches content and returns a PaperPayload."""
+
+    class DummyResponse:
+        status_code = 200
+        text = "Title: Sample Web Page\n\nThis is a test body."
+
+    def dummy_get(url, headers=None, timeout=15):
+        return DummyResponse()
+
+    monkeypatch.setattr("requests.get", dummy_get)
+
+    payloads = agent_reach_source.search_web("https://example.com/test")
+    assert len(payloads) == 1
+    p = payloads[0]
+    assert isinstance(p, PaperPayload)
+    assert p.source == "web_reach"
+    assert p.title == "Sample Web Page"
+    assert "test body" in p.abstract

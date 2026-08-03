@@ -14,13 +14,22 @@ from __future__ import annotations
 import datetime
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from typing import Any
 from urllib.parse import quote
 
+import requests
 import structlog
 
+from app.modules.scrape.net_guard import is_public_http_url
+from app.modules.scrape.ratelimit import (
+    SourceThrottledError,
+    github_reach_slot,
+    web_reach_slot,
+    youtube_reach_slot,
+)
 from app.modules.scrape.sources.payload import PaperPayload
 
 logger = structlog.get_logger()
@@ -41,43 +50,63 @@ def _generate_external_id(prefix: str, identifier: str) -> str:
 
 
 # ============================================================================
-# 1. WEB REACH ADAPTER (Jina Reader)
+# 1. WEB REACH ADAPTER (HTTP Reader via requests + net_guard)
 # ============================================================================
 
 def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
-    """Fetch content for a URL or web query via Agent Reach WebChannel."""
+    """Fetch content for a URL or web query via HTTP requests guarded by net_guard."""
     if not query or not query.strip():
         return []
 
+    if not web_reach_slot():
+        raise SourceThrottledError("Web reach rate limit reached")
+
     try:
-        from agent_reach.channels.web import WebChannel
-
-        web = WebChannel()
-
-        # If query is a URL, read directly
         target_url = query.strip()
         if not target_url.startswith(("http://", "https://")):
-            # If search query, prepend Jina search or fallback URL
             target_url = f"https://s.jina.ai/{quote(target_url)}"
 
-        content = web.read(target_url)
-        if not content:
+        allow_private = False
+        try:
+            from flask import current_app
+
+            allow_private = bool(current_app.config.get("FEED_ALLOW_PRIVATE_HOSTS", False))
+        except Exception:  # noqa: BLE001
+            pass
+
+        ok, _err = is_public_http_url(target_url, allow_private=allow_private)
+        if not ok:
+            logger.warning("web_reach_blocked", url=target_url)
             return []
 
-        # Extract title from Jina Markdown output (usually 'Title: ...')
+        headers = {"User-Agent": "ScrapeMind/1.0 (+https://github.com/AlperEnesErsu/ScrapeMind)"}
+        resp = requests.get(target_url, headers=headers, timeout=15)
+        if resp.status_code != 200 or not resp.text:
+            return []
+
+        content = resp.text
         lines = content.splitlines()
         title = "Web Result"
-        for line in lines[:5]:
-            if line.startswith("Title:"):
-                title = line.replace("Title:", "").strip()
+        for line in lines[:10]:
+            clean_line = line.strip()
+            if clean_line.startswith("Title:"):
+                title = clean_line.replace("Title:", "").strip()
                 break
+            elif clean_line.startswith("# "):
+                title = clean_line.replace("# ", "").strip()
+                break
+
+        if title == "Web Result":
+            match = re.search(r"<title>(.*?)</title>", content, re.IGNORECASE)
+            if match:
+                title = match.group(1).strip()
 
         payload = PaperPayload(
             source=WEB_SOURCE_NAME,
             external_id=_generate_external_id("web", target_url),
             title=title,
             abstract=content[:1500] if len(content) > 1500 else content,
-            authors=["Agent Reach Web"],
+            authors=["Web Reader"],
             url=target_url,
             pdf_url=None,
             published_at=datetime.datetime.now(datetime.timezone.utc),
@@ -85,6 +114,8 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
             kind="news",
         )
         return [payload]
+    except SourceThrottledError:
+        raise
     except Exception as e:
         logger.error("web_reach_search_failed", query=query, error=str(e))
         return []
@@ -99,6 +130,9 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
     keywords = [k.strip() for k in query.split() if k.strip()]
     if not keywords:
         return []
+
+    if not youtube_reach_slot():
+        raise SourceThrottledError("YouTube reach rate limit reached")
 
     search_term = f"ytsearch{max_results}:{query.strip()}"
     try:
@@ -148,6 +182,8 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
                 continue
 
         return out
+    except SourceThrottledError:
+        raise
     except Exception as e:
         logger.error("youtube_reach_search_failed", query=query, error=str(e))
         return []
@@ -161,6 +197,9 @@ def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
     """Search GitHub repositories and return PaperPayloads with repo links."""
     if not query or not query.strip():
         return []
+
+    if not github_reach_slot():
+        raise SourceThrottledError("GitHub reach rate limit reached")
 
     try:
         # Try using gh CLI
@@ -197,6 +236,8 @@ def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
             return out
         else:
             logger.warning("github_reach_cli_failed", query=query, returncode=res.returncode, stderr=res.stderr)
+    except SourceThrottledError:
+        raise
     except FileNotFoundError:
         logger.warning(
             "github_cli_not_installed",
