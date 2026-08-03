@@ -128,3 +128,15 @@ def test_agent_reach_channel_adapters_dispatch(monkeypatch):
     gh_called = False
     agent_reach_source.web_adapter.search_for_keywords(["https://example.com"])
     assert web_called and not yt_called and not gh_called
+
+
+def test_agent_reach_search_github_missing_cli(monkeypatch):
+    """Test search_github handles missing gh CLI (FileNotFoundError) gracefully."""
+
+    def dummy_run(*args, **kwargs):
+        raise FileNotFoundError("gh binary not found")
+
+    monkeypatch.setattr("subprocess.run", dummy_run)
+
+    payloads = agent_reach_source.search_github("test query")
+    assert payloads == []

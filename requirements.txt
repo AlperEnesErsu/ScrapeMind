@@ -35,6 +35,7 @@ redis==5.2.0
 
 # Scraping sources (Phase 2)
 arxiv==2.1.3
+yt-dlp>=2024.0.0
 
 # Industry RSS/Atom feeds — global ingestion (Faz 2 slice 4)
 feedparser==6.0.12

@@ -15,6 +15,7 @@ import datetime
 import hashlib
 import json
 import subprocess
+import sys
 from typing import Any
 from urllib.parse import quote
 
@@ -102,7 +103,7 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
     search_term = f"ytsearch{max_results}:{query.strip()}"
     try:
         res = subprocess.run(
-            ["python", "-m", "yt_dlp", "--dump-json", "--flat-playlist", "--no-warnings", search_term],
+            [sys.executable, "-m", "yt_dlp", "--dump-json", "--flat-playlist", "--no-warnings", search_term],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -194,6 +195,14 @@ def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
                     )
                 )
             return out
+        else:
+            logger.warning("github_reach_cli_failed", query=query, returncode=res.returncode, stderr=res.stderr)
+    except FileNotFoundError:
+        logger.warning(
+            "github_cli_not_installed",
+            query=query,
+            hint="GitHub CLI (gh) is not installed or not in PATH",
+        )
     except Exception as e:
         logger.warning("github_reach_cli_failed", query=query, error=str(e))
 
