@@ -109,7 +109,7 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
             authors=["Web Reader"],
             url=target_url,
             pdf_url=None,
-            published_at=datetime.datetime.now(datetime.timezone.utc),
+            published_at=None,
             categories=["web"],
             kind="news",
         )
@@ -158,22 +158,32 @@ def search_youtube(query: str, *, max_results: int = 5) -> list[PaperPayload]:
                     continue
 
                 video_url = f"https://www.youtube.com/watch?v={video_id}" if not video_id.startswith("http") else video_id
-                title = item.get("title") or "YouTube Video"
+                raw_title = (item.get("title") or "YouTube Video").strip()
                 uploader = item.get("uploader") or item.get("channel") or "YouTube"
                 description = item.get("description") or f"YouTube Video by {uploader}"
                 duration = item.get("duration")
                 duration_str = f" Duration: {duration}s" if duration else ""
 
+                upload_date_raw = item.get("upload_date")
+                published_at = None
+                if upload_date_raw and len(str(upload_date_raw)) == 8 and str(upload_date_raw).isdigit():
+                    try:
+                        published_at = datetime.datetime.strptime(str(upload_date_raw), "%Y%m%d").replace(
+                            tzinfo=datetime.timezone.utc
+                        )
+                    except ValueError:
+                        published_at = None
+
                 out.append(
                     PaperPayload(
                         source=YOUTUBE_SOURCE_NAME,
                         external_id=_generate_external_id("yt", video_id),
-                        title=f"🎥 {title}",
+                        title=raw_title,
                         abstract=f"{description[:1000]}{duration_str}",
                         authors=[uploader],
                         url=video_url,
                         pdf_url=None,
-                        published_at=datetime.datetime.now(datetime.timezone.utc),
+                        published_at=published_at,
                         categories=["video"],
                         kind="video",
                     )
@@ -214,21 +224,29 @@ def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
             repos = json.loads(res.stdout)
             out: list[PaperPayload] = []
             for repo in repos:
-                repo_name = repo.get("fullName") or "GitHub Repo"
+                repo_name = (repo.get("fullName") or "GitHub Repo").strip()
                 repo_url = repo.get("url") or f"https://github.com/{repo_name}"
                 owner = (repo.get("owner") or {}).get("login", "GitHub")
                 desc = repo.get("description") or f"GitHub repository: {repo_name}"
+
+                updated_at_raw = repo.get("updatedAt") or repo.get("createdAt")
+                published_at = None
+                if updated_at_raw:
+                    try:
+                        published_at = datetime.datetime.fromisoformat(str(updated_at_raw).replace("Z", "+00:00"))
+                    except ValueError:
+                        published_at = None
 
                 out.append(
                     PaperPayload(
                         source=GITHUB_SOURCE_NAME,
                         external_id=_generate_external_id("gh", repo_name),
-                        title=f"📦 {repo_name}",
+                        title=repo_name,
                         abstract=desc,
                         authors=[owner],
                         url=repo_url,
                         pdf_url=None,
-                        published_at=datetime.datetime.now(datetime.timezone.utc),
+                        published_at=published_at,
                         categories=["github"],
                         kind="github",
                     )

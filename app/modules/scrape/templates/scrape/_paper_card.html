@@ -16,6 +16,10 @@
     </span>
     {% if r.paper.kind == 'news' %}
       <span class="badge bg-info-subtle text-info-emphasis"><i class="bi bi-broadcast me-1"></i>{{ _('News') }}</span>
+    {% elif r.paper.kind == 'video' %}
+      <span class="badge bg-danger-subtle text-danger-emphasis"><i class="bi bi-play-btn me-1"></i>{{ _('Video') }}</span>
+    {% elif r.paper.kind == 'github' %}
+      <span class="badge bg-secondary-subtle text-secondary-emphasis"><i class="bi bi-code-slash me-1"></i>{{ _('GitHub') }}</span>
     {% endif %}
     {% if r.paper.categories %}
       <span class="small text-muted">{{ (r.paper.categories or [])[:2] | join(' · ') }}</span>

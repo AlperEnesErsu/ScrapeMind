@@ -40,7 +40,7 @@ def test_agent_reach_sources_registered():
 def test_agent_reach_search_youtube_payload_structure(monkeypatch):
     """Test search_youtube returns PaperPayload objects with correct URLs and metadata."""
     sample_yt_json = (
-        '{"id": "dQw4w9WgXcQ", "title": "Test Video", "uploader": "Test Channel", "description": "Test Desc", "duration": 180}\n'
+        '{"id": "dQw4w9WgXcQ", "title": "Test Video", "uploader": "Test Channel", "description": "Test Desc", "duration": 180, "upload_date": "20240512"}\n'
     )
 
     class DummyCompletedProcess:
@@ -60,15 +60,19 @@ def test_agent_reach_search_youtube_payload_structure(monkeypatch):
     assert isinstance(p, PaperPayload)
     assert p.source == "youtube_reach"
     assert p.url == "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-    assert p.title == "🎥 Test Video"
+    assert p.title == "Test Video"
     assert p.authors == ["Test Channel"]
     assert p.kind == "video"
+    assert p.published_at is not None
+    assert p.published_at.year == 2024
+    assert p.published_at.month == 5
+    assert p.published_at.day == 12
 
 
 def test_agent_reach_search_github_payload_structure(monkeypatch):
     """Test search_github returns PaperPayload objects with correct repo URLs."""
     sample_gh_json = (
-        '[{"fullName": "test/repo", "url": "https://github.com/test/repo", "description": "Repo desc", "owner": {"login": "testowner"}}]'
+        '[{"fullName": "test/repo", "url": "https://github.com/test/repo", "description": "Repo desc", "owner": {"login": "testowner"}, "updatedAt": "2024-06-15T10:00:00Z"}]'
     )
 
     class DummyCompletedProcess:
@@ -88,9 +92,13 @@ def test_agent_reach_search_github_payload_structure(monkeypatch):
     assert isinstance(p, PaperPayload)
     assert p.source == "github_reach"
     assert p.url == "https://github.com/test/repo"
-    assert p.title == "📦 test/repo"
+    assert p.title == "test/repo"
     assert p.authors == ["testowner"]
     assert p.kind == "github"
+    assert p.published_at is not None
+    assert p.published_at.year == 2024
+    assert p.published_at.month == 6
+    assert p.published_at.day == 15
 
 
 def test_agent_reach_channel_adapters_dispatch(monkeypatch):
