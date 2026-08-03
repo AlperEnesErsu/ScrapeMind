@@ -100,6 +100,9 @@ social, humanities, general) seçilir ve ilgi-farkında kaynak seçiciyi besler.
 | `semantic_scholar` | akademik | Opsiyonel `SEMANTIC_SCHOLAR_API_KEY` | **OR operatörü yok** → anahtar kelime başına 1 istek |
 | `pubmed` | akademik | Opsiyonel `NCBI_API_KEY` | esearch→efetch iki adım, OR ile tek sorgu |
 | `openai_blog`, `google_ai_blog`, `deepmind_blog`, `huggingface_blog` | besleme | Hayır | Küratörlü, **global** yutulur |
+| `youtube_reach` | besleme | Hayır | `yt-dlp` CLI/Python modülü (`sys.executable`), `kind="video"` |
+| `github_reach` | besleme | Hayır (`gh` CLI opsiyonel) | `gh` CLI repo araması (`FileNotFoundError` korumalı), `kind="github"` |
+| `web_reach` | besleme | Hayır | ScrapeMind `requests` + `net_guard` SSRF koruması, `kind="news"` |
 | `user_feed` | besleme | Hayır | Kullanıcının eklediği özel RSS |
 
 > ⚠️ `rss_source` sözleşmeyi **bilerek** kısmen uygular: `SOURCE_NAME` ve `search()`

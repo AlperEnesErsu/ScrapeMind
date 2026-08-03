@@ -22,6 +22,7 @@ Semantic Scholar/PubMed işi bitti ve testli. Onun üzerine, `main`'in 17 commit
 | API v1 (JWT, okuma + yazma, token revocation) | ✅ [docs/API_V1.md](API_V1.md) |
 | Akademik kaynaklar: arXiv, Semantic Scholar, PubMed | ✅ |
 | RSS: 4 küratörlü besleme + kullanıcının kendi beslemeleri | ✅ |
+| Agent Reach adaptörleri: YouTube Videos, GitHub Repos, Web Reader | ✅ (`net_guard`, `ratelimit`, `yt-dlp`, `gh` fallback) |
 | Konu sınıflandırma + ilgi-farkında kaynak seçici | ✅ |
 | TR→EN anahtar kelime çevirisi | ✅ |
 | Tarama geçmişi (`ScanRun`) + canlı durum paneli | ✅ |
