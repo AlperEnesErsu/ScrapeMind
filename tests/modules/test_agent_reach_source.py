@@ -43,12 +43,15 @@ def test_agent_reach_search_youtube_payload_structure(monkeypatch):
         '{"id": "dQw4w9WgXcQ", "title": "Test Video", "uploader": "Test Channel", "description": "Test Desc", "duration": 180, "upload_date": "20240512"}\n'
     )
 
+    captured_cmd = []
+
     class DummyCompletedProcess:
         returncode = 0
         stdout = sample_yt_json
         stderr = ""
 
-    def dummy_run(*args, **kwargs):
+    def dummy_run(cmd, *args, **kwargs):
+        captured_cmd.extend(cmd)
         return DummyCompletedProcess()
 
     monkeypatch.setattr("subprocess.run", dummy_run)
@@ -67,6 +70,9 @@ def test_agent_reach_search_youtube_payload_structure(monkeypatch):
     assert p.published_at.year == 2024
     assert p.published_at.month == 5
     assert p.published_at.day == 12
+
+    # Verify --flat-playlist is NOT in cmd so full metadata (upload_date) is extracted
+    assert "--flat-playlist" not in captured_cmd
 
 
 def test_agent_reach_search_github_payload_structure(monkeypatch):
@@ -156,14 +162,15 @@ def test_agent_reach_search_web_net_guard_blocking(monkeypatch):
     assert payloads == []
 
 
-def test_agent_reach_search_web_success(monkeypatch):
-    """Test search_web fetches content and returns a PaperPayload."""
+def test_agent_reach_search_web_jina_reader_success(monkeypatch):
+    """Test search_web uses Jina Reader (r.jina.ai) for direct URLs."""
 
     class DummyResponse:
         status_code = 200
-        text = "Title: Sample Web Page\n\nThis is a test body."
+        text = "Title: Sample Web Page\n\nThis is markdown text from Jina Reader."
 
     def dummy_get(url, headers=None, timeout=15):
+        assert "r.jina.ai" in url
         return DummyResponse()
 
     monkeypatch.setattr("requests.get", dummy_get)
@@ -174,4 +181,43 @@ def test_agent_reach_search_web_success(monkeypatch):
     assert isinstance(p, PaperPayload)
     assert p.source == "web_reach"
     assert p.title == "Sample Web Page"
-    assert "test body" in p.abstract
+    assert "Jina Reader" in p.abstract
+
+
+def test_agent_reach_search_web_rss_fallback(monkeypatch):
+    """Test keyword web search falls back to Google News RSS search."""
+    sample_rss_xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+        <channel>
+            <title>Google News</title>
+            <item>
+                <title>Python 3.14 Released</title>
+                <link>https://news.example.com/python314</link>
+                <guid>https://news.example.com/python314</guid>
+                <pubDate>Mon, 03 Aug 2026 12:00:00 GMT</pubDate>
+                <description>&lt;p&gt;Python 3.14 brings new speed &amp;amp; Features!&lt;/p&gt;</description>
+            </item>
+        </channel>
+    </rss>"""
+
+    class DummyResponse:
+        status_code = 200
+        content = sample_rss_xml.encode("utf-8")
+
+    def dummy_get(url, headers=None, timeout=15):
+        return DummyResponse()
+
+    monkeypatch.setattr("requests.get", dummy_get)
+
+    payloads = agent_reach_source.search_web("python release")
+    assert len(payloads) == 1
+    p = payloads[0]
+    assert isinstance(p, PaperPayload)
+    assert p.source == "web_reach"
+    assert p.title == "Python 3.14 Released"
+    assert p.url == "https://news.example.com/python314"
+    assert "Python 3.14 brings new speed & Features!" in p.abstract
+    assert "<p>" not in p.abstract  # Verifies HTML tag stripping
+    assert p.published_at is not None
+    assert p.published_at.year == 2026
+
