@@ -4096,3 +4096,16 @@ msgstr "İlgi alanlarınıza uyan yeni makalelerin e-posta özetini alın."
 #~ msgid "Add some research interests in your profile, then hit \"Scrape now\"."
 #~ msgstr "Profilinde araştırma ilgi alanı ekle, sonra \"Şimdi tara\"ya bas."
 
+msgid "YouTube video search and metadata"
+msgstr "YouTube video aramaları ve içerik bilgileri"
+
+msgid "GitHub repository search and code trends"
+msgstr "GitHub kod deposu aramaları ve trendler"
+
+msgid "Web Reader"
+msgstr "Web Okuyucu"
+
+msgid "Web content and research article reader"
+msgstr "Web içerikleri ve araştırma makalesi okuyucusu"
+
+

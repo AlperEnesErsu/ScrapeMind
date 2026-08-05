@@ -1,4 +1,4 @@
-"""Tests for Agent Reach source adapter integration in ScrapeMind."""
+"""Tests for external source adapters (YouTube, GitHub, Web Reader) in ScrapeMind."""
 
 from __future__ import annotations
 
@@ -7,22 +7,22 @@ import pytest
 from app.modules.scrape.sources import (
     AVAILABLE_SOURCES,
     SOURCE_META,
-    agent_reach_source,
     enabled_sources,
+    external_sources,
     source_options,
 )
 from app.modules.scrape.sources.payload import PaperPayload
 
 
-def test_agent_reach_sources_registered():
+def test_external_sources_registered():
     """Verify youtube_reach, github_reach, and web_reach are registered correctly."""
     assert "youtube_reach" in AVAILABLE_SOURCES
     assert "github_reach" in AVAILABLE_SOURCES
     assert "web_reach" in AVAILABLE_SOURCES
 
-    assert AVAILABLE_SOURCES["youtube_reach"] == agent_reach_source.youtube_adapter
-    assert AVAILABLE_SOURCES["github_reach"] == agent_reach_source.github_adapter
-    assert AVAILABLE_SOURCES["web_reach"] == agent_reach_source.web_adapter
+    assert AVAILABLE_SOURCES["youtube_reach"] == external_sources.youtube_adapter
+    assert AVAILABLE_SOURCES["github_reach"] == external_sources.github_adapter
+    assert AVAILABLE_SOURCES["web_reach"] == external_sources.web_adapter
 
     assert "youtube_reach" in SOURCE_META
     assert SOURCE_META["youtube_reach"]["icon"] == "bi-youtube"
@@ -56,7 +56,7 @@ def test_agent_reach_search_youtube_payload_structure(monkeypatch):
 
     monkeypatch.setattr("subprocess.run", dummy_run)
 
-    payloads = agent_reach_source.search_youtube("test query")
+    payloads = external_sources.search_youtube("test query")
     assert len(payloads) == 1
     p = payloads[0]
 
@@ -91,7 +91,7 @@ def test_agent_reach_search_github_payload_structure(monkeypatch):
 
     monkeypatch.setattr("subprocess.run", dummy_run)
 
-    payloads = agent_reach_source.search_github("test query")
+    payloads = external_sources.search_github("test query")
     assert len(payloads) == 1
     p = payloads[0]
 
@@ -128,19 +128,19 @@ def test_agent_reach_channel_adapters_dispatch(monkeypatch):
         web_called = True
         return []
 
-    monkeypatch.setattr(agent_reach_source, "search_youtube", mock_yt)
-    monkeypatch.setattr(agent_reach_source, "search_github", mock_gh)
-    monkeypatch.setattr(agent_reach_source, "search_web", mock_web)
+    monkeypatch.setattr(external_sources, "search_youtube", mock_yt)
+    monkeypatch.setattr(external_sources, "search_github", mock_gh)
+    monkeypatch.setattr(external_sources, "search_web", mock_web)
 
-    agent_reach_source.youtube_adapter.search_for_keywords(["test"])
+    external_sources.youtube_adapter.search_for_keywords(["test"])
     assert yt_called and not gh_called and not web_called
 
     yt_called = False
-    agent_reach_source.github_adapter.search_for_keywords(["test"])
+    external_sources.github_adapter.search_for_keywords(["test"])
     assert gh_called and not yt_called and not web_called
 
     gh_called = False
-    agent_reach_source.web_adapter.search_for_keywords(["https://example.com"])
+    external_sources.web_adapter.search_for_keywords(["https://example.com"])
     assert web_called and not yt_called and not gh_called
 
 
@@ -152,13 +152,13 @@ def test_agent_reach_search_github_missing_cli(monkeypatch):
 
     monkeypatch.setattr("subprocess.run", dummy_run)
 
-    payloads = agent_reach_source.search_github("test query")
+    payloads = external_sources.search_github("test query")
     assert payloads == []
 
 
 def test_agent_reach_search_web_net_guard_blocking(monkeypatch):
     """Test search_web blocks SSRF targets like 127.0.0.1 via net_guard."""
-    payloads = agent_reach_source.search_web("http://127.0.0.1:6379/")
+    payloads = external_sources.search_web("http://127.0.0.1:6379/")
     assert payloads == []
 
 
@@ -175,7 +175,7 @@ def test_agent_reach_search_web_jina_reader_success(monkeypatch):
 
     monkeypatch.setattr("requests.get", dummy_get)
 
-    payloads = agent_reach_source.search_web("https://example.com/test")
+    payloads = external_sources.search_web("https://example.com/test")
     assert len(payloads) == 1
     p = payloads[0]
     assert isinstance(p, PaperPayload)
@@ -209,7 +209,7 @@ def test_agent_reach_search_web_rss_fallback(monkeypatch):
 
     monkeypatch.setattr("requests.get", dummy_get)
 
-    payloads = agent_reach_source.search_web("python release")
+    payloads = external_sources.search_web("python release")
     assert len(payloads) == 1
     p = payloads[0]
     assert isinstance(p, PaperPayload)

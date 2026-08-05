@@ -20,8 +20,8 @@ from typing import Any
 import structlog
 
 from app.modules.scrape.sources import (
-    agent_reach_source,
     arxiv_source,
+    external_sources,
     pubmed_source,
     rss_source,
     semantic_scholar_source,
@@ -33,9 +33,9 @@ AVAILABLE_SOURCES: dict[str, Any] = {
     arxiv_source.SOURCE_NAME: arxiv_source,
     semantic_scholar_source.SOURCE_NAME: semantic_scholar_source,
     pubmed_source.SOURCE_NAME: pubmed_source,
-    agent_reach_source.YOUTUBE_SOURCE_NAME: agent_reach_source.youtube_adapter,
-    agent_reach_source.GITHUB_SOURCE_NAME: agent_reach_source.github_adapter,
-    agent_reach_source.WEB_SOURCE_NAME: agent_reach_source.web_adapter,
+    external_sources.YOUTUBE_SOURCE_NAME: external_sources.youtube_adapter,
+    external_sources.GITHUB_SOURCE_NAME: external_sources.github_adapter,
+    external_sources.WEB_SOURCE_NAME: external_sources.web_adapter,
 }
 # Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
 # under its own key, sharing the one `rss_source` module — the module's
@@ -96,7 +96,7 @@ SOURCE_META: dict[str, dict] = {
     "youtube_reach": {
         "label": "YouTube Videos",
         "icon": "bi-youtube",
-        "desc": "Video summaries and transcripts via Agent Reach",
+        "desc": "YouTube video search and metadata",
         "url": "https://youtube.com",
         "topics": ["general", "ai", "cs"],
         "category": "feed",
@@ -104,15 +104,15 @@ SOURCE_META: dict[str, dict] = {
     "github_reach": {
         "label": "GitHub Trending & Repos",
         "icon": "bi-github",
-        "desc": "Repositories and code trends via Agent Reach",
+        "desc": "GitHub repository search and code trends",
         "url": "https://github.com",
         "topics": ["cs", "ai", "ml"],
         "category": "feed",
     },
     "web_reach": {
-        "label": "Web & Social Reader",
+        "label": "Web Reader",
         "icon": "bi-globe2",
-        "desc": "Web pages & research links via Jina Reader",
+        "desc": "Web content and research article reader",
         "url": "https://r.jina.ai",
         "topics": ["general"],
         "category": "feed",

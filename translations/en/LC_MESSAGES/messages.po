@@ -4063,3 +4063,16 @@ msgstr "Get an email summary of new papers matching your interests."
 #~ msgid "Add some research interests in your profile, then hit \"Scrape now\"."
 #~ msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
 
+msgid "YouTube video search and metadata"
+msgstr "YouTube video search and metadata"
+
+msgid "GitHub repository search and code trends"
+msgstr "GitHub repository search and code trends"
+
+msgid "Web Reader"
+msgstr "Web Reader"
+
+msgid "Web content and research article reader"
+msgstr "Web content and research article reader"
+
+

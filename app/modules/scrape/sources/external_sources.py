@@ -1,7 +1,7 @@
-"""Agent Reach source adapter for ScrapeMind.
+"""External source adapters for ScrapeMind (YouTube, GitHub, Web Reader).
 
-Integrates Agent Reach capabilities (Web Reader via Jina, YouTube Transcripts,
-GitHub Repositories) into ScrapeMind's native `PaperPayload` pipeline.
+Provides lightweight, direct adapters for YouTube videos, GitHub repos,
+and web pages without third-party agent dependencies.
 
 Exposes standard source adapter contracts:
   SOURCE_NAME: str
