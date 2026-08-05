@@ -785,6 +785,47 @@ Makale Özeti:
     return answer.strip() or None
 
 
+MAX_TOKENS_WEB_SUMMARY = 300
+
+#: Enough of the page for the model to know what it is; the rest is almost
+#: always navigation, footers and repeated boilerplate.
+_WEB_SUMMARY_INPUT_CHARS = 6000
+
+
+def summarize_web_content(title: str, content: str, *, user=None) -> str | None:
+    """Two-or-three sentence summary of a fetched web page.
+
+    Used by the manual "add link" flow, where the reader output still opens
+    on chrome (language switchers, badges, install banners) that no
+    deterministic cleaner can recognise as noise. Returns None when AI is
+    unavailable so the caller keeps its cleaned-text fallback — a missing
+    summary must never block saving the link.
+    """
+    body = (content or "").strip()
+    if not body:
+        return None
+
+    system_prompt = (
+        "Sen bir araştırma asistanısın. Sana bir web sayfasının başlığı ve "
+        "metni verilecek. Sayfanın ne hakkında olduğunu 2-3 cümleyle, düz "
+        "metin olarak özetle. Menü, dil seçici, rozet ve kurulum talimatı "
+        "gibi içerikle ilgisiz kısımları yok say. Başlığı tekrar etme, "
+        "madde işareti veya markdown kullanma."
+    )
+    user_msg = f"Başlık: {title}\n\nSayfa metni:\n{body[:_WEB_SUMMARY_INPUT_CHARS]}"
+
+    answer, _raw = _call_llm(
+        system=system_prompt,
+        user_msg=user_msg,
+        max_tokens=MAX_TOKENS_WEB_SUMMARY,
+        user=user,
+        expect_json=False,
+    )
+    if answer is None:
+        return None
+    return answer.strip() or None
+
+
 # ----------------------------------------------------------------------------
 # Digest (Bölüm B) — daily/weekly LLM briefing over newly-surfaced papers
 # ----------------------------------------------------------------------------

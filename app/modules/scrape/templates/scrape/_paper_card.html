@@ -77,7 +77,9 @@
   {% endif %}
 
   <div class="paper-card__foot">
-    {% if r.matched_keyword %}
+    {% if r.paper.source == 'manual' %}
+      <span class="kw-pill kw-pill--0">{{ _('Manually added') }}</span>
+    {% elif r.matched_keyword %}
       <span class="kw-pill kw-pill--{{ (r.matched_keyword | length) % 5 }}">{{ r.matched_keyword }}</span>
     {% endif %}
     {% if r.notes %}

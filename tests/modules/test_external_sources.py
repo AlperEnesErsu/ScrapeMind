@@ -213,3 +213,58 @@ def test_agent_reach_search_web_rss_fallback(monkeypatch):
     assert "<p>" not in p.abstract  # Verifies HTML tag stripping
     assert p.published_at is not None
     assert p.published_at.year == 2026
+
+
+# ----------------------------------------------------------------------------
+# clean_reader_text — Jina preamble / markdown noise stripping
+# ----------------------------------------------------------------------------
+
+_READER_SAMPLE = """Title: Example Page
+
+URL Source: https://example.com/
+
+Published Time: Sat, 01 Aug 2026 09:39:03 GMT
+
+Markdown Content:
+[![Image 1: badge](https://img.example.com/b.svg)](https://example.com/ci)
+![Image 2: logo](https://img.example.com/logo.png)
+
+The actual body of the page starts here. See [the docs](https://example.com/docs) for more.
+"""
+
+
+def test_clean_reader_text_drops_preamble_and_markdown_noise():
+    out = external_sources.clean_reader_text(_READER_SAMPLE)
+    # Reader metadata is gone …
+    assert "URL Source:" not in out
+    assert "Markdown Content:" not in out
+    # … as is the badge/logo markup, while link text survives as plain words.
+    assert "img.example.com" not in out
+    assert "![" not in out
+    assert out.startswith("The actual body")
+    assert "the docs" in out
+
+
+def test_clean_reader_text_without_marker_still_strips_header_lines():
+    raw = "Title: No Marker Here\nURL Source: https://example.com/\n\nReal content line."
+    assert external_sources.clean_reader_text(raw) == "Real content line."
+
+
+def test_clean_reader_text_trims_on_a_sentence_boundary():
+    body = "Markdown Content:\n" + ("Sentence number one. " * 200)
+    out = external_sources.clean_reader_text(body, limit=100)
+    assert len(out) <= 100
+    assert out.endswith(".")
+
+
+def test_clean_reader_text_keeps_text_that_has_no_boundary():
+    # A single unbroken line must not be thrown away by the boundary search.
+    body = "Markdown Content:\n" + ("x" * 500)
+    out = external_sources.clean_reader_text(body, limit=100)
+    assert len(out) == 100
+
+
+def test_clean_reader_text_returns_none_when_nothing_survives():
+    assert external_sources.clean_reader_text("") is None
+    assert external_sources.clean_reader_text(None) is None
+    assert external_sources.clean_reader_text("Markdown Content:\n![Image 1: x](y)") is None

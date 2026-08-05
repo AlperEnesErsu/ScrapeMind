@@ -56,6 +56,56 @@ def _strip_html(text: str | None) -> str | None:
     return cleaned or None
 
 
+# Jina Reader prefixes every response with a metadata block ("Title: …",
+# "URL Source: …", "Markdown Content:"). Keeping it made the first 1500
+# characters — i.e. the whole card preview — pure metadata plus the page's
+# badge images, so strip the preamble and the markdown image/link noise
+# before the text is ever shown or handed to an LLM.
+_READER_PREAMBLE_KEYS = ("Title:", "URL Source:", "Published Time:", "Warning:", "Image")
+_MD_IMAGE_LINK_RE = re.compile(r"\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)")
+_MD_IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_MD_LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]*\)")
+_BLANK_LINES_RE = re.compile(r"\n{3,}")
+
+
+def clean_reader_text(text: str | None, *, limit: int = 1500) -> str | None:
+    """Readable plain text out of a Jina Reader / markdown payload.
+
+    Drops the reader's metadata preamble, flattens markdown images and links
+    to their label, and trims to `limit` on a sentence boundary so a preview
+    never ends mid-word. Returns None when nothing readable survives.
+    """
+    if not text:
+        return None
+
+    body = text
+    marker = "Markdown Content:"
+    if marker in body:
+        body = body.split(marker, 1)[1]
+    else:
+        kept: list[str] = []
+        for line in body.splitlines():
+            if not kept and (not line.strip() or line.strip().startswith(_READER_PREAMBLE_KEYS)):
+                continue
+            kept.append(line)
+        body = "\n".join(kept)
+
+    body = _MD_IMAGE_LINK_RE.sub("", body)
+    body = _MD_IMAGE_RE.sub("", body)
+    body = _MD_LINK_RE.sub(r"\1", body)
+    body = _BLANK_LINES_RE.sub("\n\n", body).strip()
+    if not body:
+        return None
+
+    if len(body) <= limit:
+        return body
+    head = body[:limit]
+    cut = max(head.rfind(". "), head.rfind("\n"))
+    # Only honour the boundary if it isn't so early that we'd throw the
+    # preview away — otherwise a page with one long line loses everything.
+    return (head[: cut + 1] if cut > limit // 2 else head).strip()
+
+
 def _cfg(key: str, default: Any) -> Any:
     """Read Flask config value safely outside app context."""
     try:
@@ -131,7 +181,7 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
                         source=WEB_SOURCE_NAME,
                         external_id=_generate_external_id("web", clean_query),
                         title=title,
-                        abstract=content[:1500] if len(content) > 1500 else content,
+                        abstract=clean_reader_text(content),
                         authors=["Web Reader"],
                         url=clean_query,
                         pdf_url=None,
@@ -164,9 +214,7 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
                     source=WEB_SOURCE_NAME,
                     external_id=_generate_external_id("web", clean_query),
                     title=title,
-                    abstract=(
-                        clean_abstract[:1500] if len(clean_abstract) > 1500 else clean_abstract
-                    ),
+                    abstract=clean_reader_text(clean_abstract),
                     authors=["Web Reader"],
                     url=clean_query,
                     pdf_url=None,
@@ -193,7 +241,7 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
                         source=WEB_SOURCE_NAME,
                         external_id=_generate_external_id("web", jina_search_url),
                         title=f"Web Search: {clean_query}",
-                        abstract=content[:1500] if len(content) > 1500 else content,
+                        abstract=clean_reader_text(content),
                         authors=["Jina Search"],
                         url=jina_search_url,
                         pdf_url=None,

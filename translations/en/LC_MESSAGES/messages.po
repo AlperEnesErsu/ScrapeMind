@@ -2722,6 +2722,56 @@ msgstr "Open your read-later list"
 
 msgid "Open your academic notes"
 msgstr "Open your academic notes"
+msgid "YouTube video search and metadata"
+msgstr "YouTube video search and metadata"
+
+msgid "GitHub repository search and code trends"
+msgstr "GitHub repository search and code trends"
+
+msgid "Web Reader"
+msgstr "Web Reader"
+
+msgid "Web content and research article reader"
+msgstr "Web content and research article reader"
+
+msgid "Manual"
+msgstr "Manual"
+
+msgid "Manually added link"
+msgstr "Manually added link"
+
+msgid "Add Link"
+msgstr "Add Link"
+
+msgid "Save Link"
+msgstr "Save Link"
+
+msgid "Paste website, article or video URL (e.g. https://example.com/article)"
+msgstr "Paste website, article or video URL (e.g. https://example.com/article)"
+
+msgid "Please enter a valid URL."
+msgstr "Please enter a valid URL."
+
+msgid "URL blocked by security guard (private or loopback IP)"
+msgstr "URL blocked by security guard (private or loopback IP)"
+
+msgid "Failed to fetch web content from URL"
+msgstr "Failed to fetch web content from URL"
+
+msgid "Link added successfully."
+msgstr "Link added successfully."
+
+msgid "Link already exists in your library."
+msgstr "Link already exists in your library."
+
+msgid "Failed to process URL. Please check the URL and try again."
+msgstr "Failed to process URL. Please check the URL and try again."
+
+msgid "elle eklendi"
+msgstr "manually added"
+
+msgid "Manually added"
+msgstr "Manually added"
 
 #~ msgid "Username or Email"
 #~ msgstr "Username"
@@ -4208,54 +4258,4 @@ msgstr "Open your academic notes"
 
 #~ msgid "Add some research interests in your profile, then hit \"Scrape now\"."
 #~ msgstr "Add some research interests in your profile, then hit \"Scrape now\"."
-
-msgid "YouTube video search and metadata"
-msgstr "YouTube video search and metadata"
-
-msgid "GitHub repository search and code trends"
-msgstr "GitHub repository search and code trends"
-
-msgid "Web Reader"
-msgstr "Web Reader"
-
-msgid "Web content and research article reader"
-msgstr "Web content and research article reader"
-
-msgid "Manual"
-msgstr "Manual"
-
-msgid "Manually added link"
-msgstr "Manually added link"
-
-msgid "Add Link"
-msgstr "Add Link"
-
-msgid "Save Link"
-msgstr "Save Link"
-
-msgid "Paste website, article or video URL (e.g. https://example.com/article)"
-msgstr "Paste website, article or video URL (e.g. https://example.com/article)"
-
-msgid "Please enter a valid URL."
-msgstr "Please enter a valid URL."
-
-msgid "URL blocked by security guard (private or loopback IP)"
-msgstr "URL blocked by security guard (private or loopback IP)"
-
-msgid "Failed to fetch web content from URL"
-msgstr "Failed to fetch web content from URL"
-
-msgid "Link added successfully."
-msgstr "Link added successfully."
-
-msgid "Link already exists in your library."
-msgstr "Link already exists in your library."
-
-msgid "Failed to process URL. Please check the URL and try again."
-msgstr "Failed to process URL. Please check the URL and try again."
-
-msgid "elle eklendi"
-msgstr "manually added"
-
-
 

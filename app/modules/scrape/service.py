@@ -650,8 +650,25 @@ def add_paper_from_url(user: User, url: str) -> tuple[UserPaper, bool]:
 
     payload = replace(payloads[0], source="manual", kind="link", categories=["manual"])
 
+    # The cleaned reader text still opens on page chrome (language switchers,
+    # badges, install banners) that no regex can reliably tell from content,
+    # so ask the LLM for a real summary. Best-effort: a failure here must not
+    # cost the user the link, so we keep the cleaned text on any error.
+    if payload.abstract:
+        try:
+            from app.modules.scrape.ai_service import summarize_web_content
+
+            summary = summarize_web_content(payload.title, payload.abstract, user=user)
+            if summary:
+                payload = replace(payload, abstract=summary)
+        except Exception:  # noqa: BLE001 — summary is a nicety, the link is the point
+            logger.warning("manual_link_summary_failed", url=clean_url, user_id=user.id)
+
     paper = upsert_paper(payload)
-    link, created = link_user_paper(user, paper, matched_keyword=_("elle eklendi"))
+    # `matched_keyword` is a stored column, so a translated label would freeze
+    # the row into whichever language was active at insert time. Manually
+    # added rows are identified by `source == "manual"` and labelled at render.
+    link, created = link_user_paper(user, paper, matched_keyword=None)
     return link, created
 
 
