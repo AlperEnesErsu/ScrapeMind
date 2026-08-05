@@ -530,7 +530,14 @@ def add_link_route():
         from app.modules.scrape.service import add_paper_from_url
 
         link, created = add_paper_from_url(current_user, url)
-        log_action("add_paper_from_url", entity_type="paper", entity_id=link.paper_id)
+        # Actor passed explicitly so core's audit middleware needs no
+        # module-specific fallback (app/core never bends for app/modules).
+        log_action(
+            "add_paper_from_url",
+            entity_type="paper",
+            entity_id=link.paper_id,
+            user_id=current_user.id,
+        )
         msg = (
             _("Link added successfully.") if created else _("Link already exists in your library.")
         )
