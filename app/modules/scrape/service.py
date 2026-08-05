@@ -10,12 +10,13 @@ from __future__ import annotations
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
 
 import structlog
 from flask import current_app
+from flask_babel import gettext as _
 from sqlalchemy import desc
 
 from app.core.models.user import User
@@ -509,6 +510,41 @@ def link_user_paper(
     db.session.add(link)
     db.session.commit()
     return link, True
+
+
+def add_paper_from_url(user: User, url: str) -> tuple[UserPaper, bool]:
+    """Manually add a paper from a public web URL using net_guard + web_reach.
+    Returns (UserPaper link, created boolean). Raises ValueError on validation/net_guard error.
+    """
+    clean_url = (url or "").strip()
+    if not clean_url.startswith(("http://", "https://")):
+        raise ValueError(_("Invalid URL. Must start with http:// or https://"))
+
+    allow_private = False
+    try:
+        from flask import current_app
+
+        allow_private = bool(current_app.config.get("FEED_ALLOW_PRIVATE_HOSTS", False))
+    except Exception:  # noqa: BLE001
+        pass
+
+    from app.modules.scrape.net_guard import is_public_http_url
+
+    ok, _err = is_public_http_url(clean_url, allow_private=allow_private)
+    if not ok:
+        raise ValueError(_("URL blocked by security guard (private or loopback IP)"))
+
+    from app.modules.scrape.sources.external_sources import search_web
+
+    payloads = search_web(clean_url)
+    if not payloads:
+        raise ValueError(_("Failed to fetch web content from URL"))
+
+    payload = replace(payloads[0], source="manual", kind="link", categories=["manual"])
+
+    paper = upsert_paper(payload)
+    link, created = link_user_paper(user, paper, matched_keyword=_("elle eklendi"))
+    return link, created
 
 
 def _match_keyword(title: str, terms: list[str], alias: dict[str, str] | None = None) -> str:

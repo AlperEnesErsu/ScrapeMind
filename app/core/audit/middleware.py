@@ -21,7 +21,10 @@ def log_action(
     where flask-login's current_user is anonymous. Falls back to current_user.
     """
     if user_id is None:
-        user_id = current_user.id if current_user.is_authenticated else None
+        try:
+            user_id = current_user.id if current_user and current_user.is_authenticated else None
+        except Exception:  # noqa: BLE001
+            user_id = None
     entry = AuditLog(
         user_id=user_id,
         action=action,

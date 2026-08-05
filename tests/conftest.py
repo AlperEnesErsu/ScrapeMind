@@ -3,6 +3,8 @@ import sys
 
 # Force FLASK_ENV to testing before any imports load config
 os.environ["FLASK_ENV"] = "testing"
+if "TEST_DATABASE_URL" not in os.environ:
+    os.environ["TEST_DATABASE_URL"] = "sqlite:///:memory:"
 
 import pytest
 

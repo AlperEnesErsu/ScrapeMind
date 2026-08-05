@@ -117,6 +117,14 @@ SOURCE_META: dict[str, dict] = {
         "topics": ["general"],
         "category": "feed",
     },
+    "manual": {
+        "label": "Manual",
+        "icon": "bi-link-45deg",
+        "desc": "Manually added link",
+        "url": "",
+        "topics": ["general"],
+        "category": "feed",
+    },
 }
 for _feed in rss_source.FEEDS:
     SOURCE_META[_feed["key"]] = {

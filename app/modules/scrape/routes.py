@@ -324,6 +324,53 @@ def feed():
     )
 
 
+@scrape_bp.route("/add-link", methods=["POST"])
+@login_required
+def add_link_route():
+    """Manually add a web link to the user's library."""
+    url = request.form.get("url", "").strip()
+    if not url:
+        if request.headers.get("HX-Request"):
+            return (
+                f'<div class="alert alert-warning py-2 mb-0 small">{_("Please enter a valid URL.")}</div>',
+                400,
+            )
+        flash(_("Please enter a valid URL."), "warning")
+        return redirect(url_for("scrape.feed"))
+
+    try:
+        from app.modules.scrape.service import add_paper_from_url
+
+        link, created = add_paper_from_url(current_user, url)
+        log_action("add_paper_from_url", entity_type="paper", entity_id=link.paper_id)
+        msg = (
+            _("Link added successfully.") if created else _("Link already exists in your library.")
+        )
+        if request.headers.get("HX-Request"):
+            return render_template(
+                "scrape/_paper_card.html",
+                r=link,
+                flash_msg=msg,
+                flash_kind="success" if created else "info",
+            )
+
+        flash(msg, "success" if created else "info")
+        return redirect(url_for("scrape.feed"))
+    except ValueError as e:
+        err_msg = str(e)
+        if request.headers.get("HX-Request"):
+            return f'<div class="alert alert-danger py-2 mb-0 small">{err_msg}</div>', 400
+        flash(err_msg, "danger")
+        return redirect(url_for("scrape.feed"))
+    except Exception as e:
+        logger.error("add_link_failed", user_id=current_user.id, url=url, error=str(e))
+        err_msg = _("Failed to process URL. Please check the URL and try again.")
+        if request.headers.get("HX-Request"):
+            return f'<div class="alert alert-danger py-2 mb-0 small">{err_msg}</div>', 500
+        flash(err_msg, "danger")
+        return redirect(url_for("scrape.feed"))
+
+
 def _get_internal_similar(link, limit=4):
     """Papers already in the user's own library that resemble this one — same
     matched keyword first, then same-category as a fallback. Cheap (DB only),

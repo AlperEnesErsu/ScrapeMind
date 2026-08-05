@@ -18,12 +18,40 @@
              style="width: 280px;">
     </div>
   </form>
+  <button type="button" class="btn btn-sm btn-outline-primary ms-1" data-bs-toggle="collapse" data-bs-target="#add-link-collapse" aria-expanded="false" aria-controls="add-link-collapse">
+    <i class="bi bi-plus-circle me-1"></i>{{ _('Add Link') }}
+  </button>
   <form method="post" action="{{ url_for('scrape.run_now') }}" class="m-0">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="btn btn-sm btn-primary">
       <i class="bi bi-arrow-clockwise me-1"></i>{{ _('Scrape now') }}
     </button>
   </form>
+</div>
+
+<div class="collapse mb-3" id="add-link-collapse">
+  <div class="card card-body bg-light-subtle border">
+    <form hx-post="{{ url_for('scrape.add_link_route') }}"
+          hx-target="#feed-cards-container"
+          hx-swap="afterbegin"
+          hx-indicator="#add-link-spinner"
+          hx-target-400="#add-link-feedback"
+          hx-target-500="#add-link-feedback"
+          hx-on::after-request="if(event.detail.successful) { this.reset(); document.getElementById('add-link-feedback').innerHTML = ''; }"
+          class="row g-2 align-items-center">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col">
+        <input type="url" name="url" class="form-control form-control-sm" placeholder="{{ _('Paste website, article or video URL (e.g. https://example.com/article)') }}" required>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <span id="add-link-spinner" class="spinner-border spinner-border-sm me-1 htmx-indicator" role="status" aria-hidden="true"></span>
+          <i class="bi bi-link-45deg me-1"></i>{{ _('Save Link') }}
+        </button>
+      </div>
+    </form>
+    <div id="add-link-feedback" class="mt-2 small"></div>
+  </div>
 </div>
 
 {% if user_keywords %}
@@ -98,6 +126,7 @@
 
     <form id="bulk-actions-form" method="post" action="{{ url_for('scrape.bulk_action') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div id="feed-cards-container">
       {% if rows %}
         {% for r in rows %}
           {% include 'scrape/_paper_card.html' %}
@@ -126,6 +155,7 @@
       {% endif %}
     </div>
     {% endif %}
+      </div>
     </form>
 
     <div class="shortcuts-hint mt-4 text-center">

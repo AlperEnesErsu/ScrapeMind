@@ -4075,4 +4075,41 @@ msgstr "Web Reader"
 msgid "Web content and research article reader"
 msgstr "Web content and research article reader"
 
+msgid "Manual"
+msgstr "Manual"
+
+msgid "Manually added link"
+msgstr "Manually added link"
+
+msgid "Add Link"
+msgstr "Add Link"
+
+msgid "Save Link"
+msgstr "Save Link"
+
+msgid "Paste website, article or video URL (e.g. https://example.com/article)"
+msgstr "Paste website, article or video URL (e.g. https://example.com/article)"
+
+msgid "Please enter a valid URL."
+msgstr "Please enter a valid URL."
+
+msgid "URL blocked by security guard (private or loopback IP)"
+msgstr "URL blocked by security guard (private or loopback IP)"
+
+msgid "Failed to fetch web content from URL"
+msgstr "Failed to fetch web content from URL"
+
+msgid "Link added successfully."
+msgstr "Link added successfully."
+
+msgid "Link already exists in your library."
+msgstr "Link already exists in your library."
+
+msgid "Failed to process URL. Please check the URL and try again."
+msgstr "Failed to process URL. Please check the URL and try again."
+
+msgid "elle eklendi"
+msgstr "manually added"
+
+
 

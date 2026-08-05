@@ -4108,4 +4108,41 @@ msgstr "Web Okuyucu"
 msgid "Web content and research article reader"
 msgstr "Web içerikleri ve araştırma makalesi okuyucusu"
 
+msgid "Manual"
+msgstr "Manuel"
+
+msgid "Manually added link"
+msgstr "Elle eklenen bağlantı"
+
+msgid "Add Link"
+msgstr "Link Ekle"
+
+msgid "Save Link"
+msgstr "Linki Kaydet"
+
+msgid "Paste website, article or video URL (e.g. https://example.com/article)"
+msgstr "Web sitesi, makale veya video bağlantısı yapıştırın (örneğin https://example.com/makale)"
+
+msgid "Please enter a valid URL."
+msgstr "Lütfen geçerli bir bağlantı girin."
+
+msgid "URL blocked by security guard (private or loopback IP)"
+msgstr "Bağlantı güvenlik engeline takıldı (özel veya yerel IP adresi)"
+
+msgid "Failed to fetch web content from URL"
+msgstr "Bağlantıdan web içeriği çekilemedi"
+
+msgid "Link added successfully."
+msgstr "Bağlantı kütüphanenize başarıyla eklendi."
+
+msgid "Link already exists in your library."
+msgstr "Bu bağlantı kütüphanenizde zaten mevcut."
+
+msgid "Failed to process URL. Please check the URL and try again."
+msgstr "Bağlantı işlenemedi. Lütfen adresi kontrol edip tekrar deneyin."
+
+msgid "elle eklendi"
+msgstr "elle eklendi"
+
+
 
