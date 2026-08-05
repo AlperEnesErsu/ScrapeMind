@@ -270,10 +270,18 @@ table code {
 .source-arxiv      { background: #e6f1fb; color: #0c447c; }
 .source-semantic_scholar { background: #faece7; color: #993c1d; }
 .source-pubmed     { background: #eaf3de; color: #27500a; }
+.source-youtube_reach { background: #fdeaea; color: #8c1c1c; }
+.source-github_reach  { background: #ecedef; color: #2b3137; }
+.source-web_reach     { background: #e7f4f2; color: #12554c; }
+.source-manual        { background: #eceaf9; color: #3c2f8f; }
 
 [data-bs-theme="dark"] .source-arxiv      { background: #133655; color: #b5d4f4; }
 [data-bs-theme="dark"] .source-semantic_scholar { background: #4a1f10; color: #f5c4b3; }
 [data-bs-theme="dark"] .source-pubmed     { background: #1c3a0a; color: #c0dd97; }
+[data-bs-theme="dark"] .source-youtube_reach { background: #4d1414; color: #f6bcbc; }
+[data-bs-theme="dark"] .source-github_reach  { background: #2f3338; color: #ced3d9; }
+[data-bs-theme="dark"] .source-web_reach     { background: #10403a; color: #a9ded6; }
+[data-bs-theme="dark"] .source-manual        { background: #2a2360; color: #c7bff5; }
 
 /* RSS/industry-announcement feeds (Paper.kind == "news") share one accent —
    distinct from the academic sources above — regardless of which feed. */

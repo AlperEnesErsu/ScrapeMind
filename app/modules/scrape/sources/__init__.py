@@ -148,7 +148,10 @@ SOURCE_META: dict[str, dict] = {
         "icon": "bi-github",
         "desc": "GitHub repository search and code trends",
         "url": "https://github.com",
-        "topics": ["cs", "ai", "ml"],
+        # "general" included deliberately: without it an un-classified user
+        # (no LLM, or interests that classify as general) never gets GitHub
+        # results by default, unlike the other two reach sources.
+        "topics": ["cs", "ai", "ml", "general"],
         "category": "feed",
     },
     "web_reach": {
