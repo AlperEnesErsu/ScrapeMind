@@ -21,6 +21,7 @@ from sqlalchemy import desc
 from app.core.models.user import User
 from app.extensions import db
 from app.modules.academic.service import list_user_keywords
+from app.modules.scrape.doi import normalize_doi
 from app.modules.scrape.models import (
     Paper,
     PaperNote,
@@ -480,18 +481,93 @@ def set_user_source(user: User, source_name: str, enabled: bool) -> bool:
     return row.enabled
 
 
-def upsert_paper(payload: PaperPayload | dict) -> Paper:
-    """Insert a paper if we haven't seen it before, return the row either way."""
-    data = payload.as_dict() if isinstance(payload, PaperPayload) else dict(payload)
-    doi = data.get("doi")
-    if doi and isinstance(doi, str) and doi.strip():
-        existing_doi = Paper.query.filter(Paper.doi.ilike(doi.strip())).first()
-        if existing_doi is not None:
-            return existing_doi
+#: Fields that are safe to backfill on a matched row. Deliberately excludes
+#: `title`, `source`, `external_id`, `kind` — those identify the row (or, for
+#: title, are never blank in practice) and overwriting them on a match would
+#: make upsert_paper silently rewrite identity rather than fill gaps.
+_ENRICHABLE_FIELDS = ("abstract", "pdf_url", "url", "doi", "published_at", "categories", "authors")
 
-    existing = Paper.query.filter_by(source=data["source"], external_id=data["external_id"]).first()
+
+def _is_empty(value: object) -> bool:
+    """True for the "nothing here yet" shapes of our enrichable fields:
+    None, empty string, empty list. Deliberately NOT true for falsy-but-
+    meaningful values like 0 or False — none of the enrichable fields are
+    numeric/boolean today, but this keeps the helper honest if one ever is.
+    """
+    if value is None:
+        return True
+    if isinstance(value, (str, list, tuple)):
+        return len(value) == 0
+    return False
+
+
+def _enrich(paper: Paper, data: dict) -> bool:
+    """Fill-only merge of `data` onto an existing `paper` row.
+
+    For each enrichable field: only write the incoming value if the existing
+    field is empty AND the incoming value is not — a populated field is
+    never overwritten, even by a different-but-also-non-empty value from
+    another source. Returns whether anything actually changed, so the caller
+    can skip a no-op commit.
+    """
+    changed = False
+    for field in _ENRICHABLE_FIELDS:
+        if field not in data:
+            continue
+        incoming = data[field]
+        if _is_empty(incoming):
+            continue
+        if not _is_empty(getattr(paper, field)):
+            continue
+        setattr(paper, field, incoming)
+        changed = True
+    return changed
+
+
+def upsert_paper(payload: PaperPayload | dict) -> Paper:
+    """Insert a paper if we haven't seen it before; otherwise return the
+    existing row, enriched with anything new the payload can fill in.
+
+    Resolution order: normalized DOI, then `(source, external_id)`. The DOI
+    is normalized on write (see `doi.normalize_doi`) so the stored form is
+    always canonical and lookup is a plain `filter_by(doi=...)` rather than
+    an `ilike` scan. The earlier version stored whatever string a source
+    handed it and matched with `ilike`, which is case-insensitive but not
+    prefix-insensitive — so "https://doi.org/10.X/Y" from one source and
+    "10.X/Y" from another still created two rows.
+
+    Enrichment is fill-only (see `_enrich`): a matched row's empty fields
+    (abstract, pdf_url, url, doi, published_at, categories, authors) are
+    backfilled from the new payload, but a populated field is never
+    overwritten. This is deliberately conservative — we have no basis for
+    picking "which source is right" when both already have a value, so we
+    just keep whatever was there first.
+
+    Edge case worth documenting: if the incoming DOI matches one existing
+    row but the incoming (source, external_id) matches a *different* row
+    (e.g. a stale/wrong DOI was recorded on that second row previously), the
+    DOI match wins and is the one enriched — the other row is left
+    untouched. Merging the two rows (e.g. moving UserPaper links across) is
+    out of scope here; it would need a real migration, not an upsert.
+    """
+    data = payload.as_dict() if isinstance(payload, PaperPayload) else dict(payload)
+    if "doi" in data:
+        data["doi"] = normalize_doi(data["doi"])
+
+    existing = None
+    doi = data.get("doi")
+    if doi:
+        existing = Paper.query.filter_by(doi=doi).first()
+    if existing is None:
+        existing = Paper.query.filter_by(
+            source=data["source"], external_id=data["external_id"]
+        ).first()
+
     if existing is not None:
+        if _enrich(existing, data):
+            db.session.commit()
         return existing
+
     paper = Paper(**data)
     db.session.add(paper)
     db.session.commit()

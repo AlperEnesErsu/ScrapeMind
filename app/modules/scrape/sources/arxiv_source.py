@@ -16,6 +16,7 @@ from __future__ import annotations
 import arxiv
 import structlog
 
+from app.modules.scrape.doi import normalize_doi
 from app.modules.scrape.ratelimit import SourceThrottledError, arxiv_slot
 from app.modules.scrape.sources.payload import PaperPayload
 
@@ -70,6 +71,11 @@ def search(query: str, *, max_results: int = 25) -> list[PaperPayload]:
                 pdf_url=entry.pdf_url,
                 published_at=entry.published,
                 categories=list(entry.categories or []),
+                # Most arXiv preprints have no DOI at submission time (the
+                # SDK returns "" rather than None when absent); a journal
+                # ref eventually gets one added upstream and normalize_doi
+                # turns that "" into a clean None either way.
+                doi=normalize_doi(getattr(entry, "doi", None)),
             )
         )
     logger.info("arxiv_search_done", query=query, hits=len(out))

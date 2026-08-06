@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 import requests
 import structlog
 
+from app.modules.scrape.doi import normalize_doi
 from app.modules.scrape.ratelimit import SourceThrottledError, pubmed_slot
 from app.modules.scrape.sources.payload import PaperPayload
 
@@ -98,6 +99,14 @@ def _parse_article(pubmed_article: ET.Element) -> PaperPayload | None:
         for m in pubmed_article.findall(".//MeshHeadingList/MeshHeading")
     ]
 
+    # DOI usually lives in PubmedData/ArticleIdList (assigned by PubMed at
+    # indexing time); ELocationID on the Article itself is the
+    # publisher-supplied fallback for records indexed before that ran.
+    doi_node = pubmed_article.find('.//ArticleId[@IdType="doi"]')
+    if doi_node is None:
+        doi_node = article.find('.//ELocationID[@EIdType="doi"]')
+    doi = normalize_doi(doi_node.text if doi_node is not None else None)
+
     return PaperPayload(
         source=SOURCE_NAME,
         external_id=pmid,
@@ -108,6 +117,7 @@ def _parse_article(pubmed_article: ET.Element) -> PaperPayload | None:
         pdf_url=None,  # PubMed hosts abstracts, not PDFs
         published_at=_parse_pub_date(pubmed_article),
         categories=[m for m in mesh if m][:8],
+        doi=doi,
     )
 
 

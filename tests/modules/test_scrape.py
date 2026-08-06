@@ -391,6 +391,157 @@ def test_upsert_paper_dedupes_by_doi(db, clean):
     assert Paper.query.count() == 1
 
 
+def test_upsert_paper_dedupes_by_doi_across_three_written_forms(db, clean):
+    """The same DOI spelled three different ways — bare, doi.org URL, and
+    'doi:' scheme — across three different (source, external_id) pairs must
+    all normalize to one canonical row."""
+    p1 = upsert_paper(
+        {
+            "source": "arxiv",
+            "external_id": "2401.00099",
+            "title": "Three Forms",
+            "authors": [],
+            "categories": [],
+            "doi": "https://doi.org/10.9999/xyz",
+        }
+    )
+    p2 = upsert_paper(
+        {
+            "source": "pubmed",
+            "external_id": "38199999",
+            "title": "Three Forms (PubMed)",
+            "authors": [],
+            "categories": [],
+            "doi": "doi:10.9999/XYZ",
+        }
+    )
+    p3 = upsert_paper(
+        {
+            "source": "semantic_scholar",
+            "external_id": "abc999",
+            "title": "Three Forms (S2)",
+            "authors": [],
+            "categories": [],
+            "doi": "10.9999/xyz",
+        }
+    )
+    assert p1.id == p2.id == p3.id
+    assert Paper.query.count() == 1
+    assert p1.doi == "10.9999/xyz"
+
+
+def test_upsert_paper_unparseable_doi_does_not_collapse_distinct_papers(db, clean):
+    """An unparseable DOI is stored as None, not as the literal garbage
+    string — two unrelated papers that both fail to parse a DOI must NOT be
+    treated as the same row just because they share a None doi."""
+    p1 = upsert_paper(
+        {
+            "source": "arxiv",
+            "external_id": "2401.00100",
+            "title": "First",
+            "authors": [],
+            "categories": [],
+            "doi": "n/a",
+        }
+    )
+    p2 = upsert_paper(
+        {
+            "source": "pubmed",
+            "external_id": "38100000",
+            "title": "Second",
+            "authors": [],
+            "categories": [],
+            "doi": "n/a",
+        }
+    )
+    assert p1.doi is None
+    assert p2.doi is None
+    assert p1.id != p2.id
+    assert Paper.query.count() == 2
+
+
+def test_upsert_paper_enriches_empty_abstract(db, clean):
+    """An empty abstract on the existing row gets filled by a second payload
+    (a different source, same paper via DOI) that carries one."""
+    p1 = upsert_paper(
+        {
+            "source": "arxiv",
+            "external_id": "2401.00200",
+            "title": "Enrich Me",
+            "abstract": None,
+            "authors": [],
+            "categories": [],
+            "doi": "10.5000/enrich",
+        }
+    )
+    assert p1.abstract is None
+
+    p2 = upsert_paper(
+        {
+            "source": "semantic_scholar",
+            "external_id": "enrich-s2",
+            "title": "Enrich Me (S2)",
+            "abstract": "Now with an abstract.",
+            "authors": [],
+            "categories": [],
+            "doi": "10.5000/enrich",
+        }
+    )
+    assert p1.id == p2.id
+    assert Paper.query.count() == 1
+    assert Paper.query.get(p1.id).abstract == "Now with an abstract."
+
+
+def test_upsert_paper_does_not_overwrite_populated_abstract(db, clean):
+    """A populated abstract is never overwritten by a different incoming
+    abstract, even on a DOI match."""
+    p1 = upsert_paper(
+        {
+            "source": "arxiv",
+            "external_id": "2401.00201",
+            "title": "Already Has One",
+            "abstract": "Original abstract.",
+            "authors": [],
+            "categories": [],
+            "doi": "10.5000/keep",
+        }
+    )
+    p2 = upsert_paper(
+        {
+            "source": "semantic_scholar",
+            "external_id": "keep-s2",
+            "title": "Already Has One (S2)",
+            "abstract": "A different abstract that should be ignored.",
+            "authors": [],
+            "categories": [],
+            "doi": "10.5000/keep",
+        }
+    )
+    assert p1.id == p2.id
+    assert Paper.query.get(p1.id).abstract == "Original abstract."
+
+
+def test_upsert_paper_no_enrichment_needed_is_a_clean_no_op(db, clean):
+    """Upserting the exact same payload twice must not spuriously touch the
+    row: nothing is empty on the existing row, so _enrich finds nothing to
+    fill and the second call must not bump updated_at."""
+    payload = {
+        "source": "arxiv",
+        "external_id": "2401.00202",
+        "title": "Stable",
+        "abstract": "Stable abstract.",
+        "authors": ["A. One"],
+        "categories": ["cs.AI"],
+        "doi": "10.5000/stable",
+    }
+    p1 = upsert_paper(payload)
+    first_updated_at = p1.updated_at
+    p2 = upsert_paper(dict(payload))
+    assert p1.id == p2.id
+    assert Paper.query.count() == 1
+    assert Paper.query.get(p1.id).updated_at == first_updated_at
+
+
 def test_add_user_feed_stores_etag_and_last_modified(db, clean, monkeypatch):
     from app.modules.scrape.service import add_user_feed
     from app.modules.scrape.sources.rss_source import FeedFetchResult

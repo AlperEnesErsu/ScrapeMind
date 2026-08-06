@@ -22,8 +22,12 @@ class Paper(BaseModel):
     # Authors stored as JSON list of strings — simple, queryable, and good
     # enough until we want author-as-entity work in Phase 3.
     authors = db.Column(db.JSON, nullable=True)
-    url = db.Column(db.String(512), nullable=True)
-    pdf_url = db.Column(db.String(512), nullable=True)
+    # Text, not String(512): OpenAlex/Crossref URLs (redirect chains, long
+    # DOI-resolver query strings) routinely overflow a 512-char varchar —
+    # same overflow class external_id was widened for (see
+    # e5f1a2b3c4d6_widen_paper_external_id).
+    url = db.Column(db.Text, nullable=True)
+    pdf_url = db.Column(db.Text, nullable=True)
     published_at = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
     categories = db.Column(db.JSON, nullable=True)  # arXiv primary + cross-list categories
     doi = db.Column(db.String(128), nullable=True, index=True)

@@ -23,7 +23,9 @@ _REACH_KEYS = {"youtube_reach", "github_reach", "web_reach"}
 
 
 def test_registry_has_academic_adapters_and_feeds():
-    assert {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS | _REACH_KEYS == set(AVAILABLE_SOURCES)
+    assert {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS | _REACH_KEYS == set(
+        AVAILABLE_SOURCES
+    )
 
 
 def test_every_feed_key_has_source_meta():
@@ -34,12 +36,79 @@ def test_every_feed_key_has_source_meta():
 
 def test_enabled_sources_defaults_to_all(monkeypatch):
     monkeypatch.delenv("SCRAPE_SOURCES", raising=False)
-    assert set(enabled_sources()) == {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS | _REACH_KEYS
+    assert (
+        set(enabled_sources()) == {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS | _REACH_KEYS
+    )
 
 
 def test_enabled_sources_filters_and_ignores_unknown(monkeypatch):
     monkeypatch.setenv("SCRAPE_SOURCES", "arxiv, nope, PubMed")
     assert set(enabled_sources()) == {"arxiv", "pubmed"}
+
+
+# ----------------------------------------------------------------------------
+# arXiv — SDK-based, not requests-based, so faked at the arxiv.Client/Search
+# level rather than through a monkeypatched requests.get.
+# ----------------------------------------------------------------------------
+
+
+class _FakeAuthor:
+    def __init__(self, name):
+        self.name = name
+
+
+class _FakeArxivResult:
+    def __init__(self, *, doi=""):
+        self.entry_id = "http://arxiv.org/abs/2401.12345v2"
+        self.title = "A Paper\nTitle"
+        self.summary = "  An abstract.  "
+        self.authors = [_FakeAuthor("A. One")]
+        self.pdf_url = "http://arxiv.org/pdf/2401.12345v2"
+        self.published = None
+        self.categories = ["cs.LG"]
+        self.doi = doi
+
+
+class _FakeArxivClient:
+    """Stand-in for arxiv.Client — ignores construction args, `results()`
+    just replays whatever was queued via `queued`."""
+
+    queued: list = []
+
+    def __init__(self, *a, **k):
+        pass
+
+    def results(self, search):  # noqa: ARG002
+        return list(_FakeArxivClient.queued)
+
+
+def _fake_arxiv(monkeypatch, results):
+    """Point arxiv_source at a fake arxiv.Client/Search pair and make the
+    rate limiter a no-op, matching the other adapters' rate-limit tests."""
+    monkeypatch.setattr(ax, "arxiv_slot", lambda: True)
+    _FakeArxivClient.queued = results
+    monkeypatch.setattr(ax.arxiv, "Client", _FakeArxivClient)
+    monkeypatch.setattr(ax.arxiv, "Search", lambda **kwargs: kwargs)
+
+
+def test_arxiv_parses_payload_and_normalizes_doi(monkeypatch):
+    _fake_arxiv(monkeypatch, [_FakeArxivResult(doi="https://doi.org/10.4321/XYZ")])
+    out = ax.search("transformers", max_results=5)
+    assert len(out) == 1
+    p = out[0]
+    assert p.source == "arxiv"
+    assert p.external_id == "2401.12345v2"
+    assert p.title == "A Paper Title"
+    assert p.abstract == "An abstract."
+    assert p.doi == "10.4321/xyz"
+
+
+def test_arxiv_blank_doi_normalizes_to_none(monkeypatch):
+    """The SDK returns "" (not None) when a preprint has no DOI yet —
+    normalize_doi must turn that into a clean None, not store the blank."""
+    _fake_arxiv(monkeypatch, [_FakeArxivResult(doi="")])
+    out = ax.search("transformers", max_results=5)
+    assert out[0].doi is None
 
 
 # ----------------------------------------------------------------------------
@@ -56,6 +125,7 @@ _SS_ITEM = {
     "publicationDate": "2017-06-12",
     "year": 2017,
     "fieldsOfStudy": ["Computer Science"],
+    "externalIds": {"DOI": "https://doi.org/10.5555/ATTN"},
 }
 
 
@@ -84,6 +154,8 @@ def test_semantic_scholar_parses_payload(monkeypatch):
     assert p.pdf_url == "https://example.com/paper.pdf"
     assert p.published_at.year == 2017 and p.published_at.month == 6
     assert p.categories == ["Computer Science"]
+    # externalIds.DOI comes back as a doi.org URL; normalized on the way in.
+    assert p.doi == "10.5555/attn"
 
 
 def test_semantic_scholar_date_falls_back_to_year(monkeypatch):
@@ -193,6 +265,26 @@ _PUBMED_XML = b"""<?xml version="1.0" ?>
         <MeshHeading><DescriptorName>Gene Editing</DescriptorName></MeshHeading>
       </MeshHeadingList>
     </MedlineCitation>
+    <PubmedData>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">12345678</ArticleId>
+        <ArticleId IdType="doi">10.1234/CRISPR.2026.001</ArticleId>
+      </ArticleIdList>
+    </PubmedData>
+  </PubmedArticle>
+</PubmedArticleSet>
+"""
+
+_PUBMED_XML_ELOCATION_DOI = b"""<?xml version="1.0" ?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation>
+      <PMID Version="1">99999999</PMID>
+      <Article>
+        <ELocationID EIdType="doi">10.9876/fallback</ELocationID>
+        <ArticleTitle>A Fallback DOI Case.</ArticleTitle>
+      </Article>
+    </MedlineCitation>
   </PubmedArticle>
 </PubmedArticleSet>
 """
@@ -219,6 +311,23 @@ def test_pubmed_parses_payload(monkeypatch):
     assert p.pdf_url is None
     assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2026, 2, 3)
     assert p.categories == ["Gene Editing"]
+    assert p.doi == "10.1234/crispr.2026.001"
+
+
+def test_pubmed_falls_back_to_elocation_doi(monkeypatch):
+    """When PubmedData/ArticleIdList has no doi-typed entry (records indexed
+    before PubMed backfilled it), the publisher-supplied ELocationID on the
+    Article itself is used instead."""
+    responses = iter(
+        [
+            _fake_response(json_data={"esearchresult": {"idlist": ["99999999"]}}),
+            _fake_response(content=_PUBMED_XML_ELOCATION_DOI),
+        ]
+    )
+    monkeypatch.setattr(pm.requests, "get", lambda *a, **k: next(responses))
+    out = pm.search("crispr", max_results=5)
+    assert len(out) == 1
+    assert out[0].doi == "10.9876/fallback"
 
 
 def test_pubmed_empty_idlist_short_circuits(monkeypatch):
