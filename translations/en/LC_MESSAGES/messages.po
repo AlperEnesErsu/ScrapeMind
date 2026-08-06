@@ -2633,6 +2633,54 @@ msgstr "Channel added."
 msgid "Could not find that YouTube channel — check the link and try again."
 msgstr "Could not find that YouTube channel — check the link and try again."
 
+msgid "AI summary"
+msgstr "AI summary"
+
+msgid "AI-generated summary of the video transcript"
+msgstr "AI-generated summary of the video transcript"
+
+msgid "Video summary"
+msgstr "Video summary"
+
+msgid "Highlights"
+msgstr "Highlights"
+
+#, python-format
+msgid "Based on a %(n)s-character transcript"
+msgstr "Based on a %(n)s-character transcript"
+
+msgid "Regenerate summary"
+msgstr "Regenerate summary"
+
+msgid "No transcript available"
+msgstr "No transcript available"
+
+msgid ""
+"This video has no captions we could read (auto-generated or manual), so "
+"no summary could be produced."
+msgstr ""
+"This video has no captions we could read (auto-generated or manual), so "
+"no summary could be produced."
+
+msgid "Try again"
+msgstr "Try again"
+
+msgid "Fetching transcript and summarizing…"
+msgstr "Fetching transcript and summarizing…"
+
+msgid "Summarize this video"
+msgstr "Summarize this video"
+
+msgid ""
+"Fetch the transcript and generate a short summary plus highlights, in "
+"Turkish. Cached — runs only on demand."
+msgstr ""
+"Fetch the transcript and generate a short summary plus highlights, in "
+"Turkish. Cached — runs only on demand."
+
+msgid "Summarize transcript"
+msgstr "Summarize transcript"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

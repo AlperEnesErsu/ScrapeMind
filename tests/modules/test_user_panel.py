@@ -907,3 +907,244 @@ def test_channel_add_rejects_over_the_cap(auth_client, clean_papers, monkeypatch
     assert r.status_code == 200
     # Turkish translation of "Channel limit reached. Remove one before adding another."
     assert "sınırına ulaştın" in r.get_data(as_text=True)
+
+
+# --------------------------------------------------------------------------
+# Video transcript summaries — card TL;DR, detail panel, generation route
+# --------------------------------------------------------------------------
+
+
+def _make_video_paper(
+    ext_id: str = "yt-000001", *, title: str = "A Great Conference Talk"
+) -> Paper:
+    paper = Paper(
+        source="youtube_channel",
+        external_id=ext_id,
+        title=title,
+        abstract="Video description provided by the channel.",
+        authors=["Some Channel"],
+        url=f"https://www.youtube.com/watch?v={ext_id}",
+        pdf_url=None,
+        published_at=datetime(2026, 1, 15, tzinfo=UTC),
+        categories=["video"],
+        kind="video",
+    )
+    _db.session.add(paper)
+    _db.session.commit()
+    return paper
+
+
+def test_detail_page_shows_video_summary_panel_for_video_kind(auth_client, clean_papers):
+    client, uid = auth_client
+    paper = _make_video_paper()
+    link = _link(uid, paper)
+    r = client.get(f"/papers/{link.id}?mode=ai")
+    assert r.status_code == 200
+    assert 'id="video-summary-panel"' in r.get_data(as_text=True)
+
+
+def test_detail_page_hides_video_summary_panel_for_normal_paper(auth_client, clean_papers):
+    client, uid = auth_client
+    paper = _make_paper()
+    link = _link(uid, paper)
+    r = client.get(f"/papers/{link.id}?mode=ai")
+    assert r.status_code == 200
+    assert 'id="video-summary-panel"' not in r.get_data(as_text=True)
+
+
+def test_card_renders_tldr_and_badge_when_video_summary_exists(auth_client, clean_papers):
+    """The card must show the VideoSummary's tldr (with an AI badge), not
+    the raw video description, once a summary has been generated."""
+    client, uid = auth_client
+    paper = _make_video_paper()
+    _link(uid, paper)
+
+    from app.modules.scrape.models import VideoSummary
+
+    _db.session.add(VideoSummary(paper_id=paper.id, tldr="Kısa ve öz bir video özeti."))
+    _db.session.commit()
+
+    r = client.get("/papers/")
+    body = r.get_data(as_text=True)
+    assert "Kısa ve öz bir video özeti." in body
+    assert "Video description provided by the channel." not in body
+    # Turkish translation of "AI summary" (BABEL_DEFAULT_LOCALE=tr in tests)
+    assert "Yapay zeka özeti" in body
+
+
+def test_card_renders_plain_abstract_when_no_video_summary(auth_client, clean_papers):
+    """No VideoSummary row yet → the card falls back to the raw description,
+    same as any other paper."""
+    client, uid = auth_client
+    paper = _make_video_paper()
+    _link(uid, paper)
+
+    r = client.get("/papers/")
+    body = r.get_data(as_text=True)
+    assert "Video description provided by the channel." in body
+    assert "Yapay zeka özeti" not in body
+
+
+def test_video_summary_route_renders_generated_summary(auth_client, clean_papers, monkeypatch):
+    client, uid = auth_client
+    paper = _make_video_paper()
+    link = _link(uid, paper)
+
+    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(
+        "app.modules.scrape.sources.youtube_channel_source.fetch_transcript",
+        lambda video_id, **kw: "a raw transcript",
+    )
+
+    from app.modules.scrape.models import VideoSummary
+
+    def _fake_generate(paper, transcript, **kw):
+        s = VideoSummary(
+            paper_id=paper.id,
+            tldr="Üretilen sahte özet",
+            highlights=["önemli nokta"],
+            topics=["ai"],
+            transcript_chars=len(transcript or ""),
+            model_version="test-model",
+        )
+        _db.session.add(s)
+        _db.session.commit()
+        return s
+
+    monkeypatch.setattr("app.modules.scrape.ai_service.generate_video_summary", _fake_generate)
+
+    r = client.post(f"/papers/{link.id}/video-summary", headers={"HX-Request": "true"})
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "Üretilen sahte özet" in body
+
+
+def test_video_summary_route_no_transcript_state(auth_client, clean_papers, monkeypatch):
+    """fetch_transcript returning None (no captions) must render the distinct
+    'no transcript' state, not crash, and not silently look like the
+    'never tried' empty state."""
+    client, uid = auth_client
+    paper = _make_video_paper()
+    link = _link(uid, paper)
+
+    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(
+        "app.modules.scrape.sources.youtube_channel_source.fetch_transcript",
+        lambda video_id, **kw: None,
+    )
+    monkeypatch.setattr(
+        "app.modules.scrape.ai_service.generate_video_summary",
+        lambda paper, transcript, **kw: None,
+    )
+
+    r = client.post(f"/papers/{link.id}/video-summary", headers={"HX-Request": "true"})
+    assert r.status_code == 200
+    # Turkish translation of "No transcript available"
+    assert "Transkript bulunamadı" in r.get_data(as_text=True)
+
+
+def test_video_summary_route_ai_disabled_skips_transcript_fetch(
+    auth_client, clean_papers, monkeypatch
+):
+    """AI disabled must short-circuit before ever shelling out to yt-dlp —
+    fetch_transcript spawns a subprocess and must not run for nothing."""
+    client, uid = auth_client
+    paper = _make_video_paper()
+    link = _link(uid, paper)
+
+    monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda user=None: False)
+
+    def _boom(*a, **k):
+        raise AssertionError("must not shell out to yt-dlp when AI is disabled")
+
+    monkeypatch.setattr("app.modules.scrape.sources.youtube_channel_source.fetch_transcript", _boom)
+
+    r = client.post(f"/papers/{link.id}/video-summary", headers={"HX-Request": "true"})
+    assert r.status_code == 200
+    # Turkish translation of "AI is not configured"
+    assert "AI yapılandırılmadı" in r.get_data(as_text=True)
+
+
+def test_video_summary_route_ownership_guard(auth_client, clean_papers, db):
+    """A user cannot POST to someone else's paper — mirrors the 404 guard
+    every other /papers/<id>/... route already enforces."""
+    from app.core.auth.strategies.local import LocalAuthStrategy
+    from app.core.models.user import User
+
+    client, uid = auth_client
+    paper = _make_video_paper()
+    link = _link(uid, paper)
+
+    db.session.query(User).filter_by(username="video_summary_other").delete()
+    db.session.commit()
+    other = User(
+        username="video_summary_other",
+        email="video_summary_other@example.test",
+        full_name="Other User",
+        password_hash=LocalAuthStrategy.hash_password("x12345678"),
+        is_active=True,
+    )
+    db.session.add(other)
+    db.session.commit()
+
+    # Same test client, switched to the second user's session — matches the
+    # pattern in tests/modules/test_library_export.py's ownership check.
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(other.id)
+        sess["_fresh"] = True
+
+    r = client.post(f"/papers/{link.id}/video-summary", headers={"HX-Request": "true"})
+    assert r.status_code == 404
+
+    db.session.query(User).filter_by(username="video_summary_other").delete()
+    db.session.commit()
+
+
+def _count_queries(fn):
+    """Count SQL statements executed by `fn()` via a `before_cursor_execute`
+    listener on the app's engine — the suite has no existing query-counting
+    helper, so this is deliberately minimal: attach, run, detach, return the
+    tally. Good enough to catch an N+1 without pulling in a profiling lib."""
+    from sqlalchemy import event
+
+    count = 0
+
+    def _listener(*_args, **_kwargs):
+        nonlocal count
+        count += 1
+
+    event.listen(_db.engine, "before_cursor_execute", _listener)
+    try:
+        fn()
+    finally:
+        event.remove(_db.engine, "before_cursor_execute", _listener)
+    return count
+
+
+def test_feed_video_summary_query_count_does_not_scale_with_card_count(auth_client, clean_papers):
+    """`_paper_card.html` reads `r.paper.video_summary` per card. Without the
+    joinedload added to `list_user_papers`, that's one extra SELECT per row
+    (N+1) — this compares the query count for a small feed against a larger
+    one and asserts they're equal, which an N+1 would fail (the second count
+    would grow with the row count)."""
+    client, uid = auth_client
+
+    from app.modules.scrape.models import VideoSummary
+
+    def _add_video_papers(n, offset):
+        for i in range(offset, offset + n):
+            p = _make_video_paper(f"yt-{i:06d}", title=f"Video number {i}")
+            _link(uid, p)
+            _db.session.add(VideoSummary(paper_id=p.id, tldr=f"Özet {i}"))
+        _db.session.commit()
+
+    _add_video_papers(2, offset=0)
+    small_count = _count_queries(lambda: client.get("/papers/"))
+
+    _add_video_papers(6, offset=2)
+    large_count = _count_queries(lambda: client.get("/papers/"))
+
+    assert small_count == large_count, (
+        f"query count grew with row count ({small_count} -> {large_count}) — "
+        "looks like an N+1 on Paper.video_summary"
+    )

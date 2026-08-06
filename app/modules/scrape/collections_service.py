@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from app.core.models.user import User
 from app.extensions import db
-from app.modules.scrape.models import Collection, UserPaper
+from app.modules.scrape.models import Collection, Paper, UserPaper, collection_papers
 
 
 def list_collections(user: User) -> list[Collection]:
@@ -22,6 +22,25 @@ def list_collections(user: User) -> list[Collection]:
 def get_collection(user: User, collection_id: int) -> Collection | None:
     """A collection owned by this user, or None (miss or someone else's)."""
     return Collection.query.filter_by(id=collection_id, user_id=user.id, deleted_at=None).first()
+
+
+def list_papers_for_display(coll: Collection) -> list[UserPaper]:
+    """`coll.papers`, but with `Paper.video_summary` eager-loaded for
+    scrape/_paper_card.html — the plain `Collection.papers` relationship
+    (lazy="select") would otherwise fire one extra SELECT per row the
+    template renders (N+1) checking `r.paper.video_summary`. Collections are
+    user-curated folders, so this is a re-query rather than reusing the
+    relationship's own lazy load, but it's still a single extra query, not
+    one per paper."""
+    from sqlalchemy.orm import joinedload
+
+    return (
+        UserPaper.query.join(collection_papers, collection_papers.c.user_paper_id == UserPaper.id)
+        .filter(collection_papers.c.collection_id == coll.id)
+        .options(joinedload(UserPaper.paper).joinedload(Paper.video_summary))
+        .order_by(db.desc(UserPaper.created_at))
+        .all()
+    )
 
 
 def create_collection(user: User, name: str, description: str | None = None) -> tuple:

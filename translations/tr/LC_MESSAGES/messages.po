@@ -2648,6 +2648,54 @@ msgstr "Kanal eklendi."
 msgid "Could not find that YouTube channel — check the link and try again."
 msgstr "Bu YouTube kanalı bulunamadı — bağlantıyı kontrol edip tekrar deneyin."
 
+msgid "AI summary"
+msgstr "Yapay zeka özeti"
+
+msgid "AI-generated summary of the video transcript"
+msgstr "Video transkriptinin yapay zeka tarafından oluşturulan özeti"
+
+msgid "Video summary"
+msgstr "Video özeti"
+
+msgid "Highlights"
+msgstr "Öne çıkanlar"
+
+#, python-format
+msgid "Based on a %(n)s-character transcript"
+msgstr "%(n)s karakterlik transkriptten üretildi"
+
+msgid "Regenerate summary"
+msgstr "Özeti yeniden oluştur"
+
+msgid "No transcript available"
+msgstr "Transkript bulunamadı"
+
+msgid ""
+"This video has no captions we could read (auto-generated or manual), so "
+"no summary could be produced."
+msgstr ""
+"Bu videoda okuyabildiğimiz altyazı yok (otomatik veya elle eklenmiş), bu "
+"yüzden özet oluşturulamadı."
+
+msgid "Try again"
+msgstr "Tekrar dene"
+
+msgid "Fetching transcript and summarizing…"
+msgstr "Transkript alınıyor ve özetleniyor…"
+
+msgid "Summarize this video"
+msgstr "Bu videoyu özetle"
+
+msgid ""
+"Fetch the transcript and generate a short summary plus highlights, in "
+"Turkish. Cached — runs only on demand."
+msgstr ""
+"Transkripti al ve kısa bir özet ile öne çıkanları Türkçe olarak oluştur. "
+"Önbelleğe alınır — yalnızca istek üzerine çalışır."
+
+msgid "Summarize transcript"
+msgstr "Transkripti özetle"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

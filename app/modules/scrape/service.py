@@ -779,9 +779,20 @@ def list_user_papers(
     paper's title, abstract, or matched keyword. Trimmed; empty == no
     filter.
     """
-    from sqlalchemy.orm import selectinload
+    from sqlalchemy.orm import joinedload, selectinload
 
-    query = _user_papers_query(user, view).join(Paper).options(selectinload(UserPaper.notes))
+    query = (
+        _user_papers_query(user, view)
+        .join(Paper)
+        .options(
+            selectinload(UserPaper.notes),
+            # `UserPaper.paper` is already `lazy="joined"` on the model, but
+            # `Paper.video_summary` (uselist=False) is not — without this,
+            # _paper_card.html's `r.paper.video_summary` check fires one
+            # extra SELECT per row (N+1) across the feed's up-to-100 cards.
+            joinedload(UserPaper.paper).joinedload(Paper.video_summary),
+        )
+    )
     q = (q or "").strip()
     if q:
         like = f"%{q.lower()}%"
@@ -1327,12 +1338,17 @@ def search_user_papers_query(
     user and hides dismissed papers — search is over the live library. All
     filters are ANDed; each is skipped when empty.
     """
-    from sqlalchemy.orm import selectinload
+    from sqlalchemy.orm import joinedload, selectinload
 
     query = (
         UserPaper.query.filter(UserPaper.user_id == user.id, UserPaper.dismissed_at.is_(None))
         .join(Paper)
-        .options(selectinload(UserPaper.notes))
+        .options(
+            selectinload(UserPaper.notes),
+            # Same N+1 guard as list_user_papers — this feeds
+            # scrape/_paper_card.html via library/search.html too.
+            joinedload(UserPaper.paper).joinedload(Paper.video_summary),
+        )
     )
 
     q = (q or "").strip()

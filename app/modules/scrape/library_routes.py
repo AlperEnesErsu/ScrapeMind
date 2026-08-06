@@ -277,7 +277,12 @@ def create_collection():
 @login_required
 def collection_detail(collection_id: int):
     coll = _get_own_collection_or_404(collection_id)
-    return render_template("library/collection_detail.html", collection=coll, rows=coll.papers)
+    # cs.list_papers_for_display (not the bare `coll.papers` relationship)
+    # eager-loads Paper.video_summary — this page renders scrape/_paper_card.html
+    # for every row, and that N+1 would otherwise be one query per card.
+    return render_template(
+        "library/collection_detail.html", collection=coll, rows=cs.list_papers_for_display(coll)
+    )
 
 
 @library_bp.route("/collections/<int:collection_id>/rename", methods=["POST"])

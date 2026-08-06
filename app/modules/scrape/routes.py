@@ -492,7 +492,12 @@ def detail(user_paper_id: int):
     to know about ai_service — anything missing just renders the "not yet"
     state plus a "Generate" button that hits the HTMX trigger endpoint.
     """
-    from app.modules.scrape.ai_service import get_analysis, get_translation, is_ai_enabled
+    from app.modules.scrape.ai_service import (
+        get_analysis,
+        get_translation,
+        get_video_summary,
+        is_ai_enabled,
+    )
 
     link = get_user_paper(current_user, user_paper_id)
     if link is None:
@@ -522,6 +527,14 @@ def detail(user_paper_id: int):
         ai_enabled=is_ai_enabled(current_user),
         translation=get_translation(link.paper) if mode == "tr" else None,
         analysis=get_analysis(link.paper) if mode == "ai" else None,
+        # Cache-only lookup — a GET never attempts generation, so there is no
+        # "no transcript" signal here, only "cached" vs "not generated yet".
+        # `no_transcript` (the route below sets it) is a transient result of
+        # a POST attempt, not persisted state, so it's always False on load.
+        summary=(
+            get_video_summary(link.paper) if mode == "ai" and link.paper.kind == "video" else None
+        ),
+        no_transcript=False,
         chat_messages=chat_messages,
     )
 
@@ -628,6 +641,71 @@ def generate_analysis_route(user_paper_id: int):
         changes={"force": force, "ok": analysis is not None},
     )
     return render_template("scrape/_ai_analysis.html", r=link, analysis=analysis)
+
+
+@scrape_bp.route("/<int:user_paper_id>/video-summary", methods=["POST"])
+@login_required
+def generate_video_summary_route(user_paper_id: int):
+    """HTMX: fetch this video's transcript (yt-dlp subprocess) and summarize
+    it via the resolved LLM. Swaps the video-summary panel with the result.
+    `?force=1` re-fetches the transcript and re-runs the cache.
+
+    Cost/latency note: unlike generate_analysis_route (one LLM call),
+    fetch_transcript shells out to yt-dlp (`_YTDLP_TIMEOUT = 30`s in
+    youtube_channel_source.py) *before* the LLM call, both blocking this web
+    worker synchronously — a request here can take ~10-30s longer than the
+    plain analysis route. That's the same "no Celery hop for a single-paper,
+    user-triggered action" trade-off the analysis route already accepts, just
+    a slower instance of it; the template's hx-disabled-elt + hx-indicator
+    are what keep a user from firing a second yt-dlp subprocess by
+    double-clicking while the first is still running.
+    """
+    from app.modules.scrape.ai_service import (
+        generate_video_summary,
+        get_video_summary,
+        is_ai_enabled,
+    )
+    from app.modules.scrape.sources.youtube_channel_source import fetch_transcript
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+    if not is_ai_enabled(current_user):
+        return render_template("scrape/_ai_disabled.html", kind="video_summary")
+
+    force = request.args.get("force") == "1"
+    if not force:
+        cached = get_video_summary(link.paper)
+        if cached is not None:
+            # Cache hit — never shell out to yt-dlp just to throw the
+            # transcript away.
+            return render_template(
+                "scrape/_video_summary.html",
+                r=link,
+                summary=cached,
+                no_transcript=False,
+                ai_enabled=True,
+            )
+
+    transcript = fetch_transcript(link.paper.external_id)
+    summary = generate_video_summary(link.paper, transcript, user=current_user)
+    # No captions vs. a generation failure both come back as None from
+    # generate_video_summary — distinguish them so the template can tell the
+    # user "this video has no captions" instead of a generic retry prompt.
+    no_transcript = summary is None and not transcript
+    log_action(
+        "paper.video_summary_generated",
+        entity_type="paper",
+        entity_id=str(link.paper.id),
+        changes={"force": force, "ok": summary is not None, "no_transcript": no_transcript},
+    )
+    return render_template(
+        "scrape/_video_summary.html",
+        r=link,
+        summary=summary,
+        no_transcript=no_transcript,
+        ai_enabled=True,
+    )
 
 
 @scrape_bp.route("/<int:user_paper_id>/translate", methods=["POST"])

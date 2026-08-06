@@ -47,7 +47,23 @@
     {% endif %}
   </div>
 
-  {% if r.paper.abstract %}
+  {% if r.paper.kind == 'video' and r.paper.video_summary and r.paper.video_summary.tldr %}
+  {# AI-generated TL;DR of the transcript, shown instead of the raw
+     description so the card never mixes an LLM summary into what looks
+     like the video's own text — the badge makes that explicit. #}
+  <span class="badge bg-primary-subtle text-primary-emphasis d-inline-flex align-items-center gap-1 mb-1"
+        title="{{ _('AI-generated summary of the video transcript') }}">
+    <i class="bi bi-stars"></i>{{ _('AI summary') }}
+  </span>
+  <p class="paper-card__abstract small text-muted mb-1 text-truncate-3" id="abstract-{{ r.id }}">{{ r.paper.video_summary.tldr }}</p>
+  {% if (r.paper.video_summary.tldr | length) > 200 %}
+    <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-primary small mb-2"
+            style="font-size: 0.75rem;"
+            onclick="toggleAbstract('abstract-{{ r.id }}', this)">
+      {{ _('Show more') }}
+    </button>
+  {% endif %}
+  {% elif r.paper.abstract %}
   <p class="paper-card__abstract small text-muted mb-1 text-truncate-3" id="abstract-{{ r.id }}">{{ r.paper.abstract }}</p>
   {% if (r.paper.abstract | length) > 200 %}
     <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-primary small mb-2"
