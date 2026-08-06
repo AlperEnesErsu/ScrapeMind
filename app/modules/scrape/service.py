@@ -299,7 +299,7 @@ def last_scan_run(
 
 #: Rough per-source cost used only until a user has a real run to measure.
 #: Self-correcting: after the first scan we use that user's own median.
-_COST_SECONDS = {"arxiv": 8.0, "semantic_scholar": 1.5, "pubmed": 3.0}
+_COST_SECONDS = {"arxiv": 8.0, "semantic_scholar": 1.5, "pubmed": 3.0, "openalex": 2.0}
 _COST_PER_FEED = 1.5
 _COST_LLM = 15.0
 

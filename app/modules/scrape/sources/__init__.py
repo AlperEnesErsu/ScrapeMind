@@ -22,6 +22,7 @@ import structlog
 from app.modules.scrape.sources import (
     agent_reach_source,
     arxiv_source,
+    openalex_source,
     pubmed_source,
     rss_source,
     semantic_scholar_source,
@@ -33,6 +34,7 @@ AVAILABLE_SOURCES: dict[str, Any] = {
     arxiv_source.SOURCE_NAME: arxiv_source,
     semantic_scholar_source.SOURCE_NAME: semantic_scholar_source,
     pubmed_source.SOURCE_NAME: pubmed_source,
+    openalex_source.SOURCE_NAME: openalex_source,
     agent_reach_source.YOUTUBE_SOURCE_NAME: agent_reach_source.youtube_adapter,
     agent_reach_source.GITHUB_SOURCE_NAME: agent_reach_source.github_adapter,
     agent_reach_source.WEB_SOURCE_NAME: agent_reach_source.web_adapter,
@@ -93,6 +95,24 @@ SOURCE_META: dict[str, dict] = {
         "topics": ["biomed"],
         "category": "academic",
     },
+    "openalex": {
+        "label": "OpenAlex",
+        "icon": "bi-globe-americas",
+        "desc": "Open catalog of scholarly works across every field",
+        "url": "https://openalex.org",
+        "topics": [
+            "ai",
+            "ml",
+            "cs",
+            "physics",
+            "math",
+            "biomed",
+            "social",
+            "humanities",
+            "general",
+        ],
+        "category": "academic",
+    },
     "youtube_reach": {
         "label": "YouTube Videos",
         "icon": "bi-youtube",
@@ -128,8 +148,9 @@ for _feed in rss_source.FEEDS:
         "category": "feed",
     }
 
-_DEFAULT = "arxiv,semantic_scholar,pubmed,youtube_reach,github_reach,web_reach," + ",".join(
-    f["key"] for f in rss_source.FEEDS
+_DEFAULT = (
+    "arxiv,semantic_scholar,pubmed,openalex,youtube_reach,github_reach,web_reach,"
+    + ",".join(f["key"] for f in rss_source.FEEDS)
 )
 
 

@@ -118,6 +118,10 @@ def pubmed_slot() -> bool:
     return acquire_slot("pubmed", int(_cfg("SCRAPE_RATE_PUBMED_PER_SEC", 3)), 1)
 
 
+def openalex_slot() -> bool:
+    return acquire_slot("openalex", int(_cfg("SCRAPE_RATE_OPENALEX_PER_SEC", 8)), 1)
+
+
 def web_reach_slot() -> bool:
     return acquire_slot("web_reach", int(_cfg("SCRAPE_RATE_WEB_PER_MIN", 30)), 60)
 

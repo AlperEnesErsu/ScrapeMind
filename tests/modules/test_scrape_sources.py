@@ -11,6 +11,7 @@ from app.modules.scrape.net_guard import BLOCKED_MESSAGE, is_public_http_url
 from app.modules.scrape.ratelimit import SourceThrottledError
 from app.modules.scrape.sources import AVAILABLE_SOURCES, SOURCE_META, enabled_sources, rss_source
 from app.modules.scrape.sources import arxiv_source as ax
+from app.modules.scrape.sources import openalex_source as oa
 from app.modules.scrape.sources import pubmed_source as pm
 from app.modules.scrape.sources import semantic_scholar_source as ss
 
@@ -23,7 +24,7 @@ _REACH_KEYS = {"youtube_reach", "github_reach", "web_reach"}
 
 
 def test_registry_has_academic_adapters_and_feeds():
-    assert {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS | _REACH_KEYS == set(
+    assert {"arxiv", "semantic_scholar", "pubmed", "openalex"} | _FEED_KEYS | _REACH_KEYS == set(
         AVAILABLE_SOURCES
     )
 
@@ -37,7 +38,8 @@ def test_every_feed_key_has_source_meta():
 def test_enabled_sources_defaults_to_all(monkeypatch):
     monkeypatch.delenv("SCRAPE_SOURCES", raising=False)
     assert (
-        set(enabled_sources()) == {"arxiv", "semantic_scholar", "pubmed"} | _FEED_KEYS | _REACH_KEYS
+        set(enabled_sources())
+        == {"arxiv", "semantic_scholar", "pubmed", "openalex"} | _FEED_KEYS | _REACH_KEYS
     )
 
 
@@ -228,6 +230,7 @@ def test_semantic_scholar_partial_success_still_returns(monkeypatch):
         (ss, "semantic_scholar_slot", "x"),
         (pm, "pubmed_slot", "x"),
         (ax, "arxiv_slot", "all:x"),
+        (oa, "openalex_slot", "x"),
     ],
 )
 def test_denied_rate_limit_slot_raises_instead_of_returning_empty(
@@ -352,6 +355,131 @@ def test_pubmed_keywords_build_or_query(monkeypatch):
     monkeypatch.setattr(pm, "search", fake_search)
     pm.search_for_keywords(["gene editing", "crispr"], max_results=5)
     assert seen["query"] == '"gene editing" OR "crispr"'
+
+
+# ----------------------------------------------------------------------------
+# OpenAlex
+# ----------------------------------------------------------------------------
+
+_OA_ITEM = {
+    "id": "https://openalex.org/W2741809807",
+    "display_name": "Attention Is\nAll You Need",
+    "doi": "https://doi.org/10.5555/attn2",
+    "publication_date": "2017-06-12",
+    "publication_year": 2017,
+    "authorships": [
+        {"author": {"display_name": "Ashish Vaswani"}},
+        {"author": {"display_name": ""}},
+    ],
+    "primary_location": {
+        "landing_page_url": "https://example.com/landing",
+        "pdf_url": None,
+    },
+    "best_oa_location": {"pdf_url": "https://example.com/paper.pdf"},
+    "topics": [{"display_name": "Machine Learning"}],
+    "concepts": [{"display_name": "Should not be used"}],
+    "abstract_inverted_index": {"We": [0], "propose": [1], "the": [2], "Transformer.": [3]},
+}
+
+
+def test_openalex_parses_payload(monkeypatch):
+    monkeypatch.setattr(
+        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
+    )
+    out = oa.search("transformers", max_results=5)
+    assert len(out) == 1
+    p = out[0]
+    assert p.source == "openalex"
+    # Host stripped off the full OpenAlex id URL
+    assert p.external_id == "W2741809807"
+    assert p.title == "Attention Is All You Need"  # newline flattened
+    assert p.doi == "10.5555/attn2"
+    assert p.abstract == "We propose the Transformer."
+    assert p.authors == ["Ashish Vaswani"]  # blank name dropped
+    # doi resolver link wins over primary_location.landing_page_url
+    assert p.url == "https://doi.org/10.5555/attn2"
+    assert p.pdf_url == "https://example.com/paper.pdf"
+    assert p.published_at.tzinfo is not None
+    assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2017, 6, 12)
+    # topics preferred over concepts when both are present
+    assert p.categories == ["Machine Learning"]
+
+
+def test_openalex_url_falls_back_to_landing_page_then_id(monkeypatch):
+    item = {**_OA_ITEM, "doi": None}
+    monkeypatch.setattr(
+        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+    )
+    p = oa.search("x", max_results=1)[0]
+    assert p.url == "https://example.com/landing"
+
+    item2 = {**item, "primary_location": {}}
+    monkeypatch.setattr(
+        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item2]})
+    )
+    p2 = oa.search("x", max_results=1)[0]
+    assert p2.url == "https://openalex.org/W2741809807"
+
+
+def test_openalex_date_falls_back_to_year(monkeypatch):
+    item = {**_OA_ITEM, "publication_date": None}
+    monkeypatch.setattr(
+        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+    )
+    p = oa.search("x", max_results=1)[0]
+    assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2017, 1, 1)
+
+
+def test_openalex_skips_records_without_id_or_title():
+    assert oa._to_payload({**_OA_ITEM, "id": ""}) is None
+    assert oa._to_payload({**_OA_ITEM, "display_name": "", "title": ""}) is None
+
+
+def test_openalex_search_empty_query_makes_no_http_call(monkeypatch):
+    calls = []
+    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: calls.append(1))
+    assert oa.search("") == []
+    assert oa.search("   ") == []
+    assert calls == []
+
+
+def test_openalex_keywords_build_or_query(monkeypatch):
+    seen = {}
+
+    def fake_search(query, *, max_results):
+        seen["query"] = query
+        return []
+
+    monkeypatch.setattr(oa, "search", fake_search)
+    oa.search_for_keywords(["gene editing", "crispr"], max_results=5)
+    assert seen["query"] == "gene editing OR crispr"
+
+
+def test_openalex_keywords_empty_list_returns_empty_without_call(monkeypatch):
+    calls = []
+    monkeypatch.setattr(oa, "search", lambda *a, **k: calls.append(1))
+    assert oa.search_for_keywords([], max_results=5) == []
+    assert oa.search_for_keywords(["", "  "], max_results=5) == []
+    assert calls == []
+
+
+class TestDecodeAbstract:
+    def test_none_returns_none(self):
+        assert oa._decode_abstract(None) is None
+
+    def test_empty_dict_returns_none(self):
+        assert oa._decode_abstract({}) is None
+
+    def test_single_word(self):
+        assert oa._decode_abstract({"Hello": [0]}) == "Hello"
+
+    def test_out_of_order_positions_reassembled(self):
+        inverted = {"quick": [1], "The": [0], "fox": [3], "brown": [2]}
+        assert oa._decode_abstract(inverted) == "The quick brown fox"
+
+    def test_non_list_value_does_not_raise(self):
+        inverted = {"good": [0], "bad": "not-a-list"}
+        assert oa._decode_abstract(inverted) == "good"
 
 
 # ----------------------------------------------------------------------------
