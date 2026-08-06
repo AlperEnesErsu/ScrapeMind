@@ -1,6 +1,7 @@
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     jsonify,
     redirect,
@@ -498,6 +499,9 @@ def system():
         form.default_locale.data = get_system_setting("default_locale", "tr")
         form.oauth_auto_register.data = bool(get_system_setting("oauth_auto_register", False))
         form.registration_open.data = bool(get_system_setting("registration_open", True))
+        form.max_user_channels.data = get_system_setting(
+            "max_user_channels", current_app.config.get("MAX_USER_CHANNELS", 10)
+        )
 
     if form.validate_on_submit():
         set_system_setting("app_name", form.app_name.data.strip(), updated_by_id=current_user.id)
@@ -509,6 +513,9 @@ def system():
         )
         set_system_setting(
             "registration_open", form.registration_open.data, updated_by_id=current_user.id
+        )
+        set_system_setting(
+            "max_user_channels", int(form.max_user_channels.data), updated_by_id=current_user.id
         )
         log_action("system_settings.update", entity_type="system_settings", entity_id=None)
         flash(_("System settings saved."), "success")

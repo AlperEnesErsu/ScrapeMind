@@ -112,6 +112,13 @@ class BaseConfig:
     # Custom RSS feeds a single user may register. Each active feed costs one
     # HTTP fetch per nightly run, so this is the main per-user cost knob.
     MAX_USER_FEEDS = int(os.getenv("MAX_USER_FEEDS", "50"))
+    # YouTube channels a single user may subscribe to. This is only the
+    # fallback used when no SystemSettings row exists yet — the effective
+    # value is the admin-editable DB setting (see settings/system route).
+    # Default is lower than MAX_USER_FEEDS because each channel costs a
+    # nightly feed fetch plus, potentially, a transcript download and an LLM
+    # summary.
+    MAX_USER_CHANNELS = int(os.getenv("MAX_USER_CHANNELS", "10"))
     # Read timeout (seconds) and hard body cap (bytes) for a feed fetch.
     FEED_FETCH_TIMEOUT = int(os.getenv("FEED_FETCH_TIMEOUT", "15"))
     FEED_FETCH_MAX_BYTES = int(os.getenv("FEED_FETCH_MAX_BYTES", "5242880"))  # 5 MiB

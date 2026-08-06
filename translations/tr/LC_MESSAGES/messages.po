@@ -2592,6 +2592,12 @@ msgstr "E-posta özeti"
 msgid "Get an email summary of new papers matching your interests."
 msgstr "İlgi alanlarınıza uyan yeni makalelerin e-posta özetini alın."
 
+msgid "Max YouTube channels per user"
+msgstr "Kullanıcı başına maksimum YouTube kanalı"
+
+msgid "Takes effect immediately for new subscriptions, no restart needed."
+msgstr "Yeni abonelikler için hemen geçerli olur, yeniden başlatma gerekmez."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

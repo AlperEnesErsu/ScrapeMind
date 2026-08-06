@@ -32,6 +32,13 @@
       </div>
       <div class="form-text">{{ _('On unknown OAuth identity, create a new account automatically.') }}</div>
     </div>
+
+    <div class="col-12"><hr class="my-1"></div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.max_user_channels.label.text }}</label>
+      {{ form.max_user_channels(class="form-control", min="0", max="200") }}
+      <div class="form-text">{{ _('Takes effect immediately for new subscriptions, no restart needed.') }}</div>
+    </div>
   </div>
 
   <div class="mt-4">

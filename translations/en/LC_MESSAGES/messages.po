@@ -2577,6 +2577,12 @@ msgstr "Email digest"
 msgid "Get an email summary of new papers matching your interests."
 msgstr "Get an email summary of new papers matching your interests."
 
+msgid "Max YouTube channels per user"
+msgstr "Max YouTube channels per user"
+
+msgid "Takes effect immediately for new subscriptions, no restart needed."
+msgstr "Takes effect immediately for new subscriptions, no restart needed."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
