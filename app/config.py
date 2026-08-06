@@ -125,6 +125,7 @@ class BaseConfig:
     SCRAPE_RATE_S2_PER_5MIN = int(os.getenv("SCRAPE_RATE_S2_PER_5MIN", "100"))
     SCRAPE_RATE_PUBMED_PER_SEC = int(os.getenv("SCRAPE_RATE_PUBMED_PER_SEC", "3"))
     SCRAPE_RATE_OPENALEX_PER_SEC = int(os.getenv("SCRAPE_RATE_OPENALEX_PER_SEC", "8"))
+    SCRAPE_RATE_CROSSREF_PER_SEC = int(os.getenv("SCRAPE_RATE_CROSSREF_PER_SEC", "5"))
     # These three back agent_reach_source's youtube/github/web adapters — added
     # here so they're actually tunable; previously they only ever hit the
     # `_cfg` fallback in ratelimit.py because no BaseConfig/.env.example entry

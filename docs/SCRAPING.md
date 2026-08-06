@@ -100,6 +100,7 @@ social, humanities, general) seçilir ve ilgi-farkında kaynak seçiciyi besler.
 | `semantic_scholar` | akademik | Opsiyonel `SEMANTIC_SCHOLAR_API_KEY` | **OR operatörü yok** → anahtar kelime başına 1 istek |
 | `pubmed` | akademik | Opsiyonel `NCBI_API_KEY` | esearch→efetch iki adım, OR ile tek sorgu |
 | `openalex` | akademik | Hayır (opsiyonel `OPENALEX_MAILTO` → polite pool) | OR ile tek sorgu; abstract `abstract_inverted_index` (kelime→pozisyon) olarak gelir, düz metne geri çevrilir |
+| `crossref` | akademik | Hayır (opsiyonel `CROSSREF_MAILTO` → polite pool) | **OR operatörü yok** → anahtar kelime başına 1 istek; DOI zorunlu (yoksa kayıt atlanır); abstract JATS XML (`<jats:p>...`) olarak gelir, düz metne çevrilir ve **kısmi** — çoğu yayıncı abstract yüklemiyor, bu kaynağın asıl değeri DOI + metadata zenginleştirme |
 | `openai_blog`, `google_ai_blog`, `deepmind_blog`, `huggingface_blog` | besleme | Hayır | Küratörlü, **global** yutulur |
 | `youtube_reach` | besleme | Hayır | `yt-dlp` CLI/Python modülü (`sys.executable`), `kind="video"` |
 | `github_reach` | besleme | Hayır (`gh` CLI opsiyonel) | `gh` CLI repo araması (`FileNotFoundError` korumalı), `kind="github"` |

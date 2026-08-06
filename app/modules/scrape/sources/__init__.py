@@ -22,6 +22,7 @@ import structlog
 from app.modules.scrape.sources import (
     agent_reach_source,
     arxiv_source,
+    crossref_source,
     openalex_source,
     pubmed_source,
     rss_source,
@@ -35,6 +36,7 @@ AVAILABLE_SOURCES: dict[str, Any] = {
     semantic_scholar_source.SOURCE_NAME: semantic_scholar_source,
     pubmed_source.SOURCE_NAME: pubmed_source,
     openalex_source.SOURCE_NAME: openalex_source,
+    crossref_source.SOURCE_NAME: crossref_source,
     agent_reach_source.YOUTUBE_SOURCE_NAME: agent_reach_source.youtube_adapter,
     agent_reach_source.GITHUB_SOURCE_NAME: agent_reach_source.github_adapter,
     agent_reach_source.WEB_SOURCE_NAME: agent_reach_source.web_adapter,
@@ -113,6 +115,24 @@ SOURCE_META: dict[str, dict] = {
         ],
         "category": "academic",
     },
+    "crossref": {
+        "label": "Crossref",
+        "icon": "bi-link-45deg",
+        "desc": "DOI registry with metadata across every publisher",
+        "url": "https://www.crossref.org",
+        "topics": [
+            "ai",
+            "ml",
+            "cs",
+            "physics",
+            "math",
+            "biomed",
+            "social",
+            "humanities",
+            "general",
+        ],
+        "category": "academic",
+    },
     "youtube_reach": {
         "label": "YouTube Videos",
         "icon": "bi-youtube",
@@ -149,7 +169,7 @@ for _feed in rss_source.FEEDS:
     }
 
 _DEFAULT = (
-    "arxiv,semantic_scholar,pubmed,openalex,youtube_reach,github_reach,web_reach,"
+    "arxiv,semantic_scholar,pubmed,openalex,crossref,youtube_reach,github_reach,web_reach,"
     + ",".join(f["key"] for f in rss_source.FEEDS)
 )
 

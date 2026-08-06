@@ -11,6 +11,7 @@ from app.modules.scrape.net_guard import BLOCKED_MESSAGE, is_public_http_url
 from app.modules.scrape.ratelimit import SourceThrottledError
 from app.modules.scrape.sources import AVAILABLE_SOURCES, SOURCE_META, enabled_sources, rss_source
 from app.modules.scrape.sources import arxiv_source as ax
+from app.modules.scrape.sources import crossref_source as cr
 from app.modules.scrape.sources import openalex_source as oa
 from app.modules.scrape.sources import pubmed_source as pm
 from app.modules.scrape.sources import semantic_scholar_source as ss
@@ -24,9 +25,13 @@ _REACH_KEYS = {"youtube_reach", "github_reach", "web_reach"}
 
 
 def test_registry_has_academic_adapters_and_feeds():
-    assert {"arxiv", "semantic_scholar", "pubmed", "openalex"} | _FEED_KEYS | _REACH_KEYS == set(
-        AVAILABLE_SOURCES
-    )
+    assert {
+        "arxiv",
+        "semantic_scholar",
+        "pubmed",
+        "openalex",
+        "crossref",
+    } | _FEED_KEYS | _REACH_KEYS == set(AVAILABLE_SOURCES)
 
 
 def test_every_feed_key_has_source_meta():
@@ -39,7 +44,9 @@ def test_enabled_sources_defaults_to_all(monkeypatch):
     monkeypatch.delenv("SCRAPE_SOURCES", raising=False)
     assert (
         set(enabled_sources())
-        == {"arxiv", "semantic_scholar", "pubmed", "openalex"} | _FEED_KEYS | _REACH_KEYS
+        == {"arxiv", "semantic_scholar", "pubmed", "openalex", "crossref"}
+        | _FEED_KEYS
+        | _REACH_KEYS
     )
 
 
@@ -231,6 +238,7 @@ def test_semantic_scholar_partial_success_still_returns(monkeypatch):
         (pm, "pubmed_slot", "x"),
         (ax, "arxiv_slot", "all:x"),
         (oa, "openalex_slot", "x"),
+        (cr, "crossref_slot", "x"),
     ],
 )
 def test_denied_rate_limit_slot_raises_instead_of_returning_empty(
@@ -480,6 +488,209 @@ class TestDecodeAbstract:
     def test_non_list_value_does_not_raise(self):
         inverted = {"good": [0], "bad": "not-a-list"}
         assert oa._decode_abstract(inverted) == "good"
+
+
+# ----------------------------------------------------------------------------
+# Crossref
+# ----------------------------------------------------------------------------
+
+_CR_ITEM = {
+    "DOI": "10.5555/CROSSREF.2024.001",
+    "title": ["Attention Is\nAll You Need"],
+    "abstract": "<jats:p>We propose the <jats:italic>Transformer</jats:italic> &amp; friends.</jats:p>",
+    "author": [
+        {"given": "Ashish", "family": "Vaswani"},
+        {"name": "The Consortium"},
+        {"given": "", "family": ""},
+    ],
+    "issued": {"date-parts": [[2024, 3, 15]]},
+    "URL": "https://doi.org/10.5555/crossref.2024.001",
+    "link": [
+        {"URL": "https://example.test/paper.xml", "content-type": "application/xml"},
+        {"URL": "https://example.test/paper.pdf", "content-type": "application/pdf"},
+    ],
+    "subject": ["Machine Learning", "Computer Science"],
+    "type": "journal-article",
+    "container-title": ["Journal of Examples"],
+}
+
+
+def test_crossref_parses_payload(monkeypatch):
+    monkeypatch.setattr(
+        cr.requests,
+        "get",
+        lambda *a, **k: _fake_response(json_data={"message": {"items": [_CR_ITEM]}}),
+    )
+    out = cr.search("transformers", max_results=5)
+    assert len(out) == 1
+    p = out[0]
+    assert p.source == "crossref"
+    # Normalized DOI is both external_id and doi
+    assert p.external_id == "10.5555/crossref.2024.001"
+    assert p.doi == "10.5555/crossref.2024.001"
+    assert p.title == "Attention Is All You Need"  # newline flattened
+    assert p.abstract == "We propose the Transformer & friends."
+    # given+family joined, org "name" author kept, blank author dropped
+    assert p.authors == ["Ashish Vaswani", "The Consortium"]
+    assert p.url == "https://doi.org/10.5555/crossref.2024.001"
+    # First entry is application/xml (skipped), second is the PDF
+    assert p.pdf_url == "https://example.test/paper.pdf"
+    assert p.published_at.tzinfo is not None
+    assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2024, 3, 15)
+    assert p.categories == ["Machine Learning", "Computer Science"]
+
+
+def test_crossref_skips_records_without_doi():
+    assert cr._to_payload({**_CR_ITEM, "DOI": None}) is None
+    assert cr._to_payload({**_CR_ITEM, "DOI": "not-a-doi"}) is None
+
+
+def test_crossref_skips_records_without_title():
+    assert cr._to_payload({**_CR_ITEM, "title": []}) is None
+    assert cr._to_payload({**_CR_ITEM, "title": [""]}) is None
+
+
+def test_crossref_pdf_url_none_when_no_pdf_link():
+    item = {
+        **_CR_ITEM,
+        "link": [{"URL": "https://example.test/x.xml", "content-type": "application/xml"}],
+    }
+    assert cr._to_payload(item).pdf_url is None
+
+
+def test_crossref_pdf_url_guards_non_dict_link_entries():
+    item = {
+        **_CR_ITEM,
+        "link": [
+            "not-a-dict",
+            {"URL": "https://example.test/p.pdf", "content-type": "application/pdf"},
+        ],
+    }
+    assert cr._to_payload(item).pdf_url == "https://example.test/p.pdf"
+
+
+def test_crossref_search_empty_query_makes_no_http_call(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cr.requests, "get", lambda *a, **k: calls.append(1))
+    assert cr.search("") == []
+    assert cr.search("   ") == []
+    assert calls == []
+
+
+def test_crossref_keywords_issue_one_request_per_keyword_and_dedupe(monkeypatch):
+    calls = []
+
+    def fake_search(query, *, max_results):
+        calls.append(query)
+        if query == "bad":
+            raise requests.ConnectionError("boom")
+        return [cr._to_payload(_CR_ITEM)]
+
+    monkeypatch.setattr(cr, "search", fake_search)
+    out = cr.search_for_keywords(["good", "bad", "good2"], max_results=10)
+    # Same DOI from two healthy keywords -> deduped to one payload.
+    assert len(out) == 1
+    assert calls == ["good", "bad", "good2"]
+
+
+def test_crossref_raises_when_every_keyword_failed(monkeypatch):
+    """Same contract as Semantic Scholar's: a wholly-throttled/failed source
+    must not look like "no papers on your topic". Crossref's public pool is
+    unauthenticated and shared, so a run of 429s/5xxs is plausible and must
+    surface as a raised error, not `status="ok", hits=0`."""
+
+    def fake_search(query, *, max_results):  # noqa: ARG001
+        raise requests.HTTPError("429 Client Error")
+
+    monkeypatch.setattr(cr, "search", fake_search)
+    with pytest.raises(requests.HTTPError):
+        cr.search_for_keywords(["a", "b"], max_results=10)
+
+
+def test_crossref_partial_success_still_returns(monkeypatch):
+    def fake_search(query, *, max_results):  # noqa: ARG001
+        if query == "bad":
+            raise requests.HTTPError("429 Client Error")
+        return [cr._to_payload(_CR_ITEM)]
+
+    monkeypatch.setattr(cr, "search", fake_search)
+    assert len(cr.search_for_keywords(["bad", "good"], max_results=10)) == 1
+
+
+def test_crossref_keywords_empty_list_returns_empty_without_call(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cr, "search", lambda *a, **k: calls.append(1))
+    assert cr.search_for_keywords([], max_results=5) == []
+    assert cr.search_for_keywords(["", "  "], max_results=5) == []
+    assert calls == []
+
+
+class TestCrossrefDateParts:
+    def test_year_only(self):
+        item = {**_CR_ITEM, "issued": {"date-parts": [[2024]]}}
+        p = cr._to_payload(item)
+        assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2024, 1, 1)
+
+    def test_year_month(self):
+        item = {**_CR_ITEM, "issued": {"date-parts": [[2024, 3]]}}
+        p = cr._to_payload(item)
+        assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2024, 3, 1)
+
+    def test_year_month_day(self):
+        item = {**_CR_ITEM, "issued": {"date-parts": [[2024, 3, 15]]}}
+        p = cr._to_payload(item)
+        assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2024, 3, 15)
+
+    def test_garbage_date_parts_does_not_raise(self):
+        item = {**_CR_ITEM, "issued": {"date-parts": [[None]]}}
+        p = cr._to_payload(item)
+        assert p.published_at is None
+
+    def test_falls_back_to_published_print(self):
+        item = {**_CR_ITEM, "issued": {}, "published-print": {"date-parts": [[2020, 5]]}}
+        p = cr._to_payload(item)
+        assert (p.published_at.year, p.published_at.month) == (2020, 5)
+
+    def test_falls_back_to_published_online(self):
+        item = {
+            **_CR_ITEM,
+            "issued": {},
+            "published-print": {},
+            "published-online": {"date-parts": [[2019]]},
+        }
+        p = cr._to_payload(item)
+        assert p.published_at.year == 2019
+
+    def test_no_date_anywhere_returns_none(self):
+        item = {**_CR_ITEM, "issued": {}}
+        p = cr._to_payload(item)
+        assert p.published_at is None
+
+
+class TestStripJats:
+    def test_none_returns_none(self):
+        assert cr._strip_jats(None) is None
+
+    def test_empty_string_returns_none(self):
+        assert cr._strip_jats("") is None
+
+    def test_tags_removed(self):
+        assert cr._strip_jats("<jats:p>Some text</jats:p>") == "Some text"
+
+    def test_entities_unescaped(self):
+        assert cr._strip_jats("<jats:p>Cats &amp; dogs</jats:p>") == "Cats & dogs"
+
+    def test_whitespace_collapsed(self):
+        assert cr._strip_jats("<jats:p>Too   much\n\nwhitespace</jats:p>") == "Too much whitespace"
+
+    def test_tags_only_string_returns_none(self):
+        assert cr._strip_jats("<jats:p></jats:p>") is None
+
+    def test_leading_abstract_heading_dropped(self):
+        assert (
+            cr._strip_jats("<jats:title>Abstract</jats:title><jats:p>Body text.</jats:p>")
+            == "Body text."
+        )
 
 
 # ----------------------------------------------------------------------------

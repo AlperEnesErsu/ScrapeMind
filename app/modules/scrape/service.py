@@ -299,7 +299,13 @@ def last_scan_run(
 
 #: Rough per-source cost used only until a user has a real run to measure.
 #: Self-correcting: after the first scan we use that user's own median.
-_COST_SECONDS = {"arxiv": 8.0, "semantic_scholar": 1.5, "pubmed": 3.0, "openalex": 2.0}
+_COST_SECONDS = {
+    "arxiv": 8.0,
+    "semantic_scholar": 1.5,
+    "pubmed": 3.0,
+    "openalex": 2.0,
+    "crossref": 2.5,
+}
 _COST_PER_FEED = 1.5
 _COST_LLM = 15.0
 
@@ -317,10 +323,10 @@ def feed_cost_estimate(active_feed_count: int) -> timedelta:
 def _estimate_scan_seconds(user: User, sources: dict, keyword_count: int, feed_count: int) -> int:
     """Median of this user's recent successful runs, or a static estimate.
 
-    Semantic Scholar issues one request per keyword, and each active custom
-    feed is one more HTTP round trip — which is exactly why this number is
-    worth showing: it makes the cost of "I added 40 feeds" visible to the
-    person who added them.
+    The sources in `_PER_KEYWORD_REQUEST_SOURCES` issue one request per
+    keyword, and each active custom feed is one more HTTP round trip — which
+    is exactly why this number is worth showing: it makes the cost of "I added
+    40 feeds" visible to the person who added them.
     """
     recent = (
         ScanRun.query.filter(
@@ -340,8 +346,10 @@ def _estimate_scan_seconds(user: User, sources: dict, keyword_count: int, feed_c
 
     total = 0.0
     for name in sources:
-        if name == "semantic_scholar":
-            total += _COST_SECONDS[name] * max(1, keyword_count)
+        # Keyed off the same set the term-expansion logic uses, so adding a
+        # per-keyword source in one place doesn't leave its estimate flat here.
+        if name in _PER_KEYWORD_REQUEST_SOURCES:
+            total += _COST_SECONDS.get(name, 0.0) * max(1, keyword_count)
         else:
             total += _COST_SECONDS.get(name, 0.0)
     total += _COST_PER_FEED * feed_count
@@ -609,8 +617,10 @@ def _match_keyword(title: str, terms: list[str], alias: dict[str, str] | None = 
 #: API). Handing them the expanded term list would multiply their request
 #: count — and their rate limit is the tightest we deal with — so they get the
 #: canonical English form only. arXiv and PubMed OR-combine everything into a
-#: single request, where extra terms are free.
-_PER_KEYWORD_REQUEST_SOURCES = {"semantic_scholar"}
+#: single request, where extra terms are free. Crossref's `query.bibliographic`
+#: is the same story as Semantic Scholar's relevance search — bag-of-words
+#: scoring with no boolean OR — so it belongs in this set too.
+_PER_KEYWORD_REQUEST_SOURCES = {"semantic_scholar", "crossref"}
 
 
 def ensure_keyword_translations(keywords: list, *, user: User | None = None) -> int:
