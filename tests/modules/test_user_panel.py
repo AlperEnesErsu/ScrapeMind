@@ -733,3 +733,177 @@ def test_feed_add_rejects_over_the_cap(auth_client, clean_papers, monkeypatch, a
     assert r.status_code == 200
     # Turkish translation of "Feed limit reached. Remove one before adding another."
     assert "sınırına ulaştın" in r.get_data(as_text=True)
+
+
+# --------------------------------------------------------------------------
+# Faz 3 — AI/Kaynaklar profile tab: YouTube channel subscription CRUD over
+# HTTP. Twin of the custom-feed tests above; `resolve_channel` is stubbed at
+# its own source module (never real network) since add_user_channel imports
+# it locally rather than importing it into service.py's module namespace.
+# --------------------------------------------------------------------------
+
+
+def _stub_resolve_channel(monkeypatch, result):
+    """`add_user_channel` validates by resolving once — stub that resolution.
+
+    `result` is either a `(dict, None)` success tuple or a `(None, error)`
+    failure tuple, matching `resolve_channel`'s own return contract.
+    """
+    monkeypatch.setattr(
+        "app.modules.scrape.sources.youtube_channel_source.resolve_channel",
+        lambda raw: result,
+    )
+
+
+def _ok_resolved(channel_id="UC1111111111111111111111", title="Example Channel"):
+    return (
+        {
+            "channel_id": channel_id,
+            "title": title,
+            "url": f"https://www.youtube.com/channel/{channel_id}",
+        },
+        None,
+    )
+
+
+def test_channel_add_remove_toggle_cycle_over_http(auth_client, clean_papers, monkeypatch):
+    client, uid = auth_client
+    _stub_resolve_channel(monkeypatch, _ok_resolved())
+
+    r = client.post(
+        "/papers/profile/channels/add",
+        data={"url": "@examplechannel", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert "Example Channel" in body
+
+    from app.core.models.user import User
+    from app.modules.scrape.service import list_user_channels
+
+    user = User.query.get(uid)
+    channels = list_user_channels(user)
+    assert len(channels) == 1
+    channel_id = channels[0].id
+
+    # Toggle off
+    r = client.post(
+        f"/papers/profile/channels/{channel_id}/toggle",
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    assert list_user_channels(user)[0].active is False
+
+    # Remove
+    r = client.post(
+        f"/papers/profile/channels/{channel_id}/remove",
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    assert list_user_channels(user) == []
+
+    # Removing again -> 404
+    r = client.post(f"/papers/profile/channels/{channel_id}/remove")
+    assert r.status_code == 404
+
+
+def test_channel_add_rejects_resolution_failure_over_http(auth_client, clean_papers, monkeypatch):
+    client, _uid = auth_client
+    _stub_resolve_channel(
+        monkeypatch,
+        (None, "Could not find that YouTube channel — check the link and try again."),
+    )
+
+    r = client.post(
+        "/papers/profile/channels/add",
+        data={"url": "@doesnotexist", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    # Turkish translation of "Could not find that YouTube channel — ..."
+    assert "bulunamadı" in body
+
+
+def test_channel_toggle_swaps_only_the_channel_list(auth_client, clean_papers, monkeypatch):
+    """A toggle must return the channel-list partial, not the whole AI tab —
+    same reasoning as the feed toggle: re-rendering the tab re-runs
+    `_ai_ctx()` -> `classify_user_topics`, an LLM round trip on a checkbox
+    click.
+    """
+    from app.core.models.user import User
+    from app.modules.scrape.service import list_user_channels
+
+    client, uid = auth_client
+    _stub_resolve_channel(monkeypatch, _ok_resolved())
+    client.post(
+        "/papers/profile/channels/add",
+        data={"url": "@examplechannel", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    channel_id = list_user_channels(User.query.get(uid))[0].id
+
+    def _boom(user):
+        raise AssertionError("a channel toggle must not trigger topic classification")
+
+    monkeypatch.setattr("app.modules.scrape.ai_service.classify_user_topics", _boom)
+
+    r = client.post(f"/papers/profile/channels/{channel_id}/toggle", headers={"HX-Request": "true"})
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert 'id="channel-list"' in body
+    # The API-key section belongs to the full tab and must not come back here
+    assert "OpenRouter" not in body
+
+
+def test_channel_list_filter_chips(auth_client, clean_papers, monkeypatch):
+    from app.core.models.user import User
+    from app.modules.scrape.service import list_user_channels
+
+    client, uid = auth_client
+    for i in range(2):
+        _stub_resolve_channel(
+            monkeypatch, _ok_resolved(channel_id=f"UC{i:024d}", title=f"Channel {i}")
+        )
+        client.post(
+            "/papers/profile/channels/add",
+            data={"url": f"@channel{i}", "label": f"Channel {i}"},
+            headers={"HX-Request": "true"},
+        )
+    channels = list_user_channels(User.query.get(uid))
+    assert len(channels) == 2
+    client.post(f"/papers/profile/channels/{channels[0].id}/toggle", headers={"HX-Request": "true"})
+
+    active = client.get("/papers/profile/channels?filter=active").get_data(as_text=True)
+    paused = client.get("/papers/profile/channels?filter=paused").get_data(as_text=True)
+    assert channels[1].title in active and channels[0].title not in active
+    assert channels[0].title in paused and channels[1].title not in paused
+
+
+def test_channel_add_rejects_over_the_cap(auth_client, clean_papers, monkeypatch, app):
+    """The cap is what keeps "dozens of channel subscriptions" from becoming
+    dozens of nightly feed fetches (plus transcript/summary work) per user."""
+    client, _uid = auth_client
+    monkeypatch.setitem(app.config, "MAX_USER_CHANNELS", 2)
+
+    for i in range(2):
+        _stub_resolve_channel(
+            monkeypatch, _ok_resolved(channel_id=f"UC{i:024d}", title=f"Channel {i}")
+        )
+        r = client.post(
+            "/papers/profile/channels/add",
+            data={"url": f"@channel{i}", "label": ""},
+            headers={"HX-Request": "true"},
+        )
+        assert r.status_code == 200
+
+    _stub_resolve_channel(monkeypatch, _ok_resolved(channel_id="UC" + "9" * 24, title="Too Many"))
+    r = client.post(
+        "/papers/profile/channels/add",
+        data={"url": "@toomanychannel", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    # Turkish translation of "Channel limit reached. Remove one before adding another."
+    assert "sınırına ulaştın" in r.get_data(as_text=True)

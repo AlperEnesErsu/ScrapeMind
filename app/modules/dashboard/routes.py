@@ -289,6 +289,9 @@ ACTION_LABELS = {
     "user.feed_added": "RSS Kaynağı Eklendi",
     "user.feed_removed": "RSS Kaynağı Kaldırıldı",
     "user.feed_toggled": "RSS Kaynağı Aç/Kapat",
+    "user.channel_added": "YouTube Kanalı Eklendi",
+    "user.channel_removed": "YouTube Kanalı Kaldırıldı",
+    "user.channel_toggled": "YouTube Kanalı Aç/Kapat",
 }
 
 

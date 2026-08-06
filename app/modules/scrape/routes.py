@@ -24,7 +24,7 @@ from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app.core.audit.middleware import log_action
-from app.modules.scrape.forms import AiSettingsForm, UserFeedForm
+from app.modules.scrape.forms import AiSettingsForm, UserChannelForm, UserFeedForm
 from app.modules.scrape.service import (
     add_note,
     count_user_papers,
@@ -94,6 +94,33 @@ def _feed_list_ctx(filter_: str = "all") -> dict:
     }
 
 
+def _channel_list_ctx(filter_: str = "all") -> dict:
+    """Context for the `settings/_channel_list.html` partial.
+
+    Same reasoning as `_feed_list_ctx`: this is what a toggle or delete
+    re-renders, so it stays free of `classify_user_topics` / `user_llm_status`
+    — `_ai_ctx` adds those for the full-tab render only.
+    """
+    from app.modules.scrape.service import list_user_channels, max_user_channels
+
+    channels = list_user_channels(current_user)
+    if filter_ == "active":
+        shown = [c for c in channels if c.active]
+    elif filter_ == "paused":
+        shown = [c for c in channels if not c.active]
+    else:
+        filter_ = "all"
+        shown = channels
+
+    return {
+        "user_channels": shown,
+        "channel_count": len(channels),
+        "active_channel_count": sum(1 for c in channels if c.active),
+        "channel_filter": filter_,
+        "max_user_channels": max_user_channels(),
+    }
+
+
 def _ai_ctx():
     from flask import current_app
 
@@ -102,11 +129,13 @@ def _ai_ctx():
     return {
         "form": AiSettingsForm(),
         "feed_form": UserFeedForm(),
+        "channel_form": UserChannelForm(),
         "status": user_llm_status(current_user),
         "provider": (current_app.config.get("LLM_PROVIDER") or "openrouter").strip().lower(),
         "default_model": current_app.config.get("OPENROUTER_MODEL"),
         "user_topics": classify_user_topics(current_user),
         **_feed_list_ctx(),
+        **_channel_list_ctx(),
     }
 
 
@@ -256,6 +285,82 @@ def submit_feed_toggle(feed_id: int):
         changes={"active": new_value},
     )
     return render_template("settings/_feed_list.html", **_feed_list_ctx())
+
+
+# ------------------------------------------------------------------ #
+# Custom YouTube channel subscriptions — same AI/Kaynaklar profile tab
+# ------------------------------------------------------------------ #
+
+
+@scrape_bp.route("/profile/channels/add", methods=["POST"])
+@login_required
+def submit_channel_add():
+    from app.modules.scrape.service import add_user_channel
+
+    form = UserChannelForm()
+    if form.validate_on_submit():
+        channel, err = add_user_channel(current_user, form.url.data, form.label.data)
+        if channel is not None:
+            log_action(
+                "user.channel_added",
+                entity_type="user_channel",
+                entity_id=str(channel.id),
+                changes={"channel_id": channel.channel_id},
+            )
+            return _render_settings_tab(
+                "ai", flash_msg=_("Channel added."), flash_kind="success", **_ai_ctx()
+            )
+        return _render_settings_tab(
+            "ai",
+            flash_msg=_(err or "Could not add that channel."),
+            flash_kind="danger",
+            **_ai_ctx(),
+        )
+    return _render_settings_tab(
+        "ai",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+        **_ai_ctx(),
+    )
+
+
+@scrape_bp.route("/profile/channels", methods=["GET"])
+@login_required
+def channel_list():
+    """The channel list on its own — filter chips and post-mutation swaps
+    target this instead of re-rendering the whole AI tab."""
+    return render_template(
+        "settings/_channel_list.html", **_channel_list_ctx(request.args.get("filter", "all"))
+    )
+
+
+@scrape_bp.route("/profile/channels/<int:channel_pk>/remove", methods=["POST"])
+@login_required
+def submit_channel_remove(channel_pk: int):
+    from app.modules.scrape.service import remove_user_channel
+
+    ok = remove_user_channel(current_user, channel_pk)
+    if not ok:
+        abort(404)
+    log_action("user.channel_removed", entity_type="user_channel", entity_id=str(channel_pk))
+    return render_template("settings/_channel_list.html", **_channel_list_ctx())
+
+
+@scrape_bp.route("/profile/channels/<int:channel_pk>/toggle", methods=["POST"])
+@login_required
+def submit_channel_toggle(channel_pk: int):
+    from app.modules.scrape.service import toggle_user_channel
+
+    new_value = toggle_user_channel(current_user, channel_pk)
+    if new_value is None:
+        abort(404)
+    log_action(
+        "user.channel_toggled",
+        entity_type="user_channel",
+        entity_id=str(channel_pk),
+        changes={"active": new_value},
+    )
+    return render_template("settings/_channel_list.html", **_channel_list_ctx())
 
 
 def _is_htmx() -> bool:

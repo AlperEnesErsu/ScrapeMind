@@ -103,3 +103,32 @@
   </div>
   <button type="submit" class="btn btn-primary">{{ feed_form.submit.label.text }}</button>
 </form>
+
+<hr class="my-4">
+<h6 class="text-muted mb-3">{{ _('Your YouTube channels') }}</h6>
+<p class="small text-muted">
+  {{ _('Subscribe to a channel — its new videos flow into your feed and briefing just like the curated sources.') }}
+</p>
+
+<div class="mb-3">
+  {% include 'settings/_channel_list.html' %}
+</div>
+
+{# Adding a channel can fail with a message (bad link, blocked host, cap
+   reached), which the tab renders as a flash — so this one still swaps the
+   whole tab, same as the feed-add form above. #}
+<form hx-post="{{ url_for('scrape.submit_channel_add') }}" hx-target="#tab-content" hx-swap="innerHTML">
+  {{ channel_form.csrf_token }}
+  <div class="mb-2">
+    <label class="form-label">{{ channel_form.url.label.text }}</label>
+    {{ channel_form.url(class="form-control", placeholder="https://www.youtube.com/@channel") }}
+    {% for err in channel_form.url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+  </div>
+  <div class="mb-2">
+    <label class="form-label">{{ channel_form.label.label.text }}</label>
+    {{ channel_form.label(class="form-control") }}
+    {% for err in channel_form.label.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    <div class="form-text">{{ _('Leave blank to use the channel\'s own title.') }}</div>
+  </div>
+  <button type="submit" class="btn btn-primary">{{ channel_form.submit.label.text }}</button>
+</form>

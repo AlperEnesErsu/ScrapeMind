@@ -92,6 +92,7 @@ def clean(db):
     db.session.execute(text("DELETE FROM keywords"))
     db.session.execute(text("DELETE FROM user_sources"))
     db.session.execute(text("DELETE FROM user_feeds"))
+    db.session.execute(text("DELETE FROM user_channels"))
     db.session.execute(text("DELETE FROM scan_runs"))
     db.session.execute(text("DELETE FROM identifier_types"))
     db.session.query(User).delete()
@@ -562,3 +563,146 @@ def test_add_user_feed_stores_etag_and_last_modified(db, clean, monkeypatch):
     assert err is None
     assert feed.etag == '"12345"'
     assert feed.last_modified == "Wed, 21 Oct 2025 07:28:00 GMT"
+
+
+# ----------------------------------------------------------------------------
+# Custom user YouTube channels — the twin of the custom-feed tests above.
+# `resolve_channel` is monkeypatched at its source module, not at
+# service.py, because add_user_channel imports it locally inside the
+# function (the same import-inside-function style `ingest_user_feeds` uses
+# for `fetch_feed`), so there is no `service.resolve_channel` name to patch.
+# ----------------------------------------------------------------------------
+
+_RESOLVE_CHANNEL_TARGET = "app.modules.scrape.sources.youtube_channel_source.resolve_channel"
+
+
+def _resolved(channel_id="UC1234567890123456789012", title="Fake Channel"):
+    return {
+        "channel_id": channel_id,
+        "title": title,
+        "url": f"https://www.youtube.com/channel/{channel_id}",
+    }
+
+
+def test_add_user_channel_happy_path(db, clean, monkeypatch):
+    from app.modules.scrape.service import add_user_channel
+
+    monkeypatch.setattr(_RESOLVE_CHANNEL_TARGET, lambda raw: (_resolved(), None))
+
+    channel, err = add_user_channel(clean, "@somechannel")
+    assert err is None
+    assert channel is not None
+    assert channel.channel_id == "UC1234567890123456789012"
+    assert channel.title == "Fake Channel"
+    assert channel.active is True
+
+
+def test_add_user_channel_resolution_failure_creates_no_row(db, clean, monkeypatch):
+    from app.modules.scrape.models import UserChannel
+    from app.modules.scrape.service import add_user_channel
+
+    monkeypatch.setattr(
+        _RESOLVE_CHANNEL_TARGET,
+        lambda raw: (None, "Could not find that YouTube channel — check the link and try again."),
+    )
+
+    channel, err = add_user_channel(clean, "https://www.youtube.com/@doesnotexist")
+    assert channel is None
+    assert err == "Could not find that YouTube channel — check the link and try again."
+    assert UserChannel.query.filter_by(user_id=clean.id).count() == 0
+
+
+def test_add_user_channel_reactivates_without_consuming_cap_slot(db, clean, monkeypatch, app):
+    from app.modules.scrape.service import (
+        add_user_channel,
+        remove_user_channel,
+        toggle_user_channel,
+    )
+
+    monkeypatch.setattr(_RESOLVE_CHANNEL_TARGET, lambda raw: (_resolved(), None))
+    monkeypatch.setitem(app.config, "MAX_USER_CHANNELS", 1)
+
+    channel, err = add_user_channel(clean, "@somechannel")
+    assert err is None
+    toggle_user_channel(clean, channel.id)  # pause it
+    assert channel.active is False
+
+    # Re-adding the identical channel while already at the cap must still
+    # succeed — it reactivates the existing row rather than creating a new
+    # one, so it never touches the cap check.
+    channel2, err2 = add_user_channel(clean, "@somechannel")
+    assert err2 is None
+    assert channel2.id == channel.id
+    assert channel2.active is True
+
+    ok = remove_user_channel(clean, channel.id)
+    assert ok is True
+
+
+def test_add_user_channel_enforces_cap_via_system_setting(db, clean, monkeypatch, app):
+    from sqlalchemy import text as sa_text
+
+    from app.core.settings.service import set_system_setting
+    from app.modules.scrape.service import add_user_channel
+
+    monkeypatch.setattr(
+        _RESOLVE_CHANNEL_TARGET,
+        lambda raw: (_resolved(channel_id="UC" + raw[-24:].rjust(24, "0")), None),
+    )
+    try:
+        # Admin lowers the cap to 1 at runtime via the system-settings row —
+        # this is the proof the admin knob actually governs add_user_channel,
+        # not just current_app.config.
+        set_system_setting("max_user_channels", 1)
+
+        channel1, err1 = add_user_channel(clean, "@first")
+        assert err1 is None
+        assert channel1 is not None
+
+        channel2, err2 = add_user_channel(clean, "@second")
+        assert channel2 is None
+        from app.modules.scrape.service import CHANNEL_CAP_MESSAGE
+
+        assert err2 == CHANNEL_CAP_MESSAGE
+    finally:
+        db.session.execute(sa_text("DELETE FROM system_settings WHERE key = 'max_user_channels'"))
+        db.session.commit()
+
+
+def test_max_user_channels_survives_garbage_db_value(db, clean, monkeypatch, app):
+    from sqlalchemy import text as sa_text
+
+    from app.core.settings.service import set_system_setting
+    from app.modules.scrape.service import max_user_channels
+
+    monkeypatch.setitem(app.config, "MAX_USER_CHANNELS", 7)
+    try:
+        set_system_setting("max_user_channels", "abc")
+        assert max_user_channels() == 7
+
+        set_system_setting("max_user_channels", None)
+        assert max_user_channels() == 7
+
+        set_system_setting("max_user_channels", -5)
+        assert max_user_channels() == 0
+    finally:
+        db.session.execute(sa_text("DELETE FROM system_settings WHERE key = 'max_user_channels'"))
+        db.session.commit()
+
+
+def test_toggle_and_remove_user_channel(db, clean, monkeypatch):
+    from app.modules.scrape.service import (
+        add_user_channel,
+        remove_user_channel,
+        toggle_user_channel,
+    )
+
+    monkeypatch.setattr(_RESOLVE_CHANNEL_TARGET, lambda raw: (_resolved(), None))
+    channel, _err = add_user_channel(clean, "@somechannel")
+
+    assert toggle_user_channel(clean, channel.id) is False
+    assert toggle_user_channel(clean, channel.id) is True
+    assert toggle_user_channel(clean, 999_999) is None  # not found
+
+    assert remove_user_channel(clean, channel.id) is True
+    assert remove_user_channel(clean, channel.id) is False  # already gone

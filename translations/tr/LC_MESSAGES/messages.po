@@ -2598,6 +2598,56 @@ msgstr "Kullanıcı başına maksimum YouTube kanalı"
 msgid "Takes effect immediately for new subscriptions, no restart needed."
 msgstr "Yeni abonelikler için hemen geçerli olur, yeniden başlatma gerekmez."
 
+msgid "Channel URL or @handle"
+msgstr "Kanal URL'si veya @kullanıcı adı"
+
+msgid "Add channel"
+msgstr "Kanal ekle"
+
+#, python-format
+msgid "%(used)s / %(cap)s channels"
+msgstr "%(used)s / %(cap)s kanal"
+
+msgid "Filter channels"
+msgstr "Kanalları filtrele"
+
+msgid "Channel limit reached. Remove one before adding another."
+msgstr "Kanal sınırına ulaştın. Yeni bir tane eklemeden önce birini kaldır."
+
+msgid "Remove this channel?"
+msgstr "Bu kanalı kaldır?"
+
+msgid "No channels match this filter."
+msgstr "Bu filtreye uyan kanal yok."
+
+msgid "No YouTube channels yet — add one below."
+msgstr "Henüz YouTube kanalın yok — aşağıdan ekleyebilirsin."
+
+msgid "Your YouTube channels"
+msgstr "YouTube kanalların"
+
+msgid ""
+"Subscribe to a channel — its new videos flow into your feed and briefing "
+"just like the curated sources."
+msgstr ""
+"Bir kanala abone ol — yeni videoları küratörlü kaynaklar gibi akışına ve "
+"brifingine dahil olur."
+
+msgid "Leave blank to use the channel's own title."
+msgstr "Kanalın kendi başlığını kullanmak için boş bırak."
+
+msgid "Please enter a YouTube channel URL or @handle."
+msgstr "Lütfen bir YouTube kanal URL'si veya @kullanıcı adı girin."
+
+msgid "Could not add that channel."
+msgstr "Bu kanal eklenemedi."
+
+msgid "Channel added."
+msgstr "Kanal eklendi."
+
+msgid "Could not find that YouTube channel — check the link and try again."
+msgstr "Bu YouTube kanalı bulunamadı — bağlantıyı kontrol edip tekrar deneyin."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

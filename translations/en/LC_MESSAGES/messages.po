@@ -2583,6 +2583,56 @@ msgstr "Max YouTube channels per user"
 msgid "Takes effect immediately for new subscriptions, no restart needed."
 msgstr "Takes effect immediately for new subscriptions, no restart needed."
 
+msgid "Channel URL or @handle"
+msgstr "Channel URL or @handle"
+
+msgid "Add channel"
+msgstr "Add channel"
+
+#, python-format
+msgid "%(used)s / %(cap)s channels"
+msgstr "%(used)s / %(cap)s channels"
+
+msgid "Filter channels"
+msgstr "Filter channels"
+
+msgid "Channel limit reached. Remove one before adding another."
+msgstr "Channel limit reached. Remove one before adding another."
+
+msgid "Remove this channel?"
+msgstr "Remove this channel?"
+
+msgid "No channels match this filter."
+msgstr "No channels match this filter."
+
+msgid "No YouTube channels yet — add one below."
+msgstr "No YouTube channels yet — add one below."
+
+msgid "Your YouTube channels"
+msgstr "Your YouTube channels"
+
+msgid ""
+"Subscribe to a channel — its new videos flow into your feed and briefing "
+"just like the curated sources."
+msgstr ""
+"Subscribe to a channel — its new videos flow into your feed and briefing "
+"just like the curated sources."
+
+msgid "Leave blank to use the channel's own title."
+msgstr "Leave blank to use the channel's own title."
+
+msgid "Please enter a YouTube channel URL or @handle."
+msgstr "Please enter a YouTube channel URL or @handle."
+
+msgid "Could not add that channel."
+msgstr "Could not add that channel."
+
+msgid "Channel added."
+msgstr "Channel added."
+
+msgid "Could not find that YouTube channel — check the link and try again."
+msgstr "Could not find that YouTube channel — check the link and try again."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

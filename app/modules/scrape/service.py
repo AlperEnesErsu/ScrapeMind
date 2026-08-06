@@ -26,6 +26,7 @@ from app.modules.scrape.models import (
     Paper,
     PaperNote,
     ScanRun,
+    UserChannel,
     UserFeed,
     UserPaper,
     UserSource,
@@ -1075,6 +1076,135 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
                 new += 1
     logger.info("user_feeds_ingest_done", user_id=user.id, hits=hits, new=new)
     return {"hits": hits, "new": new}, touched
+
+
+# ----------------------------------------------------------------------------
+# Custom user YouTube channels — the twin of the custom-RSS-feed feature
+# above, subscription-based the same way. Celery ingestion (chaining transcript
+# fetch + summarization) and the routes/UI that call it land in a later commit;
+# this is CRUD only.
+# ----------------------------------------------------------------------------
+
+#: Shown when a user tries to add channel number max_user_channels() + 1. Kept
+#: as a module constant so the route, the template and the tests agree on it.
+CHANNEL_CAP_MESSAGE = "Channel limit reached. Remove one before adding another."
+
+
+def max_user_channels() -> int:
+    """The effective admin-set channel cap.
+
+    Read from the `max_user_channels` system setting on every call, on
+    purpose — an admin's change on `/settings/system` is live on the very
+    next request, not just after a restart. Falls back to
+    `MAX_USER_CHANNELS` (config/env) when no row exists yet.
+
+    The setting lives in a JSON column an admin edits by hand, so it isn't
+    trusted to already be an int: a garbage value (`"abc"`, `None`, a
+    negative number) falls back to the config default / clamps to 0 rather
+    than blowing up the add-channel flow.
+    """
+    from app.core.settings.service import get_system_setting
+
+    fallback = current_app.config.get("MAX_USER_CHANNELS", 10)
+    value = get_system_setting("max_user_channels", fallback)
+    try:
+        value = int(value)
+    except (TypeError, ValueError):
+        return fallback
+    return max(value, 0)
+
+
+def list_user_channels(user: User) -> list[UserChannel]:
+    return UserChannel.query.filter_by(user_id=user.id).order_by(desc(UserChannel.created_at)).all()
+
+
+def get_user_channel(user: User, channel_pk: int) -> UserChannel | None:
+    """Fetch a UserChannel only if it belongs to this user — same ownership
+    guard as get_user_feed/get_note_for_user."""
+    return UserChannel.query.filter_by(id=channel_pk, user_id=user.id).first()
+
+
+def count_user_channels(user: User) -> int:
+    return UserChannel.query.filter_by(user_id=user.id).count()
+
+
+def add_user_channel(
+    user: User, raw: str, label: str | None = None
+) -> tuple[UserChannel | None, str | None]:
+    """Resolve + register a YouTube channel subscription. Returns
+    (channel, None) on success or (None, error_message) on any
+    validation/resolution failure — never raises for bad user input.
+
+    Step order mirrors add_user_feed:
+      1. blank input is rejected before any resolution attempt
+      2. resolve_channel(raw) does the actual work — SSRF guard, page/handle
+         lookup and a live validating fetch of the channel's own RSS feed.
+         Its error message is already plain, user-facing English, so it's
+         returned as-is rather than repeating those checks here.
+      3. re-adding an already-subscribed channel just reactivates it
+         (if paused) instead of creating a duplicate row, and — like
+         add_user_feed — consumes no cap slot to do so.
+      4. only a genuinely new subscription is checked against the cap.
+    """
+    from app.modules.scrape.sources.youtube_channel_source import resolve_channel
+
+    raw = (raw or "").strip()
+    if not raw:
+        return None, "Please enter a YouTube channel URL or @handle."
+
+    resolved, error = resolve_channel(raw)
+    if resolved is None:
+        return None, error
+
+    existing = UserChannel.query.filter_by(
+        user_id=user.id, channel_id=resolved["channel_id"]
+    ).first()
+    if existing is not None:
+        if not existing.active:
+            existing.active = True
+            db.session.commit()
+        return existing, None
+
+    cap = max_user_channels()
+    if count_user_channels(user) >= cap:
+        logger.info("user_channel_cap_reached", user_id=user.id, cap=cap)
+        return None, CHANNEL_CAP_MESSAGE
+
+    clean_label = (label or "").strip()[:200] or None
+    if not clean_label:
+        clean_label = (resolved.get("title") or "")[:200] or None
+
+    row = UserChannel(
+        user_id=user.id,
+        channel_id=resolved["channel_id"],
+        title=clean_label,
+        url=resolved["url"],
+        active=True,
+    )
+    db.session.add(row)
+    db.session.commit()
+    logger.info("user_channel_added", user_id=user.id, channel_pk=row.id, channel_id=row.channel_id)
+    return row, None
+
+
+def remove_user_channel(user: User, channel_pk: int) -> bool:
+    row = get_user_channel(user, channel_pk)
+    if row is None:
+        return False
+    db.session.delete(row)
+    db.session.commit()
+    return True
+
+
+def toggle_user_channel(user: User, channel_pk: int) -> bool | None:
+    """Flip a channel's active flag. Returns the new value, or None if the
+    channel doesn't exist / isn't owned by this user (caller should 404)."""
+    row = get_user_channel(user, channel_pk)
+    if row is None:
+        return None
+    row.active = not row.active
+    db.session.commit()
+    return row.active
 
 
 def count_user_papers(user: User, view: str = "discover") -> int:
