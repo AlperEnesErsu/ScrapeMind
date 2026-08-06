@@ -138,6 +138,10 @@ def github_reach_slot() -> bool:
     return acquire_slot("github_reach", int(_cfg("SCRAPE_RATE_GITHUB_PER_MIN", 30)), 60)
 
 
+def youtube_channel_slot() -> bool:
+    return acquire_slot("youtube_channel", int(_cfg("SCRAPE_RATE_YT_CHANNEL_PER_MIN", 30)), 60)
+
+
 def _cfg(key: str, default):
     try:
         return current_app.config.get(key, default)

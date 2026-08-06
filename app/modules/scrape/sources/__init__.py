@@ -27,6 +27,7 @@ from app.modules.scrape.sources import (
     pubmed_source,
     rss_source,
     semantic_scholar_source,
+    youtube_channel_source,
 )
 
 logger = structlog.get_logger()
@@ -40,6 +41,7 @@ AVAILABLE_SOURCES: dict[str, Any] = {
     agent_reach_source.YOUTUBE_SOURCE_NAME: agent_reach_source.youtube_adapter,
     agent_reach_source.GITHUB_SOURCE_NAME: agent_reach_source.github_adapter,
     agent_reach_source.WEB_SOURCE_NAME: agent_reach_source.web_adapter,
+    youtube_channel_source.SOURCE_NAME: youtube_channel_source,
 }
 # Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
 # under its own key, sharing the one `rss_source` module — the module's
@@ -157,6 +159,16 @@ SOURCE_META: dict[str, dict] = {
         "topics": ["general"],
         "category": "feed",
     },
+    "youtube_channel": {
+        "label": "YouTube Channels",
+        # bi-youtube is already used by youtube_reach (video search) — a
+        # distinct icon keeps the two tellable apart in the source picker.
+        "icon": "bi-collection-play",
+        "desc": "New uploads from channels you subscribe to, with transcripts",
+        "url": "https://www.youtube.com",
+        "topics": ["general", "ai", "cs"],
+        "category": "feed",
+    },
 }
 for _feed in rss_source.FEEDS:
     SOURCE_META[_feed["key"]] = {
@@ -170,7 +182,7 @@ for _feed in rss_source.FEEDS:
 
 _DEFAULT = (
     "arxiv,semantic_scholar,pubmed,openalex,crossref,youtube_reach,github_reach,web_reach,"
-    + ",".join(f["key"] for f in rss_source.FEEDS)
+    "youtube_channel," + ",".join(f["key"] for f in rss_source.FEEDS)
 )
 
 

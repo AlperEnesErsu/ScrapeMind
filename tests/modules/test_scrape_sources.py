@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -15,9 +16,11 @@ from app.modules.scrape.sources import crossref_source as cr
 from app.modules.scrape.sources import openalex_source as oa
 from app.modules.scrape.sources import pubmed_source as pm
 from app.modules.scrape.sources import semantic_scholar_source as ss
+from app.modules.scrape.sources import youtube_channel_source as yc
 
 _FEED_KEYS = {f["key"] for f in rss_source.FEEDS}
 _REACH_KEYS = {"youtube_reach", "github_reach", "web_reach"}
+_CHANNEL_KEYS = {"youtube_channel"}
 
 # ----------------------------------------------------------------------------
 # Registry
@@ -31,7 +34,7 @@ def test_registry_has_academic_adapters_and_feeds():
         "pubmed",
         "openalex",
         "crossref",
-    } | _FEED_KEYS | _REACH_KEYS == set(AVAILABLE_SOURCES)
+    } | _FEED_KEYS | _REACH_KEYS | _CHANNEL_KEYS == set(AVAILABLE_SOURCES)
 
 
 def test_every_feed_key_has_source_meta():
@@ -47,6 +50,7 @@ def test_enabled_sources_defaults_to_all(monkeypatch):
         == {"arxiv", "semantic_scholar", "pubmed", "openalex", "crossref"}
         | _FEED_KEYS
         | _REACH_KEYS
+        | _CHANNEL_KEYS
     )
 
 
@@ -979,3 +983,323 @@ def test_fetch_similar_papers_returns_payloads(monkeypatch):
     recs = ss.fetch_similar_papers("10.1000/182")
     assert len(recs) == 1
     assert recs[0].title == "Attention Is All You Need"  # newline flattened, like search()
+
+
+# ----------------------------------------------------------------------------
+# YouTube channels (youtube_channel_source) — channel resolution, channel-feed
+# ingestion via rss_source.fetch_feed_conditional, and yt-dlp transcripts.
+#
+# `yc.requests` and `rss_source.requests` are the same module object (both did
+# a plain `import requests`), so monkeypatching `yc.requests.get` also serves
+# the calls `fetch_channel_videos` makes through `rss_source.fetch_feed_conditional`.
+# The SSRF guard, however, is imported by *name* into each module's own
+# namespace, so both `yc.is_public_http_url` and `rss_source.is_public_http_url`
+# need neutralising separately.
+# ----------------------------------------------------------------------------
+
+_CHANNEL_ID = "UC" + "A1b2C3d4E5f6G7h8I9j0K1"  # 24 chars: "UC" + 22
+
+
+def _allow_yc(monkeypatch):
+    _allow(monkeypatch)
+    monkeypatch.setattr(yc, "is_public_http_url", lambda url, **kw: (True, None))
+
+
+def _channel_feed_xml(
+    channel_id: str, *, video_id: str = "vid1234567A", title: str = "A Great Video"
+) -> str:
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/" xmlns="http://www.w3.org/2005/Atom">
+<link rel="self" href="https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"/>
+<id>yt:channel:{channel_id}</id>
+<yt:channelId>{channel_id}</yt:channelId>
+<title>Fake Channel</title>
+<entry>
+  <id>yt:video:{video_id}</id>
+  <yt:videoId>{video_id}</yt:videoId>
+  <yt:channelId>{channel_id}</yt:channelId>
+  <title>{title}</title>
+  <link rel="alternate" href="https://www.youtube.com/watch?v={video_id}"/>
+  <author>
+    <name>Fake Channel</name>
+    <uri>https://www.youtube.com/channel/{channel_id}</uri>
+  </author>
+  <published>2026-07-20T12:00:00+00:00</published>
+  <updated>2026-07-20T12:05:00+00:00</updated>
+  <media:group>
+    <media:title>{title}</media:title>
+    <media:description>A cool video about   things.  &amp; stuff.</media:description>
+  </media:group>
+</entry>
+</feed>
+"""
+
+
+# ---- resolve_channel --------------------------------------------------------
+
+
+def test_resolve_channel_direct_channel_url_makes_no_page_request(monkeypatch):
+    _allow_yc(monkeypatch)
+
+    def fake_get(url, **kwargs):
+        if "feeds/videos.xml" in url:
+            return _FakeResponse(_channel_feed_xml(_CHANNEL_ID))
+        raise AssertionError(f"unexpected page request to {url}")
+
+    monkeypatch.setattr(yc.requests, "get", fake_get)
+    result, err = yc.resolve_channel(f"https://www.youtube.com/channel/{_CHANNEL_ID}")
+    assert err is None
+    assert result["channel_id"] == _CHANNEL_ID
+    assert result["title"] == "Fake Channel"
+    assert result["url"] == f"https://www.youtube.com/channel/{_CHANNEL_ID}"
+
+
+def test_resolve_channel_bare_id_makes_no_page_request(monkeypatch):
+    _allow_yc(monkeypatch)
+
+    def fake_get(url, **kwargs):
+        if "feeds/videos.xml" in url:
+            return _FakeResponse(_channel_feed_xml(_CHANNEL_ID))
+        raise AssertionError(f"unexpected page request to {url}")
+
+    monkeypatch.setattr(yc.requests, "get", fake_get)
+    result, err = yc.resolve_channel(_CHANNEL_ID)
+    assert err is None
+    assert result["channel_id"] == _CHANNEL_ID
+
+
+def test_resolve_channel_extracts_id_from_channel_id_json(monkeypatch):
+    html = f'<html><script>var x = {{"channelId":"{_CHANNEL_ID}","other":"x"}};</script></html>'
+    _allow_yc(monkeypatch)
+
+    def fake_get(url, **kwargs):
+        if "feeds/videos.xml" in url:
+            return _FakeResponse(_channel_feed_xml(_CHANNEL_ID))
+        return _FakeResponse(html)
+
+    monkeypatch.setattr(yc.requests, "get", fake_get)
+    result, err = yc.resolve_channel("@somehandle")
+    assert err is None
+    assert result["channel_id"] == _CHANNEL_ID
+
+
+def test_resolve_channel_extracts_id_from_meta_identifier_fallback(monkeypatch):
+    html = f'<html><head><meta itemprop="identifier" content="{_CHANNEL_ID}"></head></html>'
+    _allow_yc(monkeypatch)
+
+    def fake_get(url, **kwargs):
+        if "feeds/videos.xml" in url:
+            return _FakeResponse(_channel_feed_xml(_CHANNEL_ID))
+        return _FakeResponse(html)
+
+    monkeypatch.setattr(yc.requests, "get", fake_get)
+    result, err = yc.resolve_channel("https://www.youtube.com/c/SomeChannel")
+    assert err is None
+    assert result["channel_id"] == _CHANNEL_ID
+
+
+def test_resolve_channel_garbage_input_returns_error_without_raising(monkeypatch):
+    calls = []
+    monkeypatch.setattr(yc.requests, "get", lambda *a, **k: calls.append(1))
+    result, err = yc.resolve_channel("this is not a channel of any kind")
+    assert result is None
+    assert isinstance(err, str) and err
+    assert calls == []
+
+    result2, err2 = yc.resolve_channel("")
+    assert result2 is None
+    assert err2
+
+
+def test_resolve_channel_rejects_ssrf_blocked_url(monkeypatch):
+    monkeypatch.setattr(yc, "is_public_http_url", lambda url, **kw: (False, BLOCKED_MESSAGE))
+    calls = []
+    monkeypatch.setattr(yc.requests, "get", lambda *a, **k: calls.append(1))
+    result, err = yc.resolve_channel("@somehandle")
+    assert result is None
+    assert err
+    assert calls == []
+
+
+# ---- fetch_channel_videos ----------------------------------------------------
+
+
+def test_fetch_channel_videos_maps_entries_to_payloads(monkeypatch):
+    _allow_yc(monkeypatch)
+    monkeypatch.setattr(
+        yc.requests, "get", lambda *a, **k: _FakeResponse(_channel_feed_xml(_CHANNEL_ID))
+    )
+    payloads, status, _etag, _last_modified, title = yc.fetch_channel_videos(_CHANNEL_ID)
+    assert status == "ok"
+    assert title == "Fake Channel"
+    assert len(payloads) == 1
+    p = payloads[0]
+    assert p.source == "youtube_channel"
+    assert p.kind == "video"
+    assert p.external_id == "vid1234567A"
+    assert p.url == "https://www.youtube.com/watch?v=vid1234567A"
+    assert p.authors == ["Fake Channel"]
+    assert p.abstract == "A cool video about things. & stuff."
+    assert p.categories == ["video"]
+    assert p.published_at is not None
+    assert p.published_at.tzinfo is not None
+    assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2026, 7, 20)
+
+
+def test_fetch_channel_videos_passes_not_modified_through(monkeypatch):
+    _allow_yc(monkeypatch)
+    monkeypatch.setattr(yc.requests, "get", lambda *a, **k: _FakeResponse("", status_code=304))
+    payloads, status, etag, _last_modified, _title = yc.fetch_channel_videos(
+        _CHANNEL_ID, etag='W/"abc"'
+    )
+    assert status == "not_modified"
+    assert payloads == []
+    assert etag == 'W/"abc"'
+
+
+def test_entry_without_video_id_is_skipped():
+    entry = {"title": "Untitled Mystery", "link": "https://www.youtube.com/watch?list=PL123"}
+    assert yc._entry_to_payload(entry) is None
+
+
+# ---- fetch_transcript --------------------------------------------------------
+
+
+def _ytdlp_proc(info: dict, *, returncode: int = 0):
+    return SimpleNamespace(returncode=returncode, stdout=json.dumps(info), stderr="")
+
+
+def test_fetch_transcript_parses_json3(monkeypatch):
+    caption_json = {"events": [{"segs": [{"utf8": "Hello "}]}, {"segs": [{"utf8": "world."}]}]}
+    info = {"subtitles": {"en": [{"ext": "json3", "url": "https://example.test/caps.json3"}]}}
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+    monkeypatch.setattr(yc.subprocess, "run", lambda *a, **k: _ytdlp_proc(info))
+    monkeypatch.setattr(yc, "is_public_http_url", lambda url, **kw: (True, None))
+    monkeypatch.setattr(yc.requests, "get", lambda *a, **k: _FakeResponse(json.dumps(caption_json)))
+    text = yc.fetch_transcript("vid123", languages=("en",))
+    assert text == "Hello world."
+
+
+def test_fetch_transcript_parses_vtt_and_dedupes_scroll_lines(monkeypatch):
+    vtt_body = (
+        "WEBVTT\n\n"
+        "00:00:00.000 --> 00:00:02.000\n"
+        "Hello <c>there</c>\n\n"
+        "00:00:02.000 --> 00:00:04.000\n"
+        "Hello there\n"
+        "how are you\n"
+    )
+    info = {"subtitles": {"en": [{"ext": "vtt", "url": "https://example.test/caps.vtt"}]}}
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+    monkeypatch.setattr(yc.subprocess, "run", lambda *a, **k: _ytdlp_proc(info))
+    monkeypatch.setattr(yc, "is_public_http_url", lambda url, **kw: (True, None))
+    monkeypatch.setattr(yc.requests, "get", lambda *a, **k: _FakeResponse(vtt_body))
+    text = yc.fetch_transcript("vid123", languages=("en",))
+    # "Hello there" from the second cue is a scroll-repeat of the first and
+    # must not appear twice.
+    assert text == "Hello there how are you"
+
+
+def test_fetch_transcript_prefers_subtitles_over_automatic_and_matches_en_orig(monkeypatch):
+    urls = {
+        "https://example.test/sub.json3": {"events": [{"segs": [{"utf8": "Human captions."}]}]},
+        "https://example.test/auto.json3": {"events": [{"segs": [{"utf8": "Auto captions."}]}]},
+    }
+    info_both = {
+        "subtitles": {"en": [{"ext": "json3", "url": "https://example.test/sub.json3"}]},
+        "automatic_captions": {
+            "en-orig": [{"ext": "json3", "url": "https://example.test/auto.json3"}]
+        },
+    }
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+    monkeypatch.setattr(yc, "is_public_http_url", lambda url, **kw: (True, None))
+    monkeypatch.setattr(yc.requests, "get", lambda url, **k: _FakeResponse(json.dumps(urls[url])))
+
+    monkeypatch.setattr(yc.subprocess, "run", lambda *a, **k: _ytdlp_proc(info_both))
+    assert yc.fetch_transcript("vid", languages=("en",)) == "Human captions."
+
+    # No human subtitles for "en" at all -> falls back to auto captions,
+    # matching the "en-orig" variant via the language-tag prefix match.
+    info_auto_only = {
+        "subtitles": {},
+        "automatic_captions": {
+            "en-orig": [{"ext": "json3", "url": "https://example.test/auto.json3"}]
+        },
+    }
+    monkeypatch.setattr(yc.subprocess, "run", lambda *a, **k: _ytdlp_proc(info_auto_only))
+    assert yc.fetch_transcript("vid", languages=("en",)) == "Auto captions."
+
+
+def test_fetch_transcript_returns_none_when_ytdlp_missing(monkeypatch):
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+
+    def raise_fnf(*a, **k):
+        raise FileNotFoundError()
+
+    monkeypatch.setattr(yc.subprocess, "run", raise_fnf)
+    assert yc.fetch_transcript("vid") is None
+
+
+def test_fetch_transcript_returns_none_on_nonzero_returncode(monkeypatch):
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+    monkeypatch.setattr(
+        yc.subprocess,
+        "run",
+        lambda *a, **k: SimpleNamespace(returncode=1, stdout="", stderr="boom"),
+    )
+    assert yc.fetch_transcript("vid") is None
+
+
+def test_fetch_transcript_returns_none_on_timeout(monkeypatch):
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+
+    def raise_timeout(*a, **k):
+        raise yc.subprocess.TimeoutExpired(cmd="yt-dlp", timeout=30)
+
+    monkeypatch.setattr(yc.subprocess, "run", raise_timeout)
+    assert yc.fetch_transcript("vid") is None
+
+
+def test_fetch_transcript_returns_none_on_unparseable_json(monkeypatch):
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+    monkeypatch.setattr(
+        yc.subprocess,
+        "run",
+        lambda *a, **k: SimpleNamespace(returncode=0, stdout="not json at all", stderr=""),
+    )
+    assert yc.fetch_transcript("vid") is None
+
+
+def test_fetch_transcript_returns_none_when_no_captions_in_requested_languages(monkeypatch):
+    info = {"subtitles": {"fr": [{"ext": "json3", "url": "https://example.test/fr.json3"}]}}
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+    monkeypatch.setattr(yc.subprocess, "run", lambda *a, **k: _ytdlp_proc(info))
+    assert yc.fetch_transcript("vid", languages=("tr", "en")) is None
+
+
+def test_fetch_transcript_output_is_capped(monkeypatch):
+    long_text = "word " * 20000
+    caption_json = {"events": [{"segs": [{"utf8": long_text}]}]}
+    info = {"subtitles": {"en": [{"ext": "json3", "url": "https://example.test/long.json3"}]}}
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: True)
+    monkeypatch.setattr(yc.subprocess, "run", lambda *a, **k: _ytdlp_proc(info))
+    monkeypatch.setattr(yc, "is_public_http_url", lambda url, **kw: (True, None))
+    monkeypatch.setattr(yc.requests, "get", lambda *a, **k: _FakeResponse(json.dumps(caption_json)))
+    text = yc.fetch_transcript("vid", languages=("en",))
+    assert len(text) == yc.TRANSCRIPT_MAX_CHARS
+
+
+def test_fetch_transcript_throttled_returns_none_without_subprocess(monkeypatch):
+    monkeypatch.setattr(yc, "youtube_channel_slot", lambda: False)
+    calls = []
+    monkeypatch.setattr(yc.subprocess, "run", lambda *a, **k: calls.append(1))
+    assert yc.fetch_transcript("vid") is None
+    assert calls == []
+
+
+# ---- contract no-ops ---------------------------------------------------------
+
+
+def test_youtube_channel_search_and_search_for_keywords_are_noops():
+    assert yc.search("anything", max_results=5) == []
+    assert yc.search_for_keywords(["anything"], max_results=5) == []

@@ -142,6 +142,13 @@ class FeedFetchResult:
     #: The feed's own <title>, used to auto-fill a label when a user adds a
     #: custom feed without naming it.
     title: str | None = None
+    #: Raw feedparser entries (`parsed.entries`, capped to `max_entries`),
+    #: for callers that need fields `_entries_to_payloads` drops on the floor
+    #: (e.g. `media:description`, the entry author, a source-specific id
+    #: scheme). Defaulted to `()` so every existing caller/test that only
+    #: ever looked at `.payloads` is unaffected. See `youtube_channel_source`
+    #: for the motivating consumer.
+    entries: tuple = ()
 
 
 def _get_with_redirects(
@@ -294,8 +301,11 @@ def fetch_feed_conditional(
 
     out = _entries_to_payloads(parsed, key, max_entries)
     feed_title = ((getattr(parsed, "feed", None) or {}).get("title") or "").strip() or None
+    raw_entries = tuple(parsed.entries[:max_entries])
     logger.info("rss_fetch_done", key=key, hits=len(out))
-    return FeedFetchResult(out, "ok", new_etag, new_last_modified, http_status, feed_title)
+    return FeedFetchResult(
+        out, "ok", new_etag, new_last_modified, http_status, feed_title, raw_entries
+    )
 
 
 def fetch_feed(feed: dict[str, str], *, max_entries: int = 40) -> list[PaperPayload]:

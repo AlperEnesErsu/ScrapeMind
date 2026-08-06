@@ -140,6 +140,10 @@ class BaseConfig:
     SCRAPE_RATE_WEB_PER_MIN = int(os.getenv("SCRAPE_RATE_WEB_PER_MIN", "30"))
     SCRAPE_RATE_YOUTUBE_PER_MIN = int(os.getenv("SCRAPE_RATE_YOUTUBE_PER_MIN", "30"))
     SCRAPE_RATE_GITHUB_PER_MIN = int(os.getenv("SCRAPE_RATE_GITHUB_PER_MIN", "30"))
+    # yt-dlp transcript fetches (youtube_channel_source.fetch_transcript) —
+    # a separate bucket from SCRAPE_RATE_YOUTUBE_PER_MIN (agent_reach_source's
+    # video *search*): one video summary per new upload, not a search call.
+    SCRAPE_RATE_YT_CHANNEL_PER_MIN = int(os.getenv("SCRAPE_RATE_YT_CHANNEL_PER_MIN", "30"))
 
     # Redis cache for RBAC permission sets (see app/core/cache.py). Purely an
     # optimisation: with CACHE_ENABLED=false, or Redis unreachable, everything
