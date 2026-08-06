@@ -119,6 +119,11 @@ class BaseConfig:
     # nightly feed fetch plus, potentially, a transcript download and an LLM
     # summary.
     MAX_USER_CHANNELS = int(os.getenv("MAX_USER_CHANNELS", "10"))
+    # Per user, per nightly run: how many newly-ingested videos get a
+    # transcript-summarization job queued. One model call per video per user
+    # per night is real spend — this keeps a free-tier model's rate limit and
+    # a user's token budget sane even for a user with several active channels.
+    CHANNEL_SUMMARY_MAX_PER_RUN = int(os.getenv("CHANNEL_SUMMARY_MAX_PER_RUN", "5"))
     # Read timeout (seconds) and hard body cap (bytes) for a feed fetch.
     FEED_FETCH_TIMEOUT = int(os.getenv("FEED_FETCH_TIMEOUT", "15"))
     FEED_FETCH_MAX_BYTES = int(os.getenv("FEED_FETCH_MAX_BYTES", "5242880"))  # 5 MiB

@@ -31,6 +31,13 @@ BEAT_SCHEDULE = {
         "task": "feeds.ingest_all",
         "schedule": crontab(hour=2, minute=45),
     },
+    # Per-user YouTube channel ingestion (new videos + bounded transcript
+    # summarization) — after the global feed ingest so it doesn't contend
+    # with it, before the nightly scrape so it gets its own clear window.
+    "channels-ingest-nightly": {
+        "task": "channels.ingest_for_all_users",
+        "schedule": crontab(hour=2, minute=55),
+    },
     # Nightly fan-out: at 03:15 every day, queue a scrape task for every
     # active user. Each per-user task picks up their keywords + identifiers
     # at that moment.

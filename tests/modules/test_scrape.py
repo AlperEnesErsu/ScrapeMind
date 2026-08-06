@@ -706,3 +706,165 @@ def test_toggle_and_remove_user_channel(db, clean, monkeypatch):
 
     assert remove_user_channel(clean, channel.id) is True
     assert remove_user_channel(clean, channel.id) is False  # already gone
+
+
+# ----------------------------------------------------------------------------
+# ingest_user_channels — the channel counterpart of ingest_user_feeds
+# (tests/modules/test_topics.py). `fetch_channel_videos` is monkeypatched at
+# its source module, same reasoning as `_RESOLVE_CHANNEL_TARGET` above:
+# `ingest_user_channels` imports it locally inside the function.
+# ----------------------------------------------------------------------------
+
+_FETCH_CHANNEL_VIDEOS_TARGET = (
+    "app.modules.scrape.sources.youtube_channel_source.fetch_channel_videos"
+)
+
+
+def _video_payload(video_id: str, *, published_at=None) -> PaperPayload:
+    return PaperPayload(
+        source="youtube_channel",
+        external_id=video_id,
+        title=f"Video {video_id}",
+        abstract="a video description",
+        authors=["Some Channel"],
+        url=f"https://www.youtube.com/watch?v={video_id}",
+        pdf_url=None,
+        published_at=published_at or datetime(2026, 7, 1, tzinfo=UTC),
+        categories=["video"],
+        kind="video",
+        doi=None,
+    )
+
+
+def test_ingest_user_channels_creates_and_links_papers(db, clean, monkeypatch):
+    from app.modules.scrape.models import UserChannel
+    from app.modules.scrape.service import ingest_user_channels
+
+    row = UserChannel(
+        user_id=clean.id,
+        channel_id="UC1111111111111111111111",
+        title="Test Channel",
+        url="https://www.youtube.com/channel/UC1111111111111111111111",
+        active=True,
+    )
+    db.session.add(row)
+    db.session.commit()
+
+    payloads = [
+        _video_payload("vid-1", published_at=datetime(2026, 7, 1, tzinfo=UTC)),
+        _video_payload("vid-2", published_at=datetime(2026, 7, 5, tzinfo=UTC)),
+    ]
+    monkeypatch.setattr(
+        _FETCH_CHANNEL_VIDEOS_TARGET,
+        lambda channel_id, *, etag=None, last_modified=None, max_entries=15: (
+            payloads,
+            "ok",
+            '"etag-1"',
+            "Wed, 01 Jul 2026 00:00:00 GMT",
+            "Test Channel",
+        ),
+    )
+
+    summary, new_ids = ingest_user_channels(clean)
+    assert summary == {"UC1111111111111111111111": 2}
+    assert len(new_ids) == 2
+
+    rows = Paper.query.filter_by(source="youtube_channel", kind="video").all()
+    assert len(rows) == 2
+    assert {r.external_id for r in rows} == {"vid-1", "vid-2"}
+
+    linked_ids = {up.paper_id for up in UserPaper.query.filter_by(user_id=clean.id).all()}
+    assert linked_ids == {r.id for r in rows}
+
+    db.session.refresh(row)
+    assert row.etag == '"etag-1"'
+    assert row.last_modified == "Wed, 01 Jul 2026 00:00:00 GMT"
+    assert row.last_video_at == datetime(2026, 7, 5, tzinfo=UTC)
+
+
+def test_ingest_user_channels_not_modified_stores_nothing(db, clean, monkeypatch):
+    from app.modules.scrape.models import UserChannel
+    from app.modules.scrape.service import ingest_user_channels
+
+    row = UserChannel(
+        user_id=clean.id,
+        channel_id="UC2222222222222222222222",
+        url="https://www.youtube.com/channel/UC2222222222222222222222",
+        active=True,
+        etag='"old-etag"',
+    )
+    db.session.add(row)
+    db.session.commit()
+
+    monkeypatch.setattr(
+        _FETCH_CHANNEL_VIDEOS_TARGET,
+        lambda channel_id, *, etag=None, last_modified=None, max_entries=15: (
+            [],
+            "not_modified",
+            etag,
+            last_modified,
+            None,
+        ),
+    )
+
+    summary, new_ids = ingest_user_channels(clean)
+    assert summary == {"UC2222222222222222222222": 0}
+    assert new_ids == []
+    db.session.refresh(row)
+    assert row.etag == '"old-etag"'  # untouched — not_modified is not an update
+    assert Paper.query.filter_by(source="youtube_channel").count() == 0
+
+
+def test_ingest_user_channels_http_error_records_sentinel_and_continues(db, clean, monkeypatch):
+    from app.modules.scrape.models import UserChannel
+    from app.modules.scrape.service import ingest_user_channels
+
+    bad = UserChannel(
+        user_id=clean.id,
+        channel_id="UC3333333333333333333333",
+        url="https://www.youtube.com/channel/UC3333333333333333333333",
+        active=True,
+    )
+    good = UserChannel(
+        user_id=clean.id,
+        channel_id="UC4444444444444444444444",
+        url="https://www.youtube.com/channel/UC4444444444444444444444",
+        active=True,
+    )
+    db.session.add_all([bad, good])
+    db.session.commit()
+
+    def _fetch(channel_id, *, etag=None, last_modified=None, max_entries=15):
+        if channel_id == "UC3333333333333333333333":
+            return [], "http_error", None, None, None
+        return [_video_payload("vid-good")], "ok", None, None, "Good Channel"
+
+    monkeypatch.setattr(_FETCH_CHANNEL_VIDEOS_TARGET, _fetch)
+
+    summary, new_ids = ingest_user_channels(clean)
+    assert summary["UC3333333333333333333333"] == -1
+    assert summary["UC4444444444444444444444"] == 1
+    assert len(new_ids) == 1
+
+
+def test_ingest_user_channels_skips_inactive(db, clean, monkeypatch):
+    from app.modules.scrape.models import UserChannel
+    from app.modules.scrape.service import ingest_user_channels
+
+    row = UserChannel(
+        user_id=clean.id,
+        channel_id="UC5555555555555555555555",
+        url="https://www.youtube.com/channel/UC5555555555555555555555",
+        active=False,
+    )
+    db.session.add(row)
+    db.session.commit()
+
+    def _boom(channel_id, *, etag=None, last_modified=None, max_entries=15):
+        raise AssertionError("an inactive channel must not be fetched")
+
+    monkeypatch.setattr(_FETCH_CHANNEL_VIDEOS_TARGET, _boom)
+
+    summary, new_ids = ingest_user_channels(clean)
+    assert summary == {}
+    assert new_ids == []

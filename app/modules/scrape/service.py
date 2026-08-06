@@ -1080,9 +1080,9 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
 
 # ----------------------------------------------------------------------------
 # Custom user YouTube channels — the twin of the custom-RSS-feed feature
-# above, subscription-based the same way. Celery ingestion (chaining transcript
-# fetch + summarization) and the routes/UI that call it land in a later commit;
-# this is CRUD only.
+# above, subscription-based the same way. CRUD first, `ingest_user_channels`
+# (the Celery-driven ingestion, chaining transcript fetch + summarization)
+# below it — see `app/tasks/channel_tasks.py` for the task that calls it.
 # ----------------------------------------------------------------------------
 
 #: Shown when a user tries to add channel number max_user_channels() + 1. Kept
@@ -1205,6 +1205,101 @@ def toggle_user_channel(user: User, channel_pk: int) -> bool | None:
     row.active = not row.active
     db.session.commit()
     return row.active
+
+
+def ingest_user_channels(user: User) -> tuple[dict, list[int]]:
+    """Fetch this user's active YouTube channel subscriptions and upsert new
+    Papers (`source="youtube_channel"`, `kind="video"`) — the channel
+    counterpart of `ingest_user_feeds` above, called from
+    `channel_tasks.ingest_for_user`.
+
+    Unlike the RSS feed path (`UserFeed`/`ingest_user_feeds`), which stores an
+    etag/last_modified on the row but never sends it back on the next fetch,
+    this one actually round-trips it: `fetch_channel_videos` is called with
+    the row's stored `etag`/`last_modified`, and a `not_modified` response
+    short-circuits that channel at zero parsing/upsert cost instead of
+    re-processing the same unread feed content every night.
+
+    Returns `(summary, new_paper_ids)`:
+      * `summary` maps `channel_id -> count` for that channel this run — `-1`
+        is the same "this one errored" sentinel `scrape_for_user`/
+        `feeds.ingest_all` use, so `apply_scan_result` reads it unchanged.
+      * `new_paper_ids` is every Paper id newly *created* this run (for
+        `channel_tasks.ingest_for_user` to hand to `summarize_video`).
+        "Newly created" is decided the same way `ingest_user_feeds` decides
+        it: a pre-upsert existence check on `(source, external_id)`, not
+        `link_user_paper`'s `created` flag. The two diverge when a video's
+        Paper row already exists (another user subscribes to the same
+        channel) but is new to *this* user's library — that case must not
+        queue a second summarization job for a video someone already
+        summarized.
+
+    One broken channel must never abort the loop — per-channel try/except,
+    same isolation contract as `ingest_user_feeds`'s per-feed try/except.
+    """
+    from app.modules.scrape.sources.youtube_channel_source import fetch_channel_videos
+
+    channels = [c for c in list_user_channels(user) if c.active]
+    if not channels:
+        return {}, []
+
+    summary: dict[str, int] = {}
+    new_paper_ids: list[int] = []
+    for ch in channels:
+        try:
+            payloads, status, etag, last_modified, _title = fetch_channel_videos(
+                ch.channel_id, etag=ch.etag, last_modified=ch.last_modified
+            )
+        except Exception:  # noqa: BLE001 — one broken channel must not block the others
+            logger.exception(
+                "user_channel_ingest_failed", user_id=user.id, channel_id=ch.channel_id
+            )
+            summary[ch.channel_id] = -1
+            continue
+
+        if status == "not_modified":
+            summary[ch.channel_id] = 0
+            continue
+        if status != "ok":
+            logger.warning(
+                "user_channel_ingest_bad_status",
+                user_id=user.id,
+                channel_id=ch.channel_id,
+                status=status,
+            )
+            summary[ch.channel_id] = -1
+            continue
+
+        ch.etag = etag
+        ch.last_modified = last_modified
+
+        newest_published_at = ch.last_video_at
+        for payload in payloads:
+            existed = (
+                Paper.query.filter_by(
+                    source=payload.source, external_id=payload.external_id
+                ).first()
+                is not None
+            )
+            paper = upsert_paper(payload)
+            link_user_paper(user, paper, matched_keyword=None)
+            if not existed:
+                new_paper_ids.append(paper.id)
+            if payload.published_at and (
+                newest_published_at is None or payload.published_at > newest_published_at
+            ):
+                newest_published_at = payload.published_at
+
+        if newest_published_at is not None:
+            ch.last_video_at = newest_published_at
+
+        db.session.commit()
+        summary[ch.channel_id] = len(payloads)
+
+    logger.info(
+        "user_channels_ingest_done", user_id=user.id, summary=summary, new=len(new_paper_ids)
+    )
+    return summary, new_paper_ids
 
 
 def count_user_papers(user: User, view: str = "discover") -> int:

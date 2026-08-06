@@ -176,7 +176,7 @@ class ScanRun(BaseModel):
     __tablename__ = "scan_runs"
 
     user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
-    kind = db.Column(db.String(16), nullable=False)  # "scrape" | "feeds"
+    kind = db.Column(db.String(16), nullable=False)  # "scrape" | "feeds" | "channels"
     trigger = db.Column(db.String(16), nullable=False, default="auto")  # "auto" | "manual"
     # "running" | "ok" | "partial" | "skipped" | "error"
     status = db.Column(db.String(16), nullable=False, default="running")
@@ -319,6 +319,42 @@ class PaperAnalysis(BaseModel):
     __table_args__ = (
         db.UniqueConstraint("paper_id", "target_lang", name="uq_paper_analysis_lang"),
     )
+
+
+class VideoSummary(BaseModel):
+    """LLM-generated TL;DR + highlights/topics for one channel video's
+    transcript. One row per Paper — see `app/modules/scrape/ai_service.py`
+    `generate_video_summary` for the generation path.
+
+    Two decisions worth documenting:
+
+    1. Unique on `paper_id` alone, unlike `PaperAnalysis` which is unique on
+       `(paper_id, target_lang)`. The feed renders up to 100 cards, and a
+       `uselist=False` relationship collapses to one `joinedload` LEFT JOIN
+       instead of an N+1. The cost is no per-language cache: a video gets
+       one summary, in the deployment's default language.
+    2. The raw transcript is never stored here — only `transcript_chars`.
+       `docs/SCRAPING.md` §11 commits to never republishing copyrighted
+       content (summary + link back only), and transcripts are also large;
+       keeping only the character count is enough to show "based on an
+       11,000-character transcript" without holding onto the text itself.
+    """
+
+    __tablename__ = "video_summaries"
+
+    paper_id = db.Column(
+        db.BigInteger, db.ForeignKey("papers.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    tldr = db.Column(db.Text, nullable=True)
+    highlights = db.Column(db.JSON, nullable=True)  # list[str]
+    topics = db.Column(db.JSON, nullable=True)  # list[str]
+    transcript_chars = db.Column(db.Integer, nullable=True)
+    source_lang = db.Column(db.String(8), nullable=True)  # transcript language actually used
+    target_lang = db.Column(db.String(8), nullable=True)  # summary language
+    model_version = db.Column(db.String(64), nullable=True)
+    raw_response = db.Column(db.JSON, nullable=True)
+
+    paper = db.relationship("Paper", backref=db.backref("video_summary", uselist=False))
 
 
 class UserDigest(BaseModel):
