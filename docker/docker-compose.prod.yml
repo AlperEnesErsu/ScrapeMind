@@ -81,7 +81,13 @@ services:
     # Overrides the entrypoint's migrate+gunicorn: the web service owns
     # migrations, the worker just consumes the queue.
     entrypoint: []
-    command: celery -A app.tasks worker --loglevel=info --concurrency=2
+    # -Q must list every queue in app.tasks.TASK_ROUTES plus the default
+    # "celery". Without it Celery consumes "celery" only, so the routed tasks
+    # (feeds.ingest_all -> io, scrape.run_* -> scrape, feeds.link_for_user and
+    # digest.run_for_user -> llm) pile up unconsumed and the nightly scan,
+    # feed ingestion and digest silently never run. Dev splits the same queues
+    # across worker/worker-io; a single-VM prod box runs one worker for all.
+    command: celery -A app.tasks worker -Q celery,io,scrape,llm --loglevel=info --concurrency=2
     restart: unless-stopped
     depends_on:
       db:
