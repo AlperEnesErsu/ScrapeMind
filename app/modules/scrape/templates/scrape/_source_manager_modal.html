@@ -10,7 +10,11 @@
    the client swaps it in via `outerHTML` on every toggle — a modal living
    inside that subtree would be destroyed mid-toggle, and Bootstrap would
    leak an orphaned backdrop if that happened while the modal was open. #}
-<div class="modal fade" id="sourceManagerModal" tabindex="-1" aria-labelledby="sourceManagerModalLabel" aria-hidden="true">
+{# data-bs-backdrop="static": an outside click used to close this and silently
+   drop whatever the user had half-typed into the feed/channel URL field —
+   Esc is left alone (data-bs-keyboard untouched) as a deliberate escape
+   hatch, only the stray-click dismiss is the problem being fixed. #}
+<div class="modal fade" id="sourceManagerModal" tabindex="-1" aria-labelledby="sourceManagerModalLabel" aria-hidden="true" data-bs-backdrop="static">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">

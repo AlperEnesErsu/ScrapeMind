@@ -79,10 +79,45 @@ echo.
 echo Seed verileri kontrol ediliyor...
 python scripts\seed.py
 
+:: --- Worker kontrolu ---
+:: Worker olmadan gece taramasi, besleme/kanal yutma, digest ve video ozeti
+:: hicbir zaman calismaz -- sessizce. Burada tespit edip sormak, "calistirdim
+:: ama hicbir sey olmuyor" sikayetini onlemek icin. Redis/worker kapaliysa
+:: probe hata verir, bu da "worker yok" ile ayni yola duser -- uygulamayi
+:: asla bekletmemeli (bkz. asagidaki /t 10 /d H).
+echo.
+echo Worker durumu kontrol ediliyor...
+python -c "from app.tasks import celery_app; import sys; sys.exit(0 if celery_app.control.ping(timeout=1) else 1)" >nul 2>&1
+if %errorlevel% equ 0 goto worker_running
+
+echo.
+echo [UYARI] Calisir durumda bir Celery worker bulunamadi.
+echo          Worker olmadan calismayacak ozellikler:
+echo            - Gece taramasi
+echo            - Besleme/kanal yutma
+echo            - Digest e-postasi
+echo            - Video transkript ozeti
+echo.
+:: CMD "if" bloklari parantez icermez, bu yuzden goto stiliyle devam ediyoruz.
+choice /c EH /n /t 10 /d H /m "Worker'lari simdi baslatayim mi? [E/h] (10sn sonra hayir)"
+if errorlevel 2 goto worker_skip
+start worker.bat
+goto worker_prompt_done
+
+:worker_skip
+echo Sonra baslatmak icin: worker.bat
+goto worker_prompt_done
+
+:worker_running
+echo Arka plan isleri calisiyor (worker bulundu).
+
+:worker_prompt_done
+
 echo.
 echo Sunucu baslatildi!
 echo Ana Sayfa   : http://localhost:5000
 echo Giris       : http://localhost:5000/auth/login  -- admin / admin1234
+echo Arka plan islerini baslatmak icin: worker.bat
 echo.
 echo Durdurmak icin Ctrl+C basin
 echo.

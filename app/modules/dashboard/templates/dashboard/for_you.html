@@ -28,9 +28,20 @@
         </a>
         <a href="#sources-card" class="text-decoration-none">
           <span class="badge rounded-pill bg-info-subtle text-info-emphasis py-1 px-3">
-            <i class="bi bi-database me-1"></i>{{ _('%(n)s active sources', n=active_source_count) }}
+            {# scanned_source_count (curated + own active feeds + own active
+               channels) — not active_source_count, which is curated sources
+               only and undercounts what actually gets scanned. See
+               scrape.service.sources_card_context. #}
+            <i class="bi bi-database me-1"></i>{{ _('%(n)s active sources', n=scanned_source_count) }}
           </span>
         </a>
+        {# rounded-pill and the same py-1 as the badges beside it, so this sits
+           on the pill row instead of standing a few pixels taller than it. #}
+        <button type="button" class="btn btn-sm btn-outline-info rounded-pill py-1 px-2 lh-1 d-inline-flex align-items-center"
+                data-bs-toggle="modal" data-bs-target="#sourceManagerModal"
+                title="{{ _('Manage your sources') }}" aria-label="{{ _('Manage your sources') }}">
+          <i class="bi bi-plus-lg"></i>
+        </button>
         <a href="{{ url_for('settings.profile') }}" class="text-decoration-none">
           <span class="badge rounded-pill bg-body-secondary text-body py-1 px-3 border border-dark-subtle">
             <i class="bi bi-person-vcard me-1"></i>{{ _('%(n)s verified identifiers', n=verified_identifier_count) }}

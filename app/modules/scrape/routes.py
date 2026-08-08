@@ -121,7 +121,7 @@ def _channel_list_ctx(filter_: str = "all") -> dict:
     }
 
 
-def _source_manager_ctx() -> dict:
+def _source_manager_ctx(*, clear_forms: bool = False) -> dict:
     """Context for `settings/_source_manager.html` — the two add-forms plus
     the (cheap) feed/channel list contexts. Deliberately free of
     `classify_user_topics` / `user_llm_status`, same reasoning as
@@ -129,16 +129,27 @@ def _source_manager_ctx() -> dict:
     what a feed/channel add re-renders, and both need to stay an LLM-free
     round trip. `_ai_ctx` layers the expensive bits on top for the full-tab
     render only.
+
+    `clear_forms` empties the inputs. A bare `UserFeedForm()` inside a POST
+    request re-populates itself from the submitted formdata, so after a
+    *successful* add the URL the user just added stays sitting in the box —
+    which reads as "that didn't work" and invites a duplicate submit. It
+    matters more in the modal, where you stay put and add several in a row.
+    On failure we deliberately keep the value so it can be corrected.
     """
+    # Omit the kwarg entirely rather than passing a sentinel: Flask-WTF's
+    # default for `formdata` is a private _Auto marker, and importing that
+    # would couple us to its internals.
+    kwargs = {"formdata": None} if clear_forms else {}
     return {
-        "feed_form": UserFeedForm(),
-        "channel_form": UserChannelForm(),
+        "feed_form": UserFeedForm(**kwargs),
+        "channel_form": UserChannelForm(**kwargs),
         **_feed_list_ctx(),
         **_channel_list_ctx(),
     }
 
 
-def _ai_ctx():
+def _ai_ctx(*, clear_forms: bool = False):
     from flask import current_app
 
     from app.modules.scrape.ai_service import classify_user_topics, user_llm_status
@@ -149,7 +160,7 @@ def _ai_ctx():
         "provider": (current_app.config.get("LLM_PROVIDER") or "openrouter").strip().lower(),
         "default_model": current_app.config.get("OPENROUTER_MODEL"),
         "user_topics": classify_user_topics(current_user),
-        **_source_manager_ctx(),
+        **_source_manager_ctx(clear_forms=clear_forms),
     }
 
 
@@ -181,19 +192,36 @@ def source_manager():
     )
 
 
-def _render_source_manager_result(surface: str | None, **flash_kwargs):
+def _render_source_manager_result(
+    surface: str | None, *, active_pane: str = "feeds", added: bool = False, **flash_kwargs
+):
     """Shared response for submit_feed_add/submit_channel_add: the modal
     surface swaps just the source-manager partial (cheap context); anything
     else (the settings tab, or no `surface` field at all) re-renders the
-    full AI tab, unchanged from before this route became surface-aware."""
+    full AI tab, unchanged from before this route became surface-aware.
+
+    `active_pane` ("feeds" | "channels") keeps the modal on the tab the user
+    was just working in — re-rendering the whole partial after an add would
+    otherwise reset to the first tab, which is exactly the kind of thing that
+    makes a popup feel broken (add a channel, get bounced back to RSS). The
+    settings tab has no tab strip and simply ignores the value — passed
+    through anyway so both branches share one signature.
+
+    `added` says the add succeeded, which clears the inputs (see
+    `_source_manager_ctx`). On failure they keep their values so the user can
+    fix the URL instead of retyping it.
+    """
     if surface == "modal":
         return render_template(
             "settings/_source_manager.html",
             surface="modal",
-            **_source_manager_ctx(),
+            active_pane=active_pane,
+            **_source_manager_ctx(clear_forms=added),
             **flash_kwargs,
         )
-    return _render_settings_tab("ai", **flash_kwargs, **_ai_ctx())
+    return _render_settings_tab(
+        "ai", active_pane=active_pane, **flash_kwargs, **_ai_ctx(clear_forms=added)
+    )
 
 
 @scrape_bp.route("/profile/ai/save", methods=["POST"])
@@ -264,15 +292,21 @@ def submit_feed_add():
                 changes={"url": feed.url},
             )
             return _render_source_manager_result(
-                surface, flash_msg=_("Feed added."), flash_kind="success"
+                surface,
+                active_pane="feeds",
+                added=True,
+                flash_msg=_("Feed added."),
+                flash_kind="success",
             )
         return _render_source_manager_result(
             surface,
+            active_pane="feeds",
             flash_msg=_(err or "Could not add that feed."),
             flash_kind="danger",
         )
     return _render_source_manager_result(
         surface,
+        active_pane="feeds",
         flash_msg=_("Please correct the errors below."),
         flash_kind="danger",
     )
@@ -353,15 +387,21 @@ def submit_channel_add():
                 changes={"channel_id": channel.channel_id},
             )
             return _render_source_manager_result(
-                surface, flash_msg=_("Channel added."), flash_kind="success"
+                surface,
+                active_pane="channels",
+                added=True,
+                flash_msg=_("Channel added."),
+                flash_kind="success",
             )
         return _render_source_manager_result(
             surface,
+            active_pane="channels",
             flash_msg=_(err or "Could not add that channel."),
             flash_kind="danger",
         )
     return _render_source_manager_result(
         surface,
+        active_pane="channels",
         flash_msg=_("Please correct the errors below."),
         flash_kind="danger",
     )

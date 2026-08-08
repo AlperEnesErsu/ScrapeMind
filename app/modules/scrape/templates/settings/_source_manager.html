@@ -3,10 +3,21 @@
    scrape.source_manager for the home-page popup (surface='modal').
 
    Verbatim between the two surfaces except: the swap target each add-form
-   posts back to, and the hidden `surface` field that tells the server which
-   wrapper to re-render on success/failure. #}
+   posts back to, the hidden `surface` field that tells the server which
+   wrapper to re-render on success/failure, and — modal only — a tab strip
+   splitting the two sections into panes (the settings tab is a full page
+   with room to stack both; the modal is a fixed-height dialog and used to
+   just scroll past the RSS section to reach the channels one). The section
+   bodies themselves (`feeds_section`/`channels_section` macros below) are
+   never duplicated between the two layouts. #}
 {% set surface = surface | default('tab') %}
 {% set swap_target = '#tab-content' if surface == 'tab' else '#source-manager-body' %}
+
+{# Which pane is active after an add-form re-renders this whole partial (see
+   submit_feed_add/submit_channel_add in routes.py) — defaults to the feeds
+   pane on first open. Unused (and harmless) when surface == 'tab', which has
+   no tab strip to begin with. #}
+{% set active_pane = active_pane | default('feeds') %}
 
 {# The tab surface already gets a flash at the top of _tab_ai.html (outside
    this include) — rendering it again here would double the alert. The modal
@@ -17,11 +28,10 @@
 {% include 'settings/_flash_partial.html' %}
 {% endif %}
 
-{# This rule separates the feeds section from the AI-settings form that sits
-   above it in the tab. In the modal there is nothing above it, so it would
-   render as a stray line under the header. #}
-{% if surface == 'tab' %}<hr class="my-4">{% endif %}
-<h6 class="text-muted mb-3">{{ _('Your own RSS feeds') }}</h6>
+{% macro feeds_section() %}
+{# In the modal the tab already names this section — repeating it as a heading
+   right underneath just says the same thing twice. #}
+{% if surface == 'tab' %}<h6 class="text-muted mb-3">{{ _('Your own RSS feeds') }}</h6>{% endif %}
 <p class="small text-muted">
   {{ _('Add any RSS/Atom feed — its relevant items are scored against your interests and flow into your feed and briefing just like the curated sources.') }}
 </p>
@@ -49,9 +59,10 @@
   </div>
   <button type="submit" class="btn btn-primary">{{ feed_form.submit.label.text }}</button>
 </form>
+{% endmacro %}
 
-<hr class="my-4">
-<h6 class="text-muted mb-3">{{ _('Your YouTube channels') }}</h6>
+{% macro channels_section() %}
+{% if surface == 'tab' %}<h6 class="text-muted mb-3">{{ _('Your YouTube channels') }}</h6>{% endif %}
 <p class="small text-muted">
   {{ _('Subscribe to a channel — its new videos flow into your feed and briefing just like the curated sources.') }}
 </p>
@@ -79,3 +90,49 @@
   </div>
   <button type="submit" class="btn btn-primary">{{ channel_form.submit.label.text }}</button>
 </form>
+{% endmacro %}
+
+{% if surface == 'modal' %}
+  {# Tabs only in the modal — it's a fixed-height, scrollable dialog, and
+     stacking both sections meant scrolling past the whole RSS form just to
+     reach "Your YouTube channels". `active_pane` decides which tab opens so
+     an add-form swap (which re-renders this entire partial) lands back on
+     the tab the user was just using instead of resetting to the first one. #}
+  <ul class="nav nav-tabs mb-3" id="source-manager-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {{ 'active' if active_pane == 'feeds' else '' }}" id="source-manager-tab-feeds"
+              data-bs-toggle="tab" data-bs-target="#source-manager-pane-feeds" type="button" role="tab"
+              aria-controls="source-manager-pane-feeds"
+              aria-selected="{{ 'true' if active_pane == 'feeds' else 'false' }}">
+        <i class="bi bi-rss me-1"></i>{{ _('RSS feeds') }}
+        <span class="badge rounded-pill text-bg-secondary ms-1">{{ feed_count }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {{ 'active' if active_pane == 'channels' else '' }}" id="source-manager-tab-channels"
+              data-bs-toggle="tab" data-bs-target="#source-manager-pane-channels" type="button" role="tab"
+              aria-controls="source-manager-pane-channels"
+              aria-selected="{{ 'true' if active_pane == 'channels' else 'false' }}">
+        <i class="bi bi-youtube me-1"></i>{{ _('YouTube channels') }}
+        <span class="badge rounded-pill text-bg-secondary ms-1">{{ channel_count }}</span>
+      </button>
+    </li>
+  </ul>
+  <div class="tab-content" id="source-manager-tab-content">
+    <div class="tab-pane fade {{ 'show active' if active_pane == 'feeds' else '' }}"
+         id="source-manager-pane-feeds" role="tabpanel" aria-labelledby="source-manager-tab-feeds">
+      {{ feeds_section() }}
+    </div>
+    <div class="tab-pane fade {{ 'show active' if active_pane == 'channels' else '' }}"
+         id="source-manager-pane-channels" role="tabpanel" aria-labelledby="source-manager-tab-channels">
+      {{ channels_section() }}
+    </div>
+  </div>
+{% else %}
+  {# The settings tab is a full page with room to spare — keep the stacked
+     layout unchanged; adding tabs here would be an unrequested regression. #}
+  <hr class="my-4">
+  {{ feeds_section() }}
+  <hr class="my-4">
+  {{ channels_section() }}
+{% endif %}

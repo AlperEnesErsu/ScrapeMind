@@ -1005,6 +1005,110 @@ def test_source_manager_modal_renders_once_on_dashboard_and_feed(auth_client, cl
     assert r.get_data(as_text=True).count('id="sourceManagerModal"') == 1
 
 
+def test_source_manager_modal_backdrop_is_static(auth_client, clean_papers):
+    """An outside click must not silently close the modal and drop whatever
+    the user had half-typed into the feed/channel URL field — Esc stays a
+    valid way out (data-bs-keyboard untouched), only the stray-click dismiss
+    is disabled."""
+    client, _uid = auth_client
+    body = client.get("/").get_data(as_text=True)
+    assert 'id="sourceManagerModal"' in body
+    assert 'data-bs-backdrop="static"' in body
+
+
+def test_channel_add_modal_surface_activates_channels_pane(auth_client, clean_papers, monkeypatch):
+    """Adding a channel re-renders the whole source-manager partial (see
+    submit_channel_add -> _render_source_manager_result), which would reset
+    to the first tab unless `active_pane` threads through — assert the
+    channels tab comes back active, not feeds."""
+    client, _uid = auth_client
+    _stub_resolve_channel(monkeypatch, _ok_resolved())
+
+    r = client.post(
+        "/papers/profile/channels/add",
+        data={"url": "@examplechannel", "label": "", "surface": "modal"},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert 'nav-link active" id="source-manager-tab-channels"' in body
+    assert 'nav-link active" id="source-manager-tab-feeds"' not in body
+
+
+def test_feed_add_modal_surface_activates_feeds_pane(auth_client, clean_papers, monkeypatch):
+    """Twin of the channel-add case above, other direction: adding a feed
+    must come back with the feeds tab active."""
+    client, _uid = auth_client
+    _stub_feed_fetch(monkeypatch, _ok_fetch_result())
+
+    r = client.post(
+        "/papers/profile/feeds/add",
+        data={"url": "https://blog.example.test/feed.xml", "label": "", "surface": "modal"},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert 'nav-link active" id="source-manager-tab-feeds"' in body
+    assert 'nav-link active" id="source-manager-tab-channels"' not in body
+
+
+def test_settings_tab_source_manager_has_no_tab_strip(auth_client, clean_papers):
+    """The settings tab is a full page with room to stack both sections —
+    tabs are a modal-only affordance, changing the tab surface would be an
+    unrequested regression."""
+    client, _uid = auth_client
+    r = client.get("/settings/profile?tab=ai")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert 'id="feed-list"' in body
+    assert 'id="channel-list"' in body
+    assert "source-manager-tabs" not in body
+    assert "nav-tabs" not in body
+
+
+def test_home_page_shows_add_source_button_and_honest_scanned_count(
+    auth_client, clean_papers, monkeypatch
+):
+    """The profile-summary pill must count sources that actually get scanned
+    — curated sources plus the user's own active feeds/channels — not just
+    active_source_count (curated only). A small icon-only button next to it
+    opens the same source-manager modal as the sources card's full link."""
+    import re
+
+    client, _uid = auth_client
+
+    r = client.get("/")
+    body = r.get_data(as_text=True)
+    # Icon-only shortcut, accessible name via title/aria-label (Turkish
+    # translation of "Manage your sources", the modal's own title).
+    assert 'data-bs-target="#sourceManagerModal"' in body
+    assert "Kaynaklarını yönet" in body
+
+    match = re.search(r"(\d+)\s*aktif kaynak", body)
+    assert match is not None
+    baseline = int(match.group(1))
+
+    _stub_feed_fetch(monkeypatch, _ok_fetch_result())
+    client.post(
+        "/papers/profile/feeds/add",
+        data={"url": "https://blog.example.test/feed.xml", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+    _stub_resolve_channel(monkeypatch, _ok_resolved())
+    client.post(
+        "/papers/profile/channels/add",
+        data={"url": "@examplechannel", "label": ""},
+        headers={"HX-Request": "true"},
+    )
+
+    body2 = client.get("/").get_data(as_text=True)
+    match2 = re.search(r"(\d+)\s*aktif kaynak", body2)
+    assert match2 is not None
+    # One active feed + one active channel, on top of whatever curated
+    # sources were already counted.
+    assert int(match2.group(1)) == baseline + 2
+
+
 # --------------------------------------------------------------------------
 # Video transcript summaries — card TL;DR, detail panel, generation route
 # --------------------------------------------------------------------------

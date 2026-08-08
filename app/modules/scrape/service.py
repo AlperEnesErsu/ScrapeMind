@@ -126,15 +126,29 @@ def sources_card_context(user: User) -> dict:
     # scrape.feed (the two callers that render _sources_card.html) get them
     # for free by merging this context in, same as they already do for feeds.
     channels = list_user_channels(user)
+    active_channel_count = sum(1 for c in channels if c.active)
+    active_curated_count = sum(1 for s in sources if s["is_on"])
+
+    # `active_source_count` (below) undercounts "what will actually be
+    # scanned for me": it's the curated deployment sources only, and never
+    # included the user's own RSS feeds or YouTube channels even though both
+    # are scanned every run. `active_feed_count` normally comes from
+    # scan_status_context, not here, but the honest total needs it — one more
+    # cheap indexed query beats leaning on the caller to add three numbers
+    # together in a template (the "Your feeds" badge above already does that
+    # arithmetic in Jinja; this key exists so the home-page pill doesn't have
+    # to).
+    active_feed_count = sum(1 for f in list_user_feeds(user) if f.active)
 
     return {
         "sources": sources,
         "suggested_sources": [s for s in sources if s["is_suggested"]],
         "other_sources": [s for s in sources if not s["is_suggested"]],
-        "active_source_count": sum(1 for s in sources if s["is_on"]),
+        "active_source_count": active_curated_count,
         "user_topics": user_topics,
         "channel_count": len(channels),
-        "active_channel_count": sum(1 for c in channels if c.active),
+        "active_channel_count": active_channel_count,
+        "scanned_source_count": active_curated_count + active_feed_count + active_channel_count,
     }
 
 
