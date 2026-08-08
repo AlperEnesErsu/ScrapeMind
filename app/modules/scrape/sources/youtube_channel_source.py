@@ -77,8 +77,21 @@ _CHANNEL_URL_ID_RE = re.compile(
     r"^(?:https?://)?(?:www\.|m\.)?youtube\.com/channel/(UC[\w-]{22})(?:[/?#].*)?$",
     re.IGNORECASE,
 )
-_CHANNEL_ID_IN_HTML_RE = re.compile(r'"channelId":"(UC[\w-]{22})"')
-_META_IDENTIFIER_RE = re.compile(r'<meta itemprop="identifier" content="(UC[\w-]{22})">')
+# Ordered: each of these identifies *the page's own* channel. A YouTube
+# channel page also carries a `"channelId":"UC…"` for every recommended and
+# related channel it links to — twelve distinct ones on a real page, with the
+# page's own id nowhere near first. Matching that field subscribed the user to
+# whichever channel YouTube happened to recommend, silently and with a
+# plausible-looking title, so it is deliberately not in this list: failing to
+# resolve is recoverable, subscribing to the wrong channel is not.
+_CHANNEL_ID_PATTERNS = (
+    re.compile(
+        r'<link\s+rel="canonical"\s+href="https://www\.youtube\.com/channel/(UC[\w-]{22})"',
+        re.IGNORECASE,
+    ),
+    re.compile(r'<meta\s+itemprop="identifier"\s+content="(UC[\w-]{22})"', re.IGNORECASE),
+    re.compile(r'"externalId":"(UC[\w-]{22})"'),
+)
 _VIDEO_ID_IN_LINK_RE = re.compile(r"[?&]v=([\w-]+)")
 
 _YOUTUBE_HOSTS = frozenset({"youtube.com", "www.youtube.com", "m.youtube.com"})
@@ -173,11 +186,12 @@ def _resolve_channel_id_from_page(url: str) -> tuple[str | None, str | None]:
         return None, _CHANNEL_ERROR
 
     html_text = raw.decode("utf-8", errors="replace")
-    m = _CHANNEL_ID_IN_HTML_RE.search(html_text) or _META_IDENTIFIER_RE.search(html_text)
-    if not m:
-        logger.warning("youtube_channel_resolve_no_id_found", url=url)
-        return None, _CHANNEL_ERROR
-    return m.group(1), None
+    for pattern in _CHANNEL_ID_PATTERNS:
+        m = pattern.search(html_text)
+        if m:
+            return m.group(1), None
+    logger.warning("youtube_channel_resolve_no_id_found", url=url)
+    return None, _CHANNEL_ERROR
 
 
 def resolve_channel(raw: str) -> tuple[dict | None, str | None]:

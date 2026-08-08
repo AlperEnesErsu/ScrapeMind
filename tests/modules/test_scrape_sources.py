@@ -1068,8 +1068,11 @@ def test_resolve_channel_bare_id_makes_no_page_request(monkeypatch):
     assert result["channel_id"] == _CHANNEL_ID
 
 
-def test_resolve_channel_extracts_id_from_channel_id_json(monkeypatch):
-    html = f'<html><script>var x = {{"channelId":"{_CHANNEL_ID}","other":"x"}};</script></html>'
+def test_resolve_channel_extracts_id_from_canonical_link(monkeypatch):
+    html = (
+        '<html><head><link rel="canonical" '
+        f'href="https://www.youtube.com/channel/{_CHANNEL_ID}"></head></html>'
+    )
     _allow_yc(monkeypatch)
 
     def fake_get(url, **kwargs):
@@ -1081,6 +1084,73 @@ def test_resolve_channel_extracts_id_from_channel_id_json(monkeypatch):
     result, err = yc.resolve_channel("@somehandle")
     assert err is None
     assert result["channel_id"] == _CHANNEL_ID
+
+
+def test_resolve_channel_extracts_id_from_external_id_fallback(monkeypatch):
+    html = f'<html><script>var x = {{"externalId":"{_CHANNEL_ID}"}};</script></html>'
+    _allow_yc(monkeypatch)
+
+    def fake_get(url, **kwargs):
+        if "feeds/videos.xml" in url:
+            return _FakeResponse(_channel_feed_xml(_CHANNEL_ID))
+        return _FakeResponse(html)
+
+    monkeypatch.setattr(yc.requests, "get", fake_get)
+    result, err = yc.resolve_channel("@somehandle")
+    assert err is None
+    assert result["channel_id"] == _CHANNEL_ID
+
+
+def test_resolve_channel_ignores_recommended_channel_ids(monkeypatch):
+    """A real channel page carries a `"channelId"` for every recommended and
+    related channel it links to — a dozen of them, with the page's own id
+    nowhere near first. Resolving on that field subscribed the user to
+    whichever channel YouTube happened to recommend, silently and under a
+    plausible title. Only the canonical/meta/externalId fields identify the
+    page's own channel, so the decoys here must be ignored entirely.
+    """
+    decoy_a = "UC1_uAIS3r8Vu6JjXWvastJg"
+    decoy_b = "UConVfxXodg78Tzh5nNu85Ew"
+    html = (
+        "<html><head>"
+        f'<script>var rail = [{{"channelId":"{decoy_a}"}},{{"channelId":"{decoy_b}"}}];</script>'
+        f'<link rel="canonical" href="https://www.youtube.com/channel/{_CHANNEL_ID}">'
+        f'<meta itemprop="identifier" content="{_CHANNEL_ID}">'
+        "</head></html>"
+    )
+    _allow_yc(monkeypatch)
+    fetched = []
+
+    def fake_get(url, **kwargs):
+        fetched.append(url)
+        if "feeds/videos.xml" in url:
+            return _FakeResponse(_channel_feed_xml(_CHANNEL_ID))
+        return _FakeResponse(html)
+
+    monkeypatch.setattr(yc.requests, "get", fake_get)
+    result, err = yc.resolve_channel("@somehandle")
+    assert err is None
+    assert result["channel_id"] == _CHANNEL_ID
+    assert decoy_a not in "".join(fetched)
+
+
+def test_resolve_channel_refuses_to_guess_from_channel_id_alone(monkeypatch):
+    """A page carrying only `"channelId"` values and none of the authoritative
+    fields must fail rather than pick one. Failing is recoverable — the user
+    retries with a different link; subscribing to the wrong channel is not.
+    """
+    html = f'<html><script>var x = {{"channelId":"{_CHANNEL_ID}"}};</script></html>'
+    _allow_yc(monkeypatch)
+
+    def fake_get(url, **kwargs):
+        if "feeds/videos.xml" in url:
+            return _FakeResponse(_channel_feed_xml(_CHANNEL_ID))
+        return _FakeResponse(html)
+
+    monkeypatch.setattr(yc.requests, "get", fake_get)
+    result, err = yc.resolve_channel("@somehandle")
+    assert result is None
+    assert err
 
 
 def test_resolve_channel_extracts_id_from_meta_identifier_fallback(monkeypatch):
