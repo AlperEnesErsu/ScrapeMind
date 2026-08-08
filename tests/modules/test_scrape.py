@@ -246,10 +246,41 @@ def test_manual_run_also_refreshes_rss_feeds(auth_client, monkeypatch):
     assert queued["feeds"][0] == (uid,)
 
 
-def test_manual_run_survives_a_feed_task_that_cannot_be_queued(auth_client, monkeypatch):
-    """The scrape is already away by then — a broker hiccup on the second
-    enqueue must not turn the user's button press into a 500."""
-    from app.tasks import feed_tasks, scrape_tasks
+def test_manual_run_also_ingests_youtube_channels(auth_client, monkeypatch):
+    """Subscribed channels are a third pipeline, and they had the same bug the
+    RSS feeds did: "Scrape now" left them at last night's state, so a user who
+    had just subscribed pressed scrape, saw nothing, and had no way to tell
+    whether the channel had been checked at all.
+    """
+    from app.tasks import channel_tasks, feed_tasks, scrape_tasks
+
+    queued: dict[str, tuple] = {}
+    monkeypatch.setattr(
+        scrape_tasks.run_for_user, "delay", lambda *a, **kw: SimpleNamespace(id="s1")
+    )
+    monkeypatch.setattr(
+        feed_tasks.link_for_user, "delay", lambda *a, **kw: SimpleNamespace(id="f1")
+    )
+    monkeypatch.setattr(
+        channel_tasks.ingest_for_user,
+        "delay",
+        lambda *a, **kw: queued.setdefault("channels", (a, kw)) or SimpleNamespace(id="c1"),
+    )
+
+    client, uid = auth_client
+    r = client.post("/papers/run", follow_redirects=False)
+    assert r.status_code in (200, 302)
+    assert queued["channels"][0] == (uid,)
+    assert queued["channels"][1]["trigger"] == "manual"
+
+
+@pytest.mark.parametrize("broken", ["feeds", "channels"])
+def test_manual_run_survives_a_secondary_task_that_cannot_be_queued(
+    auth_client, monkeypatch, broken
+):
+    """The scrape is already away by then — a broker hiccup on either of the
+    follow-up enqueues must not turn the user's button press into a 500."""
+    from app.tasks import channel_tasks, feed_tasks, scrape_tasks
 
     def _boom(*_a, **_kw):
         raise RuntimeError("broker down")
@@ -257,7 +288,16 @@ def test_manual_run_survives_a_feed_task_that_cannot_be_queued(auth_client, monk
     monkeypatch.setattr(
         scrape_tasks.run_for_user, "delay", lambda *a, **kw: SimpleNamespace(id="s1")
     )
-    monkeypatch.setattr(feed_tasks.link_for_user, "delay", _boom)
+    monkeypatch.setattr(
+        feed_tasks.link_for_user,
+        "delay",
+        _boom if broken == "feeds" else (lambda *a, **kw: SimpleNamespace(id="f1")),
+    )
+    monkeypatch.setattr(
+        channel_tasks.ingest_for_user,
+        "delay",
+        _boom if broken == "channels" else (lambda *a, **kw: SimpleNamespace(id="c1")),
+    )
 
     client, _uid = auth_client
     r = client.post("/papers/run", follow_redirects=False)

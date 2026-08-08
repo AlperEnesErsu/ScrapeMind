@@ -272,7 +272,8 @@ Worker ayrımı ([docker-compose.yml](../docker/docker-compose.yml)):
 |---|---|---|
 | 1 | **`doi` üzerinde UNIQUE constraint yok** | Sadece index var. İki worker aynı DOI'yi eşzamanlı ekleyebilir. Bugünkü tek gecelik worker'da pratikte imkânsız; constraint eklemek önce mevcut duplicate'leri temizleyen ayrı bir migration ister |
 | 2 | **Satır birleştirme yok** | DOI bir satırla, `(source, external_id)` başka bir satırla eşleşirse DOI satırı kazanır, diğeri olduğu gibi kalır. Birleştirmek `UserPaper` linklerini taşımayı gerektirir — upsert'in işi değil |
-| 3 | **Conditional GET beslemelerde hâlâ ölü** | `UserFeed.etag` kolonu var ve `add_user_feed` dolduruyor, ama iki yutma yolu da `fetch_feed`'i çağırıyor ve etag'i **geçirmiyor** → 304 yolu ölü. `ingest_user_channels` geçiriyor, besleme yolu geçirmiyor (§7) |
+| 3 | **Conditional GET beslemelerde hâlâ ölü** | `UserFeed.etag` kolonu var ve `add_user_feed` dolduruyor, ama iki yutma yolu da `fetch_feed`'i çağırıyor ve etag'i **geçirmiyor** → 304 yolu ölü. `ingest_user_channels` geçiriyor (§7) |
+| 3b | YouTube kanal feed'i validator göndermiyor | Ölçüldü: `feeds/videos.xml` yalnızca `Cache-Control: max-age=900` dönüyor, **ETag ve Last-Modified yok**. `UserChannel.etag` bu yüzden hep NULL kalır ve her koşu ~15 girdiyi yeniden indirir. Kolonun boş olması hata değil — düzeltmeye çalışma |
 | 4 | RSS'siz site scrape'i yok | Lab/enstitü haber sayfaları erişilemez. Yol haritası: [ADR-0001](adr/0001-headless-browser-yok.md) + HANDOVER §5 |
 | 5 | Kanal RSS'i son ~15 videoyu verir | Yeni eklenen kanalın geçmişi geri doldurulmaz. Geçmiş için `youtube_reach` anahtar kelime araması var |
 | 6 | Video özeti dil başına cache'lenmez | `VideoSummary` `paper_id` üzerinde tekil (feed'de N+1 olmasın diye) — `PaperAnalysis`'in aksine dil başına satır yok |

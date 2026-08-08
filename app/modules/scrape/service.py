@@ -1249,10 +1249,17 @@ def ingest_user_channels(user: User) -> tuple[dict, list[int]]:
 
     Unlike the RSS feed path (`UserFeed`/`ingest_user_feeds`), which stores an
     etag/last_modified on the row but never sends it back on the next fetch,
-    this one actually round-trips it: `fetch_channel_videos` is called with
-    the row's stored `etag`/`last_modified`, and a `not_modified` response
-    short-circuits that channel at zero parsing/upsert cost instead of
-    re-processing the same unread feed content every night.
+    this one round-trips them: `fetch_channel_videos` gets the row's stored
+    values and a `not_modified` response short-circuits that channel at zero
+    parsing/upsert cost.
+
+    In practice that branch is currently dead for YouTube specifically:
+    `feeds/videos.xml` answers with `Cache-Control: max-age=900` and **no
+    ETag and no Last-Modified**, so both columns stay NULL and every run
+    re-downloads the ~15 entries. Measured, not assumed — don't "fix" the
+    empty etag column, there is nothing to store. The plumbing is kept
+    because it costs nothing, works the moment YouTube starts sending
+    validators, and is the pattern the feed path still needs to adopt.
 
     Returns `(summary, new_paper_ids)`:
       * `summary` maps `channel_id -> count` for that channel this run — `-1`

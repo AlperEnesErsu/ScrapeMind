@@ -2714,6 +2714,17 @@ msgstr "Kaynaklarını yönet"
 msgid "Full settings page"
 msgstr "Tüm ayarlar sayfası"
 
+msgid "Ingest YouTube channels"
+msgstr "YouTube kanallarını tara"
+
+msgid "Check every user's YouTube channels for new videos now?"
+msgstr ""
+"Her kullanıcının YouTube kanalları yeni video için şimdi kontrol edilsin "
+"mi?"
+
+msgid "YouTube channel check queued for all users."
+msgstr "Tüm kullanıcılar için YouTube kanal kontrolü kuyruğa alındı."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

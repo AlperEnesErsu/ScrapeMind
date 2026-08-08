@@ -2699,6 +2699,15 @@ msgstr "Manage your sources"
 msgid "Full settings page"
 msgstr "Full settings page"
 
+msgid "Ingest YouTube channels"
+msgstr "Ingest YouTube channels"
+
+msgid "Check every user's YouTube channels for new videos now?"
+msgstr "Check every user's YouTube channels for new videos now?"
+
+msgid "YouTube channel check queued for all users."
+msgstr "YouTube channel check queued for all users."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

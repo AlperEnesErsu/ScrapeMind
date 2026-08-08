@@ -1045,6 +1045,22 @@ def run_now():
     except Exception:  # noqa: BLE001
         logger.exception("manual_feed_refresh_enqueue_failed", user_id=current_user.id)
 
+    # Subscribed YouTube channels are a third pipeline, and they had exactly the
+    # bug described above for RSS: "Scrape now" left them at last night's state,
+    # so a user who had just subscribed to a channel pressed scrape, saw nothing,
+    # and had no way to tell whether it had been checked at all. Same contract as
+    # the feed task — its own "channels" lock makes a concurrent run a no-op, and
+    # a failure to queue must not cost the user the scrape that is already away.
+    channel_task_id = None
+    try:
+        from app.tasks.channel_tasks import ingest_for_user as ingest_channels_for_user
+
+        channel_task_id = getattr(
+            ingest_channels_for_user.delay(current_user.id, trigger="manual"), "id", None
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("manual_channel_refresh_enqueue_failed", user_id=current_user.id)
+
     log_action(
         "scrape.manual_run",
         entity_type="user",
@@ -1052,6 +1068,7 @@ def run_now():
         changes={
             "task_id": getattr(async_result, "id", None),
             "feed_task_id": feed_task_id,
+            "channel_task_id": channel_task_id,
         },
     )
     if _is_htmx():
