@@ -19,6 +19,7 @@ vaat ediyordu, doğru değil.)
 ## Önce Bunları Oku
 - `docs/SCRAPING.md` — veri toplama mimarisi, **yeni kaynak eklemeden önce zorunlu**
 - `docs/HANDOVER.md` — durum, commit'lenmemiş iş, tuzaklar, sıradaki görevler
+- `docs/PHASE5.md` — Faz 5 planı (patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus)
 
 ## Veritabanı (yerel geliştirme)
 - **Bu makine paylaşımlı altyapı kullanıyor** (`docker/docker-compose.local.yml`'nin anlattığı kurulum): `myo_postgres17` container'ı **5432**'de, `shared_redis` **6379**'da. Bunlar myoChtBt projesinin compose'u tarafından ayağa kaldırılıyor; ScrapeMind sadece üzerlerinde `scrapemind` ve `scrapemind_test` veritabanlarını kullanıyor.
@@ -115,11 +116,23 @@ Her commit tek başına test-yeşil, `git bisect` güvenilir. Commit listesi
 - **`fix(deploy)`** — prod worker `-Q` olmadan çalışıyordu, routed task'ların hiçbiri
   tüketilmiyordu
 
+### Faz 5 — planlandı, uygulanmadı: `docs/PHASE5.md`
+Patent kaynakları (EPO OPS 4 GB/hafta ücretsiz + PatentsView) · dergi kalite katmanı
+(Scimago quartile + atıf sayısı) · yazar takibi (mevcut kimlik modelini canlandırır) ·
+admin panelinden açılan, varsayılan kapalı, **discovery-only** Scopus.
+> **WoS Lite / Elsevier tekrar sorulursa:** engel kota değil. WoS Starter ücretsiz
+> katmanı **50 istek/gün** ve atıf döndürmüyor; Elsevier sözleşmesi içeriğin **kalıcı
+> saklanmasını** ve rekabet eden türev servisi yasaklıyor; Scopus anahtarı kurum IP'sine
+> bağlı. Tam tablo ve karar `docs/PHASE5.md §2`.
+
 ### Sıradaki iş (öncelik sırasıyla)
 1. Beslemelerde conditional GET'i bitir — kalıp `ingest_user_channels`'da hazır
-2. RSS'siz site scrape'i + alan seçici (önce `docs/adr/0001-headless-browser-yok.md` oku)
-3. Bluesky adaptörü · OpenAlex author id ile yazar takibi
-Gerekçeler: `docs/HANDOVER.md §5`
+   (Faz 5'ten bağımsız, küçük)
+2. Faz 5.1 — kimlik gerektiren kaynak altyapısı + kalıcı haftalık kota sayacı
+   (Faz 5'in diğer üç adımının ön koşulu)
+3. RSS'siz site scrape'i + alan seçici (önce `docs/adr/0001-headless-browser-yok.md` oku)
+4. Bluesky adaptörü
+Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
 
 ## Bilinen Kısıtlar / Tuzaklar
 - Email gönderimi `MAIL_SUPPRESS_SEND=true` ise dev modu — link `flash` ile gösteriliyor

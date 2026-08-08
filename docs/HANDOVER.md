@@ -200,6 +200,24 @@ ile güncelle. Örneklerde `example.com` / `example.test` kullan.
 > §5.2 (OpenAlex + Crossref) tamamlandı, eski §5.3 (conditional GET) ise kısmen:
 > aşağıda kalan kısmı yazıyor. Numaralar kaydı.
 
+### 5.0 Faz 5 — planlandı, ayrı dokümanda
+
+**[docs/PHASE5.md](PHASE5.md)** — patent kaynakları (EPO OPS + PatentsView), dergi
+kalite katmanı (Scimago quartile + atıf sayısı), yazar takibi ve admin panelinden
+açılan opsiyonel Scopus. Kapsam, 4 artımlı adım, doğrulama ve devir notları orada.
+
+İki şey buradaki listeyi etkiliyor:
+- Aşağıdaki **§5.4 ② (yazar takibi)** Faz 5.4'e taşındı, orada planlandı.
+- Faz 5 "WoS Lite / Elsevier ücretsiz kotalarını kullanalım" sorusundan çıktı; araştırma
+  sonucu **engelin kota değil lisans ve IP olduğu**. WoS Starter ücretsiz katmanı
+  **50 istek/gün** ve atıf döndürmüyor; Elsevier sözleşmesi içeriğin **kalıcı
+  saklanmasını** ve rekabet eden türev servisi yasaklıyor, Scopus anahtarı ayrıca kurum
+  IP'sine bağlı. Gerekçe tablosu [PHASE5.md](PHASE5.md) §2'de — aynı soru tekrar
+  gelirse oradan cevaplanır.
+
+§5.1 (conditional GET) Faz 5'ten bağımsız ve çakışmıyor; küçük olduğu için önce
+bitirilebilir.
+
 ### 5.1 Beslemelerde conditional GET'i bitir — **küçük ve net**
 `UserFeed.etag`/`last_modified` kolonları **var** ve `add_user_feed` doğrulama
 fetch'inde dolduruyor. Ama iki yutma yolu da (`feed_tasks.ingest_all` ve
@@ -252,9 +270,10 @@ ve README'deki etik taahhütle çelişir. Yerine:
    `ask_paper` "RAG chat" diye anılıyor ama başlık+abstract'ı prompt'a dolduruyor;
    `_get_similar_papers` de embedding tabanlı değil. Docker imajını
    `pgvector/pgvector:pg17`'ye çevirmek gerekir.
-2. **Yazar takibi.** ORCID/Scopus/WoS kimlik modeli zaten var (PR #4-#6) ama gerçek
-   bir özelliğe bağlanmadı. OpenAlex adaptörü artık mevcut, dolayısıyla author id
-   üzerinden "bu yazarın yeni yayınları" beslemesi en yakın büyük kazanç.
+2. ~~**Yazar takibi.**~~ → **Faz 5.4'e taşındı**, bkz. [PHASE5.md](PHASE5.md).
+   ORCID/Scopus/WoS kimlik modeli zaten var (PR #4-#6) ama gerçek bir özelliğe
+   bağlanmadı; OpenAlex adaptörü artık mevcut olduğu için author id üzerinden
+   "bu yazarın yeni yayınları" beslemesi en yakın büyük kazanç.
 3. **Atıf grafiği** — OpenAlex/S2 `referenced_works` + `cited_by`.
 4. **Açık erişim tam metin** — OpenAlex `best_oa_location`. Etik sınır net: sadece OA.
 5. **Kayıtlı arama + uyarı** — bildirim altyapısı (`add_notification`) hazır.
@@ -270,6 +289,7 @@ ve README'deki etik taahhütle çelişir. Yerine:
 | [CLAUDE.md](../CLAUDE.md) | AI asistanı için bağlam — kurallar ve tuzaklar |
 | [PROJECT.md](../PROJECT.md) | Detaylı tasarım dokümanı, faz planı |
 | [docs/SCRAPING.md](SCRAPING.md) | Veri toplama mimarisi — **yeni kaynak eklemeden önce oku** |
+| [docs/PHASE5.md](PHASE5.md) | Faz 5 planı — patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus |
 | [docs/API_V1.md](API_V1.md) | JSON API referansı |
 | [docs/UI_REVIEW.md](UI_REVIEW.md) | UI inceleme notları |
 | [docs/adr/](adr/) | Mimari karar kayıtları — neden **yapmadığımız** şeyler |
