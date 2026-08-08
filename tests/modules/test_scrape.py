@@ -908,3 +908,34 @@ def test_ingest_user_channels_skips_inactive(db, clean, monkeypatch):
     summary, new_ids = ingest_user_channels(clean)
     assert summary == {}
     assert new_ids == []
+
+
+# ----------------------------------------------------------------------------
+# list_user_papers(kinds=...) — the home-page "burial" fix. Academic sources
+# (kind=None/"paper") publish daily in volume and always win the top slots
+# when ordered by published_at across every kind; `kinds` lets a caller
+# scope to just the low-volume kinds (video/news) instead.
+# ----------------------------------------------------------------------------
+
+
+def test_list_user_papers_kinds_filters_to_matching_rows(db, clean):
+    paper = upsert_paper(_payload("2401.90001"))
+    video = upsert_paper(_video_payload("vid-kinds-1"))
+    link_user_paper(clean, paper, matched_keyword="x")
+    link_user_paper(clean, video, matched_keyword="x")
+
+    only_video = list_user_papers(clean, kinds=("video",))
+    assert len(only_video) == 1
+    assert only_video[0].paper.kind == "video"
+
+
+def test_list_user_papers_without_kinds_returns_everything(db, clean):
+    """Default (no kinds) must be unaffected — guards against the new filter
+    changing behaviour for every existing caller that doesn't pass it."""
+    paper = upsert_paper(_payload("2401.90002"))
+    video = upsert_paper(_video_payload("vid-kinds-2"))
+    link_user_paper(clean, paper, matched_keyword="x")
+    link_user_paper(clean, video, matched_keyword="x")
+
+    rows = list_user_papers(clean)
+    assert len(rows) == 2

@@ -2708,6 +2708,21 @@ msgstr "Check every user's YouTube channels for new videos now?"
 msgid "YouTube channel check queued for all users."
 msgstr "YouTube channel check queued for all users."
 
+msgid "From your channels & feeds"
+msgstr "From your channels & feeds"
+
+msgid "Manage your interests"
+msgstr "Manage your interests"
+
+msgid "Open your favorite papers"
+msgstr "Open your favorite papers"
+
+msgid "Open your read-later list"
+msgstr "Open your read-later list"
+
+msgid "Open your academic notes"
+msgstr "Open your academic notes"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

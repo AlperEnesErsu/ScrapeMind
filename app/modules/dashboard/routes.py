@@ -28,6 +28,20 @@ def index():
     from app.modules.scrape.service import count_all_notes, count_user_papers, list_user_papers
 
     for_you = list_user_papers(current_user, limit=10)
+    # Videos/news from the user's own YouTube channels and RSS feeds get
+    # buried by the daily-volume academic sources in `for_you` above (it
+    # orders by published_at across every kind). Surface them in their own
+    # section instead of competing for the same top-5 slots. Excludes ids
+    # already in `for_you[:5]` so a video that does make the top five isn't
+    # rendered twice on the page.
+    _for_you_top_ids = {r.id for r in for_you[:5]}
+    highlighted_media = [
+        r
+        for r in list_user_papers(
+            current_user, limit=5 + len(_for_you_top_ids), kinds=("video", "news")
+        )
+        if r.id not in _for_you_top_ids
+    ][:5]
     user_keywords = list_user_keywords(current_user)
     has_interests = bool(user_keywords)
     user_keyword_values = {kw.value for kw in user_keywords}
@@ -109,6 +123,7 @@ def index():
     return render_template(
         "dashboard/for_you.html",
         for_you=for_you,
+        highlighted_media=highlighted_media,
         has_interests=has_interests,
         user_keywords=user_keywords,
         user_keyword_values=user_keyword_values,

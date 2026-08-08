@@ -789,6 +789,7 @@ def list_user_papers(
     limit: int = 50,
     view: str = "discover",
     q: str | None = None,
+    kinds: tuple[str, ...] | None = None,
 ) -> list[UserPaper]:
     """List a user's surfaced papers.
 
@@ -801,6 +802,14 @@ def list_user_papers(
     `q` is an optional case-insensitive substring match against the
     paper's title, abstract, or matched keyword. Trimmed; empty == no
     filter.
+
+    `kinds` restricts to specific `Paper.kind` values (e.g. `("video",
+    "news")`). Default `None` means no filter — every existing caller is
+    unaffected. This exists because the home page orders everything by
+    `Paper.published_at DESC` across every kind, and the high-volume
+    academic sources (arXiv et al. publish daily) always win the top slots;
+    a user's own YouTube videos and RSS items get buried and never surface
+    on the home page without a dedicated, kind-scoped query.
     """
     from sqlalchemy.orm import joinedload, selectinload
 
@@ -816,6 +825,8 @@ def list_user_papers(
             joinedload(UserPaper.paper).joinedload(Paper.video_summary),
         )
     )
+    if kinds:
+        query = query.filter(Paper.kind.in_(kinds))
     q = (q or "").strip()
     if q:
         like = f"%{q.lower()}%"

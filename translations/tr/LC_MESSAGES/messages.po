@@ -2725,6 +2725,21 @@ msgstr ""
 msgid "YouTube channel check queued for all users."
 msgstr "Tüm kullanıcılar için YouTube kanal kontrolü kuyruğa alındı."
 
+msgid "From your channels & feeds"
+msgstr "Kanallarınızdan ve beslemelerinizden"
+
+msgid "Manage your interests"
+msgstr "İlgi alanlarınızı yönetin"
+
+msgid "Open your favorite papers"
+msgstr "Favori makalelerinizi açın"
+
+msgid "Open your read-later list"
+msgstr "Sonra oku listenizi açın"
+
+msgid "Open your academic notes"
+msgstr "Akademik notlarınızı açın"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

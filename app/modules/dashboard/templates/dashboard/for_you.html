@@ -112,26 +112,30 @@
 {% elif user_stats %}
   <!-- Regular User Library Stats — compact strip, not tall cards -->
   <div class="stat-strip d-flex flex-wrap gap-2 mb-4">
-    <div class="stat-pill stat-pill--interests">
+    <a href="#interests-manager" class="stat-pill stat-pill--interests text-decoration-none"
+       title="{{ _('Manage your interests') }}">
       <i class="bi bi-tags"></i>
       <span class="stat-pill__value">{{ user_stats.interests_count }}</span>
       <span class="stat-pill__label">{{ _('Followed Interests') }}</span>
-    </div>
-    <div class="stat-pill stat-pill--favorites">
+    </a>
+    <a href="{{ url_for('library.index', view='favorites') }}" class="stat-pill stat-pill--favorites text-decoration-none"
+       title="{{ _('Open your favorite papers') }}">
       <i class="bi bi-heart"></i>
       <span class="stat-pill__value">{{ user_stats.favorites_count }}</span>
       <span class="stat-pill__label">{{ _('Favorite Papers') }}</span>
-    </div>
-    <div class="stat-pill stat-pill--read-later">
+    </a>
+    <a href="{{ url_for('library.index', view='read_later') }}" class="stat-pill stat-pill--read-later text-decoration-none"
+       title="{{ _('Open your read-later list') }}">
       <i class="bi bi-bookmark-heart"></i>
       <span class="stat-pill__value">{{ user_stats.read_later_count }}</span>
       <span class="stat-pill__label">{{ _('Read Later') }}</span>
-    </div>
-    <div class="stat-pill stat-pill--notes">
+    </a>
+    <a href="{{ url_for('library.index', view='notes') }}" class="stat-pill stat-pill--notes text-decoration-none"
+       title="{{ _('Open your academic notes') }}">
       <i class="bi bi-journal-text"></i>
       <span class="stat-pill__value">{{ user_stats.notes_count }}</span>
       <span class="stat-pill__label">{{ _('Academic Notes') }}</span>
-    </div>
+    </a>
   </div>
 {% endif %}
 
@@ -236,6 +240,19 @@
         </div>
       </div>
       {% endif %}
+    {% endif %}
+
+    {% if highlighted_media %}
+      {# Videos/news from the user's own YouTube channels and RSS feeds —
+         published_at ordering across every kind buries these under the
+         daily-volume academic sources in "Surfaced Publications" above, so
+         they get their own section instead of competing for those slots. #}
+      <h5 class="fw-semibold mb-3 mt-4 d-flex align-items-center gap-2">
+        <i class="bi bi-broadcast text-primary"></i>{{ _('From your channels & feeds') }}
+      </h5>
+      {% for r in highlighted_media %}
+        {% include 'scrape/_paper_card.html' %}
+      {% endfor %}
     {% endif %}
   </div>
 
