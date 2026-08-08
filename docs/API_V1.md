@@ -113,8 +113,22 @@ client that retries must not flip state back — so each flag is `PUT` (set) /
 | `POST /me/papers/<id>/notes`                | Create a note → `201`.               |
 | `PATCH /notes/<note_id>`                    | Update a note (omitted fields kept). |
 | `DELETE /notes/<note_id>`                   | Delete → `{ "deleted": true }`.      |
+| `GET /me/feeds`                             | The caller's custom RSS feeds.       |
+| `POST /me/feeds`                            | Add one → `201`. Body: `{ "url", "label" }`. |
 
 Flag endpoints return the updated paper: `{ "data": { …, "is_favorite": true } }`.
+
+### Custom feeds
+
+`POST /me/feeds` runs the same validation as the web UI — SSRF guard, the
+`MAX_USER_FEEDS` cap, and a live fetch that must actually parse as a feed. Any
+of those failing returns `422 validation_error` with the reason in `message`.
+Re-posting a URL you already have reactivates that row instead of adding a
+second one, and does not consume a cap slot.
+
+Feeds have no update or delete endpoint yet, and **YouTube channel
+subscriptions are not exposed through the API at all** — they are web-UI only
+(`/settings/profile?tab=ai`).
 
 ### Notes
 
