@@ -2696,6 +2696,24 @@ msgstr ""
 msgid "Summarize transcript"
 msgstr "Transkripti özetle"
 
+msgid "Manage your feeds and channels"
+msgstr "Beslemelerini ve kanallarını yönet"
+
+msgid "Add your own RSS feed or YouTube channel"
+msgstr "Kendi RSS kaynağını veya YouTube kanalını ekle"
+
+msgid "RSS feeds"
+msgstr "RSS kaynakları"
+
+msgid "YouTube channels"
+msgstr "YouTube kanalları"
+
+msgid "Manage your sources"
+msgstr "Kaynaklarını yönet"
+
+msgid "Full settings page"
+msgstr "Tüm ayarlar sayfası"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

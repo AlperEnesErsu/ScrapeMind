@@ -2681,6 +2681,24 @@ msgstr ""
 msgid "Summarize transcript"
 msgstr "Summarize transcript"
 
+msgid "Manage your feeds and channels"
+msgstr "Manage your feeds and channels"
+
+msgid "Add your own RSS feed or YouTube channel"
+msgstr "Add your own RSS feed or YouTube channel"
+
+msgid "RSS feeds"
+msgstr "RSS feeds"
+
+msgid "YouTube channels"
+msgstr "YouTube channels"
+
+msgid "Manage your sources"
+msgstr "Manage your sources"
+
+msgid "Full settings page"
+msgstr "Full settings page"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

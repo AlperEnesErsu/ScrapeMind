@@ -1,0 +1,81 @@
+{# Shared feeds+channels management UI — included by settings/_tab_ai.html
+   (surface='tab', the default) and rendered standalone by
+   scrape.source_manager for the home-page popup (surface='modal').
+
+   Verbatim between the two surfaces except: the swap target each add-form
+   posts back to, and the hidden `surface` field that tells the server which
+   wrapper to re-render on success/failure. #}
+{% set surface = surface | default('tab') %}
+{% set swap_target = '#tab-content' if surface == 'tab' else '#source-manager-body' %}
+
+{# The tab surface already gets a flash at the top of _tab_ai.html (outside
+   this include) — rendering it again here would double the alert. The modal
+   surface has no such wrapper-level flash (the modal shell is rendered once,
+   statically, per page load; only this partial is swapped on every
+   add/remove), so it needs its own. #}
+{% if surface == 'modal' %}
+{% include 'settings/_flash_partial.html' %}
+{% endif %}
+
+{# This rule separates the feeds section from the AI-settings form that sits
+   above it in the tab. In the modal there is nothing above it, so it would
+   render as a stray line under the header. #}
+{% if surface == 'tab' %}<hr class="my-4">{% endif %}
+<h6 class="text-muted mb-3">{{ _('Your own RSS feeds') }}</h6>
+<p class="small text-muted">
+  {{ _('Add any RSS/Atom feed — its relevant items are scored against your interests and flow into your feed and briefing just like the curated sources.') }}
+</p>
+
+<div class="mb-3">
+  {% include 'settings/_feed_list.html' %}
+</div>
+
+{# Adding a feed can fail with a message (bad URL, blocked host, cap reached),
+   which the tab/modal renders as a flash — so this one swaps the whole
+   wrapper (tab content or modal body), not just the list. #}
+<form hx-post="{{ url_for('scrape.submit_feed_add') }}" hx-target="{{ swap_target }}" hx-swap="innerHTML">
+  {{ feed_form.csrf_token }}
+  <input type="hidden" name="surface" value="{{ surface }}">
+  <div class="mb-2">
+    <label class="form-label">{{ feed_form.url.label.text }}</label>
+    {{ feed_form.url(class="form-control", placeholder="https://example.com/feed.xml") }}
+    {% for err in feed_form.url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+  </div>
+  <div class="mb-2">
+    <label class="form-label">{{ feed_form.label.label.text }}</label>
+    {{ feed_form.label(class="form-control") }}
+    {% for err in feed_form.label.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    <div class="form-text">{{ _('Leave blank to use the feed\'s own title.') }}</div>
+  </div>
+  <button type="submit" class="btn btn-primary">{{ feed_form.submit.label.text }}</button>
+</form>
+
+<hr class="my-4">
+<h6 class="text-muted mb-3">{{ _('Your YouTube channels') }}</h6>
+<p class="small text-muted">
+  {{ _('Subscribe to a channel — its new videos flow into your feed and briefing just like the curated sources.') }}
+</p>
+
+<div class="mb-3">
+  {% include 'settings/_channel_list.html' %}
+</div>
+
+{# Adding a channel can fail with a message (bad link, blocked host, cap
+   reached), which the tab/modal renders as a flash — so this one swaps the
+   whole wrapper too, same as the feed-add form above. #}
+<form hx-post="{{ url_for('scrape.submit_channel_add') }}" hx-target="{{ swap_target }}" hx-swap="innerHTML">
+  {{ channel_form.csrf_token }}
+  <input type="hidden" name="surface" value="{{ surface }}">
+  <div class="mb-2">
+    <label class="form-label">{{ channel_form.url.label.text }}</label>
+    {{ channel_form.url(class="form-control", placeholder="https://www.youtube.com/@channel") }}
+    {% for err in channel_form.url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+  </div>
+  <div class="mb-2">
+    <label class="form-label">{{ channel_form.label.label.text }}</label>
+    {{ channel_form.label(class="form-control") }}
+    {% for err in channel_form.label.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    <div class="form-text">{{ _('Leave blank to use the channel\'s own title.') }}</div>
+  </div>
+  <button type="submit" class="btn btn-primary">{{ channel_form.submit.label.text }}</button>
+</form>

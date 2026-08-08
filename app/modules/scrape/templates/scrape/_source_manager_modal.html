@@ -1,0 +1,38 @@
+{# Home-page 'manage your sources' popup — opened from the sources card's
+   CTA button (data-bs-toggle="modal" data-bs-target="#sourceManagerModal").
+
+   Body is lazy: it only loads on `show.bs.modal`, so a normal page view
+   (the vast majority — most loads never open this) never queries the
+   feed/channel lists just because the card and this shell are on the page.
+
+   Included as a SIBLING of #sources-card, never inside it:
+   `dashboard.toggle_source` re-renders `_sources_card.html` standalone and
+   the client swaps it in via `outerHTML` on every toggle — a modal living
+   inside that subtree would be destroyed mid-toggle, and Bootstrap would
+   leak an orphaned backdrop if that happened while the modal was open. #}
+<div class="modal fade" id="sourceManagerModal" tabindex="-1" aria-labelledby="sourceManagerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sourceManagerModalLabel">
+          <i class="bi bi-database-gear me-1"></i>{{ _('Manage your sources') }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <div class="modal-body" id="source-manager-body"
+           hx-get="{{ url_for('scrape.source_manager') }}"
+           hx-trigger="show.bs.modal from:#sourceManagerModal"
+           hx-swap="innerHTML">
+        <div class="text-center text-muted py-4">
+          <span class="spinner-border spinner-border-sm me-2"></span>{{ _('Loading…') }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="{{ url_for('settings.profile', tab='ai') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-gear me-1"></i>{{ _('Full settings page') }}
+        </a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+      </div>
+    </div>
+  </div>
+</div>

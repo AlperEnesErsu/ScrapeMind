@@ -79,6 +79,7 @@ def clean_papers(db):
         ("get", "/papers/"),
         ("get", "/library/"),
         ("get", "/notifications"),
+        ("get", "/papers/profile/source-manager"),
         ("post", "/papers/1/read-later/toggle"),
         ("post", "/papers/1/favorite/toggle"),
         ("post", "/papers/bulk-action"),
@@ -907,6 +908,101 @@ def test_channel_add_rejects_over_the_cap(auth_client, clean_papers, monkeypatch
     assert r.status_code == 200
     # Turkish translation of "Channel limit reached. Remove one before adding another."
     assert "sınırına ulaştın" in r.get_data(as_text=True)
+
+
+# --------------------------------------------------------------------------
+# Home-page source manager modal — GET /papers/profile/source-manager and
+# the surface-aware add-feed/add-channel routes
+# --------------------------------------------------------------------------
+
+
+def test_source_manager_route_renders_feed_and_channel_lists(auth_client, clean_papers):
+    client, _uid = auth_client
+    r = client.get("/papers/profile/source-manager")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert 'id="feed-list"' in body
+    assert 'id="channel-list"' in body
+
+
+def test_source_manager_route_skips_topic_classification(auth_client, clean_papers, monkeypatch):
+    """The modal opens on every click (unlike the settings tab, which the
+    user navigates to deliberately) — it must never resolve topics via an
+    LLM call, only the cheap feed/channel DB lookups. Mirrors
+    test_feed_toggle_swaps_only_the_feed_list's `_boom` guard."""
+    client, _uid = auth_client
+
+    def _boom(user):
+        raise AssertionError("opening the source manager must not classify topics")
+
+    monkeypatch.setattr("app.modules.scrape.ai_service.classify_user_topics", _boom)
+
+    r = client.get("/papers/profile/source-manager")
+    assert r.status_code == 200
+
+
+def test_feed_add_modal_surface_returns_manager_partial_not_tab(
+    auth_client, clean_papers, monkeypatch
+):
+    client, _uid = auth_client
+    _stub_feed_fetch(monkeypatch, _ok_fetch_result())
+
+    r = client.post(
+        "/papers/profile/feeds/add",
+        data={"url": "https://blog.example.test/feed.xml", "label": "", "surface": "modal"},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    assert 'id="feed-list"' in body
+    assert 'id="channel-list"' in body
+    # The API-key section belongs to the full settings tab only — its
+    # presence would mean this fell through to _render_settings_tab instead
+    # of the cheap modal partial.
+    assert "OpenRouter" not in body
+
+
+def test_channel_add_over_cap_modal_surface_shows_flash(
+    auth_client, clean_papers, monkeypatch, app
+):
+    """The cap message must survive in the modal surface too, not just the
+    settings tab — that's the whole reason submit_channel_add swaps a
+    wrapper instead of just the list (see the comment above the add-form in
+    settings/_source_manager.html)."""
+    client, _uid = auth_client
+    monkeypatch.setitem(app.config, "MAX_USER_CHANNELS", 1)
+
+    _stub_resolve_channel(monkeypatch, _ok_resolved(channel_id="UC" + "1" * 24, title="First"))
+    r = client.post(
+        "/papers/profile/channels/add",
+        data={"url": "@examplechannel", "label": "", "surface": "modal"},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+
+    _stub_resolve_channel(monkeypatch, _ok_resolved(channel_id="UC" + "2" * 24, title="Too Many"))
+    r = client.post(
+        "/papers/profile/channels/add",
+        data={"url": "@toomanychannel", "label": "", "surface": "modal"},
+        headers={"HX-Request": "true"},
+    )
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    # Turkish translation of "Channel limit reached. Remove one before adding another."
+    assert "sınırına ulaştın" in body
+    assert 'id="channel-list"' in body
+
+
+def test_source_manager_modal_renders_once_on_dashboard_and_feed(auth_client, clean_papers):
+    """The modal shell must be a sibling of #sources-card, included once per
+    page — not once per card re-render, and not duplicated if some future
+    edit accidentally includes it twice."""
+    client, _uid = auth_client
+    r = client.get("/")
+    assert r.get_data(as_text=True).count('id="sourceManagerModal"') == 1
+
+    r = client.get("/papers/")
+    assert r.get_data(as_text=True).count('id="sourceManagerModal"') == 1
 
 
 # --------------------------------------------------------------------------

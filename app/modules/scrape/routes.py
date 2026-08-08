@@ -121,6 +121,23 @@ def _channel_list_ctx(filter_: str = "all") -> dict:
     }
 
 
+def _source_manager_ctx() -> dict:
+    """Context for `settings/_source_manager.html` — the two add-forms plus
+    the (cheap) feed/channel list contexts. Deliberately free of
+    `classify_user_topics` / `user_llm_status`, same reasoning as
+    `_feed_list_ctx`: this is what the home-page modal renders on open and
+    what a feed/channel add re-renders, and both need to stay an LLM-free
+    round trip. `_ai_ctx` layers the expensive bits on top for the full-tab
+    render only.
+    """
+    return {
+        "feed_form": UserFeedForm(),
+        "channel_form": UserChannelForm(),
+        **_feed_list_ctx(),
+        **_channel_list_ctx(),
+    }
+
+
 def _ai_ctx():
     from flask import current_app
 
@@ -128,14 +145,11 @@ def _ai_ctx():
 
     return {
         "form": AiSettingsForm(),
-        "feed_form": UserFeedForm(),
-        "channel_form": UserChannelForm(),
         "status": user_llm_status(current_user),
         "provider": (current_app.config.get("LLM_PROVIDER") or "openrouter").strip().lower(),
         "default_model": current_app.config.get("OPENROUTER_MODEL"),
         "user_topics": classify_user_topics(current_user),
-        **_feed_list_ctx(),
-        **_channel_list_ctx(),
+        **_source_manager_ctx(),
     }
 
 
@@ -149,6 +163,37 @@ def _register_tabs():
 
 def _render_settings_tab(tab: str, **ctx):
     return render_template(f"settings/_tab_{tab}.html", active_tab=tab, **ctx)
+
+
+@scrape_bp.route("/profile/source-manager", methods=["GET"])
+@login_required
+def source_manager():
+    """Lazy-loaded body of the home-page 'manage your sources' modal.
+
+    The card renders on every home-page load and most loads never open the
+    modal, so this must stay cheap: built from `_source_manager_ctx()` only
+    (feed/channel lists + the two add-forms), never `_ai_ctx()` — see
+    `_feed_list_ctx`'s docstring for why that one is off-limits here
+    (`classify_user_topics` is an LLM round trip).
+    """
+    return render_template(
+        "settings/_source_manager.html", surface="modal", **_source_manager_ctx()
+    )
+
+
+def _render_source_manager_result(surface: str | None, **flash_kwargs):
+    """Shared response for submit_feed_add/submit_channel_add: the modal
+    surface swaps just the source-manager partial (cheap context); anything
+    else (the settings tab, or no `surface` field at all) re-renders the
+    full AI tab, unchanged from before this route became surface-aware."""
+    if surface == "modal":
+        return render_template(
+            "settings/_source_manager.html",
+            surface="modal",
+            **_source_manager_ctx(),
+            **flash_kwargs,
+        )
+    return _render_settings_tab("ai", **flash_kwargs, **_ai_ctx())
 
 
 @scrape_bp.route("/profile/ai/save", methods=["POST"])
@@ -207,6 +252,7 @@ def submit_ai_clear():
 def submit_feed_add():
     from app.modules.scrape.service import add_user_feed
 
+    surface = request.form.get("surface")
     form = UserFeedForm()
     if form.validate_on_submit():
         feed, err = add_user_feed(current_user, form.url.data, form.label.data)
@@ -217,20 +263,18 @@ def submit_feed_add():
                 entity_id=str(feed.id),
                 changes={"url": feed.url},
             )
-            return _render_settings_tab(
-                "ai", flash_msg=_("Feed added."), flash_kind="success", **_ai_ctx()
+            return _render_source_manager_result(
+                surface, flash_msg=_("Feed added."), flash_kind="success"
             )
-        return _render_settings_tab(
-            "ai",
+        return _render_source_manager_result(
+            surface,
             flash_msg=_(err or "Could not add that feed."),
             flash_kind="danger",
-            **_ai_ctx(),
         )
-    return _render_settings_tab(
-        "ai",
+    return _render_source_manager_result(
+        surface,
         flash_msg=_("Please correct the errors below."),
         flash_kind="danger",
-        **_ai_ctx(),
     )
 
 
@@ -297,6 +341,7 @@ def submit_feed_toggle(feed_id: int):
 def submit_channel_add():
     from app.modules.scrape.service import add_user_channel
 
+    surface = request.form.get("surface")
     form = UserChannelForm()
     if form.validate_on_submit():
         channel, err = add_user_channel(current_user, form.url.data, form.label.data)
@@ -307,20 +352,18 @@ def submit_channel_add():
                 entity_id=str(channel.id),
                 changes={"channel_id": channel.channel_id},
             )
-            return _render_settings_tab(
-                "ai", flash_msg=_("Channel added."), flash_kind="success", **_ai_ctx()
+            return _render_source_manager_result(
+                surface, flash_msg=_("Channel added."), flash_kind="success"
             )
-        return _render_settings_tab(
-            "ai",
+        return _render_source_manager_result(
+            surface,
             flash_msg=_(err or "Could not add that channel."),
             flash_kind="danger",
-            **_ai_ctx(),
         )
-    return _render_settings_tab(
-        "ai",
+    return _render_source_manager_result(
+        surface,
         flash_msg=_("Please correct the errors below."),
         flash_kind="danger",
-        **_ai_ctx(),
     )
 
 

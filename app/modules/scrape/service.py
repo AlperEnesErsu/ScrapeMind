@@ -120,12 +120,21 @@ def sources_card_context(user: User) -> dict:
         opt["is_on"] = prefs.get(opt["name"], True)
         opt["is_suggested"] = opt["name"] in suggested_names
 
+    # Own-channel counts, for the card's "Your feeds" summary block — mirrors
+    # feed_count/active_feed_count, which come from scan_status_context, not
+    # here; kept together with the channel counts so both dashboard.index and
+    # scrape.feed (the two callers that render _sources_card.html) get them
+    # for free by merging this context in, same as they already do for feeds.
+    channels = list_user_channels(user)
+
     return {
         "sources": sources,
         "suggested_sources": [s for s in sources if s["is_suggested"]],
         "other_sources": [s for s in sources if not s["is_suggested"]],
         "active_source_count": sum(1 for s in sources if s["is_on"]),
         "user_topics": user_topics,
+        "channel_count": len(channels),
+        "active_channel_count": sum(1 for c in channels if c.active),
     }
 
 

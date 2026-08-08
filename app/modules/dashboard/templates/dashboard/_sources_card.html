@@ -62,18 +62,30 @@
       </div>
     {% endif %}
 
-    {# Your own feeds — counts only. Never render the rows here: at
-       MAX_USER_FEEDS this card would be longer than the page it lives on.
-       The settings tab is the management surface. #}
-    {% if feed_count %}
+    {# Your own feeds/channels — counts only, same reasoning for both: never
+       render the rows here, at MAX_USER_FEEDS/MAX_USER_CHANNELS this card
+       would be longer than the page it lives on. The popup (and the full
+       settings tab it links to) is the management surface. #}
+    {% set channel_count = channel_count | default(0) %}
+    {% set active_channel_count = active_channel_count | default(0) %}
+    {% if feed_count or channel_count %}
       <hr class="my-2">
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
         <span class="small text-uppercase text-muted fw-semibold">
           <i class="bi bi-rss me-1"></i>{{ _('Your feeds') }}
         </span>
-        <span class="small">
-          <span class="badge rounded-pill bg-secondary-subtle text-secondary">{{ active_feed_count }}/{{ feed_count }}</span>
-          {% set paused = feed_count - active_feed_count %}
+        <span class="small d-flex align-items-center gap-1 flex-wrap">
+          {% if feed_count %}
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary" title="{{ _('RSS feeds') }}">
+              <i class="bi bi-rss"></i> {{ active_feed_count }}/{{ feed_count }}
+            </span>
+          {% endif %}
+          {% if channel_count %}
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary" title="{{ _('YouTube channels') }}">
+              <i class="bi bi-youtube"></i> {{ active_channel_count }}/{{ channel_count }}
+            </span>
+          {% endif %}
+          {% set paused = (feed_count - active_feed_count) + (channel_count - active_channel_count) %}
           {% if paused %}
             <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">{{ _('%(n)s paused', n=paused) }}</span>
           {% endif %}
@@ -91,13 +103,14 @@
     {% endif %}
 
     <div class="text-end mt-2">
-      <a href="{{ url_for('settings.profile', tab='ai') }}" class="small text-decoration-none">
-        {% if feed_count %}
-          <i class="bi bi-gear me-1"></i>{{ _('Manage your feeds') }}
+      <button type="button" class="btn btn-link btn-sm p-0 small text-decoration-none align-baseline"
+              data-bs-toggle="modal" data-bs-target="#sourceManagerModal">
+        {% if feed_count or channel_count %}
+          <i class="bi bi-gear me-1"></i>{{ _('Manage your feeds and channels') }}
         {% else %}
-          <i class="bi bi-plus-lg me-1"></i>{{ _('Add your own RSS source') }}
+          <i class="bi bi-plus-lg me-1"></i>{{ _('Add your own RSS feed or YouTube channel') }}
         {% endif %}
-      </a>
+      </button>
     </div>
   </div>
 </div>
