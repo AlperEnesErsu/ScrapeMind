@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import pytest
-
 from app.modules.scrape.sources import (
     AVAILABLE_SOURCES,
     SOURCE_META,
     agent_reach_source,
     enabled_sources,
-    source_options,
 )
 from app.modules.scrape.sources.payload import PaperPayload
 
@@ -39,9 +36,7 @@ def test_agent_reach_sources_registered():
 
 def test_agent_reach_search_youtube_payload_structure(monkeypatch):
     """Test search_youtube returns PaperPayload objects with correct URLs and metadata."""
-    sample_yt_json = (
-        '{"id": "dQw4w9WgXcQ", "title": "Test Video", "uploader": "Test Channel", "description": "Test Desc", "duration": 180, "upload_date": "20240512"}\n'
-    )
+    sample_yt_json = '{"id": "dQw4w9WgXcQ", "title": "Test Video", "uploader": "Test Channel", "description": "Test Desc", "duration": 180, "upload_date": "20240512"}\n'
 
     class DummyCompletedProcess:
         returncode = 0
@@ -71,9 +66,7 @@ def test_agent_reach_search_youtube_payload_structure(monkeypatch):
 
 def test_agent_reach_search_github_payload_structure(monkeypatch):
     """Test search_github returns PaperPayload objects with correct repo URLs."""
-    sample_gh_json = (
-        '[{"fullName": "test/repo", "url": "https://github.com/test/repo", "description": "Repo desc", "owner": {"login": "testowner"}, "updatedAt": "2024-06-15T10:00:00Z"}]'
-    )
+    sample_gh_json = '[{"fullName": "test/repo", "url": "https://github.com/test/repo", "description": "Repo desc", "owner": {"login": "testowner"}, "updatedAt": "2024-06-15T10:00:00Z"}]'
 
     class DummyCompletedProcess:
         returncode = 0

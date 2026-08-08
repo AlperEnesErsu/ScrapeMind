@@ -15,7 +15,8 @@
 İnternet her gün milyonlarca yeni içerikle büyüyor; ama gerçekten **anlamlı** olan bilgiye ulaşmak giderek zorlaşıyor. ScrapeMind, kullanıcının ilgi alanlarına göre:
 
 - 📰 **Güncel haberleri** ve sektörel gelişmeleri,
-- 📚 **Akademik makaleleri** (arXiv, Semantic Scholar, PubMed vb.),
+- 📚 **Akademik makaleleri** (arXiv, Semantic Scholar, PubMed, OpenAlex, Crossref),
+- 🎬 Takip ettiği **YouTube kanallarının** yeni videolarını (transkriptten AI özeti ile),
 - 🔍 Bu kaynaklar arasındaki **örüntü, trend ve büyük çıkarımları**
 
 otomatik olarak toplayıp özetler, sınıflandırır ve kullanıcıya günlük bir "bilgi özeti" olarak sunar.
@@ -48,7 +49,7 @@ Gelecek projelerde sadece `app/modules/` boşaltılıp yeni modüller eklenerek 
 | Lint | ruff + black + mypy + pre-commit |
 | Container | Docker + docker-compose |
 | Task queue | Celery 5.4 + Redis (prefork `worker` + threaded `worker-io` + tek replika `beat`) |
-| Scraping | `arxiv` SDK · `feedparser` · `requests` — **tarayıcı otomasyonu yok** (Scrapy/Playwright/Selenium kullanılmıyor) |
+| Scraping | `arxiv` SDK · `feedparser` · `requests` · `yt-dlp` (yalnızca transkript) — **tarayıcı otomasyonu yok**; gerekçe: [ADR-0001](docs/adr/0001-headless-browser-yok.md) |
 | LLM | Çok sağlayıcılı: OpenRouter (varsayılan) · Ollama (yerel) · Anthropic |
 
 > Scraping ve LLM bileşenleri `app/modules/`'da yaşar, `core`'a sızmaz.
@@ -73,8 +74,10 @@ Gelecek projelerde sadece `app/modules/` boşaltılıp yeni modüller eklenerek 
 
 ### ScrapeMind modülleri (`app/modules/`)
 
-- 📚 **Akademik kaynaklar**: arXiv · Semantic Scholar · PubMed
+- 📚 **Akademik kaynaklar**: arXiv · Semantic Scholar · PubMed · OpenAlex · Crossref
+- 🔗 **DOI tekilleştirme + zenginleştirme**: aynı makale iki kaynaktan gelirse tek satır olur, boş alanlar dolar, dolu alanlar asla ezilmez
 - 📰 **RSS/Atom**: 4 küratörlü besleme + kullanıcının kendi beslemeleri (SSRF korumalı)
+- 🎬 **YouTube kanal aboneliği**: kanal RSS'i ile yeni video tespiti, `yt-dlp` ile transkript, LLM ile TR özet — kanal limiti admin panelinden ayarlanır
 - 🎯 **İlgi-farkında kaynak seçici**: konu sınıflandırması + kaynak başına opt-out
 - 🌍 **TR→EN anahtar kelime çevirisi**: Türkçe ilgi alanları İngilizce korpuslarda eşleşsin diye
 - 🤖 **AI**: makale analizi, TR çeviri, makale sohbeti, günlük/haftalık özet (digest)
@@ -249,16 +252,18 @@ ScrapeMind/
 - ✅ **Faz 0** — Repo + Docker + pyproject + pre-commit + CI iskeleti
 - ✅ **Faz 1** — Auth (Local+OAuth), Register/Reset, RBAC, Menu, Profile, Audit, i18n (TR/EN), UI shell
 - ✅ **Faz 2** — Celery + Redis · arXiv + Semantic Scholar + PubMed · Discover/Library UI · AI analiz & TR çeviri · 2FA (TOTP) · SMTP · Avatar upload · [API v1 (JWT)](docs/API_V1.md) + token revocation · Audit retention
-- 🔶 **Faz 3** *(devam ediyor)* — ✅ RSS beslemeler + kullanıcı beslemeleri · ✅ konu sınıflandırma + kaynak seçici · ✅ TR→EN anahtar kelime çevirisi · ✅ tarama geçmişi + durum paneli · ✅ digest · ✅ çok sağlayıcılı LLM · ⏳ DOI tekilleştirmesi · ⏳ OpenAlex + Crossref · ⏳ RSS'siz site scrape'i
-- 🔮 **Faz 4** — pgvector + semantik arama/RAG · yazar takibi (ORCID) · atıf grafiği · LDAP · Sentry/Prometheus
+- ✅ **Faz 3** — RSS beslemeler + kullanıcı beslemeleri · konu sınıflandırma + kaynak seçici · TR→EN anahtar kelime çevirisi · tarama geçmişi + durum paneli · digest · çok sağlayıcılı LLM
+- ✅ **Faz 4** — DOI tekilleştirme + zenginleştirme · OpenAlex + Crossref · YouTube kanal aboneliği + transkript özeti · admin panelinden düzenlenebilir limitler
+- 🔶 **Faz 5** *(sıradaki)* — ⏳ beslemelerde conditional GET · ⏳ RSS'siz site scrape'i + alan seçici · ⏳ Bluesky adaptörü
+- 🔮 **Sonrası** — pgvector + semantik arama/RAG · yazar takibi (OpenAlex author id) · atıf grafiği · LDAP
 
 Detaylı plan: [PROJECT.md](PROJECT.md) · Sıradaki iş ve gerekçeleri: [docs/HANDOVER.md](docs/HANDOVER.md)
 
 ## ⚖️ Etik & Yasal
 
-- Mümkün olan her yerde **resmî API'leri** tercih eder (arXiv, Semantic Scholar, PubMed, Crossref)
+- Mümkün olan her yerde **resmî API'leri** tercih eder (arXiv, Semantic Scholar, PubMed, OpenAlex, Crossref)
 - Rate limit + dağıtık zamanlama ile hedef sunucuları yormaz
-- Telif hakkıyla korunan içeriği **yeniden yayınlamaz** — yalnızca özet + kaynağa geri link
+- Telif hakkıyla korunan içeriği **yeniden yayınlamaz** — yalnızca özet + kaynağa geri link. Video transkriptleri bu yüzden saklanmaz, sadece LLM özeti tutulur
 - Kullanıcının verdiği URL'ler SSRF guard'ından geçer (özel/iç ağ adresleri reddedilir)
 - **X/Twitter kazınmaz** — ücretsiz okuma API'si yok, kazıma ToS ihlali olur
 - `robots.txt` uyumu: genel sayfa scrape'i eklendiğinde **zorunlu**. Şu an yalnızca
