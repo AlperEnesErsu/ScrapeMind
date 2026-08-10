@@ -215,3 +215,44 @@ def test_usage_never_raises(app, db, monkeypatch):
     monkeypatch.setattr("app.modules.scrape.models.SourceQuotaUsage", Broken)
     usage = ratelimit.quota_usage(_SRC)
     assert usage["requests_used"] == 0
+
+
+# ----------------------------------------------------------------------------
+# Admin overview panel rows
+# ----------------------------------------------------------------------------
+
+
+def test_panel_omits_sources_without_a_budget(app, db):
+    """Every shipped source is unmetered today. A panel of "0 / 0" rows trains
+    admins to ignore the panel, so unmetered sources are left out entirely."""
+    from app.modules.dashboard.routes import _source_quota_rows
+
+    assert _source_quota_rows() == []
+
+
+def test_panel_lists_a_metered_source(app, db, monkeypatch):
+    from app.modules.dashboard.routes import _source_quota_rows
+
+    monkeypatch.setitem(app.config, "SCRAPE_QUOTA_ARXIV_WEEKLY", 100)
+    ratelimit.consume_quota("arxiv", cost=7)
+    try:
+        rows = _source_quota_rows()
+        arxiv = next(r for r in rows if r["source"] == "arxiv")
+        assert arxiv["requests_used"] == 7
+        assert arxiv["requests_limit"] == 100
+        assert arxiv["label"] == "arXiv"
+        # The panel reports when the budget frees up — the end of the window.
+        assert arxiv["resets_at"] > arxiv["window_start"]
+    finally:
+        SourceQuotaUsage.query.filter_by(source_name="arxiv").delete(synchronize_session=False)
+        db.session.commit()
+
+
+def test_panel_never_raises(app, db, monkeypatch):
+    from app.modules.dashboard import routes
+
+    def boom(_name):
+        raise RuntimeError("quota table unreachable")
+
+    monkeypatch.setattr("app.modules.scrape.ratelimit.quota_limit", boom)
+    assert routes._source_quota_rows() == []

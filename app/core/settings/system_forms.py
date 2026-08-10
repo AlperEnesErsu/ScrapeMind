@@ -3,6 +3,8 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, IntegerField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Length, NumberRange
 
+from app.core.settings.toggle_registry import all_system_toggles
+
 
 class SystemSettingsForm(FlaskForm):
     app_name = StringField(_l("Application Name"), validators=[DataRequired(), Length(max=128)])
@@ -23,3 +25,23 @@ class SystemSettingsForm(FlaskForm):
         validators=[NumberRange(min=0, max=200)],
     )
     submit = SubmitField(_l("Save"))
+
+
+def build_system_settings_form(*args, **kwargs) -> SystemSettingsForm:
+    """`SystemSettingsForm` plus one BooleanField per module-registered toggle.
+
+    Built per request rather than at import time: `register_system_toggle` runs
+    when a module is imported, which happens after this module is first read,
+    and a deployment that trims `app/modules/` should not carry fields for
+    toggles nobody registered.
+
+    The subclass is throwaway — WTForms binds fields per instance, so adding
+    attributes to a fresh class each call cannot leak between requests.
+    """
+
+    class _Form(SystemSettingsForm):
+        pass
+
+    for toggle in all_system_toggles():
+        setattr(_Form, toggle.key, BooleanField(_l(toggle.label)))
+    return _Form(*args, **kwargs)

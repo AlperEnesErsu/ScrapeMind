@@ -39,6 +39,33 @@
       {{ form.max_user_channels(class="form-control", min="0", max="200") }}
       <div class="form-text">{{ _('Takes effect immediately for new subscriptions, no restart needed.') }}</div>
     </div>
+
+    {% if system_toggles %}
+    <div class="col-12"><hr class="my-1"></div>
+    <div class="col-12">
+      <div class="fw-semibold small text-muted mb-2">{{ _('Optional data sources') }}</div>
+    </div>
+    {% for toggle, creds_ok in system_toggles %}
+    <div class="col-md-6">
+      <div class="form-check form-switch">
+        {{ form[toggle.key](class="form-check-input") }}
+        <label class="form-check-label" for="{{ toggle.key }}">{{ _(toggle.label) }}</label>
+      </div>
+      {% if toggle.help_text %}
+      <div class="form-text">{{ _(toggle.help_text) }}</div>
+      {% endif %}
+      {% if not creds_ok %}
+      <div class="form-text text-warning-emphasis">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        {{ _('API keys are not configured — turning this on has no effect yet.') }}
+        {% if toggle.missing_credentials_hint %}
+        <span class="text-muted">{{ _(toggle.missing_credentials_hint) }}</span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
   </div>
 
   <div class="mt-4">
