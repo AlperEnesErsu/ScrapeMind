@@ -9,11 +9,39 @@ Every adapter module exposes the same contract:
 `enabled_sources()` reads SCRAPE_SOURCES (comma-separated names) so a
 deployment can trim the list — e.g. `SCRAPE_SOURCES=arxiv` to skip the
 rate-limited public APIs. Unknown names are logged and ignored.
+
+Credential gating (Faz 5.1)
+---------------------------
+Every source up to Faz 4 works with no credentials at all, so "enabled" only
+ever meant "the deployment listed it". Faz 5's sources (EPO OPS, PatentsView,
+Scopus) do not: without a key they cannot answer, and a source that cannot
+answer must not reach a scan. `scrape_for_user` marks a raising source with
+its `-1` sentinel, which turns *every* nightly run into `status="partial"` for
+*every* user — a permanent warning icon that means nothing.
+
+Two independent gates keep that from happening, both declared in SOURCE_META:
+
+  `requires_key` + `credentials_ok()`
+      No credentials configured → the source never enters `enabled_sources()`
+      at all. Users don't see a toggle for something that cannot run.
+
+  `requires_admin_optin: "<system_setting_key>"`
+      Credentials exist, but the deployment must still opt in (licensing —
+      see `docs/adr/0002-elsevier-discovery-only.md` when 5.4 lands). Until an
+      admin flips the setting the source stays off for everyone, even for a
+      user who has an explicit `UserSource` row saying otherwise. Once opted
+      in it is *default off* but freely toggleable — see
+      `service.effective_source_prefs`.
+
+`credentials_ok` is a callable, not a bool, because it is evaluated per call:
+env vars are read at request time (`SCRAPE_SOURCES` sets the precedent), so a
+deployment that adds a key does not need a restart to see the source appear.
 """
 
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from types import ModuleType
 from typing import Any
 
@@ -71,9 +99,14 @@ TOPICS: dict[str, str] = {
 # UI-facing metadata for each source. Kept here — not on the adapter modules —
 # so adapters stay pure I/O. `label`/`desc` are English msgids; templates wrap
 # them in `_()` for translation. `icon` is a bootstrap-icons class.
-# `topics` (list of TOPICS keys) + `category` ("academic"|"feed") drive the
-# interest-aware source picker (Faz 3 Bölüm C) — `category` distinguishes the
-# always-on-by-default academic databases from the topic-gated RSS feeds.
+# `topics` (list of TOPICS keys) + `category` ("academic"|"feed"|"patent") drive
+# the interest-aware source picker (Faz 3 Bölüm C) — `category` distinguishes
+# the always-on-by-default databases from the topic-gated RSS feeds.
+#
+# Optional gating keys (Faz 5.1, see the module docstring):
+#   "requires_key": True + "credentials_ok": <callable() -> bool>
+#   "requires_admin_optin": "<SystemSettings key>"
+# Absent keys mean "no gate", which is every source up to Faz 4.
 SOURCE_META: dict[str, dict] = {
     "arxiv": {
         "label": "arXiv",
@@ -197,8 +230,44 @@ _DEFAULT = (
 )
 
 
+def credentials_ok(name: str) -> bool:
+    """Whether `name`'s credentials are configured.
+
+    True for every source that declares no `requires_key` — the Faz 0-4 sources
+    need nothing, and "no gate" must never read as "gate closed". A
+    `credentials_ok` callable that raises is treated as False: a probe that
+    cannot answer is not evidence that the key is there.
+    """
+    meta = SOURCE_META.get(name, {})
+    if not meta.get("requires_key"):
+        return True
+    probe: Callable[[], bool] | None = meta.get("credentials_ok")
+    if probe is None:
+        return False
+    try:
+        return bool(probe())
+    except Exception:  # noqa: BLE001 — an unreadable probe is a missing key
+        logger.warning("source_credentials_probe_failed", name=name)
+        return False
+
+
+def admin_optin_key(name: str) -> str | None:
+    """The SystemSettings key that must be True before `name` may run, or None
+    when the source needs no admin opt-in."""
+    return SOURCE_META.get(name, {}).get("requires_admin_optin")
+
+
 def enabled_sources() -> dict[str, ModuleType]:
-    """Registry filtered by the SCRAPE_SOURCES env var (default: all)."""
+    """Registry filtered by the SCRAPE_SOURCES env var (default: all), then by
+    credential availability.
+
+    A key-gated source with no key configured is dropped here rather than
+    disabled downstream, so it is invisible everywhere at once — the source
+    picker, `user_enabled_sources`, the library filter dropdown. The
+    admin-opt-in gate deliberately does *not* apply at this level: those
+    sources stay listed (an admin needs to see what they are choosing to turn
+    on) and are forced off per-user in `service.effective_source_prefs`.
+    """
     raw = os.getenv("SCRAPE_SOURCES", _DEFAULT)
     names = [n.strip().lower() for n in raw.split(",") if n.strip()]
     out: dict[str, ModuleType] = {}
@@ -206,6 +275,8 @@ def enabled_sources() -> dict[str, ModuleType]:
         mod = AVAILABLE_SOURCES.get(name)
         if mod is None:
             logger.warning("scrape_source_unknown", name=name)
+            continue
+        if not credentials_ok(name):
             continue
         out[name] = mod
     return out
@@ -227,6 +298,10 @@ def source_options() -> list[dict]:
                 "url": meta.get("url", ""),
                 "topics": meta.get("topics", []),
                 "category": meta.get("category", "academic"),
+                # None for everything up to Faz 4. Carried here so the picker
+                # can label a source the admin has not opted into without
+                # re-reading SOURCE_META itself.
+                "requires_admin_optin": meta.get("requires_admin_optin"),
             }
         )
     return out
