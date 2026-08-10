@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import pytest
-
 from werkzeug.security import generate_password_hash
 
 from app.core.models.user import User
-from app.modules.scrape.models import Paper, UserPaper
+from app.modules.scrape.models import UserPaper
 from app.modules.scrape.service import add_paper_from_url
 from app.modules.scrape.sources.payload import PaperPayload
 
@@ -48,9 +47,7 @@ def test_add_paper_from_url_valid(db, a_user, monkeypatch):
             )
         ]
 
-    monkeypatch.setattr(
-        "app.modules.scrape.sources.external_sources.search_web", mock_search_web
-    )
+    monkeypatch.setattr("app.modules.scrape.sources.external_sources.search_web", mock_search_web)
 
     link, created = add_paper_from_url(a_user, "https://example.com/article")
     assert created is True
@@ -87,9 +84,7 @@ def test_add_paper_from_url_deduplication(db, a_user, monkeypatch):
             )
         ]
 
-    monkeypatch.setattr(
-        "app.modules.scrape.sources.external_sources.search_web", mock_search_web
-    )
+    monkeypatch.setattr("app.modules.scrape.sources.external_sources.search_web", mock_search_web)
 
     link1, created1 = add_paper_from_url(a_user, "https://example.com/dedup")
     assert created1 is True
@@ -105,9 +100,7 @@ def test_add_paper_from_url_unreachable(db, a_user, monkeypatch):
     def mock_search_web(url):
         return []
 
-    monkeypatch.setattr(
-        "app.modules.scrape.sources.external_sources.search_web", mock_search_web
-    )
+    monkeypatch.setattr("app.modules.scrape.sources.external_sources.search_web", mock_search_web)
 
     with pytest.raises(ValueError):
         add_paper_from_url(a_user, "https://example.com/404-not-found")
@@ -115,7 +108,6 @@ def test_add_paper_from_url_unreachable(db, a_user, monkeypatch):
 
 def test_add_link_route_htmx(client, a_user, db, monkeypatch):
     """Test POST /papers/add-link route via HTMX."""
-    from flask_login import login_user
 
     def mock_search_web(url):
         return [
@@ -133,9 +125,7 @@ def test_add_link_route_htmx(client, a_user, db, monkeypatch):
             )
         ]
 
-    monkeypatch.setattr(
-        "app.modules.scrape.sources.external_sources.search_web", mock_search_web
-    )
+    monkeypatch.setattr("app.modules.scrape.sources.external_sources.search_web", mock_search_web)
 
     with client:
         with client.session_transaction() as sess:

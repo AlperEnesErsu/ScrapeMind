@@ -7,7 +7,6 @@ from app.modules.scrape.sources import (
     SOURCE_META,
     enabled_sources,
     external_sources,
-    source_options,
 )
 from app.modules.scrape.sources.payload import PaperPayload
 
@@ -214,4 +213,3 @@ def test_agent_reach_search_web_rss_fallback(monkeypatch):
     assert "<p>" not in p.abstract  # Verifies HTML tag stripping
     assert p.published_at is not None
     assert p.published_at.year == 2026
-
