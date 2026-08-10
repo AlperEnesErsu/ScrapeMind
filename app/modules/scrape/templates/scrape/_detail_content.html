@@ -35,6 +35,9 @@
         {% include 'scrape/_ai_translation.html' %}
       {% elif mode == 'ai' %}
         {% include 'scrape/_ai_analysis.html' %}
+        {% if r.paper.kind == 'video' %}
+          {% include 'scrape/_video_summary.html' %}
+        {% endif %}
       {% elif mode == 'chat' %}
         {% include 'scrape/_paper_chat.html' %}
       {% endif %}

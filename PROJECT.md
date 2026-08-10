@@ -62,13 +62,15 @@ Bu mimari **iki şapkalı** geliştirilecek:
 | Logging | **structlog** | JSON log |
 | Container | **Docker + docker-compose** | |
 | Task queue | **Celery 5.4 + Redis** | Scraping işleri için kritik |
-| Scraping | `arxiv` SDK · `feedparser` · `requests` | `app/modules/scrape/`, core'a sızmaz |
+| Scraping | `arxiv` SDK · `feedparser` · `requests` · `yt-dlp` (yalnızca transkript) | `app/modules/scrape/`, core'a sızmaz |
 | LLM | OpenRouter (varsayılan) · Ollama · Anthropic | Çok sağlayıcılı, kullanıcı bazlı şifreli anahtar |
 
-> **Güncelleme (Temmuz 2026):** Bu dokümanın önceki hali scraping stack'i olarak
+> **Güncelleme (Ağustos 2026):** Bu dokümanın önceki hali scraping stack'i olarak
 > Playwright/Scrapy/BeautifulSoup yazıyordu. **Hiçbiri kurulu değil ve kullanılmıyor.**
-> Veri toplama resmî API'ler (arXiv/S2/PubMed) ve `feedparser` üzerinden yapılıyor;
-> tarayıcı otomasyonu bilinçli olarak kapsam dışı (imaj boyutu + worker maliyeti).
+> Veri toplama resmî API'ler (arXiv/S2/PubMed/OpenAlex/Crossref) ve `feedparser`
+> üzerinden yapılıyor. Tarayıcı otomasyonu bilinçli olarak kapsam dışı — tam gerekçe,
+> reddedilen alternatifler ve kararın yeniden açılma koşulu:
+> [ADR-0001](docs/adr/0001-headless-browser-yok.md).
 > Güncel mimari: [docs/SCRAPING.md](docs/SCRAPING.md).
 
 ---
@@ -512,7 +514,7 @@ Startup'ta `app/modules/__init__.py` tüm klasörleri tarar, manifest'leri DB'ye
 - [x] **ScrapeMind iş modülleri** — arXiv, Semantic Scholar, PubMed; mimari
       [docs/SCRAPING.md](docs/SCRAPING.md)'de belgelendi
 
-### 🔶 Faz 3 — Kaynak Zenginleştirme & Kişiselleştirme *(devam ediyor)*
+### ✅ Faz 3 — Kaynak Zenginleştirme & Kişiselleştirme
 - [x] RSS/Atom beslemeler (küratörlü + kullanıcının kendi beslemeleri, SSRF korumalı)
 - [x] Konu sınıflandırma + ilgi-farkında kaynak seçici
 - [x] TR→EN anahtar kelime çevirisi
@@ -520,16 +522,28 @@ Startup'ta `app/modules/__init__.py` tüm klasörleri tarar, manifest'leri DB'ye
 - [x] Günlük/haftalık LLM özeti (digest)
 - [x] Çok sağlayıcılı LLM + kullanıcı bazlı şifreli anahtar
 - [x] Redis cache (permission) · worker ayrımı · deterministik fan-out
-- [ ] **DOI tekilleştirmesi** — yeni kaynak eklemeden önce şart
-- [ ] OpenAlex + Crossref adaptörleri
-- [ ] RSS'siz sitelerden scrape + alan seçici (robots.txt uyumu dahil)
 
-> Faz 3'ün büyük kısmı `feat/homepage-source-selection` branch'inde, `main`'in
-> **17 commit** önünde. Commit listesi ve devir notları: [docs/HANDOVER.md](docs/HANDOVER.md).
+> Faz 3 `feat/homepage-source-selection` ile `main`'e merge edildi.
 
-### 🟧 Faz 4 — İleri Auth & Ölçek
+### ✅ Faz 4 — Çok Kaynaklı Tekilleştirme & Video
+- [x] **DOI normalizasyonu + `upsert_paper` zenginleştirmesi** — boş alanı doldur, doluyu asla ezme
+- [x] OpenAlex + Crossref adaptörleri (akademik kaynak 3 → 5)
+- [x] **YouTube kanal aboneliği** — kanal RSS'i, `yt-dlp` transkript, LLM ile TR özet
+- [x] Admin panelinden çalışma zamanında düzenlenebilir sayısal limit (`max_user_channels`)
+- [x] `fix(deploy)` — prod worker `-Q` almadığı için routed task'ların hiçbiri tüketilmiyordu
+
+> `feat/openalex-crossref-youtube-channels` branch'i, `main`'in **10 commit** önünde.
+> Commit listesi ve devir notları: [docs/HANDOVER.md](docs/HANDOVER.md).
+
+### 🔶 Faz 5 — Web Scrape & Sosyal
+- [ ] Beslemelerde conditional GET'i bitir (kalıp `ingest_user_channels`'da hazır)
+- [ ] RSS'siz sitelerden scrape + alan seçici (robots.txt uyumu dahil) — önce [ADR-0001](docs/adr/0001-headless-browser-yok.md)
+- [ ] Bluesky adaptörü
+- [ ] `doi` üzerinde UNIQUE constraint (önce mevcut duplicate temizliği)
+
+### 🟧 Faz 6 — İleri Auth & Ölçek
 - [ ] pgvector + semantik arama / gerçek RAG
-- [ ] Yazar takibi (ORCID → OpenAlex) + atıf grafiği
+- [ ] Yazar takibi (OpenAlex author id) + atıf grafiği
 - [ ] `LdapAuthStrategy` (gerçek implementation)
 - [ ] Audit log partition
 - [ ] Sentry, Prometheus
@@ -617,8 +631,10 @@ Bu doküman aşağıdaki kararlarla onay bekliyor:
 - ✅ ScrapeMind = ilk proje, ama `flask-core-base` yeniden kullanılabilir iskelet olarak yapılandırılacak
 - ✅ Faz 1'de: Auth (Local+OAuth) + RBAC + Dinamik Menü + Soft Delete + i18n (TR/EN) + Sol Sidebar UI
 - ✅ Faz 2'de: Celery, ScrapeMind modülleri, 2FA, Email, API — **tamamlandı**
-- 🔶 Faz 3'te: kaynak zenginleştirme, kişiselleştirme, digest, çok sağlayıcılı LLM — **devam ediyor**
-- ⏳ Faz 4'te: pgvector/RAG, yazar takibi, LDAP, Monitoring
+- ✅ Faz 3'te: kaynak zenginleştirme, kişiselleştirme, digest, çok sağlayıcılı LLM — **tamamlandı**
+- ✅ Faz 4'te: DOI tekilleştirme, OpenAlex + Crossref, YouTube kanal aboneliği — **tamamlandı**
+- 🔶 Faz 5'te: conditional GET, RSS'siz site scrape'i, Bluesky — **sıradaki**
+- ⏳ Faz 6'da: pgvector/RAG, yazar takibi, LDAP, Monitoring
 
 | Kişi | Onay | Tarih |
 |---|---|---|

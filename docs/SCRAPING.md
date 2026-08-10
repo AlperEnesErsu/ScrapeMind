@@ -99,10 +99,13 @@ social, humanities, general) seçilir ve ilgi-farkında kaynak seçiciyi besler.
 | `arxiv` | akademik | Hayır | `arxiv` SDK, client-side 3sn gecikme |
 | `semantic_scholar` | akademik | Opsiyonel `SEMANTIC_SCHOLAR_API_KEY` | **OR operatörü yok** → anahtar kelime başına 1 istek |
 | `pubmed` | akademik | Opsiyonel `NCBI_API_KEY` | esearch→efetch iki adım, OR ile tek sorgu |
+| `openalex` | akademik | Hayır (opsiyonel `OPENALEX_MAILTO` → polite pool) | OR ile tek sorgu; abstract `abstract_inverted_index` (kelime→pozisyon) olarak gelir, düz metne geri çevrilir |
+| `crossref` | akademik | Hayır (opsiyonel `CROSSREF_MAILTO` → polite pool) | **OR operatörü yok** → anahtar kelime başına 1 istek; DOI zorunlu (yoksa kayıt atlanır); abstract JATS XML (`<jats:p>...`) olarak gelir, düz metne çevrilir ve **kısmi** — çoğu yayıncı abstract yüklemiyor, bu kaynağın asıl değeri DOI + metadata zenginleştirme |
 | `openai_blog`, `google_ai_blog`, `deepmind_blog`, `huggingface_blog` | besleme | Hayır | Küratörlü, **global** yutulur |
 | `youtube_reach` | besleme | Hayır | `yt-dlp` CLI/Python modülü (`sys.executable`), `kind="video"` |
 | `github_reach` | besleme | Hayır (`gh` CLI opsiyonel) | `gh` CLI repo araması (`FileNotFoundError` korumalı), `kind="github"` |
 | `web_reach` | besleme | Hayır | ScrapeMind `requests` + `net_guard` SSRF koruması, `kind="news"` |
+| `youtube_channel` | besleme | Hayır | Abonelik tabanlı — YouTube'un ücretsiz, anahtarsız kanal RSS beslemesi (`feeds/videos.xml?channel_id=`), `rss_source.fetch_feed_conditional` üzerinden; `kind="video"`. Transkript ayrı bir adımda `yt-dlp` ile (video başına bir kez, taramaya dahil değil) çekilir — yt-dlp kurulu değilse veya YouTube isteği engellerse (özellikle datacenter IP'lerinden yaygın) özetsiz zarifçe devam eder |
 | `user_feed` | besleme | Hayır | Kullanıcının eklediği özel RSS |
 
 > ⚠️ `rss_source` sözleşmeyi **bilerek** kısmen uygular: `SOURCE_NAME` ve `search()`
@@ -267,12 +270,14 @@ Worker ayrımı ([docker-compose.yml](../docker/docker-compose.yml)):
 
 | # | Konu | Neden önemli |
 |---|---|---|
-| 1 | **DOI tekilleştirmesi yok** | Yeni akademik kaynak eklemeden önce şart; yoksa aynı makale N satır olur |
-| 2 | **`upsert_paper` zenginleştirme yapmıyor** | Boş abstract başka kaynaktan dolmuyor |
-| 3 | **Conditional GET ölü kod** | Her gece her besleme tam indiriliyor (§7) |
-| 4 | `Paper.url` / `pdf_url` `String(512)` | `external_id` genişletildi ama bunlar değil; uzun RSS permalink'i taşabilir |
-| 5 | RSS'siz site scrape'i yok | Lab/enstitü haber sayfaları erişilemez |
-| 6 | `ask_paper` "RAG" değil | Başlık+abstract prompt'a doldurulıyor; pgvector yok |
+| 1 | **`doi` üzerinde UNIQUE constraint yok** | Sadece index var. İki worker aynı DOI'yi eşzamanlı ekleyebilir. Bugünkü tek gecelik worker'da pratikte imkânsız; constraint eklemek önce mevcut duplicate'leri temizleyen ayrı bir migration ister |
+| 2 | **Satır birleştirme yok** | DOI bir satırla, `(source, external_id)` başka bir satırla eşleşirse DOI satırı kazanır, diğeri olduğu gibi kalır. Birleştirmek `UserPaper` linklerini taşımayı gerektirir — upsert'in işi değil |
+| 3 | **Conditional GET beslemelerde hâlâ ölü** | `UserFeed.etag` kolonu var ve `add_user_feed` dolduruyor, ama iki yutma yolu da `fetch_feed`'i çağırıyor ve etag'i **geçirmiyor** → 304 yolu ölü. `ingest_user_channels` geçiriyor (§7) |
+| 3b | YouTube kanal feed'i validator göndermiyor | Ölçüldü: `feeds/videos.xml` yalnızca `Cache-Control: max-age=900` dönüyor, **ETag ve Last-Modified yok**. `UserChannel.etag` bu yüzden hep NULL kalır ve her koşu ~15 girdiyi yeniden indirir. Kolonun boş olması hata değil — düzeltmeye çalışma |
+| 4 | RSS'siz site scrape'i yok | Lab/enstitü haber sayfaları erişilemez. Yol haritası: [ADR-0001](adr/0001-headless-browser-yok.md) + HANDOVER §5 |
+| 5 | Kanal RSS'i son ~15 videoyu verir | Yeni eklenen kanalın geçmişi geri doldurulmaz. Geçmiş için `youtube_reach` anahtar kelime araması var |
+| 6 | Video özeti dil başına cache'lenmez | `VideoSummary` `paper_id` üzerinde tekil (feed'de N+1 olmasın diye) — `PaperAnalysis`'in aksine dil başına satır yok |
+| 7 | `ask_paper` "RAG" değil | Başlık+abstract prompt'a dolduruluyor; pgvector yok |
 
 Detaylı yol haritası ve gerekçeler: [HANDOVER.md](HANDOVER.md).
 
@@ -286,8 +291,12 @@ README'deki taahhüt bu katmanın davranış sözleşmesidir:
   zorunlu — şu an yalnızca RSS çekildiği için devrede değil)*
 - Rate limit + dağıtık zamanlama ile hedef sunucular yorulmaz
 - Mümkün olan her yerde **resmî API** tercih edilir
-- Telifli içerik **yeniden yayımlanmaz** — yalnızca özet + kaynağa geri link
+- Telifli içerik **yeniden yayımlanmaz** — yalnızca özet + kaynağa geri link.
+  Video transkriptleri bu yüzden **saklanmaz**: `VideoSummary` yalnızca LLM özetini ve
+  `transcript_chars` sayacını tutar, ham metni değil
 - X/Twitter kazınmaz: ücretsiz okuma API'si yok ve kazıma ToS ihlali olur
+- **Tarayıcı otomasyonu kullanılmaz** — gerekçe ve kararın yeniden açılma koşulu:
+  [ADR-0001](adr/0001-headless-browser-yok.md)
 
 ---
 
@@ -297,10 +306,15 @@ Tümü `.env.example`'da açıklamalı. Özet:
 
 | Değişken | Default | Ne yapar |
 |---|---|---|
-| `SCRAPE_SOURCES` | tüm 7 kaynak | Dağıtımın aktif kaynak listesi |
+| `SCRAPE_SOURCES` | tüm kaynaklar | Dağıtımın aktif kaynak listesi |
 | `SEMANTIC_SCHOLAR_API_KEY`, `NCBI_API_KEY` | boş | Opsiyonel, daha yüksek kota |
+| `OPENALEX_MAILTO`, `CROSSREF_MAILTO` | boş | Anahtar değil — "polite pool" için iletişim adresi |
 | `SCRAPE_RATE_ARXIV_PER_MIN` / `_S2_PER_5MIN` / `_PUBMED_PER_SEC` | 20 / 100 / 3 | Dağıtım geneli bütçe |
+| `SCRAPE_RATE_OPENALEX_PER_SEC` / `_CROSSREF_PER_SEC` | 8 / 5 | Aynı |
+| `SCRAPE_RATE_WEB` / `_YOUTUBE` / `_GITHUB` / `_YT_CHANNEL_PER_MIN` | 30 | Aynı |
 | `MAX_USER_FEEDS` | 50 | Kullanıcı başına özel besleme |
+| `MAX_USER_CHANNELS` | 10 | Kullanıcı başına YouTube kanalı — **yalnızca fallback**, geçerli değer admin panelindeki `max_user_channels` sistem ayarı |
+| `CHANNEL_SUMMARY_MAX_PER_RUN` | 5 | Kullanıcı başına gecelik özetlenecek video tavanı |
 | `FEED_FETCH_TIMEOUT` / `FEED_FETCH_MAX_BYTES` | 15 / 5 MiB | Besleme çekme sınırları |
 | `FEED_ALLOW_PRIVATE_HOSTS` | false | SSRF guard kapatma — **prod'da asla** |
 | `SCAN_RUN_RETENTION_DAYS` | 30 | 0 = sonsuza dek sakla |

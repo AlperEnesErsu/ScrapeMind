@@ -112,6 +112,18 @@ class BaseConfig:
     # Custom RSS feeds a single user may register. Each active feed costs one
     # HTTP fetch per nightly run, so this is the main per-user cost knob.
     MAX_USER_FEEDS = int(os.getenv("MAX_USER_FEEDS", "50"))
+    # YouTube channels a single user may subscribe to. This is only the
+    # fallback used when no SystemSettings row exists yet — the effective
+    # value is the admin-editable DB setting (see settings/system route).
+    # Default is lower than MAX_USER_FEEDS because each channel costs a
+    # nightly feed fetch plus, potentially, a transcript download and an LLM
+    # summary.
+    MAX_USER_CHANNELS = int(os.getenv("MAX_USER_CHANNELS", "10"))
+    # Per user, per nightly run: how many newly-ingested videos get a
+    # transcript-summarization job queued. One model call per video per user
+    # per night is real spend — this keeps a free-tier model's rate limit and
+    # a user's token budget sane even for a user with several active channels.
+    CHANNEL_SUMMARY_MAX_PER_RUN = int(os.getenv("CHANNEL_SUMMARY_MAX_PER_RUN", "5"))
     # Read timeout (seconds) and hard body cap (bytes) for a feed fetch.
     FEED_FETCH_TIMEOUT = int(os.getenv("FEED_FETCH_TIMEOUT", "15"))
     FEED_FETCH_MAX_BYTES = int(os.getenv("FEED_FETCH_MAX_BYTES", "5242880"))  # 5 MiB
@@ -124,6 +136,19 @@ class BaseConfig:
     SCRAPE_RATE_ARXIV_PER_MIN = int(os.getenv("SCRAPE_RATE_ARXIV_PER_MIN", "20"))
     SCRAPE_RATE_S2_PER_5MIN = int(os.getenv("SCRAPE_RATE_S2_PER_5MIN", "100"))
     SCRAPE_RATE_PUBMED_PER_SEC = int(os.getenv("SCRAPE_RATE_PUBMED_PER_SEC", "3"))
+    SCRAPE_RATE_OPENALEX_PER_SEC = int(os.getenv("SCRAPE_RATE_OPENALEX_PER_SEC", "8"))
+    SCRAPE_RATE_CROSSREF_PER_SEC = int(os.getenv("SCRAPE_RATE_CROSSREF_PER_SEC", "5"))
+    # These three back external_sources's youtube/github/web adapters — added
+    # here so they're actually tunable; previously they only ever hit the
+    # `_cfg` fallback in ratelimit.py because no BaseConfig/.env.example entry
+    # defined them.
+    SCRAPE_RATE_WEB_PER_MIN = int(os.getenv("SCRAPE_RATE_WEB_PER_MIN", "30"))
+    SCRAPE_RATE_YOUTUBE_PER_MIN = int(os.getenv("SCRAPE_RATE_YOUTUBE_PER_MIN", "30"))
+    SCRAPE_RATE_GITHUB_PER_MIN = int(os.getenv("SCRAPE_RATE_GITHUB_PER_MIN", "30"))
+    # yt-dlp transcript fetches (youtube_channel_source.fetch_transcript) —
+    # a separate bucket from SCRAPE_RATE_YOUTUBE_PER_MIN (external_sources's
+    # video *search*): one video summary per new upload, not a search call.
+    SCRAPE_RATE_YT_CHANNEL_PER_MIN = int(os.getenv("SCRAPE_RATE_YT_CHANNEL_PER_MIN", "30"))
 
     # Redis cache for RBAC permission sets (see app/core/cache.py). Purely an
     # optimisation: with CACHE_ENABLED=false, or Redis unreachable, everything

@@ -33,3 +33,21 @@ class UserFeedForm(FlaskForm):
     url = StringField(_l("Feed URL"), validators=[DataRequired(), Length(max=512)])
     label = StringField(_l("Label (optional)"), validators=[Optional(), Length(max=128)])
     submit = SubmitField(_l("Add feed"))
+
+
+class UserChannelForm(FlaskForm):
+    """Subscribe to a YouTube channel — see
+    app/modules/scrape/service.py:add_user_channel. `label` is optional; the
+    service auto-fills it from the channel's own title when left blank.
+
+    Deliberately no URL validator here either, for the same reason as
+    UserFeedForm: the accepted input isn't always a URL (a bare "@handle" or
+    a bare "UC..." id is valid too), and the real validation — resolution,
+    the SSRF guard, the per-user cap and an actual verifying fetch — lives in
+    the service, which is the only place with the config and DB access it
+    needs.
+    """
+
+    url = StringField(_l("Channel URL or @handle"), validators=[DataRequired(), Length(max=512)])
+    label = StringField(_l("Label (optional)"), validators=[Optional(), Length(max=200)])
+    submit = SubmitField(_l("Add channel"))

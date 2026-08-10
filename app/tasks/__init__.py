@@ -34,6 +34,9 @@ TASK_ROUTES = {
     "scrape.run_for_all_users": {"queue": "scrape"},
     "feeds.link_for_user": {"queue": "llm"},
     "digest.run_for_user": {"queue": "llm"},
+    "channels.ingest_for_user": {"queue": "io"},
+    "channels.summarize_video": {"queue": "llm"},
+    "channels.ingest_for_all_users": {"queue": "io"},
 }
 
 
@@ -111,7 +114,13 @@ def init_celery(flask_app) -> Celery:
 
 # Side-effect: importing this module registers tasks via decorators.
 # Keep at the bottom to avoid circular imports.
-from app.tasks import core_tasks, digest_tasks, feed_tasks, scrape_tasks  # noqa: E402, F401
+from app.tasks import (  # noqa: E402, F401
+    channel_tasks,
+    core_tasks,
+    digest_tasks,
+    feed_tasks,
+    scrape_tasks,
+)
 
 
 def _bootstrap_for_worker() -> None:

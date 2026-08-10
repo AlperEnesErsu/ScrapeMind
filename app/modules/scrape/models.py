@@ -22,8 +22,12 @@ class Paper(BaseModel):
     # Authors stored as JSON list of strings — simple, queryable, and good
     # enough until we want author-as-entity work in Phase 3.
     authors = db.Column(db.JSON, nullable=True)
-    url = db.Column(db.String(512), nullable=True)
-    pdf_url = db.Column(db.String(512), nullable=True)
+    # Text, not String(512): OpenAlex/Crossref URLs (redirect chains, long
+    # DOI-resolver query strings) routinely overflow a 512-char varchar —
+    # same overflow class external_id was widened for (see
+    # e5f1a2b3c4d6_widen_paper_external_id).
+    url = db.Column(db.Text, nullable=True)
+    pdf_url = db.Column(db.Text, nullable=True)
     published_at = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
     categories = db.Column(db.JSON, nullable=True)  # arXiv primary + cross-list categories
     doi = db.Column(db.String(128), nullable=True, index=True)
@@ -114,6 +118,42 @@ class UserFeed(BaseModel):
     user = db.relationship("User", backref=db.backref("custom_feeds", lazy="dynamic"))
 
 
+class UserChannel(BaseModel):
+    """A user's YouTube channel subscription (Faz 3 — agent reach).
+
+    Deliberately its own table rather than a `kind` column on `UserFeed`,
+    for three reasons: the cap is counted separately from `MAX_USER_FEEDS`
+    (an admin-set `max_user_channels` system setting — see
+    `service.max_user_channels`, distinct from the per-feed cap because each
+    channel is a heavier per-night cost); it needs a `channel_id` column
+    `UserFeed` has no use for; and its ingestion path (added in a later
+    commit) chains transcript fetching and AI summarization that RSS feeds
+    never touch, so the two are governed by unrelated code paths even though
+    they share the "user subscribes to a recurring source" shape.
+
+    `active` mirrors `UserFeed.active` — a pause switch, not a delete.
+    `etag`/`last_modified` back the same conditional-GET machinery as
+    `UserFeed` (see `sources/youtube_channel_source.fetch_channel_videos`).
+    `last_video_at` is set by the ingestion task (not this commit) so the UI
+    can show "last new video" without querying Papers.
+    """
+
+    __tablename__ = "user_channels"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    channel_id = db.Column(db.String(64), nullable=False)  # the UC... id
+    title = db.Column(db.String(200), nullable=True)
+    url = db.Column(db.String(512), nullable=False)  # canonical channel URL
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    etag = db.Column(db.String(256), nullable=True)
+    last_modified = db.Column(db.String(256), nullable=True)
+    last_video_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    user = db.relationship("User", backref=db.backref("youtube_channels", lazy="dynamic"))
+
+    __table_args__ = (db.UniqueConstraint("user_id", "channel_id", name="uq_user_channel"),)
+
+
 class ScanRun(BaseModel):
     """One recorded execution of a per-user scan.
 
@@ -136,7 +176,7 @@ class ScanRun(BaseModel):
     __tablename__ = "scan_runs"
 
     user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
-    kind = db.Column(db.String(16), nullable=False)  # "scrape" | "feeds"
+    kind = db.Column(db.String(16), nullable=False)  # "scrape" | "feeds" | "channels"
     trigger = db.Column(db.String(16), nullable=False, default="auto")  # "auto" | "manual"
     # "running" | "ok" | "partial" | "skipped" | "error"
     status = db.Column(db.String(16), nullable=False, default="running")
@@ -279,6 +319,42 @@ class PaperAnalysis(BaseModel):
     __table_args__ = (
         db.UniqueConstraint("paper_id", "target_lang", name="uq_paper_analysis_lang"),
     )
+
+
+class VideoSummary(BaseModel):
+    """LLM-generated TL;DR + highlights/topics for one channel video's
+    transcript. One row per Paper — see `app/modules/scrape/ai_service.py`
+    `generate_video_summary` for the generation path.
+
+    Two decisions worth documenting:
+
+    1. Unique on `paper_id` alone, unlike `PaperAnalysis` which is unique on
+       `(paper_id, target_lang)`. The feed renders up to 100 cards, and a
+       `uselist=False` relationship collapses to one `joinedload` LEFT JOIN
+       instead of an N+1. The cost is no per-language cache: a video gets
+       one summary, in the deployment's default language.
+    2. The raw transcript is never stored here — only `transcript_chars`.
+       `docs/SCRAPING.md` §11 commits to never republishing copyrighted
+       content (summary + link back only), and transcripts are also large;
+       keeping only the character count is enough to show "based on an
+       11,000-character transcript" without holding onto the text itself.
+    """
+
+    __tablename__ = "video_summaries"
+
+    paper_id = db.Column(
+        db.BigInteger, db.ForeignKey("papers.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    tldr = db.Column(db.Text, nullable=True)
+    highlights = db.Column(db.JSON, nullable=True)  # list[str]
+    topics = db.Column(db.JSON, nullable=True)  # list[str]
+    transcript_chars = db.Column(db.Integer, nullable=True)
+    source_lang = db.Column(db.String(8), nullable=True)  # transcript language actually used
+    target_lang = db.Column(db.String(8), nullable=True)  # summary language
+    model_version = db.Column(db.String(64), nullable=True)
+    raw_response = db.Column(db.JSON, nullable=True)
+
+    paper = db.relationship("Paper", backref=db.backref("video_summary", uselist=False))
 
 
 class UserDigest(BaseModel):

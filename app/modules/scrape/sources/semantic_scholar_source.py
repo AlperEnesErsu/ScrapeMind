@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 import requests
 import structlog
 
+from app.modules.scrape.doi import normalize_doi
 from app.modules.scrape.ratelimit import SourceThrottledError, semantic_scholar_slot
 from app.modules.scrape.sources.payload import PaperPayload
 
@@ -68,6 +69,7 @@ def _to_payload(item: dict) -> PaperPayload | None:
         pdf_url=pdf.get("url"),
         published_at=_parse_date(item),
         categories=list(item.get("fieldsOfStudy") or []),
+        doi=normalize_doi((item.get("externalIds") or {}).get("DOI")),
     )
 
 

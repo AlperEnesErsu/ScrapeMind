@@ -24,7 +24,7 @@ from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app.core.audit.middleware import log_action
-from app.modules.scrape.forms import AiSettingsForm, UserFeedForm
+from app.modules.scrape.forms import AiSettingsForm, UserChannelForm, UserFeedForm
 from app.modules.scrape.service import (
     add_note,
     count_user_papers,
@@ -94,19 +94,73 @@ def _feed_list_ctx(filter_: str = "all") -> dict:
     }
 
 
-def _ai_ctx():
+def _channel_list_ctx(filter_: str = "all") -> dict:
+    """Context for the `settings/_channel_list.html` partial.
+
+    Same reasoning as `_feed_list_ctx`: this is what a toggle or delete
+    re-renders, so it stays free of `classify_user_topics` / `user_llm_status`
+    — `_ai_ctx` adds those for the full-tab render only.
+    """
+    from app.modules.scrape.service import list_user_channels, max_user_channels
+
+    channels = list_user_channels(current_user)
+    if filter_ == "active":
+        shown = [c for c in channels if c.active]
+    elif filter_ == "paused":
+        shown = [c for c in channels if not c.active]
+    else:
+        filter_ = "all"
+        shown = channels
+
+    return {
+        "user_channels": shown,
+        "channel_count": len(channels),
+        "active_channel_count": sum(1 for c in channels if c.active),
+        "channel_filter": filter_,
+        "max_user_channels": max_user_channels(),
+    }
+
+
+def _source_manager_ctx(*, clear_forms: bool = False) -> dict:
+    """Context for `settings/_source_manager.html` — the two add-forms plus
+    the (cheap) feed/channel list contexts. Deliberately free of
+    `classify_user_topics` / `user_llm_status`, same reasoning as
+    `_feed_list_ctx`: this is what the home-page modal renders on open and
+    what a feed/channel add re-renders, and both need to stay an LLM-free
+    round trip. `_ai_ctx` layers the expensive bits on top for the full-tab
+    render only.
+
+    `clear_forms` empties the inputs. A bare `UserFeedForm()` inside a POST
+    request re-populates itself from the submitted formdata, so after a
+    *successful* add the URL the user just added stays sitting in the box —
+    which reads as "that didn't work" and invites a duplicate submit. It
+    matters more in the modal, where you stay put and add several in a row.
+    On failure we deliberately keep the value so it can be corrected.
+    """
+    # Omit the kwarg entirely rather than passing a sentinel: Flask-WTF's
+    # default for `formdata` is a private _Auto marker, and importing that
+    # would couple us to its internals.
+    kwargs = {"formdata": None} if clear_forms else {}
+    return {
+        "feed_form": UserFeedForm(**kwargs),
+        "channel_form": UserChannelForm(**kwargs),
+        **_feed_list_ctx(),
+        **_channel_list_ctx(),
+    }
+
+
+def _ai_ctx(*, clear_forms: bool = False):
     from flask import current_app
 
     from app.modules.scrape.ai_service import classify_user_topics, user_llm_status
 
     return {
         "form": AiSettingsForm(),
-        "feed_form": UserFeedForm(),
         "status": user_llm_status(current_user),
         "provider": (current_app.config.get("LLM_PROVIDER") or "openrouter").strip().lower(),
         "default_model": current_app.config.get("OPENROUTER_MODEL"),
         "user_topics": classify_user_topics(current_user),
-        **_feed_list_ctx(),
+        **_source_manager_ctx(clear_forms=clear_forms),
     }
 
 
@@ -120,6 +174,54 @@ def _register_tabs():
 
 def _render_settings_tab(tab: str, **ctx):
     return render_template(f"settings/_tab_{tab}.html", active_tab=tab, **ctx)
+
+
+@scrape_bp.route("/profile/source-manager", methods=["GET"])
+@login_required
+def source_manager():
+    """Lazy-loaded body of the home-page 'manage your sources' modal.
+
+    The card renders on every home-page load and most loads never open the
+    modal, so this must stay cheap: built from `_source_manager_ctx()` only
+    (feed/channel lists + the two add-forms), never `_ai_ctx()` — see
+    `_feed_list_ctx`'s docstring for why that one is off-limits here
+    (`classify_user_topics` is an LLM round trip).
+    """
+    return render_template(
+        "settings/_source_manager.html", surface="modal", **_source_manager_ctx()
+    )
+
+
+def _render_source_manager_result(
+    surface: str | None, *, active_pane: str = "feeds", added: bool = False, **flash_kwargs
+):
+    """Shared response for submit_feed_add/submit_channel_add: the modal
+    surface swaps just the source-manager partial (cheap context); anything
+    else (the settings tab, or no `surface` field at all) re-renders the
+    full AI tab, unchanged from before this route became surface-aware.
+
+    `active_pane` ("feeds" | "channels") keeps the modal on the tab the user
+    was just working in — re-rendering the whole partial after an add would
+    otherwise reset to the first tab, which is exactly the kind of thing that
+    makes a popup feel broken (add a channel, get bounced back to RSS). The
+    settings tab has no tab strip and simply ignores the value — passed
+    through anyway so both branches share one signature.
+
+    `added` says the add succeeded, which clears the inputs (see
+    `_source_manager_ctx`). On failure they keep their values so the user can
+    fix the URL instead of retyping it.
+    """
+    if surface == "modal":
+        return render_template(
+            "settings/_source_manager.html",
+            surface="modal",
+            active_pane=active_pane,
+            **_source_manager_ctx(clear_forms=added),
+            **flash_kwargs,
+        )
+    return _render_settings_tab(
+        "ai", active_pane=active_pane, **flash_kwargs, **_ai_ctx(clear_forms=added)
+    )
 
 
 @scrape_bp.route("/profile/ai/save", methods=["POST"])
@@ -178,6 +280,7 @@ def submit_ai_clear():
 def submit_feed_add():
     from app.modules.scrape.service import add_user_feed
 
+    surface = request.form.get("surface")
     form = UserFeedForm()
     if form.validate_on_submit():
         feed, err = add_user_feed(current_user, form.url.data, form.label.data)
@@ -188,20 +291,24 @@ def submit_feed_add():
                 entity_id=str(feed.id),
                 changes={"url": feed.url},
             )
-            return _render_settings_tab(
-                "ai", flash_msg=_("Feed added."), flash_kind="success", **_ai_ctx()
+            return _render_source_manager_result(
+                surface,
+                active_pane="feeds",
+                added=True,
+                flash_msg=_("Feed added."),
+                flash_kind="success",
             )
-        return _render_settings_tab(
-            "ai",
+        return _render_source_manager_result(
+            surface,
+            active_pane="feeds",
             flash_msg=_(err or "Could not add that feed."),
             flash_kind="danger",
-            **_ai_ctx(),
         )
-    return _render_settings_tab(
-        "ai",
+    return _render_source_manager_result(
+        surface,
+        active_pane="feeds",
         flash_msg=_("Please correct the errors below."),
         flash_kind="danger",
-        **_ai_ctx(),
     )
 
 
@@ -256,6 +363,87 @@ def submit_feed_toggle(feed_id: int):
         changes={"active": new_value},
     )
     return render_template("settings/_feed_list.html", **_feed_list_ctx())
+
+
+# ------------------------------------------------------------------ #
+# Custom YouTube channel subscriptions — same AI/Kaynaklar profile tab
+# ------------------------------------------------------------------ #
+
+
+@scrape_bp.route("/profile/channels/add", methods=["POST"])
+@login_required
+def submit_channel_add():
+    from app.modules.scrape.service import add_user_channel
+
+    surface = request.form.get("surface")
+    form = UserChannelForm()
+    if form.validate_on_submit():
+        channel, err = add_user_channel(current_user, form.url.data, form.label.data)
+        if channel is not None:
+            log_action(
+                "user.channel_added",
+                entity_type="user_channel",
+                entity_id=str(channel.id),
+                changes={"channel_id": channel.channel_id},
+            )
+            return _render_source_manager_result(
+                surface,
+                active_pane="channels",
+                added=True,
+                flash_msg=_("Channel added."),
+                flash_kind="success",
+            )
+        return _render_source_manager_result(
+            surface,
+            active_pane="channels",
+            flash_msg=_(err or "Could not add that channel."),
+            flash_kind="danger",
+        )
+    return _render_source_manager_result(
+        surface,
+        active_pane="channels",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+    )
+
+
+@scrape_bp.route("/profile/channels", methods=["GET"])
+@login_required
+def channel_list():
+    """The channel list on its own — filter chips and post-mutation swaps
+    target this instead of re-rendering the whole AI tab."""
+    return render_template(
+        "settings/_channel_list.html", **_channel_list_ctx(request.args.get("filter", "all"))
+    )
+
+
+@scrape_bp.route("/profile/channels/<int:channel_pk>/remove", methods=["POST"])
+@login_required
+def submit_channel_remove(channel_pk: int):
+    from app.modules.scrape.service import remove_user_channel
+
+    ok = remove_user_channel(current_user, channel_pk)
+    if not ok:
+        abort(404)
+    log_action("user.channel_removed", entity_type="user_channel", entity_id=str(channel_pk))
+    return render_template("settings/_channel_list.html", **_channel_list_ctx())
+
+
+@scrape_bp.route("/profile/channels/<int:channel_pk>/toggle", methods=["POST"])
+@login_required
+def submit_channel_toggle(channel_pk: int):
+    from app.modules.scrape.service import toggle_user_channel
+
+    new_value = toggle_user_channel(current_user, channel_pk)
+    if new_value is None:
+        abort(404)
+    log_action(
+        "user.channel_toggled",
+        entity_type="user_channel",
+        entity_id=str(channel_pk),
+        changes={"active": new_value},
+    )
+    return render_template("settings/_channel_list.html", **_channel_list_ctx())
 
 
 def _is_htmx() -> bool:
@@ -434,7 +622,12 @@ def detail(user_paper_id: int):
     to know about ai_service — anything missing just renders the "not yet"
     state plus a "Generate" button that hits the HTMX trigger endpoint.
     """
-    from app.modules.scrape.ai_service import get_analysis, get_translation, is_ai_enabled
+    from app.modules.scrape.ai_service import (
+        get_analysis,
+        get_translation,
+        get_video_summary,
+        is_ai_enabled,
+    )
 
     link = get_user_paper(current_user, user_paper_id)
     if link is None:
@@ -464,6 +657,14 @@ def detail(user_paper_id: int):
         ai_enabled=is_ai_enabled(current_user),
         translation=get_translation(link.paper) if mode == "tr" else None,
         analysis=get_analysis(link.paper) if mode == "ai" else None,
+        # Cache-only lookup — a GET never attempts generation, so there is no
+        # "no transcript" signal here, only "cached" vs "not generated yet".
+        # `no_transcript` (the route below sets it) is a transient result of
+        # a POST attempt, not persisted state, so it's always False on load.
+        summary=(
+            get_video_summary(link.paper) if mode == "ai" and link.paper.kind == "video" else None
+        ),
+        no_transcript=False,
         chat_messages=chat_messages,
     )
 
@@ -570,6 +771,71 @@ def generate_analysis_route(user_paper_id: int):
         changes={"force": force, "ok": analysis is not None},
     )
     return render_template("scrape/_ai_analysis.html", r=link, analysis=analysis)
+
+
+@scrape_bp.route("/<int:user_paper_id>/video-summary", methods=["POST"])
+@login_required
+def generate_video_summary_route(user_paper_id: int):
+    """HTMX: fetch this video's transcript (yt-dlp subprocess) and summarize
+    it via the resolved LLM. Swaps the video-summary panel with the result.
+    `?force=1` re-fetches the transcript and re-runs the cache.
+
+    Cost/latency note: unlike generate_analysis_route (one LLM call),
+    fetch_transcript shells out to yt-dlp (`_YTDLP_TIMEOUT = 30`s in
+    youtube_channel_source.py) *before* the LLM call, both blocking this web
+    worker synchronously — a request here can take ~10-30s longer than the
+    plain analysis route. That's the same "no Celery hop for a single-paper,
+    user-triggered action" trade-off the analysis route already accepts, just
+    a slower instance of it; the template's hx-disabled-elt + hx-indicator
+    are what keep a user from firing a second yt-dlp subprocess by
+    double-clicking while the first is still running.
+    """
+    from app.modules.scrape.ai_service import (
+        generate_video_summary,
+        get_video_summary,
+        is_ai_enabled,
+    )
+    from app.modules.scrape.sources.youtube_channel_source import fetch_transcript
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+    if not is_ai_enabled(current_user):
+        return render_template("scrape/_ai_disabled.html", kind="video_summary")
+
+    force = request.args.get("force") == "1"
+    if not force:
+        cached = get_video_summary(link.paper)
+        if cached is not None:
+            # Cache hit — never shell out to yt-dlp just to throw the
+            # transcript away.
+            return render_template(
+                "scrape/_video_summary.html",
+                r=link,
+                summary=cached,
+                no_transcript=False,
+                ai_enabled=True,
+            )
+
+    transcript = fetch_transcript(link.paper.external_id)
+    summary = generate_video_summary(link.paper, transcript, user=current_user)
+    # No captions vs. a generation failure both come back as None from
+    # generate_video_summary — distinguish them so the template can tell the
+    # user "this video has no captions" instead of a generic retry prompt.
+    no_transcript = summary is None and not transcript
+    log_action(
+        "paper.video_summary_generated",
+        entity_type="paper",
+        entity_id=str(link.paper.id),
+        changes={"force": force, "ok": summary is not None, "no_transcript": no_transcript},
+    )
+    return render_template(
+        "scrape/_video_summary.html",
+        r=link,
+        summary=summary,
+        no_transcript=no_transcript,
+        ai_enabled=True,
+    )
 
 
 @scrape_bp.route("/<int:user_paper_id>/translate", methods=["POST"])
@@ -826,6 +1092,22 @@ def run_now():
     except Exception:  # noqa: BLE001
         logger.exception("manual_feed_refresh_enqueue_failed", user_id=current_user.id)
 
+    # Subscribed YouTube channels are a third pipeline, and they had exactly the
+    # bug described above for RSS: "Scrape now" left them at last night's state,
+    # so a user who had just subscribed to a channel pressed scrape, saw nothing,
+    # and had no way to tell whether it had been checked at all. Same contract as
+    # the feed task — its own "channels" lock makes a concurrent run a no-op, and
+    # a failure to queue must not cost the user the scrape that is already away.
+    channel_task_id = None
+    try:
+        from app.tasks.channel_tasks import ingest_for_user as ingest_channels_for_user
+
+        channel_task_id = getattr(
+            ingest_channels_for_user.delay(current_user.id, trigger="manual"), "id", None
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("manual_channel_refresh_enqueue_failed", user_id=current_user.id)
+
     log_action(
         "scrape.manual_run",
         entity_type="user",
@@ -833,6 +1115,7 @@ def run_now():
         changes={
             "task_id": getattr(async_result, "id", None),
             "feed_task_id": feed_task_id,
+            "channel_task_id": channel_task_id,
         },
     )
     if _is_htmx():

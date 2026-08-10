@@ -1,0 +1,69 @@
+{# The user's YouTube channel subscriptions — twin of _feed_list.html.
+
+   Swaps target this partial (#channel-list), not #tab-content. Re-rendering
+   the whole AI tab on every toggle meant re-running `_ai_ctx()`, which calls
+   `classify_user_topics` — an LLM round trip for a checkbox click.
+
+   `channel_filter` is one of: all | active | paused. #}
+<div id="channel-list">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    {# The cost of "I subscribed to 10 channels", shown to the person who
+       added them: every active channel is one more feed fetch per nightly
+       scan, plus (later) transcript + summary work per new video. #}
+    <div class="small text-muted">
+      {{ _('%(used)s / %(cap)s channels', used=channel_count, cap=max_user_channels) }}
+    </div>
+    {% if channel_count %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('Filter channels') }}">
+        {% for key, label in [('all', _('All')), ('active', _('Active')), ('paused', _('Paused'))] %}
+          <button type="button"
+                  class="btn btn-outline-secondary {% if channel_filter == key %}active{% endif %}"
+                  hx-get="{{ url_for('scrape.channel_list', filter=key) }}"
+                  hx-target="#channel-list" hx-swap="outerHTML">{{ label }}</button>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if channel_count >= max_user_channels %}
+    <div class="alert alert-warning py-2 px-3 small">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ _('Channel limit reached. Remove one before adding another.') }}
+    </div>
+  {% endif %}
+
+  {% for c in user_channels %}
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-2 p-2 border rounded">
+      <div class="flex-grow-1 text-truncate">
+        <a href="{{ c.url }}" target="_blank" rel="noopener" class="fw-medium">{{ c.title or c.channel_id }}</a>
+        {% if not c.active %}
+          <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">{{ _('Paused') }}</span>
+        {% endif %}
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <form hx-post="{{ url_for('scrape.submit_channel_toggle', channel_pk=c.id) }}"
+              hx-target="#channel-list" hx-swap="outerHTML" class="form-check form-switch mb-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 onchange="this.form.requestSubmit()" {% if c.active %}checked{% endif %}>
+        </form>
+        <form hx-post="{{ url_for('scrape.submit_channel_remove', channel_pk=c.id) }}"
+              hx-target="#channel-list" hx-swap="outerHTML"
+              hx-confirm="{{ _('Remove this channel?') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger border-0">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-muted small">
+      {% if channel_count %}
+        {{ _('No channels match this filter.') }}
+      {% else %}
+        {{ _('No YouTube channels yet — add one below.') }}
+      {% endif %}
+    </p>
+  {% endfor %}
+</div>

@@ -2592,6 +2592,154 @@ msgstr "E-posta özeti"
 msgid "Get an email summary of new papers matching your interests."
 msgstr "İlgi alanlarınıza uyan yeni makalelerin e-posta özetini alın."
 
+msgid "Max YouTube channels per user"
+msgstr "Kullanıcı başına maksimum YouTube kanalı"
+
+msgid "Takes effect immediately for new subscriptions, no restart needed."
+msgstr "Yeni abonelikler için hemen geçerli olur, yeniden başlatma gerekmez."
+
+msgid "Channel URL or @handle"
+msgstr "Kanal URL'si veya @kullanıcı adı"
+
+msgid "Add channel"
+msgstr "Kanal ekle"
+
+#, python-format
+msgid "%(used)s / %(cap)s channels"
+msgstr "%(used)s / %(cap)s kanal"
+
+msgid "Filter channels"
+msgstr "Kanalları filtrele"
+
+msgid "Channel limit reached. Remove one before adding another."
+msgstr "Kanal sınırına ulaştın. Yeni bir tane eklemeden önce birini kaldır."
+
+msgid "Remove this channel?"
+msgstr "Bu kanalı kaldır?"
+
+msgid "No channels match this filter."
+msgstr "Bu filtreye uyan kanal yok."
+
+msgid "No YouTube channels yet — add one below."
+msgstr "Henüz YouTube kanalın yok — aşağıdan ekleyebilirsin."
+
+msgid "Your YouTube channels"
+msgstr "YouTube kanalların"
+
+msgid ""
+"Subscribe to a channel — its new videos flow into your feed and briefing "
+"just like the curated sources."
+msgstr ""
+"Bir kanala abone ol — yeni videoları küratörlü kaynaklar gibi akışına ve "
+"brifingine dahil olur."
+
+msgid "Leave blank to use the channel's own title."
+msgstr "Kanalın kendi başlığını kullanmak için boş bırak."
+
+msgid "Please enter a YouTube channel URL or @handle."
+msgstr "Lütfen bir YouTube kanal URL'si veya @kullanıcı adı girin."
+
+msgid "Could not add that channel."
+msgstr "Bu kanal eklenemedi."
+
+msgid "Channel added."
+msgstr "Kanal eklendi."
+
+msgid "Could not find that YouTube channel — check the link and try again."
+msgstr "Bu YouTube kanalı bulunamadı — bağlantıyı kontrol edip tekrar deneyin."
+
+msgid "AI summary"
+msgstr "Yapay zeka özeti"
+
+msgid "AI-generated summary of the video transcript"
+msgstr "Video transkriptinin yapay zeka tarafından oluşturulan özeti"
+
+msgid "Video summary"
+msgstr "Video özeti"
+
+msgid "Highlights"
+msgstr "Öne çıkanlar"
+
+#, python-format
+msgid "Based on a %(n)s-character transcript"
+msgstr "%(n)s karakterlik transkriptten üretildi"
+
+msgid "Regenerate summary"
+msgstr "Özeti yeniden oluştur"
+
+msgid "No transcript available"
+msgstr "Transkript bulunamadı"
+
+msgid ""
+"This video has no captions we could read (auto-generated or manual), so "
+"no summary could be produced."
+msgstr ""
+"Bu videoda okuyabildiğimiz altyazı yok (otomatik veya elle eklenmiş), bu "
+"yüzden özet oluşturulamadı."
+
+msgid "Try again"
+msgstr "Tekrar dene"
+
+msgid "Fetching transcript and summarizing…"
+msgstr "Transkript alınıyor ve özetleniyor…"
+
+msgid "Summarize this video"
+msgstr "Bu videoyu özetle"
+
+msgid ""
+"Fetch the transcript and generate a short summary plus highlights, in "
+"Turkish. Cached — runs only on demand."
+msgstr ""
+"Transkripti al ve kısa bir özet ile öne çıkanları Türkçe olarak oluştur. "
+"Önbelleğe alınır — yalnızca istek üzerine çalışır."
+
+msgid "Summarize transcript"
+msgstr "Transkripti özetle"
+
+msgid "Manage your feeds and channels"
+msgstr "Beslemelerini ve kanallarını yönet"
+
+msgid "Add your own RSS feed or YouTube channel"
+msgstr "Kendi RSS kaynağını veya YouTube kanalını ekle"
+
+msgid "RSS feeds"
+msgstr "RSS kaynakları"
+
+msgid "YouTube channels"
+msgstr "YouTube kanalları"
+
+msgid "Manage your sources"
+msgstr "Kaynaklarını yönet"
+
+msgid "Full settings page"
+msgstr "Tüm ayarlar sayfası"
+
+msgid "Ingest YouTube channels"
+msgstr "YouTube kanallarını tara"
+
+msgid "Check every user's YouTube channels for new videos now?"
+msgstr ""
+"Her kullanıcının YouTube kanalları yeni video için şimdi kontrol edilsin "
+"mi?"
+
+msgid "YouTube channel check queued for all users."
+msgstr "Tüm kullanıcılar için YouTube kanal kontrolü kuyruğa alındı."
+
+msgid "From your channels & feeds"
+msgstr "Kanallarınızdan ve beslemelerinizden"
+
+msgid "Manage your interests"
+msgstr "İlgi alanlarınızı yönetin"
+
+msgid "Open your favorite papers"
+msgstr "Favori makalelerinizi açın"
+
+msgid "Open your read-later list"
+msgstr "Sonra oku listenizi açın"
+
+msgid "Open your academic notes"
+msgstr "Akademik notlarınızı açın"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

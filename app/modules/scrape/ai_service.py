@@ -43,7 +43,13 @@ import structlog
 from flask import current_app
 
 from app.extensions import db
-from app.modules.scrape.models import Paper, PaperAnalysis, PaperTranslation, UserDigest
+from app.modules.scrape.models import (
+    Paper,
+    PaperAnalysis,
+    PaperTranslation,
+    UserDigest,
+    VideoSummary,
+)
 
 logger = structlog.get_logger()
 
@@ -65,6 +71,12 @@ DIGEST_MAX_ITEMS = 30
 FEED_SCORE_MAX_ITEMS = 20
 
 MAX_TOKENS_TOPIC_CLASSIFY = 300
+
+# Channel-video transcript summarization (Faz 3 — agent reach).
+MAX_TOKENS_VIDEO_SUMMARY = 1200
+# Auto-generated transcripts run long; this caps how much of one goes into the
+# prompt, same cost-guard reasoning as DIGEST_MAX_ITEMS/FEED_SCORE_MAX_ITEMS.
+VIDEO_TRANSCRIPT_PROMPT_CHARS = 12_000
 
 
 # ----------------------------------------------------------------------------
@@ -183,6 +195,24 @@ ver ve şu JSON şemasına uygun döndür:
 
 method/findings/limitations her biri en fazla 4 madde, her madde tek \
 satır. Sadece JSON döndür, başına/sonuna metin ekleme."""
+
+_VIDEO_SUMMARY_SYSTEM_TR = """Sen, bir YouTube videosunun otomatik-oluşturulmuş \
+transkriptinden kullanıcıya hızlı bir özet çıkaran bir asistan'sın. Sana \
+verilen metin bir konuşma tanıma sisteminin çıktısıdır — noktalama işaretleri \
+eksik olabilir, kelime hataları içerebilir ve zaman zaman anlamsız parçalar \
+barındırabilir. Görevin transkripti tarif etmek DEĞİL, videonun içeriğini \
+özetlemektir — sanki videoyu izlemiş gibi konuş.
+
+Cevaplarını DAİMA Türkçe ver ve şu JSON şemasına uygun döndür:
+
+{
+  "tldr": "2-3 cümlelik özet — video ne anlatıyor, ana çıkarım ne",
+  "highlights": ["öne çıkan nokta 1", "öne çıkan nokta 2", "..."],
+  "topics": ["kısa konu etiketi 1", "kısa konu etiketi 2", "..."]
+}
+
+highlights en az 3, en fazla 6 madde içermeli, her biri tek satır. Sadece \
+JSON döndür, başına/sonuna metin ekleme."""
 
 _TRANSLATION_SYSTEM_TR = """Akademik metin çevirmenisin. Sana verilen \
 İngilizce makale başlığı ve özetini akıcı, terimleri koruyan Türkçe'ye \
@@ -617,6 +647,92 @@ def get_or_generate_translation(
         if cached is not None:
             return cached
     return generate_translation(paper, target_lang=target_lang, user=user)
+
+
+# ----------------------------------------------------------------------------
+# Video summary (Faz 3 — agent reach: channel ingestion + transcript
+# summarization). One row per paper — see VideoSummary's docstring for why
+# this cache is unique on paper_id alone, unlike PaperAnalysis/PaperTranslation.
+# ----------------------------------------------------------------------------
+
+
+def get_video_summary(paper: Paper) -> VideoSummary | None:
+    """Cache-only lookup. Returns None if no summary exists yet."""
+    return VideoSummary.query.filter_by(paper_id=paper.id).first()
+
+
+def generate_video_summary(
+    paper: Paper,
+    transcript: str | None,
+    *,
+    target_lang: str = "tr",
+    source_lang: str | None = None,
+    user=None,
+) -> VideoSummary | None:
+    """Force an LLM call over `transcript` (routed via `_call_llm` for
+    `user`'s resolved provider) and upsert the cache row. Returns None on
+    failure, a blank transcript, or when AI is disabled — never persists a
+    partial row."""
+    if not is_ai_enabled(user):
+        return None
+
+    transcript = (transcript or "").strip()
+    if not transcript:
+        return None
+
+    title = (paper.title or "").strip()
+    user_msg = (
+        f"Video başlığı:\n{title}\n\n"
+        f"Transkript (otomatik oluşturulmuş, noktalama eksik olabilir):\n"
+        f"{_truncate(transcript, VIDEO_TRANSCRIPT_PROMPT_CHARS)}"
+    )
+
+    parsed, raw = _call_llm(
+        system=_VIDEO_SUMMARY_SYSTEM_TR,
+        user_msg=user_msg,
+        max_tokens=MAX_TOKENS_VIDEO_SUMMARY,
+        user=user,
+    )
+    if parsed is None:
+        return None
+
+    existing = get_video_summary(paper)
+    fields = dict(
+        tldr=_safe_str(parsed.get("tldr")),
+        highlights=_safe_list(parsed.get("highlights")),
+        topics=_safe_list(parsed.get("topics")),
+        transcript_chars=len(transcript),
+        source_lang=source_lang,
+        target_lang=target_lang,
+        model_version=_model_label(user),
+        raw_response={"text": raw} if isinstance(raw, str) else None,
+    )
+    if existing is None:
+        summary = VideoSummary(paper_id=paper.id, **fields)
+        db.session.add(summary)
+    else:
+        for k, v in fields.items():
+            setattr(existing, k, v)
+        summary = existing
+    db.session.commit()
+    logger.info("video_summary_generated", paper_id=paper.id, model=_model_label(user))
+    return summary
+
+
+def get_or_generate_video_summary(
+    paper: Paper,
+    transcript: str | None = None,
+    *,
+    force: bool = False,
+    user=None,
+) -> VideoSummary | None:
+    """Returns a cached summary or generates one. None means AI is off, the
+    call failed, or (on a cache miss) no transcript was supplied."""
+    if not force:
+        cached = get_video_summary(paper)
+        if cached is not None:
+            return cached
+    return generate_video_summary(paper, transcript, user=user)
 
 
 def ask_paper(paper: Paper, question: str, history: list[dict] = None, *, user=None) -> str | None:

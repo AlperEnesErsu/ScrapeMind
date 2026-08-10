@@ -151,3 +151,102 @@ def test_get_or_generate_translation_cache_hit(app, a_paper, monkeypatch):
         monkeypatch.setattr(ai_service, "_call_llm", _boom)
         result = ai_service.get_or_generate_translation(a_paper)
         assert result.title_translated == "Önbellek"
+
+
+# --------------------------------------------------------------------------
+# Video summary cache behaviour (Faz 3 — channel ingestion + transcript
+# summarization). Same cache-first / never-poison-on-failure contract as
+# analysis/translation above, plus a blank-transcript short-circuit that has
+# no equivalent there (a paper always has *some* title/abstract; a video may
+# genuinely have no transcript).
+# --------------------------------------------------------------------------
+
+_FAKE_VIDEO_SUMMARY = {
+    "tldr": "video kısa özeti",
+    "highlights": ["nokta 1", "nokta 2", "nokta 3"],
+    "topics": ["ai", "ml"],
+}
+
+
+def test_generate_video_summary_ai_disabled_no_call(app, a_paper, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: False)
+
+    def _boom(**kw):
+        raise AssertionError("LLM must not be called when AI is disabled")
+
+    monkeypatch.setattr(ai_service, "_call_llm", _boom)
+    with app.app_context():
+        assert ai_service.generate_video_summary(a_paper, "some transcript text") is None
+        assert ai_service.get_video_summary(a_paper) is None
+
+
+def test_generate_video_summary_persists_with_transcript_chars(app, a_paper, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (_FAKE_VIDEO_SUMMARY, "{}"))
+    with app.app_context():
+        transcript = "x" * 50_000  # longer than VIDEO_TRANSCRIPT_PROMPT_CHARS
+        result = ai_service.generate_video_summary(a_paper, transcript, source_lang="en")
+        assert result is not None
+        assert result.tldr == "video kısa özeti"
+        assert result.highlights == ["nokta 1", "nokta 2", "nokta 3"]
+        assert result.topics == ["ai", "ml"]
+        # Full pre-truncation length, not the prompt-capped length.
+        assert result.transcript_chars == 50_000
+        assert result.source_lang == "en"
+        assert result.target_lang == "tr"
+        assert ai_service.get_video_summary(a_paper).id == result.id
+
+
+def test_generate_video_summary_second_call_updates_in_place(app, a_paper, monkeypatch):
+    """The unique constraint on paper_id would raise on a second insert —
+    this proves the upsert updates the existing row instead."""
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (_FAKE_VIDEO_SUMMARY, "{}"))
+    with app.app_context():
+        first = ai_service.generate_video_summary(a_paper, "transcript one")
+        updated_fake = {**_FAKE_VIDEO_SUMMARY, "tldr": "güncellenmiş özet"}
+        monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (updated_fake, "{}"))
+        second = ai_service.generate_video_summary(a_paper, "transcript two")
+
+        assert second.id == first.id
+        assert second.tldr == "güncellenmiş özet"
+        from app.modules.scrape.models import VideoSummary
+
+        assert VideoSummary.query.filter_by(paper_id=a_paper.id).count() == 1
+
+
+def test_generate_video_summary_llm_failure_no_cache(app, a_paper, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (None, None))
+    with app.app_context():
+        assert ai_service.generate_video_summary(a_paper, "some transcript") is None
+        assert ai_service.get_video_summary(a_paper) is None
+
+
+def test_generate_video_summary_blank_transcript_no_call(app, a_paper, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+
+    def _boom(**kw):
+        raise AssertionError("LLM must not be called for a blank transcript")
+
+    monkeypatch.setattr(ai_service, "_call_llm", _boom)
+    with app.app_context():
+        assert ai_service.generate_video_summary(a_paper, "") is None
+        assert ai_service.generate_video_summary(a_paper, None) is None
+        assert ai_service.generate_video_summary(a_paper, "   ") is None
+
+
+def test_get_or_generate_video_summary_cache_hit_skips_llm(app, a_paper, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    with app.app_context():
+        from app.modules.scrape.models import VideoSummary
+
+        _db.session.add(VideoSummary(paper_id=a_paper.id, tldr="mevcut özet"))
+        _db.session.commit()
+
+        def _boom(**kw):
+            raise AssertionError("LLM should not be called on a cache hit")
+
+        monkeypatch.setattr(ai_service, "_call_llm", _boom)
+        result = ai_service.get_or_generate_video_summary(a_paper)
+        assert result.tldr == "mevcut özet"

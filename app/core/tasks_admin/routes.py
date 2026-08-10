@@ -24,6 +24,7 @@ tasks_admin_bp = Blueprint("tasks_admin", __name__)
 # the same admin-only surface that already shows the panel.
 _TRIGGERS = {
     "scrape_all": ("scrape.run_for_all_users", "task.scrape_all_queued"),
+    "channels_all": ("channels.ingest_for_all_users", "task.channels_all_queued"),
     "purge_audit": ("core.purge_audit_logs", "task.purge_audit_queued"),
 }
 
@@ -105,6 +106,7 @@ def run_task(trigger: str):
 
     messages = {
         "task.scrape_all_queued": _("Scrape queued for all users."),
+        "task.channels_all_queued": _("YouTube channel check queued for all users."),
         "task.purge_audit_queued": _("Audit log cleanup queued."),
     }
     flash(messages[flash_key], "success")

@@ -22,10 +22,12 @@ from sqlalchemy import desc
 from app.core.models.user import User
 from app.extensions import db
 from app.modules.academic.service import list_user_keywords
+from app.modules.scrape.doi import normalize_doi
 from app.modules.scrape.models import (
     Paper,
     PaperNote,
     ScanRun,
+    UserChannel,
     UserFeed,
     UserPaper,
     UserSource,
@@ -119,12 +121,35 @@ def sources_card_context(user: User) -> dict:
         opt["is_on"] = prefs.get(opt["name"], True)
         opt["is_suggested"] = opt["name"] in suggested_names
 
+    # Own-channel counts, for the card's "Your feeds" summary block — mirrors
+    # feed_count/active_feed_count, which come from scan_status_context, not
+    # here; kept together with the channel counts so both dashboard.index and
+    # scrape.feed (the two callers that render _sources_card.html) get them
+    # for free by merging this context in, same as they already do for feeds.
+    channels = list_user_channels(user)
+    active_channel_count = sum(1 for c in channels if c.active)
+    active_curated_count = sum(1 for s in sources if s["is_on"])
+
+    # `active_source_count` (below) undercounts "what will actually be
+    # scanned for me": it's the curated deployment sources only, and never
+    # included the user's own RSS feeds or YouTube channels even though both
+    # are scanned every run. `active_feed_count` normally comes from
+    # scan_status_context, not here, but the honest total needs it — one more
+    # cheap indexed query beats leaning on the caller to add three numbers
+    # together in a template (the "Your feeds" badge above already does that
+    # arithmetic in Jinja; this key exists so the home-page pill doesn't have
+    # to).
+    active_feed_count = sum(1 for f in list_user_feeds(user) if f.active)
+
     return {
         "sources": sources,
         "suggested_sources": [s for s in sources if s["is_suggested"]],
         "other_sources": [s for s in sources if not s["is_suggested"]],
-        "active_source_count": sum(1 for s in sources if s["is_on"]),
+        "active_source_count": active_curated_count,
         "user_topics": user_topics,
+        "channel_count": len(channels),
+        "active_channel_count": active_channel_count,
+        "scanned_source_count": active_curated_count + active_feed_count + active_channel_count,
     }
 
 
@@ -299,7 +324,13 @@ def last_scan_run(
 
 #: Rough per-source cost used only until a user has a real run to measure.
 #: Self-correcting: after the first scan we use that user's own median.
-_COST_SECONDS = {"arxiv": 8.0, "semantic_scholar": 1.5, "pubmed": 3.0}
+_COST_SECONDS = {
+    "arxiv": 8.0,
+    "semantic_scholar": 1.5,
+    "pubmed": 3.0,
+    "openalex": 2.0,
+    "crossref": 2.5,
+}
 _COST_PER_FEED = 1.5
 _COST_LLM = 15.0
 
@@ -317,10 +348,10 @@ def feed_cost_estimate(active_feed_count: int) -> timedelta:
 def _estimate_scan_seconds(user: User, sources: dict, keyword_count: int, feed_count: int) -> int:
     """Median of this user's recent successful runs, or a static estimate.
 
-    Semantic Scholar issues one request per keyword, and each active custom
-    feed is one more HTTP round trip — which is exactly why this number is
-    worth showing: it makes the cost of "I added 40 feeds" visible to the
-    person who added them.
+    The sources in `_PER_KEYWORD_REQUEST_SOURCES` issue one request per
+    keyword, and each active custom feed is one more HTTP round trip — which
+    is exactly why this number is worth showing: it makes the cost of "I added
+    40 feeds" visible to the person who added them.
     """
     recent = (
         ScanRun.query.filter(
@@ -340,8 +371,10 @@ def _estimate_scan_seconds(user: User, sources: dict, keyword_count: int, feed_c
 
     total = 0.0
     for name in sources:
-        if name == "semantic_scholar":
-            total += _COST_SECONDS[name] * max(1, keyword_count)
+        # Keyed off the same set the term-expansion logic uses, so adding a
+        # per-keyword source in one place doesn't leave its estimate flat here.
+        if name in _PER_KEYWORD_REQUEST_SOURCES:
+            total += _COST_SECONDS.get(name, 0.0) * max(1, keyword_count)
         else:
             total += _COST_SECONDS.get(name, 0.0)
     total += _COST_PER_FEED * feed_count
@@ -481,18 +514,93 @@ def set_user_source(user: User, source_name: str, enabled: bool) -> bool:
     return row.enabled
 
 
-def upsert_paper(payload: PaperPayload | dict) -> Paper:
-    """Insert a paper if we haven't seen it before, return the row either way."""
-    data = payload.as_dict() if isinstance(payload, PaperPayload) else dict(payload)
-    doi = data.get("doi")
-    if doi and isinstance(doi, str) and doi.strip():
-        existing_doi = Paper.query.filter(Paper.doi.ilike(doi.strip())).first()
-        if existing_doi is not None:
-            return existing_doi
+#: Fields that are safe to backfill on a matched row. Deliberately excludes
+#: `title`, `source`, `external_id`, `kind` — those identify the row (or, for
+#: title, are never blank in practice) and overwriting them on a match would
+#: make upsert_paper silently rewrite identity rather than fill gaps.
+_ENRICHABLE_FIELDS = ("abstract", "pdf_url", "url", "doi", "published_at", "categories", "authors")
 
-    existing = Paper.query.filter_by(source=data["source"], external_id=data["external_id"]).first()
+
+def _is_empty(value: object) -> bool:
+    """True for the "nothing here yet" shapes of our enrichable fields:
+    None, empty string, empty list. Deliberately NOT true for falsy-but-
+    meaningful values like 0 or False — none of the enrichable fields are
+    numeric/boolean today, but this keeps the helper honest if one ever is.
+    """
+    if value is None:
+        return True
+    if isinstance(value, (str, list, tuple)):
+        return len(value) == 0
+    return False
+
+
+def _enrich(paper: Paper, data: dict) -> bool:
+    """Fill-only merge of `data` onto an existing `paper` row.
+
+    For each enrichable field: only write the incoming value if the existing
+    field is empty AND the incoming value is not — a populated field is
+    never overwritten, even by a different-but-also-non-empty value from
+    another source. Returns whether anything actually changed, so the caller
+    can skip a no-op commit.
+    """
+    changed = False
+    for field in _ENRICHABLE_FIELDS:
+        if field not in data:
+            continue
+        incoming = data[field]
+        if _is_empty(incoming):
+            continue
+        if not _is_empty(getattr(paper, field)):
+            continue
+        setattr(paper, field, incoming)
+        changed = True
+    return changed
+
+
+def upsert_paper(payload: PaperPayload | dict) -> Paper:
+    """Insert a paper if we haven't seen it before; otherwise return the
+    existing row, enriched with anything new the payload can fill in.
+
+    Resolution order: normalized DOI, then `(source, external_id)`. The DOI
+    is normalized on write (see `doi.normalize_doi`) so the stored form is
+    always canonical and lookup is a plain `filter_by(doi=...)` rather than
+    an `ilike` scan. The earlier version stored whatever string a source
+    handed it and matched with `ilike`, which is case-insensitive but not
+    prefix-insensitive — so "https://doi.org/10.X/Y" from one source and
+    "10.X/Y" from another still created two rows.
+
+    Enrichment is fill-only (see `_enrich`): a matched row's empty fields
+    (abstract, pdf_url, url, doi, published_at, categories, authors) are
+    backfilled from the new payload, but a populated field is never
+    overwritten. This is deliberately conservative — we have no basis for
+    picking "which source is right" when both already have a value, so we
+    just keep whatever was there first.
+
+    Edge case worth documenting: if the incoming DOI matches one existing
+    row but the incoming (source, external_id) matches a *different* row
+    (e.g. a stale/wrong DOI was recorded on that second row previously), the
+    DOI match wins and is the one enriched — the other row is left
+    untouched. Merging the two rows (e.g. moving UserPaper links across) is
+    out of scope here; it would need a real migration, not an upsert.
+    """
+    data = payload.as_dict() if isinstance(payload, PaperPayload) else dict(payload)
+    if "doi" in data:
+        data["doi"] = normalize_doi(data["doi"])
+
+    existing = None
+    doi = data.get("doi")
+    if doi:
+        existing = Paper.query.filter_by(doi=doi).first()
+    if existing is None:
+        existing = Paper.query.filter_by(
+            source=data["source"], external_id=data["external_id"]
+        ).first()
+
     if existing is not None:
+        if _enrich(existing, data):
+            db.session.commit()
         return existing
+
     paper = Paper(**data)
     db.session.add(paper)
     db.session.commit()
@@ -569,8 +677,10 @@ def _match_keyword(title: str, terms: list[str], alias: dict[str, str] | None = 
 #: API). Handing them the expanded term list would multiply their request
 #: count — and their rate limit is the tightest we deal with — so they get the
 #: canonical English form only. arXiv and PubMed OR-combine everything into a
-#: single request, where extra terms are free.
-_PER_KEYWORD_REQUEST_SOURCES = {"semantic_scholar"}
+#: single request, where extra terms are free. Crossref's `query.bibliographic`
+#: is the same story as Semantic Scholar's relevance search — bag-of-words
+#: scoring with no boolean OR — so it belongs in this set too.
+_PER_KEYWORD_REQUEST_SOURCES = {"semantic_scholar", "crossref"}
 
 
 def ensure_keyword_translations(keywords: list, *, user: User | None = None) -> int:
@@ -715,6 +825,7 @@ def list_user_papers(
     limit: int = 50,
     view: str = "discover",
     q: str | None = None,
+    kinds: tuple[str, ...] | None = None,
 ) -> list[UserPaper]:
     """List a user's surfaced papers.
 
@@ -727,10 +838,31 @@ def list_user_papers(
     `q` is an optional case-insensitive substring match against the
     paper's title, abstract, or matched keyword. Trimmed; empty == no
     filter.
-    """
-    from sqlalchemy.orm import selectinload
 
-    query = _user_papers_query(user, view).join(Paper).options(selectinload(UserPaper.notes))
+    `kinds` restricts to specific `Paper.kind` values (e.g. `("video",
+    "news")`). Default `None` means no filter — every existing caller is
+    unaffected. This exists because the home page orders everything by
+    `Paper.published_at DESC` across every kind, and the high-volume
+    academic sources (arXiv et al. publish daily) always win the top slots;
+    a user's own YouTube videos and RSS items get buried and never surface
+    on the home page without a dedicated, kind-scoped query.
+    """
+    from sqlalchemy.orm import joinedload, selectinload
+
+    query = (
+        _user_papers_query(user, view)
+        .join(Paper)
+        .options(
+            selectinload(UserPaper.notes),
+            # `UserPaper.paper` is already `lazy="joined"` on the model, but
+            # `Paper.video_summary` (uselist=False) is not — without this,
+            # _paper_card.html's `r.paper.video_summary` check fires one
+            # extra SELECT per row (N+1) across the feed's up-to-100 cards.
+            joinedload(UserPaper.paper).joinedload(Paper.video_summary),
+        )
+    )
+    if kinds:
+        query = query.filter(Paper.kind.in_(kinds))
     q = (q or "").strip()
     if q:
         like = f"%{q.lower()}%"
@@ -1027,6 +1159,237 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
     return {"hits": hits, "new": new}, touched
 
 
+# ----------------------------------------------------------------------------
+# Custom user YouTube channels — the twin of the custom-RSS-feed feature
+# above, subscription-based the same way. CRUD first, `ingest_user_channels`
+# (the Celery-driven ingestion, chaining transcript fetch + summarization)
+# below it — see `app/tasks/channel_tasks.py` for the task that calls it.
+# ----------------------------------------------------------------------------
+
+#: Shown when a user tries to add channel number max_user_channels() + 1. Kept
+#: as a module constant so the route, the template and the tests agree on it.
+CHANNEL_CAP_MESSAGE = "Channel limit reached. Remove one before adding another."
+
+
+def max_user_channels() -> int:
+    """The effective admin-set channel cap.
+
+    Read from the `max_user_channels` system setting on every call, on
+    purpose — an admin's change on `/settings/system` is live on the very
+    next request, not just after a restart. Falls back to
+    `MAX_USER_CHANNELS` (config/env) when no row exists yet.
+
+    The setting lives in a JSON column an admin edits by hand, so it isn't
+    trusted to already be an int: a garbage value (`"abc"`, `None`, a
+    negative number) falls back to the config default / clamps to 0 rather
+    than blowing up the add-channel flow.
+    """
+    from app.core.settings.service import get_system_setting
+
+    fallback = current_app.config.get("MAX_USER_CHANNELS", 10)
+    value = get_system_setting("max_user_channels", fallback)
+    try:
+        value = int(value)
+    except (TypeError, ValueError):
+        return fallback
+    return max(value, 0)
+
+
+def list_user_channels(user: User) -> list[UserChannel]:
+    return UserChannel.query.filter_by(user_id=user.id).order_by(desc(UserChannel.created_at)).all()
+
+
+def get_user_channel(user: User, channel_pk: int) -> UserChannel | None:
+    """Fetch a UserChannel only if it belongs to this user — same ownership
+    guard as get_user_feed/get_note_for_user."""
+    return UserChannel.query.filter_by(id=channel_pk, user_id=user.id).first()
+
+
+def count_user_channels(user: User) -> int:
+    return UserChannel.query.filter_by(user_id=user.id).count()
+
+
+def add_user_channel(
+    user: User, raw: str, label: str | None = None
+) -> tuple[UserChannel | None, str | None]:
+    """Resolve + register a YouTube channel subscription. Returns
+    (channel, None) on success or (None, error_message) on any
+    validation/resolution failure — never raises for bad user input.
+
+    Step order mirrors add_user_feed:
+      1. blank input is rejected before any resolution attempt
+      2. resolve_channel(raw) does the actual work — SSRF guard, page/handle
+         lookup and a live validating fetch of the channel's own RSS feed.
+         Its error message is already plain, user-facing English, so it's
+         returned as-is rather than repeating those checks here.
+      3. re-adding an already-subscribed channel just reactivates it
+         (if paused) instead of creating a duplicate row, and — like
+         add_user_feed — consumes no cap slot to do so.
+      4. only a genuinely new subscription is checked against the cap.
+    """
+    from app.modules.scrape.sources.youtube_channel_source import resolve_channel
+
+    raw = (raw or "").strip()
+    if not raw:
+        return None, "Please enter a YouTube channel URL or @handle."
+
+    resolved, error = resolve_channel(raw)
+    if resolved is None:
+        return None, error
+
+    existing = UserChannel.query.filter_by(
+        user_id=user.id, channel_id=resolved["channel_id"]
+    ).first()
+    if existing is not None:
+        if not existing.active:
+            existing.active = True
+            db.session.commit()
+        return existing, None
+
+    cap = max_user_channels()
+    if count_user_channels(user) >= cap:
+        logger.info("user_channel_cap_reached", user_id=user.id, cap=cap)
+        return None, CHANNEL_CAP_MESSAGE
+
+    clean_label = (label or "").strip()[:200] or None
+    if not clean_label:
+        clean_label = (resolved.get("title") or "")[:200] or None
+
+    row = UserChannel(
+        user_id=user.id,
+        channel_id=resolved["channel_id"],
+        title=clean_label,
+        url=resolved["url"],
+        active=True,
+    )
+    db.session.add(row)
+    db.session.commit()
+    logger.info("user_channel_added", user_id=user.id, channel_pk=row.id, channel_id=row.channel_id)
+    return row, None
+
+
+def remove_user_channel(user: User, channel_pk: int) -> bool:
+    row = get_user_channel(user, channel_pk)
+    if row is None:
+        return False
+    db.session.delete(row)
+    db.session.commit()
+    return True
+
+
+def toggle_user_channel(user: User, channel_pk: int) -> bool | None:
+    """Flip a channel's active flag. Returns the new value, or None if the
+    channel doesn't exist / isn't owned by this user (caller should 404)."""
+    row = get_user_channel(user, channel_pk)
+    if row is None:
+        return None
+    row.active = not row.active
+    db.session.commit()
+    return row.active
+
+
+def ingest_user_channels(user: User) -> tuple[dict, list[int]]:
+    """Fetch this user's active YouTube channel subscriptions and upsert new
+    Papers (`source="youtube_channel"`, `kind="video"`) — the channel
+    counterpart of `ingest_user_feeds` above, called from
+    `channel_tasks.ingest_for_user`.
+
+    Unlike the RSS feed path (`UserFeed`/`ingest_user_feeds`), which stores an
+    etag/last_modified on the row but never sends it back on the next fetch,
+    this one round-trips them: `fetch_channel_videos` gets the row's stored
+    values and a `not_modified` response short-circuits that channel at zero
+    parsing/upsert cost.
+
+    In practice that branch is currently dead for YouTube specifically:
+    `feeds/videos.xml` answers with `Cache-Control: max-age=900` and **no
+    ETag and no Last-Modified**, so both columns stay NULL and every run
+    re-downloads the ~15 entries. Measured, not assumed — don't "fix" the
+    empty etag column, there is nothing to store. The plumbing is kept
+    because it costs nothing, works the moment YouTube starts sending
+    validators, and is the pattern the feed path still needs to adopt.
+
+    Returns `(summary, new_paper_ids)`:
+      * `summary` maps `channel_id -> count` for that channel this run — `-1`
+        is the same "this one errored" sentinel `scrape_for_user`/
+        `feeds.ingest_all` use, so `apply_scan_result` reads it unchanged.
+      * `new_paper_ids` is every Paper id newly *created* this run (for
+        `channel_tasks.ingest_for_user` to hand to `summarize_video`).
+        "Newly created" is decided the same way `ingest_user_feeds` decides
+        it: a pre-upsert existence check on `(source, external_id)`, not
+        `link_user_paper`'s `created` flag. The two diverge when a video's
+        Paper row already exists (another user subscribes to the same
+        channel) but is new to *this* user's library — that case must not
+        queue a second summarization job for a video someone already
+        summarized.
+
+    One broken channel must never abort the loop — per-channel try/except,
+    same isolation contract as `ingest_user_feeds`'s per-feed try/except.
+    """
+    from app.modules.scrape.sources.youtube_channel_source import fetch_channel_videos
+
+    channels = [c for c in list_user_channels(user) if c.active]
+    if not channels:
+        return {}, []
+
+    summary: dict[str, int] = {}
+    new_paper_ids: list[int] = []
+    for ch in channels:
+        try:
+            payloads, status, etag, last_modified, _title = fetch_channel_videos(
+                ch.channel_id, etag=ch.etag, last_modified=ch.last_modified
+            )
+        except Exception:  # noqa: BLE001 — one broken channel must not block the others
+            logger.exception(
+                "user_channel_ingest_failed", user_id=user.id, channel_id=ch.channel_id
+            )
+            summary[ch.channel_id] = -1
+            continue
+
+        if status == "not_modified":
+            summary[ch.channel_id] = 0
+            continue
+        if status != "ok":
+            logger.warning(
+                "user_channel_ingest_bad_status",
+                user_id=user.id,
+                channel_id=ch.channel_id,
+                status=status,
+            )
+            summary[ch.channel_id] = -1
+            continue
+
+        ch.etag = etag
+        ch.last_modified = last_modified
+
+        newest_published_at = ch.last_video_at
+        for payload in payloads:
+            existed = (
+                Paper.query.filter_by(
+                    source=payload.source, external_id=payload.external_id
+                ).first()
+                is not None
+            )
+            paper = upsert_paper(payload)
+            link_user_paper(user, paper, matched_keyword=None)
+            if not existed:
+                new_paper_ids.append(paper.id)
+            if payload.published_at and (
+                newest_published_at is None or payload.published_at > newest_published_at
+            ):
+                newest_published_at = payload.published_at
+
+        if newest_published_at is not None:
+            ch.last_video_at = newest_published_at
+
+        db.session.commit()
+        summary[ch.channel_id] = len(payloads)
+
+    logger.info(
+        "user_channels_ingest_done", user_id=user.id, summary=summary, new=len(new_paper_ids)
+    )
+    return summary, new_paper_ids
+
+
 def count_user_papers(user: User, view: str = "discover") -> int:
     """COUNT(*) for the same view filters list_user_papers uses. Library /
     Discover tab badges use this instead of materialising 500 rows just to
@@ -1052,12 +1415,17 @@ def search_user_papers_query(
     user and hides dismissed papers — search is over the live library. All
     filters are ANDed; each is skipped when empty.
     """
-    from sqlalchemy.orm import selectinload
+    from sqlalchemy.orm import joinedload, selectinload
 
     query = (
         UserPaper.query.filter(UserPaper.user_id == user.id, UserPaper.dismissed_at.is_(None))
         .join(Paper)
-        .options(selectinload(UserPaper.notes))
+        .options(
+            selectinload(UserPaper.notes),
+            # Same N+1 guard as list_user_papers — this feeds
+            # scrape/_paper_card.html via library/search.html too.
+            joinedload(UserPaper.paper).joinedload(Paper.video_summary),
+        )
     )
 
     q = (q or "").strip()

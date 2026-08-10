@@ -27,9 +27,11 @@ from app.modules.scrape.models import ScanRun
 from app.modules.scrape.service import (
     apply_scan_result,
     last_scan_run,
+    link_user_paper,
     purge_scan_runs,
     record_scan_run,
     scan_status_context,
+    upsert_paper,
 )
 from app.modules.scrape.sources.payload import PaperPayload
 from app.tasks.fanout import user_fanout_offset
@@ -91,6 +93,21 @@ def _payload(ext_id: str = "2401.00001") -> PaperPayload:
         pdf_url=None,
         published_at=datetime(2026, 7, 20, tzinfo=UTC),
         categories=["cs.AI"],
+    )
+
+
+def _video_payload(video_id: str) -> PaperPayload:
+    return PaperPayload(
+        source="youtube_channel",
+        external_id=video_id,
+        title=f"Video {video_id}",
+        abstract="a video description",
+        authors=["Some Channel"],
+        url=f"https://www.youtube.com/watch?v={video_id}",
+        pdf_url=None,
+        published_at=datetime(2026, 7, 25, tzinfo=UTC),
+        categories=["video"],
+        kind="video",
     )
 
 
@@ -565,3 +582,69 @@ def test_scraper_widget_shows_the_users_effective_sources(auth_client, monkeypat
     set_user_source(User.query.get(uid), "arxiv", False)
     body = client.get("/papers/").get_data(as_text=True)
     assert 'class="badge source-badge source-arxiv' not in body
+
+
+# ----------------------------------------------------------------------------
+# Home page — video/news section (burial fix) + clickable stat pills
+# ----------------------------------------------------------------------------
+
+
+def test_home_page_shows_video_in_channels_feeds_section(auth_client, db):
+    """A video paper linked to the user renders on the home page even though
+    it never makes the `for_you` top-5 (academic papers outrank it there)."""
+    from app.core.models.user import User
+
+    client, uid = auth_client
+    user = User.query.get(uid)
+    add_user_keyword(user, "quantum")
+
+    academic = upsert_paper(_payload("2401.11111"))
+    video = upsert_paper(_video_payload("vid-home-1"))
+    up_academic, _ = link_user_paper(user, academic, matched_keyword="quantum")
+    up_video, _ = link_user_paper(user, video, matched_keyword="quantum")
+
+    body = client.get("/").get_data(as_text=True)
+    assert f'id="card-{up_video.id}"' in body
+    assert f'id="card-{up_academic.id}"' in body
+
+
+def test_home_page_video_section_absent_when_no_video_or_news(auth_client, db):
+    """No video/news linked → the section (and its heading) must not render
+    at all, not just render empty."""
+    client, _uid = auth_client
+    body = client.get("/").get_data(as_text=True)
+    assert "bi-broadcast" not in body
+
+
+def test_home_page_does_not_duplicate_a_video_already_in_top_five(auth_client, db):
+    """A video that lands in the top-5 `for_you` slots must not also be
+    rendered again in the channels/feeds section below it."""
+    from app.core.models.user import User
+
+    client, uid = auth_client
+    user = User.query.get(uid)
+    add_user_keyword(user, "quantum")
+
+    video = upsert_paper(_video_payload("vid-home-2"))
+    up_video, _ = link_user_paper(user, video, matched_keyword="quantum")
+
+    body = client.get("/").get_data(as_text=True)
+    assert body.count(f'id="card-{up_video.id}"') == 1
+
+
+def test_stat_pills_are_links_to_expected_destinations(auth_client, db):
+    """The four stat pills must be real links (keyboard-reachable), not
+    inert divs, pointing at interests/favorites/read-later/notes."""
+    from flask import url_for
+
+    client, _uid = auth_client
+    with client.application.test_request_context():
+        favorites_url = url_for("library.index", view="favorites")
+        read_later_url = url_for("library.index", view="read_later")
+        notes_url = url_for("library.index", view="notes")
+
+    body = client.get("/").get_data(as_text=True)
+    assert 'href="#interests-manager" class="stat-pill stat-pill--interests' in body
+    assert f'href="{favorites_url}" class="stat-pill stat-pill--favorites' in body
+    assert f'href="{read_later_url}" class="stat-pill stat-pill--read-later' in body
+    assert f'href="{notes_url}" class="stat-pill stat-pill--notes' in body

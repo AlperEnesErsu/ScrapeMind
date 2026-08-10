@@ -2577,6 +2577,152 @@ msgstr "Email digest"
 msgid "Get an email summary of new papers matching your interests."
 msgstr "Get an email summary of new papers matching your interests."
 
+msgid "Max YouTube channels per user"
+msgstr "Max YouTube channels per user"
+
+msgid "Takes effect immediately for new subscriptions, no restart needed."
+msgstr "Takes effect immediately for new subscriptions, no restart needed."
+
+msgid "Channel URL or @handle"
+msgstr "Channel URL or @handle"
+
+msgid "Add channel"
+msgstr "Add channel"
+
+#, python-format
+msgid "%(used)s / %(cap)s channels"
+msgstr "%(used)s / %(cap)s channels"
+
+msgid "Filter channels"
+msgstr "Filter channels"
+
+msgid "Channel limit reached. Remove one before adding another."
+msgstr "Channel limit reached. Remove one before adding another."
+
+msgid "Remove this channel?"
+msgstr "Remove this channel?"
+
+msgid "No channels match this filter."
+msgstr "No channels match this filter."
+
+msgid "No YouTube channels yet — add one below."
+msgstr "No YouTube channels yet — add one below."
+
+msgid "Your YouTube channels"
+msgstr "Your YouTube channels"
+
+msgid ""
+"Subscribe to a channel — its new videos flow into your feed and briefing "
+"just like the curated sources."
+msgstr ""
+"Subscribe to a channel — its new videos flow into your feed and briefing "
+"just like the curated sources."
+
+msgid "Leave blank to use the channel's own title."
+msgstr "Leave blank to use the channel's own title."
+
+msgid "Please enter a YouTube channel URL or @handle."
+msgstr "Please enter a YouTube channel URL or @handle."
+
+msgid "Could not add that channel."
+msgstr "Could not add that channel."
+
+msgid "Channel added."
+msgstr "Channel added."
+
+msgid "Could not find that YouTube channel — check the link and try again."
+msgstr "Could not find that YouTube channel — check the link and try again."
+
+msgid "AI summary"
+msgstr "AI summary"
+
+msgid "AI-generated summary of the video transcript"
+msgstr "AI-generated summary of the video transcript"
+
+msgid "Video summary"
+msgstr "Video summary"
+
+msgid "Highlights"
+msgstr "Highlights"
+
+#, python-format
+msgid "Based on a %(n)s-character transcript"
+msgstr "Based on a %(n)s-character transcript"
+
+msgid "Regenerate summary"
+msgstr "Regenerate summary"
+
+msgid "No transcript available"
+msgstr "No transcript available"
+
+msgid ""
+"This video has no captions we could read (auto-generated or manual), so "
+"no summary could be produced."
+msgstr ""
+"This video has no captions we could read (auto-generated or manual), so "
+"no summary could be produced."
+
+msgid "Try again"
+msgstr "Try again"
+
+msgid "Fetching transcript and summarizing…"
+msgstr "Fetching transcript and summarizing…"
+
+msgid "Summarize this video"
+msgstr "Summarize this video"
+
+msgid ""
+"Fetch the transcript and generate a short summary plus highlights, in "
+"Turkish. Cached — runs only on demand."
+msgstr ""
+"Fetch the transcript and generate a short summary plus highlights, in "
+"Turkish. Cached — runs only on demand."
+
+msgid "Summarize transcript"
+msgstr "Summarize transcript"
+
+msgid "Manage your feeds and channels"
+msgstr "Manage your feeds and channels"
+
+msgid "Add your own RSS feed or YouTube channel"
+msgstr "Add your own RSS feed or YouTube channel"
+
+msgid "RSS feeds"
+msgstr "RSS feeds"
+
+msgid "YouTube channels"
+msgstr "YouTube channels"
+
+msgid "Manage your sources"
+msgstr "Manage your sources"
+
+msgid "Full settings page"
+msgstr "Full settings page"
+
+msgid "Ingest YouTube channels"
+msgstr "Ingest YouTube channels"
+
+msgid "Check every user's YouTube channels for new videos now?"
+msgstr "Check every user's YouTube channels for new videos now?"
+
+msgid "YouTube channel check queued for all users."
+msgstr "YouTube channel check queued for all users."
+
+msgid "From your channels & feeds"
+msgstr "From your channels & feeds"
+
+msgid "Manage your interests"
+msgstr "Manage your interests"
+
+msgid "Open your favorite papers"
+msgstr "Open your favorite papers"
+
+msgid "Open your read-later list"
+msgstr "Open your read-later list"
+
+msgid "Open your academic notes"
+msgstr "Open your academic notes"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

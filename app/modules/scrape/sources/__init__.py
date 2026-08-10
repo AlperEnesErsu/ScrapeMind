@@ -21,10 +21,13 @@ import structlog
 
 from app.modules.scrape.sources import (
     arxiv_source,
+    crossref_source,
     external_sources,
+    openalex_source,
     pubmed_source,
     rss_source,
     semantic_scholar_source,
+    youtube_channel_source,
 )
 
 logger = structlog.get_logger()
@@ -33,9 +36,12 @@ AVAILABLE_SOURCES: dict[str, Any] = {
     arxiv_source.SOURCE_NAME: arxiv_source,
     semantic_scholar_source.SOURCE_NAME: semantic_scholar_source,
     pubmed_source.SOURCE_NAME: pubmed_source,
+    openalex_source.SOURCE_NAME: openalex_source,
+    crossref_source.SOURCE_NAME: crossref_source,
     external_sources.YOUTUBE_SOURCE_NAME: external_sources.youtube_adapter,
     external_sources.GITHUB_SOURCE_NAME: external_sources.github_adapter,
     external_sources.WEB_SOURCE_NAME: external_sources.web_adapter,
+    youtube_channel_source.SOURCE_NAME: youtube_channel_source,
 }
 # Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
 # under its own key, sharing the one `rss_source` module — the module's
@@ -93,6 +99,42 @@ SOURCE_META: dict[str, dict] = {
         "topics": ["biomed"],
         "category": "academic",
     },
+    "openalex": {
+        "label": "OpenAlex",
+        "icon": "bi-globe-americas",
+        "desc": "Open catalog of scholarly works across every field",
+        "url": "https://openalex.org",
+        "topics": [
+            "ai",
+            "ml",
+            "cs",
+            "physics",
+            "math",
+            "biomed",
+            "social",
+            "humanities",
+            "general",
+        ],
+        "category": "academic",
+    },
+    "crossref": {
+        "label": "Crossref",
+        "icon": "bi-link-45deg",
+        "desc": "DOI registry with metadata across every publisher",
+        "url": "https://www.crossref.org",
+        "topics": [
+            "ai",
+            "ml",
+            "cs",
+            "physics",
+            "math",
+            "biomed",
+            "social",
+            "humanities",
+            "general",
+        ],
+        "category": "academic",
+    },
     "youtube_reach": {
         "label": "YouTube Videos",
         "icon": "bi-youtube",
@@ -117,6 +159,16 @@ SOURCE_META: dict[str, dict] = {
         "topics": ["general"],
         "category": "feed",
     },
+    "youtube_channel": {
+        "label": "YouTube Channels",
+        # bi-youtube is already used by youtube_reach (video search) — a
+        # distinct icon keeps the two tellable apart in the source picker.
+        "icon": "bi-collection-play",
+        "desc": "New uploads from channels you subscribe to, with transcripts",
+        "url": "https://www.youtube.com",
+        "topics": ["general", "ai", "cs"],
+        "category": "feed",
+    },
     "manual": {
         "label": "Manual",
         "icon": "bi-link-45deg",
@@ -136,8 +188,9 @@ for _feed in rss_source.FEEDS:
         "category": "feed",
     }
 
-_DEFAULT = "arxiv,semantic_scholar,pubmed,youtube_reach,github_reach,web_reach," + ",".join(
-    f["key"] for f in rss_source.FEEDS
+_DEFAULT = (
+    "arxiv,semantic_scholar,pubmed,openalex,crossref,youtube_reach,github_reach,web_reach,"
+    "youtube_channel," + ",".join(f["key"] for f in rss_source.FEEDS)
 )
 
 
