@@ -38,6 +38,16 @@ BEAT_SCHEDULE = {
         "task": "channels.ingest_for_all_users",
         "schedule": crontab(hour=2, minute=55),
     },
+    # Per-user patent scanning — its own window between channel ingestion and
+    # the academic scrape. Separate from `scrape.run_for_all_users` on
+    # purpose: patent sources are metered weekly, and an exhausted quota must
+    # not be able to mark a user's academic scan "partial". A deployment
+    # without EPO/PatentsView keys short-circuits here for the cost of one
+    # registry lookup (see patent_tasks.ingest_for_all_users).
+    "patents-ingest-nightly": {
+        "task": "patents.ingest_for_all_users",
+        "schedule": crontab(hour=3, minute=5),
+    },
     # Nightly fan-out: at 03:15 every day, queue a scrape task for every
     # active user. Each per-user task picks up their keywords + identifiers
     # at that moment.

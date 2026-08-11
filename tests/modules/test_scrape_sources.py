@@ -21,6 +21,20 @@ from app.modules.scrape.sources import youtube_channel_source as yc
 _FEED_KEYS = {f["key"] for f in rss_source.FEEDS}
 _REACH_KEYS = {"youtube_reach", "github_reach", "web_reach"}
 _CHANNEL_KEYS = {"youtube_channel"}
+#: Key-gated (Faz 5.2). Present in AVAILABLE_SOURCES, but only reach
+#: `enabled_sources()` when their credentials are configured — hence the
+#: separate set and the env fixture below.
+_PATENT_KEYS = {"epo_ops", "patentsview"}
+
+
+@pytest.fixture
+def patent_credentials(monkeypatch):
+    """Configure the patent keys so the gated sources appear in
+    `enabled_sources()`. Without this they are correctly invisible."""
+    monkeypatch.setenv("EPO_OPS_KEY", "k")
+    monkeypatch.setenv("EPO_OPS_SECRET", "s")
+    monkeypatch.setenv("PATENTSVIEW_API_KEY", "k")
+
 
 # ----------------------------------------------------------------------------
 # Registry
@@ -34,7 +48,7 @@ def test_registry_has_academic_adapters_and_feeds():
         "pubmed",
         "openalex",
         "crossref",
-    } | _FEED_KEYS | _REACH_KEYS | _CHANNEL_KEYS == set(AVAILABLE_SOURCES)
+    } | _FEED_KEYS | _REACH_KEYS | _CHANNEL_KEYS | _PATENT_KEYS == set(AVAILABLE_SOURCES)
 
 
 def test_every_feed_key_has_source_meta():
@@ -43,7 +57,7 @@ def test_every_feed_key_has_source_meta():
         assert SOURCE_META[key]["label"]
 
 
-def test_enabled_sources_defaults_to_all(monkeypatch):
+def test_enabled_sources_defaults_to_all(monkeypatch, patent_credentials):
     monkeypatch.delenv("SCRAPE_SOURCES", raising=False)
     assert (
         set(enabled_sources())
@@ -51,7 +65,23 @@ def test_enabled_sources_defaults_to_all(monkeypatch):
         | _FEED_KEYS
         | _REACH_KEYS
         | _CHANNEL_KEYS
+        | _PATENT_KEYS
     )
+
+
+def test_patent_sources_are_invisible_without_their_keys(monkeypatch):
+    """The default list names them, but a source that cannot answer must not
+    reach a scan — see the credential gate in `sources.credentials_ok`."""
+    monkeypatch.delenv("SCRAPE_SOURCES", raising=False)
+    for var in ("EPO_OPS_KEY", "EPO_OPS_SECRET", "PATENTSVIEW_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    assert not (_PATENT_KEYS & set(enabled_sources()))
+
+
+def test_patent_sources_are_gated_on_the_admin_optin():
+    for key in _PATENT_KEYS:
+        assert SOURCE_META[key]["requires_admin_optin"] == "patents_enabled"
+        assert SOURCE_META[key]["category"] == "patent"
 
 
 def test_enabled_sources_filters_and_ignores_unknown(monkeypatch):

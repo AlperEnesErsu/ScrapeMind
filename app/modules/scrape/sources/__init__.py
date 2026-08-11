@@ -50,8 +50,10 @@ import structlog
 from app.modules.scrape.sources import (
     arxiv_source,
     crossref_source,
+    epo_ops_source,
     external_sources,
     openalex_source,
+    patentsview_source,
     pubmed_source,
     rss_source,
     semantic_scholar_source,
@@ -70,6 +72,8 @@ AVAILABLE_SOURCES: dict[str, Any] = {
     external_sources.GITHUB_SOURCE_NAME: external_sources.github_adapter,
     external_sources.WEB_SOURCE_NAME: external_sources.web_adapter,
     youtube_channel_source.SOURCE_NAME: youtube_channel_source,
+    epo_ops_source.SOURCE_NAME: epo_ops_source,
+    patentsview_source.SOURCE_NAME: patentsview_source,
 }
 # Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
 # under its own key, sharing the one `rss_source` module — the module's
@@ -205,6 +209,31 @@ SOURCE_META: dict[str, dict] = {
         "topics": ["general", "ai", "cs"],
         "category": "feed",
     },
+    # Patent sources (Faz 5.2) — the first users of 5.1's gates. Both need a
+    # key *and* an admin opt-in: `patents_enabled` is registered on the system
+    # settings page by `scrape.routes._register_system_toggles`.
+    "epo_ops": {
+        "label": "EPO Patents",
+        "icon": "bi-award",
+        "desc": "Worldwide patent publications, including TR (EPO OPS / DOCDB)",
+        "url": "https://worldwide.espacenet.com",
+        "topics": ["cs", "ai", "ml", "physics", "biomed", "general"],
+        "category": "patent",
+        "requires_key": True,
+        "credentials_ok": epo_ops_source.credentials_ok,
+        "requires_admin_optin": "patents_enabled",
+    },
+    "patentsview": {
+        "label": "US Patents",
+        "icon": "bi-patch-check",
+        "desc": "US patents with inventors, assignees and CPC classes",
+        "url": "https://patentsview.org",
+        "topics": ["cs", "ai", "ml", "physics", "biomed", "general"],
+        "category": "patent",
+        "requires_key": True,
+        "credentials_ok": patentsview_source.credentials_ok,
+        "requires_admin_optin": "patents_enabled",
+    },
     "manual": {
         "label": "Manual",
         "icon": "bi-link-45deg",
@@ -224,9 +253,13 @@ for _feed in rss_source.FEEDS:
         "category": "feed",
     }
 
+# The patent sources are listed here like any other: being in SCRAPE_SOURCES
+# only means "this deployment would allow it". Without EPO/PatentsView keys
+# `enabled_sources()` drops them anyway, and without the `patents_enabled`
+# opt-in `effective_source_prefs` keeps them off for every user.
 _DEFAULT = (
     "arxiv,semantic_scholar,pubmed,openalex,crossref,youtube_reach,github_reach,web_reach,"
-    "youtube_channel," + ",".join(f["key"] for f in rss_source.FEEDS)
+    "youtube_channel,epo_ops,patentsview," + ",".join(f["key"] for f in rss_source.FEEDS)
 )
 
 

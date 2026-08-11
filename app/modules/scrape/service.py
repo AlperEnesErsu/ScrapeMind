@@ -33,7 +33,11 @@ from app.modules.scrape.models import (
     UserSource,
 )
 from app.modules.scrape.net_guard import is_public_http_url
-from app.modules.scrape.sources import SOURCE_META, admin_optin_key, enabled_sources
+from app.modules.scrape.sources import (
+    SOURCE_META,
+    admin_optin_key,
+    enabled_sources,
+)
 from app.modules.scrape.sources.payload import PaperPayload
 from app.modules.scrape.sources.rss_source import fetch_feed_conditional
 
@@ -368,6 +372,11 @@ _COST_SECONDS = {
     "pubmed": 3.0,
     "openalex": 2.0,
     "crossref": 2.5,
+    # One request each (CQL `or` / PatentsView `_or`), but OPS is markedly
+    # slower than the metadata APIs and pays for an OAuth round trip on a cold
+    # token — hence the widest estimate of the set.
+    "epo_ops": 6.0,
+    "patentsview": 3.0,
 }
 _COST_PER_FEED = 1.5
 _COST_LLM = 15.0
@@ -857,6 +866,128 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
 
 # Backward-compatible alias — pre-multi-source callers used the arXiv name.
 scrape_arxiv_for_user = scrape_for_user
+
+
+def patent_sources(user: User | None = None) -> dict:
+    """The deployment's usable patent sources, optionally narrowed to one
+    user's preferences.
+
+    "Usable" already means credentials are configured — `enabled_sources()`
+    drops key-gated sources without them — and, when a user is given, that the
+    admin has opted in and the user has not switched the source off.
+    """
+    available = {
+        name: mod
+        for name, mod in enabled_sources().items()
+        if SOURCE_META.get(name, {}).get("category") == "patent"
+    }
+    if user is None:
+        return available
+    prefs = effective_source_prefs(user)
+    return {name: mod for name, mod in available.items() if prefs.get(name)}
+
+
+def patent_sources_available() -> bool:
+    """Whether any patent source could run at all — keys present *and* the
+    admin opt-in on.
+
+    Read once by `patents.ingest_for_all_users` so a deployment that never
+    configured EPO/PatentsView pays one registry lookup for the nightly
+    schedule entry instead of a fan-out per user.
+    """
+    available = patent_sources()
+    if not available:
+        return False
+    return any(
+        admin_optin_key(name) is None or admin_opted_in(admin_optin_key(name)) for name in available
+    )
+
+
+def scrape_patents_for_user(user: User, *, max_results: int = 25) -> dict:
+    """`scrape_for_user`, restricted to the patent sources.
+
+    Deliberately a separate run rather than extra entries in the academic
+    scan: patent sources are metered against a weekly budget, so an exhausted
+    quota must not be able to mark a user's *academic* scan `partial` and
+    drain the status line of meaning.
+
+    Keyword handling is otherwise identical, including the English expansion —
+    EPO's CQL and PatentsView's `_text_any` both search English text, so a
+    user following "kalp yetmezliği" needs the same translation the academic
+    sources get.
+    """
+    keyword_rows = list_user_keywords(user)
+    if not keyword_rows:
+        logger.info("patent_scrape_skip_no_keywords", user_id=user.id)
+        return {"hits": 0, "linked": 0, "reason": "no_keywords"}
+
+    sources = patent_sources(user)
+    if not sources:
+        logger.info("patent_scrape_skip_no_sources", user_id=user.id)
+        return {"hits": 0, "linked": 0, "reason": "no_sources"}
+
+    ensure_keyword_translations(keyword_rows, user=user)
+
+    hits = 0
+    linked = 0
+    per_source: dict[str, int] = {}
+    for name, source in sources.items():
+        terms, alias = keyword_search_terms(keyword_rows, name)
+        if not terms:
+            continue
+        try:
+            payloads = source.search_for_keywords(terms, max_results=max_results)
+        except Exception:  # noqa: BLE001 — one failing source must not kill the run
+            logger.exception("patent_source_failed", source=name, user_id=user.id)
+            per_source[name] = -1  # sentinel → apply_scan_result marks "partial"
+            continue
+        per_source[name] = len(payloads)
+        hits += len(payloads)
+        for payload in payloads:
+            paper = upsert_paper(payload)
+            _, created = link_user_paper(
+                user, paper, matched_keyword=_match_keyword(paper.title, terms, alias)
+            )
+            if created:
+                linked += 1
+    logger.info("patent_scrape_done", user_id=user.id, hits=hits, linked=linked)
+    return {"hits": hits, "linked": linked, "sources": per_source}
+
+
+def search_patents_live(keywords: list[str], *, max_results: int = 20) -> tuple[list, dict]:
+    """Query the patent sources directly and return payloads **without
+    persisting them** — the prior-art search page (Faz 5.2).
+
+    One-off prior-art queries must not pollute the `papers` table: a user
+    checking twenty variations of an invention idea would otherwise leave
+    hundreds of rows nobody's feed ever wanted, and EPO's fair-use terms are
+    happier with a search that keeps nothing. Only the nightly keyword scan
+    (`scrape_patents_for_user`) persists.
+
+    Returns `(payloads, per_source)` where `per_source` uses the same -1
+    sentinel as the scan paths so the page can say "EPO was rate limited"
+    rather than silently showing fewer results.
+    """
+    terms = [kw.strip() for kw in keywords if kw and kw.strip()]
+    if not terms:
+        return [], {}
+
+    out: list = []
+    per_source: dict[str, int] = {}
+    for name, source in patent_sources().items():
+        try:
+            payloads = source.search_for_keywords(terms, max_results=max_results)
+        except Exception:  # noqa: BLE001 — report the failure, keep the others
+            logger.exception("patent_live_search_failed", source=name)
+            per_source[name] = -1
+            continue
+        per_source[name] = len(payloads)
+        out.extend(payloads)
+
+    # Newest first: for prior art, a recent publication is the one most likely
+    # to matter, and it also puts the "is this already claimed" answer on top.
+    out.sort(key=lambda p: (p.published_at is not None, p.published_at), reverse=True)
+    return out[:max_results], per_source
 
 
 def _user_papers_query(user: User, view: str):
@@ -1748,6 +1879,7 @@ class TimelineEvent:
 
 
 KIND_SCRAPE = "scrape_run"
+KIND_PATENT_SCAN = "patent_run"
 KIND_FAVORITED = "favorited"
 KIND_NOTE_ADDED = "note_added"
 KIND_DISMISSED = "dismissed"
@@ -1793,6 +1925,31 @@ def build_timeline(user: User, *, limit: int = 40) -> list[TimelineEvent]:
                 when=r.finished_at or r.started_at,
                 kind=KIND_SCRAPE,
                 title="Manuel tarama" if r.trigger == "manual" else "Otomatik tarama",
+                detail=None,
+                badge=f"+{r.new_items}" if r.new_items else None,
+            )
+        )
+
+    # ---- Patent scans ----
+    # Their own event kind rather than folding into the scrape runs above: a
+    # patent run is a separate ScanRun (see `scrape_patents_for_user`), and
+    # showing both as "tarama" would make two rows look like a duplicate.
+    patent_runs = (
+        ScanRun.query.filter(
+            ScanRun.user_id == user.id,
+            ScanRun.kind == "patents",
+            ScanRun.status.in_(("ok", "partial", "error")),
+        )
+        .order_by(desc(ScanRun.started_at))
+        .limit(limit)
+        .all()
+    )
+    for r in patent_runs:
+        events.append(
+            TimelineEvent(
+                when=r.finished_at or r.started_at,
+                kind=KIND_PATENT_SCAN,
+                title="Manuel patent taraması" if r.trigger == "manual" else "Patent taraması",
                 detail=None,
                 badge=f"+{r.new_items}" if r.new_items else None,
             )

@@ -223,11 +223,13 @@ def test_usage_never_raises(app, db, monkeypatch):
 
 
 def test_panel_omits_sources_without_a_budget(app, db):
-    """Every shipped source is unmetered today. A panel of "0 / 0" rows trains
-    admins to ignore the panel, so unmetered sources are left out entirely."""
+    """A panel of "0 / 0" rows trains admins to ignore the panel, so unmetered
+    sources are left out entirely. Since Faz 5.2 only EPO OPS ships with a
+    default budget (its 4 GB/week tier), so it is the one row expected here."""
     from app.modules.dashboard.routes import _source_quota_rows
 
-    assert _source_quota_rows() == []
+    listed = {row["source"] for row in _source_quota_rows()}
+    assert listed == {"epo_ops"}
 
 
 def test_panel_lists_a_metered_source(app, db, monkeypatch):
