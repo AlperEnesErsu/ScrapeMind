@@ -406,3 +406,45 @@ class PaperTranslation(BaseModel):
     __table_args__ = (
         db.UniqueConstraint("paper_id", "target_lang", name="uq_paper_translation_lang"),
     )
+
+
+class SourceQuotaUsage(BaseModel):
+    """Cumulative weekly consumption of one licensed/metered source's quota
+    (Faz 5.1).
+
+    Why this is not `ratelimit.py`'s Redis counter. That counter is a
+    fixed-window *rate* limiter — "8 requests per second" — and it is
+    deliberately **fail-open**: when Redis is unreachable the request goes
+    through, because a missing limiter should degrade to the old behaviour
+    rather than stop every scan. Neither property survives contact with a
+    published quota:
+
+      * The windows are weeks, not seconds (Scopus 20.000 requests/week, EPO
+        OPS 4 GB/week). A Redis key that must live seven days is a durability
+        promise Redis is not being asked to make here — it is configured as a
+        broker, and a restart or eviction silently resets the budget to zero
+        used.
+      * Fail-open is the wrong direction for a contract. Blowing through a
+        licensed weekly quota because a cache was down is a worse outcome than
+        skipping a nightly run, so `ratelimit.consume_quota` fails **closed**.
+
+    The two coexist and are called together: `<name>_slot()` shapes the
+    instantaneous rate, `consume_quota()` spends from the cumulative budget.
+
+    `bytes_used` exists because EPO OPS meters bandwidth rather than calls;
+    sources that meter calls simply leave it at 0.
+    """
+
+    __tablename__ = "source_quota_usage"
+
+    source_name = db.Column(db.String(64), nullable=False)
+    # Start of the quota week, UTC-normalised to Monday 00:00 by
+    # `ratelimit.quota_window_start`. Stored (not derived at query time) so the
+    # unique constraint can do the "one row per source per week" work.
+    window_start = db.Column(db.DateTime(timezone=True), nullable=False)
+    requests_used = db.Column(db.BigInteger, nullable=False, default=0, server_default="0")
+    bytes_used = db.Column(db.BigInteger, nullable=False, default=0, server_default="0")
+
+    __table_args__ = (
+        db.UniqueConstraint("source_name", "window_start", name="uq_source_quota_window"),
+    )

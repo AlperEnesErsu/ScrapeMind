@@ -137,15 +137,47 @@ ile **tarama anında tembel** yapılır — ilgi ekleme senkron yolunda asla LLM
 
 ## 5. Kaynak Seçimi (opt-out modeli)
 
-`service.effective_source_prefs(user)` üç kademeli çözer:
+`service.effective_source_prefs(user)` dört kademeli çözer:
 
+0. Kaynak `requires_admin_optin` taşıyor ve admin açmamışsa → **kapalı**, üstelik
+   1. maddedeki açık satır bunu **ezemez** (Faz 5.1).
 1. Açık `UserSource` satırı varsa **o kazanır**.
-2. Satır yok + `category == "academic"` → **açık** (geniş kataloglar herkese uygun).
+2. Satır yok + `category == "academic"` / `"patent"` → **açık** (geniş kataloglar
+   herkese uygun). İstisna: admin opt-in'i olan kaynak, açılmış olsa bile
+   **varsayılan kapalı**.
 3. Satır yok + `category == "feed"` → kullanıcının sınıflandırılmış konularıyla
    kaynağın `topics`'i kesişiyorsa açık, yoksa kapalı.
 
 **Satırın yokluğu "açık" demek** — bu sayede yeni bir kaynak eklendiğinde mevcut
 kullanıcılar etkilenmez ve migration'da satır üretmek gerekmez.
+
+### Kimlik gerektiren ve admin onaylı kaynaklar (Faz 5.1)
+
+Faz 4'e kadar hiçbir kaynak anahtar istemiyordu; "enabled" sadece "dağıtım listeledi"
+demekti. Faz 5'in kaynakları (EPO OPS, PatentsView, Scopus) anahtarsız **cevap
+veremez** ve cevap veremeyen kaynak `scrape_for_user`'ın `-1` sentinel'ini tetikler —
+yani her kullanıcının her gecelik taraması kalıcı olarak `status="partial"` olur.
+Anlamı olmayan bir uyarı ikonu, uyarı ikonu olmaktan çıkar.
+
+`SOURCE_META`'da iki **bağımsız** kapı bunu engeller:
+
+| Alan | Etkisi |
+|---|---|
+| `requires_key: True` + `credentials_ok: Callable[[], bool]` | Anahtar yoksa kaynak `enabled_sources()`'a **hiç girmez** — seçicide, kütüphane filtresinde, `user_enabled_sources`'ta aynı anda görünmez olur |
+| `requires_admin_optin: "<SystemSettings anahtarı>"` | Kaynak **listelenir** (admin neyi açtığını görmeli) ama admin açana kadar herkes için zorla kapalı; açıldıktan sonra da varsayılan kapalı |
+
+`credentials_ok` bilinçli olarak **callable**, bool değil: env değişkenleri her çağrıda
+okunur (`SCRAPE_SOURCES` presedansı), böylece anahtar ekleyen dağıtımın restart'a
+ihtiyacı olmaz. Probe patlarsa "anahtar yok" sayılır — cevap veremeyen bir kontrol,
+anahtarın var olduğunun kanıtı değildir.
+
+Admin toggle'ları core'un [`toggle_registry.py`](../app/core/settings/toggle_registry.py)'sine
+kaydedilir ([`scrape/routes.py:_register_system_toggles`](../app/modules/scrape/routes.py)).
+`app/core/` asla `app/modules/`'dan import etmediği için (CLAUDE.md kuralı 1) core yalnızca
+adını bilmediği boolean'ları saklar ve render eder; anlamı — hangi API'yi kapıladığı,
+hangi env değişkenine baktığı — modülde durur. **Anahtarın kendisi asla
+`SystemSettings`'e yazılmaz** (`value` düz JSON, admin'in okuyabildiği bir tablo);
+orada yalnızca boolean vardır.
 
 Konu sınıflandırması `ai_service.classify_user_topics(user)`: önce sözlük hızlı yolu
 (`_TOPIC_LEXICON`, kelime sınırı regex'i), tutmazsa tek LLM çağrısı. Sonuç
@@ -189,6 +221,37 @@ mekanizmasıdır; Redis arızası taramayı tamamen durdurmamalı.
 
 Bucket adı serbest string — host başına limit gerekirse yeni mekanizma yazmaya gerek yok.
 
+### 6.2b Kalıcı haftalık kota — `ratelimit.consume_quota` (Faz 5.1)
+
+Yukarıdaki Redis sayacı **saniye/dakika bazlı bir hız** limitidir ve **fail-open**'dır.
+Lisanslı kaynakların kotası ikisine de uymaz:
+
+- **Pencere hafta.** Scopus 20.000 istek/hafta, EPO OPS 4 GB/hafta. Yedi gün yaşaması
+  gereken bir Redis anahtarı, Redis'ten istenmeyen bir dayanıklılık sözüdür — burada
+  broker olarak yapılandırılmış, restart bütçeyi sessizce sıfırlar.
+- **Fail-open yanlış yön.** Cache düştü diye sözleşmeli kotayı aşmak, bir gecelik
+  taramayı atlamaktan kötüdür.
+
+Bu yüzden bütçe Postgres'te (`SourceQuotaUsage`, kaynak başına haftada bir satır) durur
+ve `consume_quota(name, *, cost=1, bytes_=0)` **fail-closed**'dır: herhangi bir DB
+hatasında `False` döner.
+
+- Harcama ve limit kontrolü **tek statement**: `UPDATE ... WHERE used + cost <= limit
+  RETURNING id`. Son slot için yarışan iki worker'ın ikisi birden kazanamaz.
+- Haftanın ilk harcaması satırı `ON CONFLICT DO NOTHING` ile yaratır.
+- İstek ve byte **ayrı eksenler** (EPO bant genişliği, Scopus çağrı ölçer). Bir eksende
+  limit `0` ise "burada tavan yok" demektir, "hiç izin yok" değil.
+- Pencere **Pazartesi 00:00 UTC** — bilerek `BABEL_DEFAULT_TIMEZONE` değil (§9'daki
+  `BEAT_SCHEDULE`'ın aksine): sıfırlama sınırı sağlayıcıya ait ve her worker için aynı
+  an olmalı.
+- Kota bitince adaptör **`SourceThrottledError` fırlatır**, boş liste dönmez —
+  `scrape_for_user` bunu `-1` sentinel'ine çevirir, `ScanRun` `status="partial"` olur.
+  Boş liste dönmek kullanıcıya "0 sonuç" diye yalan söyler.
+
+`quota_usage(name)` admin overview'daki kota kartını besler ve **asla patlamaz**.
+Bütçesi olmayan kaynaklar panelde hiç listelenmez — anlamsız "0 / 0" satırları admin'e
+paneli görmezden gelmeyi öğretir.
+
 ### 6.3 Boyut ve süre sınırları
 `FEED_FETCH_TIMEOUT` (15sn), `FEED_FETCH_MAX_BYTES` (5 MiB, streaming olarak kesilir),
 `_MAX_REDIRECTS=3`. Celery tarafında `CELERY_TASK_SOFT_TIME_LIMIT`/`_TIME_LIMIT` —
@@ -220,16 +283,30 @@ en fazla 50 bağlanmamış `kind="news"` makaleyi **tek** `ai_service.score_feed
 
 ## 8. Kalıcılık ve Tekilleştirme
 
-`Paper` tekilleştirmesi **yalnızca** `UniqueConstraint("source", "external_id")`.
-`service.upsert_paper` eşleşen satırı bulursa **dokunmadan** döndürür.
+`service.upsert_paper` **DOI-first** çözer (Faz 4):
 
-İki sonucu var, ikisi de bilinçli ama ikisi de sınır:
-- Aynı makale hem arXiv hem Semantic Scholar'da varsa **iki ayrı `Paper` satırı** olur.
-- arXiv'den abstract'sız gelen bir kayıt, başka kaynak abstract'ı taşısa bile
-  sonsuza dek abstract'sız kalır.
+1. Normalize edilmiş DOI (`doi.normalize_doi`) ile arar. DOI **yazarken** normalize
+   edilir, böylece saklanan biçim her zaman kanonik ve arama düz bir
+   `filter_by(doi=...)` — `ilike` taraması değil. Önceki sürüm kaynağın verdiği
+   string'i olduğu gibi saklayıp `ilike` ile eşleştiriyordu; bu büyük/küçük harfe
+   duyarsızdı ama **prefix'e duyarsız değildi**, yani bir kaynaktan gelen
+   `https://doi.org/10.X/Y` ile diğerinden gelen `10.X/Y` yine iki satır üretiyordu.
+2. DOI yoksa/tutmazsa `UniqueConstraint("source", "external_id")`.
 
-DOI tabanlı tekilleştirme ve boş-alan zenginleştirmesi yeni kaynak eklemeden önce
-yapılmalı — bkz. §10.
+Eşleşen satır **fill-only** zenginleştirilir (`_enrich`): boş alanlar
+(`abstract`, `pdf_url`, `url`, `doi`, `published_at`, `categories`, `authors`) yeni
+payload'dan doldurulur, **dolu alan asla ezilmez** — iki kaynağın ikisinde de değer
+varken "hangisi doğru" diye karar vermek için elimizde bir dayanak yok, o yüzden ilk
+gelen kalır. Boş sayılan şekiller: `None`, boş string, boş liste (`0`/`False` değil).
+
+Sınır olarak kalan durum: gelen DOI bir satırla, gelen `(source, external_id)` ise
+**başka** bir satırla eşleşirse DOI kazanır ve zenginleştirilen o olur; diğer satıra
+dokunulmaz. İki satırı birleştirmek (`UserPaper` bağlarını taşımak dahil) upsert'in
+işi değil — gerçek bir migration ister.
+
+> ⚠️ Faz 5.3 `cited_by_count` ekleyecek ve o alan **fill-only olamaz**: atıf sayısı
+> zamanla artar, ilk değerinde donarsa yanlış olur. Ayrı bir "her zaman güncelle"
+> seti gerekecek — bkz. [PHASE5.md](PHASE5.md) §5.3.
 
 `ScanRun` her taramayı kaydeder (`status`: `running|ok|partial|skipped|error`;
 negatif kaynak sayacı → `partial`, `reason` → `skipped`). UI Celery'yi yoklamak yerine
@@ -247,6 +324,7 @@ bu tabloyu okur.
 |---|---|
 | her dakika | `core.heartbeat` |
 | 02:45 | `feeds.ingest_all` |
+| 02:55 | `channels.ingest_for_all_users` |
 | 03:15 | `scrape.run_for_all_users` |
 | 03:45 | `feeds.link_for_all_users` |
 | 04:00 / 04:15 / 04:30 | audit / revoked token / scan run purge |
@@ -320,7 +398,17 @@ Tümü `.env.example`'da açıklamalı. Özet:
 | `SCAN_RUN_RETENTION_DAYS` | 30 | 0 = sonsuza dek sakla |
 | `SCAN_FANOUT_WINDOW_SECONDS` | 1800 | Gecelik dağıtım penceresi |
 | `LLM_PROVIDER` | `openrouter` | `openrouter` \| `ollama` \| `anthropic` |
+| `SCRAPE_QUOTA_<KAYNAK>_WEEKLY` | 0 | Haftalık **istek** bütçesi. 0 = ölçümsüz (bugün tüm kaynaklar) |
+| `SCRAPE_QUOTA_<KAYNAK>_WEEKLY_BYTES` | 0 | Haftalık **byte** bütçesi (EPO OPS bant genişliği ölçer) |
+| `EPO_OPS_KEY` / `EPO_OPS_SECRET` | boş | Faz 5.2 — patent kaynağı, henüz adaptörü yok |
+| `PATENTSVIEW_API_KEY` | boş | Faz 5.2 — aynı |
+| `SCOPUS_API_KEY` / `SCOPUS_INSTTOKEN` | boş | Faz 5.4 — kurum IP'sine bağlı, varsayılan kapalı |
 
 > ⚠️ `SCRAPE_SOURCES`, `SEMANTIC_SCHOLAR_API_KEY` ve `NCBI_API_KEY` **`BaseConfig`'i
 > atlar**, doğrudan `os.getenv` ile okunur. Testte `monkeypatch.setitem(app.config, ...)`
-> işe yaramaz; `monkeypatch.setenv` kullan.
+> işe yaramaz; `monkeypatch.setenv` kullan. Kota değişkenleri (`SCRAPE_QUOTA_*`) bunun
+> **tersine** `_cfg` üzerinden `app.config`'ten okunur — testte `setitem` doğru yoldur.
+>
+> Anahtar gerektiren kaynakların açık/kapalı durumu env'de değil, admin panelindeki
+> `patents_enabled` / `scopus_enabled` sistem ayarlarındadır (§5). Env yalnızca
+> **anahtarı** taşır; anahtar yoksa kaynak zaten listelenmez.

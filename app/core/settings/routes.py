@@ -491,9 +491,11 @@ def system():
             abort(403)
 
     from app.core.settings.service import get_system_setting, set_system_setting
-    from app.core.settings.system_forms import SystemSettingsForm
+    from app.core.settings.system_forms import build_system_settings_form
+    from app.core.settings.toggle_registry import all_system_toggles, toggle_credentials_ok
 
-    form = SystemSettingsForm()
+    toggles = all_system_toggles()
+    form = build_system_settings_form()
     if request.method == "GET":
         form.app_name.data = get_system_setting("app_name", "ScrapeMind")
         form.default_locale.data = get_system_setting("default_locale", "tr")
@@ -502,6 +504,11 @@ def system():
         form.max_user_channels.data = get_system_setting(
             "max_user_channels", current_app.config.get("MAX_USER_CHANNELS", 10)
         )
+        for toggle in toggles:
+            # Default False, not True: a module-registered toggle gates
+            # something metered or licensed, so "never configured" has to mean
+            # off (see toggle_registry's docstring).
+            form[toggle.key].data = bool(get_system_setting(toggle.key, False))
 
     if form.validate_on_submit():
         set_system_setting("app_name", form.app_name.data.strip(), updated_by_id=current_user.id)
@@ -517,11 +524,19 @@ def system():
         set_system_setting(
             "max_user_channels", int(form.max_user_channels.data), updated_by_id=current_user.id
         )
+        for toggle in toggles:
+            set_system_setting(
+                toggle.key, bool(form[toggle.key].data), updated_by_id=current_user.id
+            )
         log_action("system_settings.update", entity_type="system_settings", entity_id=None)
         flash(_("System settings saved."), "success")
         return redirect(url_for("settings.system"))
 
-    return render_template("settings/system.html", form=form)
+    return render_template(
+        "settings/system.html",
+        form=form,
+        system_toggles=[(t, toggle_credentials_ok(t)) for t in toggles],
+    )
 
 
 @settings_bp.route("/theme", methods=["POST"])

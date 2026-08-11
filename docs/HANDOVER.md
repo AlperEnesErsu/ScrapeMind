@@ -31,14 +31,18 @@ ve YouTube kanal aboneliği + transkript özeti var.
 | Tarama geçmişi (`ScanRun`) + canlı durum paneli | ✅ |
 | Günlük/haftalık LLM özeti (digest) | ✅ |
 | Çok sağlayıcılı LLM (OpenRouter/Ollama/Anthropic) + kullanıcı bazlı şifreli anahtar | ✅ |
+| Kimlik/admin kapılı kaynak altyapısı + haftalık kalıcı kota (Faz 5.1) | ✅ altyapı hazır, kullanan kaynak henüz yok — bkz. §5.0 |
 
-**Doğrulama durumu (6 Ağustos 2026):**
+**Doğrulama durumu (10 Ağustos 2026):**
 
 ```
-pytest tests/ -q      →  626 passed in ~78s
-ruff check app/       →  All checks passed!
-black --check app/    →  121 files would be left unchanged
+pytest tests/ -q      →  704 passed in ~89s
+ruff check app/ tests/  →  All checks passed!
+black --check app/ tests/ →  174 files would be left unchanged
 ```
+
+> ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
+> var ve formatlayıcı 21 eski migration'ı gereksizce yeniden yazar.
 
 Yani devraldığında yeşil bir ağaç var. Uyarıların çoğu SQLAlchemy `Query.get()`
 `LegacyAPIWarning`'i — testlerde, davranışı etkilemiyor, ama `Session.get()`'e
@@ -100,7 +104,14 @@ Test DB ayrı (`scrapemind_test`), her oturumda `create_all`/`drop_all`.
 
 ## 3. Commit Geçmişi
 
-Dal `main`'in **9 commit** önünde. Önceki devir turunun dalı
+> **10 Ağustos 2026 güncellemesi.** Aşağıdaki dal (`feat/openalex-crossref-youtube-channels`)
+> `main`'e merge edildi. Merge sırasında iki isim çakışması vardı — dal hâlâ
+> `agent_reach_source` diyordu, `main` onu `external_sources`'a çevirmişti — ve merge
+> `tests/conftest.py`'deki SQLite fallback'ini yanlışlıkla geri getirmişti (testler
+> sessizce Postgres yerine SQLite'a düşüyordu). İkisi de düzeltildi.
+> Güncel dal: **`feat/phase5-key-gated-sources`**, 4 commit, Faz 5.1 (bkz. §5.0).
+
+Dal `main`'in **9 commit** önündeydi. Önceki devir turunun dalı
 (`feat/homepage-source-selection`, 17 commit) tamamen `main`'e merge edildi —
 o turun "ara commit'ler yeşil değil, bisect güvenilmez" uyarısı artık geçersiz.
 
@@ -205,6 +216,27 @@ ile güncelle. Örneklerde `example.com` / `example.test` kullan.
 **[docs/PHASE5.md](PHASE5.md)** — patent kaynakları (EPO OPS + PatentsView), dergi
 kalite katmanı (Scimago quartile + atıf sayısı), yazar takibi ve admin panelinden
 açılan opsiyonel Scopus. Kapsam, 4 artımlı adım, doğrulama ve devir notları orada.
+
+> **10 Ağustos 2026 — Faz 5.1 bitti** (`feat/phase5-key-gated-sources`). Diğer üç
+> adımın ön koşulu olan altyapı hazır:
+> - `SOURCE_META`'da `requires_key` + `credentials_ok()` ve `requires_admin_optin`
+>   kapıları; `enabled_sources()` anahtarsız kaynağı hiç listelemiyor,
+>   `effective_source_prefs` admin opt-in'i açık `UserSource` satırının **üstünde**
+>   tutuyor (bkz. [SCRAPING.md](SCRAPING.md) §5).
+> - `SourceQuotaUsage` + `ratelimit.consume_quota` — haftalık, Postgres'te, **fail-closed**,
+>   tek statement'lık atomik harcama. Migration `c7e4b8d3a915`.
+> - Core'da `toggle_registry.py`: modüller sistem ayarları sayfasına boolean
+>   ekleyebiliyor, core hiçbir modülü import etmeden render ediyor. Scrape iki toggle
+>   kaydediyor (`patents_enabled`, `scopus_enabled`), anahtar yoksa yanında uyarı çıkıyor.
+> - Admin overview'da haftalık kota kartı.
+>
+> **Henüz hiçbir kaynak bu kapıları kullanmıyor** — kullananlar 5.2 ve 5.4'te geliyor.
+> Testler bu yüzden sentetik bir kaynak kaydediyor
+> ([test_source_gating.py](../tests/modules/test_source_gating.py)); mekanizma,
+> onu ilk kullanan adaptörden bağımsız olarak sabitlenmiş oluyor.
+>
+> Sırada **5.2 (patent kaynakları + prior-art arama)** var. `.env.example`'daki
+> `EPO_OPS_*`, `PATENTSVIEW_API_KEY` ve `SCRAPE_QUOTA_*` placeholder'ları bekliyor.
 
 İki şey buradaki listeyi etkiliyor:
 - Aşağıdaki **§5.4 ② (yazar takibi)** Faz 5.4'e taşındı, orada planlandı.

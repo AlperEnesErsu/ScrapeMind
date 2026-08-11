@@ -2722,6 +2722,7 @@ msgstr "Open your read-later list"
 
 msgid "Open your academic notes"
 msgstr "Open your academic notes"
+
 msgid "YouTube video search and metadata"
 msgstr "YouTube video search and metadata"
 
@@ -2772,6 +2773,41 @@ msgstr "manually added"
 
 msgid "Manually added"
 msgstr "Manually added"
+
+msgid "Optional data sources"
+msgstr "Optional data sources"
+
+msgid "API keys are not configured — turning this on has no effect yet."
+msgstr "API keys are not configured — turning this on has no effect yet."
+
+msgid "Patent sources"
+msgstr "Patent sources"
+
+msgid "Scan EPO OPS and PatentsView for patents matching user interests."
+msgstr "Scan EPO OPS and PatentsView for patents matching user interests."
+
+msgid "Set EPO_OPS_KEY + EPO_OPS_SECRET or PATENTSVIEW_API_KEY."
+msgstr "Set EPO_OPS_KEY + EPO_OPS_SECRET or PATENTSVIEW_API_KEY."
+
+msgid "Scopus (discovery only)"
+msgstr "Scopus (discovery only)"
+
+msgid ""
+"Off by default. Scopus keys are bound to an institution IP and its "
+"licence forbids storing abstracts — see docs/PHASE5.md."
+msgstr ""
+"Off by default. Scopus keys are bound to an institution IP and its "
+"licence forbids storing abstracts — see docs/PHASE5.md."
+
+msgid "Set SCOPUS_API_KEY (and SCOPUS_INSTTOKEN off campus)."
+msgstr "Set SCOPUS_API_KEY (and SCOPUS_INSTTOKEN off campus)."
+
+msgid "Source quotas this week"
+msgstr "Source quotas this week"
+
+#, python-format
+msgid "Resets %(when)s"
+msgstr "Resets %(when)s"
 
 #~ msgid "Username or Email"
 #~ msgstr "Username"

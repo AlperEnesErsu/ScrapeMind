@@ -310,6 +310,38 @@ ACTION_LABELS = {
 }
 
 
+def _source_quota_rows() -> list[dict]:
+    """This week's consumption for every source that actually has a weekly
+    budget (Faz 5.1).
+
+    Sources with no configured quota — which is all of them until the patent
+    and Scopus adapters land — are omitted rather than listed as "0 / 0": a
+    panel of meaningless zeroes trains admins to ignore the panel.
+
+    Never raises; the admin overview must render even when the quota table is
+    unreachable.
+    """
+    from datetime import timedelta
+
+    try:
+        from app.modules.scrape.ratelimit import quota_byte_limit, quota_limit, quota_usage
+        from app.modules.scrape.sources import SOURCE_META
+
+        rows = []
+        for name in sorted(SOURCE_META):
+            if quota_limit(name) <= 0 and quota_byte_limit(name) <= 0:
+                continue
+            usage = quota_usage(name)
+            usage["label"] = SOURCE_META[name].get("label", name)
+            # The panel says when the budget frees up, which is the *end* of
+            # the current window, not its start.
+            usage["resets_at"] = usage["window_start"] + timedelta(days=7)
+            rows.append(usage)
+        return rows
+    except Exception:  # noqa: BLE001 — a status panel must not break a render
+        return []
+
+
 @dashboard_bp.route("/admin/overview")
 @login_required
 @permission_required("dashboard.admin")
@@ -405,6 +437,7 @@ def admin_overview():
 
     return render_template(
         "dashboard/admin_overview.html",
+        source_quotas=_source_quota_rows(),
         metrics=metrics,
         recent_logs=recent_logs,
         last_login_user=last_login_user,

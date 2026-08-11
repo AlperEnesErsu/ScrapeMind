@@ -12,11 +12,18 @@ counter per (bucket, window), shared by every worker.
 Fail-open by design, same contract as the scrape lock in `service.py`: if Redis
 is unreachable we let the request through rather than stalling every scan. A
 missing rate limiter degrades to today's behaviour, not to an outage.
+
+The bottom half of this module (`consume_quota` and friends, Faz 5.1) is the
+deliberate exception: cumulative weekly budgets for licensed sources live in
+Postgres and fail **closed**. Overrunning a contracted quota because a cache
+was down is worse than skipping a night's scan. Both are called together —
+`<name>_slot()` for the instantaneous rate, `consume_quota()` for the budget.
 """
 
 from __future__ import annotations
 
 import time
+from datetime import UTC, datetime, timedelta
 
 import structlog
 from flask import current_app
@@ -140,6 +147,183 @@ def github_reach_slot() -> bool:
 
 def youtube_channel_slot() -> bool:
     return acquire_slot("youtube_channel", int(_cfg("SCRAPE_RATE_YT_CHANNEL_PER_MIN", 30)), 60)
+
+
+# ----------------------------------------------------------------------------
+# Cumulative weekly quotas — Postgres, fail-closed (Faz 5.1)
+# ----------------------------------------------------------------------------
+#
+# Everything above is a per-second/per-minute *rate* limiter in Redis and fails
+# open. Everything below is a per-week *budget* in Postgres and fails closed.
+# See `SourceQuotaUsage`'s docstring for why the two cannot be the same thing.
+
+
+def quota_window_start(now: datetime | None = None) -> datetime:
+    """Start of the quota week containing `now`: Monday 00:00 UTC.
+
+    UTC, not `BABEL_DEFAULT_TIMEZONE`. The published quotas belong to the
+    upstream provider, and the reset boundary has to be the same instant for
+    every worker regardless of where it runs — this is the one place in the
+    codebase where the local timezone would be actively wrong.
+    """
+    now = now or datetime.now(UTC)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    now = now.astimezone(UTC)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return midnight - timedelta(days=midnight.weekday())
+
+
+def quota_limit(name: str) -> int:
+    """Weekly request budget for `name` from SCRAPE_QUOTA_<NAME>_WEEKLY.
+
+    0 (the default) means unmetered — every source through Faz 4 — and
+    `consume_quota` lets those through untouched rather than writing rows
+    nothing will ever read.
+    """
+    return int(_cfg(f"SCRAPE_QUOTA_{name.upper()}_WEEKLY", 0) or 0)
+
+
+def quota_byte_limit(name: str) -> int:
+    """Weekly byte budget for `name` from SCRAPE_QUOTA_<NAME>_WEEKLY_BYTES.
+    0 means the source meters calls, not bandwidth."""
+    return int(_cfg(f"SCRAPE_QUOTA_{name.upper()}_WEEKLY_BYTES", 0) or 0)
+
+
+def consume_quota(name: str, *, cost: int = 1, bytes_: int = 0) -> bool:
+    """Spend `cost` requests (and `bytes_` bytes) from `name`'s weekly budget.
+
+    Returns True when the spend fit inside the budget and was recorded, False
+    when it would exceed it — in which case the caller must raise
+    `SourceThrottledError` rather than return an empty list, so the run is
+    labelled "partial" instead of lying about having found nothing.
+
+    Atomic by construction: the spend and the limit check are one
+    `UPDATE ... WHERE used + cost <= limit RETURNING id` statement, so two
+    workers racing on the last slot cannot both win. The row is created on
+    first use of each week; a lost INSERT race is caught and retried as an
+    UPDATE against the row the other worker just committed.
+
+    **Fail-closed.** Any database error returns False. An unmetered source
+    (limit 0 and byte limit 0) returns True without touching the database.
+    """
+    limit = quota_limit(name)
+    byte_limit = quota_byte_limit(name)
+    if limit <= 0 and byte_limit <= 0:
+        return True
+
+    from sqlalchemy import text
+
+    from app.extensions import db
+
+    window = quota_window_start()
+    # An unset budget on one axis must not block the other: a source metered
+    # only on bytes has limit 0, and `used + cost <= 0` would reject every
+    # call. Treat 0 as "no ceiling on this axis" by comparing against a bound
+    # the counter cannot reach.
+    req_ceiling = limit if limit > 0 else None
+    byte_ceiling = byte_limit if byte_limit > 0 else None
+
+    conditions = []
+    params = {
+        "name": name,
+        "window": window,
+        "cost": int(cost),
+        "bytes": int(bytes_),
+    }
+    if req_ceiling is not None:
+        conditions.append("requests_used + :cost <= :req_ceiling")
+        params["req_ceiling"] = req_ceiling
+    if byte_ceiling is not None:
+        conditions.append("bytes_used + :bytes <= :byte_ceiling")
+        params["byte_ceiling"] = byte_ceiling
+    where_budget = " AND ".join(conditions)
+
+    try:
+        for _attempt in range(2):
+            row = db.session.execute(
+                text(f"""
+                    UPDATE source_quota_usage
+                       SET requests_used = requests_used + :cost,
+                           bytes_used    = bytes_used + :bytes,
+                           updated_at    = now()
+                     WHERE source_name = :name
+                       AND window_start = :window
+                       AND {where_budget}
+                 RETURNING id
+                    """),  # noqa: S608 — `where_budget` is built from literals above
+                params,
+            ).first()
+            if row is not None:
+                db.session.commit()
+                return True
+
+            # No row updated: either this week's row does not exist yet, or the
+            # budget is genuinely spent. Only the first case is retryable.
+            exists = db.session.execute(
+                text(
+                    "SELECT 1 FROM source_quota_usage "
+                    "WHERE source_name = :name AND window_start = :window"
+                ),
+                {"name": name, "window": window},
+            ).first()
+            if exists is not None:
+                db.session.rollback()
+                logger.warning("source_quota_exhausted", source=name, window=window.isoformat())
+                return False
+
+            try:
+                db.session.execute(
+                    text(
+                        "INSERT INTO source_quota_usage "
+                        "(source_name, window_start, requests_used, bytes_used, "
+                        " created_at, updated_at) "
+                        "VALUES (:name, :window, 0, 0, now(), now()) "
+                        "ON CONFLICT (source_name, window_start) DO NOTHING"
+                    ),
+                    {"name": name, "window": window},
+                )
+                db.session.commit()
+            except Exception:  # noqa: BLE001 — another worker inserted it first
+                db.session.rollback()
+        return False
+    except Exception:  # noqa: BLE001 — see the docstring: fail closed
+        logger.exception("source_quota_check_failed", source=name)
+        try:
+            db.session.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        return False
+
+
+def quota_usage(name: str) -> dict:
+    """This week's consumption for `name`, for the admin health panel.
+
+    Shape: ``{"source": str, "window_start": datetime, "requests_used": int,
+    "requests_limit": int, "bytes_used": int, "bytes_limit": int}``. Returns
+    zeroed counters (never raises) when nothing has been spent yet or the
+    lookup fails — a status panel must not be able to break a render.
+    """
+    window = quota_window_start()
+    out = {
+        "source": name,
+        "window_start": window,
+        "requests_used": 0,
+        "requests_limit": quota_limit(name),
+        "bytes_used": 0,
+        "bytes_limit": quota_byte_limit(name),
+    }
+    try:
+        from app.modules.scrape.models import SourceQuotaUsage
+
+        row = SourceQuotaUsage.query.filter_by(source_name=name, window_start=window).first()
+    except Exception:  # noqa: BLE001
+        logger.warning("source_quota_read_failed", source=name)
+        return out
+    if row is not None:
+        out["requests_used"] = int(row.requests_used or 0)
+        out["bytes_used"] = int(row.bytes_used or 0)
+    return out
 
 
 def _cfg(key: str, default):

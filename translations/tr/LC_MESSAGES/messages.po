@@ -2739,6 +2739,7 @@ msgstr "Sonra oku listenizi açın"
 
 msgid "Open your academic notes"
 msgstr "Akademik notlarınızı açın"
+
 msgid "YouTube video search and metadata"
 msgstr "YouTube video aramaları ve içerik bilgileri"
 
@@ -2791,6 +2792,43 @@ msgstr "elle eklendi"
 
 msgid "Manually added"
 msgstr "Elle eklendi"
+
+msgid "Optional data sources"
+msgstr "Opsiyonel veri kaynakları"
+
+msgid "API keys are not configured — turning this on has no effect yet."
+msgstr "API anahtarları yapılandırılmamış — bunu açmanın şimdilik bir etkisi yok."
+
+msgid "Patent sources"
+msgstr "Patent kaynakları"
+
+msgid "Scan EPO OPS and PatentsView for patents matching user interests."
+msgstr ""
+"Kullanıcı ilgi alanlarıyla eşleşen patentler için EPO OPS ve "
+"PatentsView'i tara."
+
+msgid "Set EPO_OPS_KEY + EPO_OPS_SECRET or PATENTSVIEW_API_KEY."
+msgstr "EPO_OPS_KEY + EPO_OPS_SECRET veya PATENTSVIEW_API_KEY tanımla."
+
+msgid "Scopus (discovery only)"
+msgstr "Scopus (yalnızca keşif)"
+
+msgid ""
+"Off by default. Scopus keys are bound to an institution IP and its "
+"licence forbids storing abstracts — see docs/PHASE5.md."
+msgstr ""
+"Varsayılan kapalı. Scopus anahtarları kurum IP'sine bağlıdır ve lisansı "
+"özetlerin saklanmasını yasaklar — bkz. docs/PHASE5.md."
+
+msgid "Set SCOPUS_API_KEY (and SCOPUS_INSTTOKEN off campus)."
+msgstr "SCOPUS_API_KEY tanımla (kampüs dışında ayrıca SCOPUS_INSTTOKEN)."
+
+msgid "Source quotas this week"
+msgstr "Bu haftaki kaynak kotaları"
+
+#, python-format
+msgid "Resets %(when)s"
+msgstr "%(when)s tarihinde sıfırlanır"
 
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"

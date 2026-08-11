@@ -33,7 +33,7 @@ from app.modules.scrape.models import (
     UserSource,
 )
 from app.modules.scrape.net_guard import is_public_http_url
-from app.modules.scrape.sources import SOURCE_META, enabled_sources
+from app.modules.scrape.sources import SOURCE_META, admin_optin_key, enabled_sources
 from app.modules.scrape.sources.payload import PaperPayload
 from app.modules.scrape.sources.rss_source import fetch_feed_conditional
 
@@ -51,6 +51,24 @@ FEED_CAP_MESSAGE = "Feed limit reached. Remove one before adding another."
 # ----------------------------------------------------------------------------
 
 
+def admin_opted_in(setting_key: str) -> bool:
+    """Whether an admin has switched on the `requires_admin_optin` gate named
+    by `setting_key` (Faz 5.1).
+
+    Defaults to False — a licensed or metered source stays off until someone
+    with `system.manage` deliberately turns it on. A failed read is False for
+    the same reason `ratelimit.consume_quota` is fail-closed: when the answer
+    is "we can't tell", not calling a paid API is the safe direction.
+    """
+    from app.core.settings.service import get_system_setting
+
+    try:
+        return bool(get_system_setting(setting_key, False))
+    except Exception:  # noqa: BLE001 — see the docstring: fail closed
+        logger.warning("admin_optin_read_failed", setting_key=setting_key)
+        return False
+
+
 def list_user_source_prefs(user: User) -> dict[str, bool]:
     """Map of source_name -> enabled for this user's explicit choices only.
     Sources without a row are absent here (they default to enabled)."""
@@ -64,9 +82,17 @@ def effective_source_prefs(user: User, *, user_topics: list[str] | None = None) 
     `UserSource` override.
 
     Resolution order per source:
+      0. `requires_admin_optin` and the admin has not opted in — off, and the
+         explicit row in step 1 does not get to override it (Faz 5.1). This
+         gate is a deployment-level licensing/cost decision, so it outranks
+         user preference; a stale `UserSource` row from before the admin
+         turned the source off must not keep scraping it.
       1. Explicit `UserSource` row — always wins, whichever way it's set.
-      2. No row + `category == "academic"` — on (unchanged Faz 1/2 behaviour;
-         academic databases are relevant regardless of specialty).
+      2. No row + `category == "academic"` / `"patent"` — on (unchanged Faz 1/2
+         behaviour; these databases are relevant regardless of specialty)…
+         except for a source still carrying an admin opt-in, which is
+         **default off** even once opted into: someone paying per request
+         should turn it on deliberately, not discover it in a bill.
       3. No row + `category == "feed"` — on only if the source's `topics`
          intersect `classify_user_topics(user)` (Faz 3's actual point: a
          history researcher doesn't get AI industry feeds default-on).
@@ -80,9 +106,21 @@ def effective_source_prefs(user: User, *, user_topics: list[str] | None = None) 
     prefs = list_user_source_prefs(user)
     out: dict[str, bool] = {}
     suggested: set[str] | None = None
+    # One SystemSettings read per distinct gate, not per gated source.
+    optin_cache: dict[str, bool] = {}
     for name in enabled_sources():
+        optin_key = admin_optin_key(name)
+        if optin_key is not None:
+            if optin_key not in optin_cache:
+                optin_cache[optin_key] = admin_opted_in(optin_key)
+            if not optin_cache[optin_key]:
+                out[name] = False
+                continue
         if name in prefs:
             out[name] = prefs[name]
+            continue
+        if optin_key is not None:
+            out[name] = False
             continue
         meta = SOURCE_META.get(name, {})
         if meta.get("category") != "feed":

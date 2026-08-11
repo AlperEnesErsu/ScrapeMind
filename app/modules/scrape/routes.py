@@ -172,6 +172,43 @@ def _register_tabs():
     register_profile_tab("ai", "bi-robot", "AI Settings", _ai_ctx)
 
 
+def _register_system_toggles():
+    """Register scrape's deployment-level source switches on the core system
+    settings page (Faz 5.1).
+
+    The switches live here, not in `SystemSettingsForm`, because what they mean
+    — which APIs they gate, which env vars back them — is scrape's business and
+    `app/core/` never imports from `app/modules/` (CLAUDE.md rule 1).
+
+    The `credentials_ok` probes read env directly, matching the convention
+    `SCRAPE_SOURCES` / `SEMANTIC_SCHOLAR_API_KEY` already use: these are
+    secrets, and `SystemSettings.value` is plain JSON in a table admins can
+    read, so no key is ever stored there — only the boolean.
+    """
+    import os
+
+    from app.core.settings.toggle_registry import register_system_toggle
+
+    register_system_toggle(
+        "patents_enabled",
+        label="Patent sources",
+        help_text="Scan EPO OPS and PatentsView for patents matching user interests.",
+        credentials_ok=lambda: bool(os.getenv("EPO_OPS_KEY") and os.getenv("EPO_OPS_SECRET"))
+        or bool(os.getenv("PATENTSVIEW_API_KEY")),
+        missing_credentials_hint="Set EPO_OPS_KEY + EPO_OPS_SECRET or PATENTSVIEW_API_KEY.",
+    )
+    register_system_toggle(
+        "scopus_enabled",
+        label="Scopus (discovery only)",
+        help_text=(
+            "Off by default. Scopus keys are bound to an institution IP and its "
+            "licence forbids storing abstracts — see docs/PHASE5.md."
+        ),
+        credentials_ok=lambda: bool(os.getenv("SCOPUS_API_KEY")),
+        missing_credentials_hint="Set SCOPUS_API_KEY (and SCOPUS_INSTTOKEN off campus).",
+    )
+
+
 def _render_settings_tab(tab: str, **ctx):
     return render_template(f"settings/_tab_{tab}.html", active_tab=tab, **ctx)
 
@@ -1334,6 +1371,8 @@ def export_notes_route(user_paper_id: int):
     )
 
 
-# Side-effect: registers the "AI Settings" profile tab. Runs when this module
-# is imported (app/__init__.py imports scrape_bp from here at startup).
+# Side-effect: registers the "AI Settings" profile tab and the deployment-level
+# source toggles. Runs when this module is imported (app/__init__.py imports
+# scrape_bp from here at startup).
 _register_tabs()
+_register_system_toggles()
