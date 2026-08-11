@@ -149,6 +149,20 @@ class BaseConfig:
     # a separate bucket from SCRAPE_RATE_YOUTUBE_PER_MIN (external_sources's
     # video *search*): one video summary per new upload, not a search call.
     SCRAPE_RATE_YT_CHANNEL_PER_MIN = int(os.getenv("SCRAPE_RATE_YT_CHANNEL_PER_MIN", "30"))
+    # Patent sources (Faz 5.2). EPO publishes no per-second figure, only the
+    # weekly 4 GB tier and a fair-use clause, so the per-minute shape here is
+    # conservative and the real ceiling is the byte budget below.
+    SCRAPE_RATE_EPO_OPS_PER_MIN = int(os.getenv("SCRAPE_RATE_EPO_OPS_PER_MIN", "10"))
+    SCRAPE_RATE_PATENTSVIEW_PER_MIN = int(os.getenv("SCRAPE_RATE_PATENTSVIEW_PER_MIN", "45"))
+
+    # Cumulative weekly budgets (Faz 5.1 — Postgres, fail-closed). Unlike the
+    # rate limits above, 0 means unmetered. EPO's free tier is 4 GB/week; the
+    # default here leaves headroom rather than claiming the whole allowance,
+    # because the same key may be shared with another tool.
+    SCRAPE_QUOTA_EPO_OPS_WEEKLY_BYTES = int(
+        os.getenv("SCRAPE_QUOTA_EPO_OPS_WEEKLY_BYTES", str(3 * 1024**3))
+    )
+    SCRAPE_QUOTA_PATENTSVIEW_WEEKLY = int(os.getenv("SCRAPE_QUOTA_PATENTSVIEW_WEEKLY", "0"))
 
     # Redis cache for RBAC permission sets (see app/core/cache.py). Purely an
     # optimisation: with CACHE_ENABLED=false, or Redis unreachable, everything

@@ -149,6 +149,18 @@ def youtube_channel_slot() -> bool:
     return acquire_slot("youtube_channel", int(_cfg("SCRAPE_RATE_YT_CHANNEL_PER_MIN", 30)), 60)
 
 
+def epo_ops_slot() -> bool:
+    """EPO publishes no per-second figure, only the weekly 4 GB tier and a
+    "fair use" clause. 10/min is a conservative shape for a nightly batch —
+    the real ceiling is the byte budget in `consume_quota`."""
+    return acquire_slot("epo_ops", int(_cfg("SCRAPE_RATE_EPO_OPS_PER_MIN", 10)), 60)
+
+
+def patentsview_slot() -> bool:
+    """PatentsView documents 45 requests/minute."""
+    return acquire_slot("patentsview", int(_cfg("SCRAPE_RATE_PATENTSVIEW_PER_MIN", 45)), 60)
+
+
 # ----------------------------------------------------------------------------
 # Cumulative weekly quotas — Postgres, fail-closed (Faz 5.1)
 # ----------------------------------------------------------------------------
