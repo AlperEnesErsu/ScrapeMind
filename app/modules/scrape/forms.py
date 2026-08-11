@@ -1,6 +1,6 @@
 from flask_babel import lazy_gettext as _l
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, SubmitField
+from wtforms import BooleanField, PasswordField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
 
 
@@ -16,6 +16,23 @@ class AiSettingsForm(FlaskForm):
     )
     model = StringField(_l("Model override (optional)"), validators=[Optional(), Length(max=128)])
     submit = SubmitField(_l("Save"))
+
+
+class PriorArtForm(FlaskForm):
+    """Free-text invention idea for the prior-art search (Faz 5.2).
+
+    A textarea rather than a keyword box on purpose: the patent adapters take
+    keywords, but the LLM novelty assessment reads the *description*, and
+    asking for the idea once serves both — the route derives search terms from
+    it. `Length(max=4000)` is a prompt-cost guard, not a domain limit.
+    """
+
+    idea = TextAreaField(
+        _l("Describe your invention idea"),
+        validators=[DataRequired(), Length(min=10, max=4000)],
+    )
+    assess = BooleanField(_l("Also assess novelty with AI"), default=True)
+    submit = SubmitField(_l("Search prior art"))
 
 
 class UserFeedForm(FlaskForm):

@@ -78,6 +78,13 @@ MAX_TOKENS_VIDEO_SUMMARY = 1200
 # prompt, same cost-guard reasoning as DIGEST_MAX_ITEMS/FEED_SCORE_MAX_ITEMS.
 VIDEO_TRANSCRIPT_PROMPT_CHARS = 12_000
 
+# Prior-art novelty assessment (Faz 5.2). Fewer items than the digest: the
+# user is reading every one of these carefully, and a long list dilutes the
+# comparison the assessment is actually for.
+MAX_TOKENS_NOVELTY = 1200
+NOVELTY_MAX_ITEMS = 12
+NOVELTY_ABSTRACT_CHARS = 700
+
 
 # ----------------------------------------------------------------------------
 # Provider abstraction (Bölüm B0) — Anthropic / OpenRouter / Ollama
@@ -824,6 +831,74 @@ def summarize_web_content(title: str, content: str, *, user=None) -> str | None:
     if answer is None:
         return None
     return answer.strip() or None
+
+
+_NOVELTY_SYSTEM_TR = (
+    "Sen bir patent ön araştırma asistanısın. Kullanıcı bir buluş fikrini "
+    "anlatacak, ardından bu fikirle ilgili olabilecek yayınlanmış patentlerin "
+    "listesini vereceğim. Görevin, fikrin bu patentler karşısında ne kadar "
+    "yeni göründüğünü değerlendirmek.\n\n"
+    "Kurallar:\n"
+    "- Sadece sana verilen patent listesine dayan. Listede olmayan bir "
+    "patenti varmış gibi anma.\n"
+    "- En yakın patentleri numaralarıyla göster ve neden yakın olduklarını yaz.\n"
+    "- Hukuki tavsiye verme. Bu bir patentlenebilirlik görüşü değil, bir "
+    "okuma yardımıdır; sonuç mutlaka bir patent vekiliyle doğrulanmalıdır.\n"
+    "- Emin değilsen bunu açıkça söyle.\n\n"
+    'Yanıtı şu JSON şemasıyla ver: {"verdict": "...", "confidence": '
+    '"low|medium|high", "closest": [{"id": "...", "why": "..."}], '
+    '"differentiators": ["..."], "caveats": "..."}\n'
+    '"verdict" 2-3 cümlelik düz Türkçe bir değerlendirme olsun. '
+    '"differentiators" fikri listeden ayıran noktalar; hiçbiri yoksa boş '
+    "liste ver — uydurma."
+)
+
+
+def analyze_novelty(idea: str, patents: list, *, user=None) -> dict | None:
+    """LLM assessment of how novel `idea` looks against `patents`.
+
+    `patents` is a list of `PaperPayload` (the live prior-art search never
+    persists — see `service.search_patents_live`), so this reads payload
+    attributes, not model columns.
+
+    Returns the parsed JSON dict, or None when AI is unavailable or the model
+    did not return usable JSON. None is a normal outcome: the page still shows
+    the patent list, which is the part with actual evidentiary value. The
+    assessment is a reading aid layered on top.
+
+    Deliberately **not** cached. Prior-art queries are one-off and the answer
+    depends on the exact wording of the idea; a cache keyed on anything less
+    than the full text would hand back an assessment of a different question.
+    """
+    idea = (idea or "").strip()
+    if not idea or not patents:
+        return None
+
+    lines = []
+    for p in patents[:NOVELTY_MAX_ITEMS]:
+        assignees = [
+            c[len("assignee:") :]
+            for c in (getattr(p, "categories", None) or [])
+            if isinstance(c, str) and c.startswith("assignee:")
+        ]
+        year = getattr(getattr(p, "published_at", None), "year", None)
+        owner = f" · {assignees[0]}" if assignees else ""
+        lines.append(
+            f"- [{p.external_id}] {p.title} ({year or 'tarih yok'}){owner}\n"
+            f"  {_truncate(p.abstract, NOVELTY_ABSTRACT_CHARS) or 'Özet yok.'}"
+        )
+
+    user_msg = "Buluş fikri:\n" + idea + "\n\nİlgili patentler:\n" + "\n".join(lines)
+
+    parsed, _raw = _call_llm(
+        system=_NOVELTY_SYSTEM_TR,
+        user_msg=user_msg,
+        max_tokens=MAX_TOKENS_NOVELTY,
+        user=user,
+    )
+    if not isinstance(parsed, dict):
+        return None
+    return parsed
 
 
 # ----------------------------------------------------------------------------
