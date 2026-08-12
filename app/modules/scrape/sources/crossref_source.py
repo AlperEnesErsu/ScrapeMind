@@ -58,7 +58,12 @@ _MAX_CATEGORIES = 8
 
 # Only the fields the adapter actually consumes — smaller responses, and one
 # less place a Crossref schema change can silently start returning nothing.
-_SELECT = "DOI,title,abstract,author,issued,URL,link,subject,type,container-title"
+_SELECT = (
+    "DOI,title,abstract,author,issued,URL,link,subject,type,container-title,"
+    # Faz 5.3 — journal quality. `ISSN` is the venue's identifier list;
+    # `is-referenced-by-count` is Crossref's citation count.
+    "ISSN,is-referenced-by-count"
+)
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
@@ -174,6 +179,39 @@ def _title(item: dict) -> str | None:
     return None
 
 
+def _issn(item: dict) -> str | None:
+    """First usable ISSN from Crossref's `ISSN` list (Faz 5.3).
+
+    Crossref lists a journal's ISSNs (print and electronic) without saying
+    which is the linking one — it has no `issn_l` equivalent. Taking the first
+    well-formed entry means a journal with separate print/online ISSNs can
+    land under either, so some papers will miss a `journals` row that OpenAlex
+    would have matched. Accepted deliberately: OpenAlex covers the same works
+    and its `issn_l` wins the fill-only race whenever both report, so this is
+    a fallback for the Crossref-only tail, not the primary path.
+    """
+    for raw in item.get("ISSN") or []:
+        issn = (raw or "").strip().upper()
+        if len(issn) == 9 and issn[4] == "-":
+            return issn
+    return None
+
+
+def _cited_by_count(item: dict) -> int | None:
+    """`is-referenced-by-count` — Crossref's name for citations.
+
+    None (not 0) when absent, so a response that omits the field cannot wipe
+    a real number recorded by another source (see `_REFRESHABLE_FIELDS`).
+    """
+    raw = item.get("is-referenced-by-count")
+    if raw is None:
+        return None
+    try:
+        return max(0, int(raw))
+    except (TypeError, ValueError):
+        return None
+
+
 def _to_payload(item: dict) -> PaperPayload | None:
     # The DOI *is* Crossref's identity for a work — a record without one has
     # nothing stable to key on, so it's skipped rather than kept with a
@@ -198,6 +236,8 @@ def _to_payload(item: dict) -> PaperPayload | None:
         published_at=_parse_date(item),
         categories=[c for c in (item.get("subject") or []) if c][:_MAX_CATEGORIES],
         doi=doi,
+        issn_l=_issn(item),
+        cited_by_count=_cited_by_count(item),
     )
 
 

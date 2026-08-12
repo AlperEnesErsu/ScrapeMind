@@ -416,11 +416,13 @@ _OA_ITEM = {
     "primary_location": {
         "landing_page_url": "https://example.com/landing",
         "pdf_url": None,
+        "source": {"issn_l": "1234-567X", "display_name": "Journal of Examples"},
     },
     "best_oa_location": {"pdf_url": "https://example.com/paper.pdf"},
     "topics": [{"display_name": "Machine Learning"}],
     "concepts": [{"display_name": "Should not be used"}],
     "abstract_inverted_index": {"We": [0], "propose": [1], "the": [2], "Transformer.": [3]},
+    "cited_by_count": 137,
 }
 
 
@@ -475,6 +477,47 @@ def test_openalex_date_falls_back_to_year(monkeypatch):
 def test_openalex_skips_records_without_id_or_title():
     assert oa._to_payload({**_OA_ITEM, "id": ""}) is None
     assert oa._to_payload({**_OA_ITEM, "display_name": "", "title": ""}) is None
+
+
+# --- Journal quality (Faz 5.3) ---
+
+
+def test_openalex_reports_issn_and_citations(monkeypatch):
+    monkeypatch.setattr(
+        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
+    )
+    p = oa.search("x", max_results=1)[0]
+    assert p.issn_l == "1234-567X"
+    assert p.cited_by_count == 137
+
+
+def test_openalex_work_without_a_venue_has_no_issn():
+    """A preprint or dataset has no `source` object at all — normal, not an
+    error."""
+    item = {**_OA_ITEM, "primary_location": {"landing_page_url": "https://example.com/x"}}
+    assert oa._to_payload(item).issn_l is None
+
+
+def test_openalex_rejects_a_malformed_issn():
+    """The column is String(9); anything else would be silently truncated on
+    write, so drop it instead."""
+    item = {**_OA_ITEM, "primary_location": {"source": {"issn_l": "not-an-issn-at-all"}}}
+    assert oa._to_payload(item).issn_l is None
+
+
+def test_openalex_missing_citation_count_is_none_not_zero():
+    """ "This response didn't say" and "this paper has no citations" are
+    different claims — `_enrich` treats them differently."""
+    item = {k: v for k, v in _OA_ITEM.items() if k != "cited_by_count"}
+    assert oa._to_payload(item).cited_by_count is None
+
+
+def test_openalex_zero_citations_is_preserved():
+    assert oa._to_payload({**_OA_ITEM, "cited_by_count": 0}).cited_by_count == 0
+
+
+def test_openalex_garbage_citation_count_is_dropped():
+    assert oa._to_payload({**_OA_ITEM, "cited_by_count": "many"}).cited_by_count is None
 
 
 def test_openalex_search_empty_query_makes_no_http_call(monkeypatch):
@@ -546,6 +589,8 @@ _CR_ITEM = {
     "subject": ["Machine Learning", "Computer Science"],
     "type": "journal-article",
     "container-title": ["Journal of Examples"],
+    "ISSN": ["1234-567X", "9876-5432"],
+    "is-referenced-by-count": 42,
 }
 
 
@@ -572,6 +617,53 @@ def test_crossref_parses_payload(monkeypatch):
     assert p.published_at.tzinfo is not None
     assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2024, 3, 15)
     assert p.categories == ["Machine Learning", "Computer Science"]
+
+
+# --- Journal quality (Faz 5.3) ---
+
+
+def test_crossref_reports_issn_and_citations():
+    p = cr._to_payload(_CR_ITEM)
+    assert p.issn_l == "1234-567X"
+    assert p.cited_by_count == 42
+
+
+def test_crossref_takes_the_first_well_formed_issn():
+    """Crossref has no `issn_l` equivalent — it lists print and electronic
+    ISSNs without saying which links them, so the first usable one wins. A
+    journal with a print/online split can therefore land under either; that is
+    accepted, because OpenAlex covers the same works with a real issn_l and
+    wins the fill-only race whenever both report."""
+    item = {**_CR_ITEM, "ISSN": ["bogus", "9876-5432", "1234-567X"]}
+    assert cr._to_payload(item).issn_l == "9876-5432"
+
+
+def test_crossref_without_issn_is_fine():
+    assert cr._to_payload({**_CR_ITEM, "ISSN": []}).issn_l is None
+
+
+def test_crossref_missing_citation_count_is_none_not_zero():
+    item = {k: v for k, v in _CR_ITEM.items() if k != "is-referenced-by-count"}
+    assert cr._to_payload(item).cited_by_count is None
+
+
+def test_crossref_zero_citations_is_preserved():
+    assert cr._to_payload({**_CR_ITEM, "is-referenced-by-count": 0}).cited_by_count == 0
+
+
+def test_crossref_requests_the_quality_fields(monkeypatch):
+    """A field missing from `select` comes back absent no matter what the
+    parser does."""
+    seen = {}
+
+    def fake_get(url, **kwargs):
+        seen.update(kwargs["params"])
+        return _fake_response(json_data={"message": {"items": []}})
+
+    monkeypatch.setattr(cr.requests, "get", fake_get)
+    cr.search("x")
+    assert "ISSN" in seen["select"]
+    assert "is-referenced-by-count" in seen["select"]
 
 
 def test_crossref_skips_records_without_doi():
