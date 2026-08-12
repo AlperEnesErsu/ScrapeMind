@@ -26,6 +26,13 @@ class PaperPayload:
     # optional with a default so existing adapters don't need to change.
     kind: str | None = None
     doi: str | None = None
+    # Journal quality signals (Faz 5.3). Only OpenAlex and Crossref populate
+    # these; every other adapter leaves them None and picks the values up for
+    # free when a DOI match enriches the shared row. Defaulted for the same
+    # reason `kind` is: an existing adapter must not have to change to keep
+    # working.
+    issn_l: str | None = None
+    cited_by_count: int | None = None
 
     def as_dict(self) -> dict:
         return {
@@ -40,4 +47,6 @@ class PaperPayload:
             "categories": self.categories,
             "kind": self.kind,
             "doi": self.doi,
+            "issn_l": self.issn_l,
+            "cited_by_count": self.cited_by_count,
         }

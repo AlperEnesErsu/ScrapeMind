@@ -565,7 +565,18 @@ def set_user_source(user: User, source_name: str, enabled: bool) -> bool:
 #: `title`, `source`, `external_id`, `kind` — those identify the row (or, for
 #: title, are never blank in practice) and overwriting them on a match would
 #: make upsert_paper silently rewrite identity rather than fill gaps.
-_ENRICHABLE_FIELDS = ("abstract", "pdf_url", "url", "doi", "published_at", "categories", "authors")
+_ENRICHABLE_FIELDS = (
+    "abstract",
+    "pdf_url",
+    "url",
+    "doi",
+    "published_at",
+    "categories",
+    "authors",
+    # A paper's journal does not change; only OpenAlex/Crossref report it, so
+    # every other source picks it up for free through a DOI match.
+    "issn_l",
+)
 
 
 def _is_empty(value: object) -> bool:
@@ -581,14 +592,35 @@ def _is_empty(value: object) -> bool:
     return False
 
 
-def _enrich(paper: Paper, data: dict) -> bool:
-    """Fill-only merge of `data` onto an existing `paper` row.
+#: Fields that are *refreshed* on every match rather than filled once.
+#:
+#: `cited_by_count` is a running total, not a fact about the paper: a 2019
+#: article picks up citations for years. Under the fill-only rule it would
+#: freeze at whatever the first source happened to report — showing "12
+#: citations" forever for a paper that now has 300, which is worse than
+#: showing nothing, because it looks precise.
+#:
+#: Keep this set small and obviously time-varying. Everything else belongs in
+#: `_ENRICHABLE_FIELDS`, where "we have no basis to pick a winner between two
+#: non-empty values" is the right default.
+_REFRESHABLE_FIELDS = ("cited_by_count",)
 
-    For each enrichable field: only write the incoming value if the existing
-    field is empty AND the incoming value is not — a populated field is
-    never overwritten, even by a different-but-also-non-empty value from
-    another source. Returns whether anything actually changed, so the caller
-    can skip a no-op commit.
+
+def _enrich(paper: Paper, data: dict) -> bool:
+    """Merge `data` onto an existing `paper` row.
+
+    Two rules, deliberately different:
+
+      * `_ENRICHABLE_FIELDS` — **fill-only**. Write the incoming value only if
+        the existing field is empty and the incoming one is not. A populated
+        field is never overwritten, even by a different-but-also-non-empty
+        value from another source: with both non-empty we have no basis for
+        deciding which source is right, so whatever arrived first stays.
+      * `_REFRESHABLE_FIELDS` — **always updated** when the incoming value is
+        present, because the field tracks something that changes over time.
+
+    Returns whether anything actually changed, so the caller can skip a no-op
+    commit.
     """
     changed = False
     for field in _ENRICHABLE_FIELDS:
@@ -598,6 +630,19 @@ def _enrich(paper: Paper, data: dict) -> bool:
         if _is_empty(incoming):
             continue
         if not _is_empty(getattr(paper, field)):
+            continue
+        setattr(paper, field, incoming)
+        changed = True
+
+    for field in _REFRESHABLE_FIELDS:
+        if field not in data:
+            continue
+        incoming = data[field]
+        # An absent count is "this source didn't say", not "zero citations" —
+        # so a source that omits the field must not wipe a real number.
+        if incoming is None:
+            continue
+        if getattr(paper, field) == incoming:
             continue
         setattr(paper, field, incoming)
         changed = True
