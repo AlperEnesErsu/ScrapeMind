@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Prior art search') }}{% endblock %}
+{% block content %}
+
+<h4 class="mb-1"><i class="bi bi-award me-2"></i>{{ _('Prior art search') }}</h4>
+<p class="text-muted small">
+  {{ _('Search published patents for work close to an invention idea. Results are not saved to your library.') }}
+</p>
+
+{% if not sources %}
+  {# No usable patent source: either the API keys are missing or an admin has
+     not switched patents on. Saying which beats an empty search box that
+     silently finds nothing. #}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ _('No patent source is available on this deployment.') }}
+    <div class="small mt-1 text-body-secondary">
+      {{ _('An administrator needs to configure the patent API keys and enable patent sources in system settings.') }}
+    </div>
+  </div>
+{% else %}
+
+<form method="post" novalidate class="card card-body mb-3">
+  {{ form.csrf_token }}
+  <label class="form-label">{{ form.idea.label.text }}</label>
+  {{ form.idea(class="form-control", rows="4",
+               placeholder=_('e.g. A vibration sensor that detects bearing wear in CNC spindles and warns before failure.')) }}
+  {% if form.idea.errors %}
+    <div class="small text-danger mt-1">{{ form.idea.errors[0] }}</div>
+  {% endif %}
+  <div class="form-text">
+    {{ _('Searching:') }}
+    {% for name, _mod in sources.items() %}
+      {% set _meta = source_meta.get(name, {}) %}
+      <span class="badge bg-light text-body-secondary border">
+        {% if _meta.icon %}<i class="bi {{ _meta.icon }} me-1"></i>{% endif %}{{ _(_meta.label or name) }}
+      </span>
+    {% endfor %}
+  </div>
+
+  <div class="form-check form-switch mt-3">
+    {{ form.assess(class="form-check-input", disabled=not ai_available) }}
+    <label class="form-check-label" for="assess">{{ form.assess.label.text }}</label>
+  </div>
+  {% if not ai_available %}
+    <div class="form-text">{{ _('Add an AI key in your profile to enable the novelty assessment.') }}</div>
+  {% endif %}
+
+  <div class="mt-3">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-search me-1"></i>{{ form.submit.label.text }}
+    </button>
+  </div>
+</form>
+
+{% if terms %}
+  <div class="small text-muted mb-3">
+    {{ _('Search terms:') }}
+    {% for t in terms %}<span class="badge bg-secondary-subtle text-secondary-emphasis">{{ t }}</span>{% endfor %}
+  </div>
+{% endif %}
+
+{# A source that errored carries the -1 sentinel, same as the scan paths.
+   Saying so beats quietly showing a shorter list. #}
+{% for name, count in per_source.items() %}
+  {% if count == -1 %}
+    <div class="alert alert-warning py-2 small">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ _('%(source)s could not be reached — results below are incomplete.',
+            source=_(source_meta.get(name, {}).get('label', name))) }}
+    </div>
+  {% endif %}
+{% endfor %}
+
+{% if assessment %}
+  <div class="card mb-3 border-primary-subtle">
+    <div class="card-header py-2 bg-transparent">
+      <strong><i class="bi bi-stars me-2"></i>{{ _('Novelty assessment') }}</strong>
+      {% if assessment.confidence %}
+        <span class="badge ms-2
+          {{ 'bg-success-subtle text-success-emphasis' if assessment.confidence == 'high'
+             else ('bg-warning-subtle text-warning-emphasis' if assessment.confidence == 'medium'
+             else 'bg-secondary-subtle text-secondary-emphasis') }}">
+          {{ _('Confidence: %(level)s', level=assessment.confidence) }}
+        </span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if assessment.verdict %}<p class="mb-2">{{ assessment.verdict }}</p>{% endif %}
+
+      {% if assessment.closest %}
+        <div class="small fw-semibold mt-3">{{ _('Closest matches') }}</div>
+        <ul class="small mb-2">
+          {% for c in assessment.closest %}
+            <li><code>{{ c.id }}</code> — {{ c.why }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if assessment.differentiators %}
+        <div class="small fw-semibold mt-3">{{ _('What sets your idea apart') }}</div>
+        <ul class="small mb-2">
+          {% for d in assessment.differentiators %}<li>{{ d }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      <div class="alert alert-secondary py-2 small mb-0 mt-3">
+        <i class="bi bi-info-circle me-1"></i>
+        {{ _('This is a reading aid, not a patentability opinion. Confirm anything that matters with a patent attorney.') }}
+        {% if assessment.caveats %}<div class="mt-1">{{ assessment.caveats }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if results is not none %}
+  {% if results %}
+    <div class="small text-muted mb-2">{{ _('%(n)s patents found', n=results|length) }}</div>
+    <div class="list-group">
+      {% for p in results %}
+        {% set _meta = source_meta.get(p.source, {}) %}
+        <div class="list-group-item">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+            <span class="badge source-badge source-{{ p.source }}">
+              {% if _meta.icon %}<i class="bi {{ _meta.icon }} me-1"></i>{% endif %}{{ _(_meta.label or p.source) }}
+            </span>
+            <code class="small">{{ p.external_id }}</code>
+            {% if p.published_at %}
+              <span class="small text-muted">{{ p.published_at.strftime('%d.%m.%Y') }}</span>
+            {% endif %}
+          </div>
+          <div class="fw-semibold">
+            {% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener noreferrer">{{ p.title }}</a>
+            {% else %}{{ p.title }}{% endif %}
+          </div>
+          {% if p.authors %}
+            <div class="small text-muted">{{ p.authors[:4] | join(', ') }}{% if p.authors|length > 4 %} …{% endif %}</div>
+          {% endif %}
+          {% if p.abstract %}
+            <div class="small mt-1">{{ p.abstract[:400] }}{% if p.abstract|length > 400 %}…{% endif %}</div>
+          {% endif %}
+          {% if p.categories %}
+            <div class="small text-muted mt-1">{{ p.categories[:4] | join(' · ') }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-1"></i>
+      {{ _('No patents matched. That is not the same as "nothing exists" — try broader wording.') }}
+    </div>
+  {% endif %}
+{% endif %}
+
+{% endif %}
+{% endblock %}

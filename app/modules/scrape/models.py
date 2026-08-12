@@ -176,7 +176,10 @@ class ScanRun(BaseModel):
     __tablename__ = "scan_runs"
 
     user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
-    kind = db.Column(db.String(16), nullable=False)  # "scrape" | "feeds" | "channels"
+    # "scrape" | "feeds" | "channels" | "patents". String(16) with no
+    # constraint, so a new kind needs no migration — but `scan_status_context`
+    # and `library/_timeline.html` branch on it, so they do need updating.
+    kind = db.Column(db.String(16), nullable=False)
     trigger = db.Column(db.String(16), nullable=False, default="auto")  # "auto" | "manual"
     # "running" | "ok" | "partial" | "skipped" | "error"
     status = db.Column(db.String(16), nullable=False, default="running")

@@ -22,9 +22,30 @@
       <span class="badge bg-secondary-subtle text-secondary-emphasis"><i class="bi bi-code-slash me-1"></i>{{ _('GitHub') }}</span>
     {% elif r.paper.kind == 'link' %}
       <span class="badge bg-primary-subtle text-primary-emphasis"><i class="bi bi-link-45deg me-1"></i>{{ _('Link') }}</span>
+    {% elif r.paper.kind == 'patent' %}
+      <span class="badge bg-warning-subtle text-warning-emphasis"><i class="bi bi-award me-1"></i>{{ _('Patent') }}</span>
     {% endif %}
     {% if r.paper.categories %}
-      <span class="small text-muted">{{ (r.paper.categories or [])[:2] | join(' · ') }}</span>
+      {# PatentsView carries the owner as an "assignee:" category (an
+         organisation is not an inventor). Surface it as its own chip — for a
+         patent, who owns it is the headline, not a classification code. #}
+      {% set _assignees = [] %}
+      {% set _classes = [] %}
+      {% for c in r.paper.categories %}
+        {% if c is string and c.startswith('assignee:') %}
+          {% set _ = _assignees.append(c[9:]) %}
+        {% else %}
+          {% set _ = _classes.append(c) %}
+        {% endif %}
+      {% endfor %}
+      {% if _assignees %}
+        <span class="badge bg-light text-body-secondary border">
+          <i class="bi bi-building me-1"></i>{{ _assignees[0] }}
+        </span>
+      {% endif %}
+      {% if _classes %}
+        <span class="small text-muted">{{ _classes[:2] | join(' · ') }}</span>
+      {% endif %}
     {% endif %}
     {% if r.paper.published_at %}<span class="small text-muted">· {{ r.paper.published_at.strftime('%d.%m.%Y') }}</span>{% endif %}
 

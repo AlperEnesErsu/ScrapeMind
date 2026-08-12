@@ -107,6 +107,8 @@ social, humanities, general) seçilir ve ilgi-farkında kaynak seçiciyi besler.
 | `web_reach` | besleme | Hayır | ScrapeMind `requests` + `net_guard` SSRF koruması, `kind="news"` |
 | `youtube_channel` | besleme | Hayır | Abonelik tabanlı — YouTube'un ücretsiz, anahtarsız kanal RSS beslemesi (`feeds/videos.xml?channel_id=`), `rss_source.fetch_feed_conditional` üzerinden; `kind="video"`. Transkript ayrı bir adımda `yt-dlp` ile (video başına bir kez, taramaya dahil değil) çekilir — yt-dlp kurulu değilse veya YouTube isteği engellerse (özellikle datacenter IP'lerinden yaygın) özetsiz zarifçe devam eder |
 | `user_feed` | besleme | Hayır | Kullanıcının eklediği özel RSS |
+| `epo_ops` | **patent** | **Evet** — `EPO_OPS_KEY` + `EPO_OPS_SECRET` | Dünya çapında (DOCDB), TR dahil. Repodaki **tek OAuth'lu** adaptör: client-credentials → 20dk bearer token, modül seviyesinde cache, 401'de bir kez zorla yenilenip istek tekrarlanır. CQL `or` destekler → tüm anahtar kelimeler **tek istekte**. **Bant genişliği ölçer** (4 GB/hafta), çağrı değil: istek öncesi nominal rezervasyon, yanıt sonrası gerçek boyutla kapanış. 404 = "eşleşme yok" (hata değil). `kind="patent"`, `doi=None` |
+| `patentsview` | **patent** | **Evet** — `PATENTSVIEW_API_KEY` | Yalnızca ABD ama çok daha yapılandırılmış: mucit, **hak sahibi**, CPC ayrı nesneler. JSON DSL + `_or` → tek istek. 429'da `Retry-After` **bir kez** ve yalnızca kısaysa beklenir. Hak sahibi `categories`'te `assignee:` önekiyle taşınır (kurum mucit değildir). `kind="patent"`, `doi=None` |
 
 > ⚠️ `rss_source` sözleşmeyi **bilerek** kısmen uygular: `SOURCE_NAME` ve `search()`
 > yoktur, `search_for_keywords` sabit `[]` döner. Beslemeler anahtar kelime aramasıyla
@@ -115,6 +117,21 @@ social, humanities, general) seçilir ve ilgi-farkında kaynak seçiciyi besler.
 
 Dağıtım `SCRAPE_SOURCES` env değişkeniyle listeyi kısabilir
 (`SCRAPE_SOURCES=arxiv` gibi). Tanınmayan ad `scrape_source_unknown` olarak loglanıp atılır.
+
+> **Patent kaynakları `SCRAPE_SOURCES`'un varsayılanında yer alır ama bu tek başına
+> hiçbir şey açmaz.** İki kapı daha var (§5): anahtar yoksa `enabled_sources()` kaynağı
+> zaten listelemez, admin `patents_enabled`'ı açmadıysa `effective_source_prefs` her
+> kullanıcı için kapalı tutar. Yani anahtarları tanımlamamış bir kurulumda bu iki satır
+> hiçbir davranış değiştirmez.
+
+### Patentler neden ayrı bir gecelik tarama?
+
+`patents.ingest_for_all_users` (03:05) akademik taramadan (`scrape.run_for_all_users`,
+03:15) **ayrı** bir task ve ayrı bir `ScanRun.kind="patents"` üretir. Gerekçe: patent
+kaynakları haftalık bütçeyle ölçülüyor. Tek bir `ScanRun` paylaşılsaydı tükenmiş bir
+patent kotası kullanıcının **akademik** taramasını da `partial` işaretlerdi ve durum
+satırı anlamını kaybederdi. Patent anahtarı olmayan kurulum tek registry lookup'ıyla
+kısa devre yapar, kullanıcı başına task kuyruğa atmaz.
 
 ---
 
@@ -325,6 +342,7 @@ bu tabloyu okur.
 | her dakika | `core.heartbeat` |
 | 02:45 | `feeds.ingest_all` |
 | 02:55 | `channels.ingest_for_all_users` |
+| 03:05 | `patents.ingest_for_all_users` |
 | 03:15 | `scrape.run_for_all_users` |
 | 03:45 | `feeds.link_for_all_users` |
 | 04:00 / 04:15 / 04:30 | audit / revoked token / scan run purge |
@@ -356,6 +374,9 @@ Worker ayrımı ([docker-compose.yml](../docker/docker-compose.yml)):
 | 5 | Kanal RSS'i son ~15 videoyu verir | Yeni eklenen kanalın geçmişi geri doldurulmaz. Geçmiş için `youtube_reach` anahtar kelime araması var |
 | 6 | Video özeti dil başına cache'lenmez | `VideoSummary` `paper_id` üzerinde tekil (feed'de N+1 olmasın diye) — `PaperAnalysis`'in aksine dil başına satır yok |
 | 7 | `ask_paper` "RAG" değil | Başlık+abstract prompt'a dolduruluyor; pgvector yok |
+| 8 | Prior-art araması **hiçbir şey saklamaz** | Tasarım kararı, eksik değil: tek seferlik fikir kontrolleri `papers`'ı kirletmesin (§11). Sonuç kaydedilemez — kullanıcı ilgilendiği patenti kütüphanesine alamaz. İhtiyaç doğarsa çözüm "otomatik kaydet" değil, açık bir "kütüphaneme ekle" butonudur |
+| 9 | EPO patent ailesi / hukuki durum kullanılmıyor | OPS bunları veriyor, adaptör yalnızca biblio araması yapıyor. "Aileyi göster" için ayrı bir servis çağrısı gerekir |
+| 10 | Patent araması yalnızca başlık+özet tarar | EPO `ti,ab any`, PatentsView `_text_any` — tarifname (claims) metni taranmıyor. Prior-art için asıl metin orada; ikisi de ayrı endpoint ister |
 
 Detaylı yol haritası ve gerekçeler: [HANDOVER.md](HANDOVER.md).
 
@@ -375,6 +396,19 @@ README'deki taahhüt bu katmanın davranış sözleşmesidir:
 - X/Twitter kazınmaz: ücretsiz okuma API'si yok ve kazıma ToS ihlali olur
 - **Tarayıcı otomasyonu kullanılmaz** — gerekçe ve kararın yeniden açılma koşulu:
   [ADR-0001](adr/0001-headless-browser-yok.md)
+
+### Patentler (Faz 5.2)
+
+- Patent tarifnamesi ve özeti çoğu yargı alanında **resmî yayındır, telif dışıdır** —
+  yukarıdaki "yeniden yayımlama" sınırıyla çatışmaz. Yine de kart kaynağa link verir.
+- **Prior-art araması hiçbir şey saklamaz** (`service.search_patents_live`). İki gerekçe:
+  tek seferlik fikir sorguları kalıcı `papers` tablosunu kirletmemeli, ve EPO'nun
+  fair-use şartları hiçbir şey saklamayan bir aramadan memnun. Yalnızca gecelik anahtar
+  kelime taraması persist eder.
+- **Yenilik değerlendirmesi hukuki tavsiye değildir.** Prompt modele yalnızca verilen
+  listeye dayanmasını ve listede olmayan patenti anmamasını söylüyor; sayfa da sonucun
+  bir patent vekiliyle doğrulanması gerektiğini açıkça yazıyor. Bu ifadeyi kaldırma —
+  kullanıcı bu çıktıya dayanarak başvuru kararı verebilir.
 
 ---
 
@@ -398,10 +432,11 @@ Tümü `.env.example`'da açıklamalı. Özet:
 | `SCAN_RUN_RETENTION_DAYS` | 30 | 0 = sonsuza dek sakla |
 | `SCAN_FANOUT_WINDOW_SECONDS` | 1800 | Gecelik dağıtım penceresi |
 | `LLM_PROVIDER` | `openrouter` | `openrouter` \| `ollama` \| `anthropic` |
-| `SCRAPE_QUOTA_<KAYNAK>_WEEKLY` | 0 | Haftalık **istek** bütçesi. 0 = ölçümsüz (bugün tüm kaynaklar) |
-| `SCRAPE_QUOTA_<KAYNAK>_WEEKLY_BYTES` | 0 | Haftalık **byte** bütçesi (EPO OPS bant genişliği ölçer) |
-| `EPO_OPS_KEY` / `EPO_OPS_SECRET` | boş | Faz 5.2 — patent kaynağı, henüz adaptörü yok |
-| `PATENTSVIEW_API_KEY` | boş | Faz 5.2 — aynı |
+| `SCRAPE_QUOTA_<KAYNAK>_WEEKLY` | 0 | Haftalık **istek** bütçesi. 0 = ölçümsüz |
+| `SCRAPE_QUOTA_EPO_OPS_WEEKLY_BYTES` | 3 GiB | Haftalık **byte** bütçesi — EPO'nun 4 GB'lık katmanına pay bırakır (aynı anahtar başka bir araçla paylaşılıyor olabilir) |
+| `SCRAPE_RATE_EPO_OPS_PER_MIN` / `_PATENTSVIEW_PER_MIN` | 10 / 45 | EPO saniyelik rakam yayınlamıyor; gerçek tavan byte bütçesi |
+| `EPO_OPS_KEY` / `EPO_OPS_SECRET` | boş | OAuth2 client-credentials. İkisi birden gerekli |
+| `PATENTSVIEW_API_KEY` | boş | `X-Api-Key` header |
 | `SCOPUS_API_KEY` / `SCOPUS_INSTTOKEN` | boş | Faz 5.4 — kurum IP'sine bağlı, varsayılan kapalı |
 
 > ⚠️ `SCRAPE_SOURCES`, `SEMANTIC_SCHOLAR_API_KEY` ve `NCBI_API_KEY` **`BaseConfig`'i

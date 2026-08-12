@@ -37,6 +37,8 @@ TASK_ROUTES = {
     "channels.ingest_for_user": {"queue": "io"},
     "channels.summarize_video": {"queue": "llm"},
     "channels.ingest_for_all_users": {"queue": "io"},
+    "patents.ingest_for_user": {"queue": "io"},
+    "patents.ingest_for_all_users": {"queue": "io"},
 }
 
 
@@ -119,6 +121,7 @@ from app.tasks import (  # noqa: E402, F401
     core_tasks,
     digest_tasks,
     feed_tasks,
+    patent_tasks,
     scrape_tasks,
 )
 

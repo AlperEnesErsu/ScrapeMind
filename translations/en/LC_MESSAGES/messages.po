@@ -2809,6 +2809,107 @@ msgstr "Source quotas this week"
 msgid "Resets %(when)s"
 msgstr "Resets %(when)s"
 
+msgid "menu.prior_art"
+msgstr "menu.prior_art"
+
+msgid "EPO Patents"
+msgstr "EPO Patents"
+
+msgid "Worldwide patent publications, including TR (EPO OPS / DOCDB)"
+msgstr "Worldwide patent publications, including TR (EPO OPS / DOCDB)"
+
+msgid "US Patents"
+msgstr "US Patents"
+
+msgid "US patents with inventors, assignees and CPC classes"
+msgstr "US patents with inventors, assignees and CPC classes"
+
+msgid "Patent"
+msgstr "Patent"
+
+msgid "Patent scan"
+msgstr "Patent scan"
+
+msgid "Describe your invention idea"
+msgstr "Describe your invention idea"
+
+msgid "Also assess novelty with AI"
+msgstr "Also assess novelty with AI"
+
+msgid "Search prior art"
+msgstr "Search prior art"
+
+msgid "Prior art search"
+msgstr "Prior art search"
+
+msgid ""
+"Search published patents for work close to an invention idea. Results are"
+" not saved to your library."
+msgstr ""
+"Search published patents for work close to an invention idea. Results are"
+" not saved to your library."
+
+msgid "No patent source is available on this deployment."
+msgstr "No patent source is available on this deployment."
+
+msgid ""
+"An administrator needs to configure the patent API keys and enable patent"
+" sources in system settings."
+msgstr ""
+"An administrator needs to configure the patent API keys and enable patent"
+" sources in system settings."
+
+msgid ""
+"e.g. A vibration sensor that detects bearing wear in CNC spindles and "
+"warns before failure."
+msgstr ""
+"e.g. A vibration sensor that detects bearing wear in CNC spindles and "
+"warns before failure."
+
+msgid "Searching:"
+msgstr "Searching:"
+
+msgid "Add an AI key in your profile to enable the novelty assessment."
+msgstr "Add an AI key in your profile to enable the novelty assessment."
+
+msgid "Search terms:"
+msgstr "Search terms:"
+
+#, python-format
+msgid "%(source)s could not be reached — results below are incomplete."
+msgstr "%(source)s could not be reached — results below are incomplete."
+
+msgid "Novelty assessment"
+msgstr "Novelty assessment"
+
+#, python-format
+msgid "Confidence: %(level)s"
+msgstr "Confidence: %(level)s"
+
+msgid "Closest matches"
+msgstr "Closest matches"
+
+msgid "What sets your idea apart"
+msgstr "What sets your idea apart"
+
+msgid ""
+"This is a reading aid, not a patentability opinion. Confirm anything that"
+" matters with a patent attorney."
+msgstr ""
+"This is a reading aid, not a patentability opinion. Confirm anything that"
+" matters with a patent attorney."
+
+#, python-format
+msgid "%(n)s patents found"
+msgstr "%(n)s patents found"
+
+msgid ""
+"No patents matched. That is not the same as \"nothing exists\" — try "
+"broader wording."
+msgstr ""
+"No patents matched. That is not the same as \"nothing exists\" — try "
+"broader wording."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

@@ -9,6 +9,7 @@
     <div class="timeline-event__dot">
       <i class="bi
         {%- if ev.kind == 'scrape_run' %} bi-arrow-clockwise
+        {%- elif ev.kind == 'patent_run' %} bi-award
         {%- elif ev.kind == 'favorited' %} bi-heart-fill
         {%- elif ev.kind == 'note_added' %} bi-journal-text
         {%- elif ev.kind == 'dismissed' %} bi-eye-slash
@@ -29,6 +30,7 @@
 
       <span class="timeline-event__label">
         {%- if ev.kind == 'scrape_run' %}{{ _('Scrape run') }}
+        {%- elif ev.kind == 'patent_run' %}{{ _('Patent scan') }}
         {%- elif ev.kind == 'favorited' %}{{ _('Favorited') }}
         {%- elif ev.kind == 'note_added' %}{{ _('Note added') }}
         {%- elif ev.kind == 'dismissed' %}{{ _('Hidden') }}

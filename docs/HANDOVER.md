@@ -31,14 +31,16 @@ ve YouTube kanal aboneliği + transkript özeti var.
 | Tarama geçmişi (`ScanRun`) + canlı durum paneli | ✅ |
 | Günlük/haftalık LLM özeti (digest) | ✅ |
 | Çok sağlayıcılı LLM (OpenRouter/Ollama/Anthropic) + kullanıcı bazlı şifreli anahtar | ✅ |
-| Kimlik/admin kapılı kaynak altyapısı + haftalık kalıcı kota (Faz 5.1) | ✅ altyapı hazır, kullanan kaynak henüz yok — bkz. §5.0 |
+| Kimlik/admin kapılı kaynak altyapısı + haftalık kalıcı kota (Faz 5.1) | ✅ |
+| **Patent kaynakları**: EPO OPS (dünya çapında) + PatentsView (ABD) (Faz 5.2) | ✅ anahtar + admin opt-in gerektirir |
+| **Prior-art araması** + LLM yenilik değerlendirmesi (`/papers/patents`) | ✅ sonuçlar **saklanmaz** |
 
-**Doğrulama durumu (10 Ağustos 2026):**
+**Doğrulama durumu (12 Ağustos 2026):**
 
 ```
-pytest tests/ -q      →  704 passed in ~89s
+pytest tests/ -q      →  780 passed in ~83s
 ruff check app/ tests/  →  All checks passed!
-black --check app/ tests/ →  174 files would be left unchanged
+black --check app/ tests/ →  183 files would be left unchanged
 ```
 
 > ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
@@ -230,13 +232,38 @@ açılan opsiyonel Scopus. Kapsam, 4 artımlı adım, doğrulama ve devir notlar
 >   kaydediyor (`patents_enabled`, `scopus_enabled`), anahtar yoksa yanında uyarı çıkıyor.
 > - Admin overview'da haftalık kota kartı.
 >
-> **Henüz hiçbir kaynak bu kapıları kullanmıyor** — kullananlar 5.2 ve 5.4'te geliyor.
-> Testler bu yüzden sentetik bir kaynak kaydediyor
-> ([test_source_gating.py](../tests/modules/test_source_gating.py)); mekanizma,
-> onu ilk kullanan adaptörden bağımsız olarak sabitlenmiş oluyor.
+> Kapıları kullanan ilk kaynaklar 5.2'de geldi. Mekanizmanın kendisi ayrıca sentetik
+> bir kaynakla test ediliyor ([test_source_gating.py](../tests/modules/test_source_gating.py)),
+> böylece onu ilk kullanan adaptörden bağımsız olarak sabit kalıyor.
+
+> **12 Ağustos 2026 — Faz 5.2 bitti** (`feat/phase5-patent-sources`).
+> - **`epo_ops`** — repodaki tek OAuth'lu adaptör (client-credentials, 20dk token,
+>   401'de bir kez zorla yenileme). CQL `or` sayesinde tüm anahtar kelimeler tek
+>   istekte, bu yüzden `_PER_KEYWORD_REQUEST_SOURCES`'a **girmez**. **Bant genişliği
+>   ölçer**: istek öncesi nominal rezervasyon, yanıt sonrası gerçek boyutla kapanış.
+> - **`patentsview`** — `X-Api-Key`, JSON DSL + `_or` (yine tek istek). 429'da
+>   `Retry-After` bir kez ve yalnızca kısaysa beklenir. Hak sahibi `categories`'te
+>   `assignee:` önekiyle.
+> - **Gecelik `patents.ingest_for_all_users`** 03:05'te, ayrı `ScanRun.kind="patents"`.
+>   Ayrı olmasının sebebi: tükenmiş bir patent kotası akademik taramayı `partial`
+>   işaretlememeli. Anahtarı olmayan kurulum tek registry lookup'ıyla kısa devre yapar.
+> - **`/papers/patents`** — prior-art araması + LLM yenilik değerlendirmesi.
+>   **Hiçbir şey saklamaz** (`search_patents_live`); gerekçe [SCRAPING.md](SCRAPING.md) §11.
+>   Değerlendirme cache'lenmez — cevap fikrin tam metnine bağlı.
+> - Migration'lar: `c7e4b8d3a915` (5.1 kota tablosu), `d8a1c6e40f27` (nav girdisi).
 >
-> Sırada **5.2 (patent kaynakları + prior-art arama)** var. `.env.example`'daki
-> `EPO_OPS_*`, `PATENTSVIEW_API_KEY` ve `SCRAPE_QUOTA_*` placeholder'ları bekliyor.
+> ⚠️ Doğrulama sınırı: sayfa **görsel olarak** kontrol edilmedi (admin/kullanıcı girişi
+> gerekiyordu). Render, HTML gövdesini okuyan route testleriyle doğrulandı
+> ([test_prior_art.py](../tests/modules/test_prior_art.py)).
+>
+> ⚠️ `tests/modules/test_scrape.py`'deki `clean` fixture'ı **tüm kullanıcıları siler ama
+> `audit_logs`'a dokunmaz**. Audit satırı bırakan her yeni test, ilgisiz bir dosyada
+> foreign-key ihlaline dönüşür. Yeni route testi yazarken kullanıcıyı audit satırlarıyla
+> birlikte temizle (`test_prior_art.py` ve `test_system_settings.py` kalıbı).
+>
+> Sırada **5.3 (dergi kalite katmanı)** var: Scimago quartile + atıf sayısı.
+> ⚠️ `cited_by_count` fill-only **olamaz** — atıf sayısı zamanla artar, ilk değerinde
+> donarsa yanlış olur. Ayrı bir "her zaman güncelle" seti gerekiyor ([PHASE5.md](PHASE5.md) §5.3).
 
 İki şey buradaki listeyi etkiliyor:
 - Aşağıdaki **§5.4 ② (yazar takibi)** Faz 5.4'e taşındı, orada planlandı.
