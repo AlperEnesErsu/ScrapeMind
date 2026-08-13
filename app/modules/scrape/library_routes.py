@@ -174,6 +174,11 @@ def search():
     q = (request.args.get("q") or "").strip()
     source = (request.args.get("source") or "").strip() or None
     has_notes = request.args.get("has_notes") == "1"
+    # Whitelisted rather than passed through: this value reaches a SQL filter,
+    # and only four quartiles exist.
+    quartile = (request.args.get("quartile") or "").strip().upper()
+    if quartile not in ("Q1", "Q2", "Q3", "Q4"):
+        quartile = ""
     date_from = _parse_date(request.args.get("from"))
     date_to = _parse_date(request.args.get("to"))
     # Make the "to" date inclusive of the whole day.
@@ -188,6 +193,7 @@ def search():
         date_from=date_from,
         date_to=date_to,
         has_notes=has_notes,
+        quartile=quartile or None,
     )
     results = query.paginate(page=page, per_page=20, error_out=False)
 
@@ -201,6 +207,7 @@ def search():
             "from": request.args.get("from", ""),
             "to": request.args.get("to", ""),
             "has_notes": has_notes,
+            "quartile": quartile,
         },
     )
 

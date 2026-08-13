@@ -116,6 +116,37 @@ def _decode_abstract(inverted: dict | None) -> str | None:
     return text[:_MAX_ABSTRACT_CHARS] or None
 
 
+def _issn_l(primary_location: dict) -> str | None:
+    """Linking ISSN of the venue this work appeared in (Faz 5.3).
+
+    `issn_l` is OpenAlex's own normalisation: one identifier per journal even
+    when it has separate print and online ISSNs, which is exactly what the
+    `journals` table keys on. A work with no venue — a preprint, a dataset —
+    has no source object at all, which is normal.
+    """
+    source = (primary_location or {}).get("source") or {}
+    issn = (source.get("issn_l") or "").strip()
+    # String(9) in the column: "1234-567X" is 9 characters. Anything longer is
+    # not an ISSN-L and would be truncated on write, so drop it instead.
+    return issn if len(issn) == 9 else None
+
+
+def _cited_by_count(item: dict) -> int | None:
+    """Citations OpenAlex currently reports.
+
+    None (not 0) when absent: "this response didn't include a count" and "this
+    paper has no citations" are different claims, and `_enrich` treats them
+    differently — see `_REFRESHABLE_FIELDS`.
+    """
+    raw = item.get("cited_by_count")
+    if raw is None:
+        return None
+    try:
+        return max(0, int(raw))
+    except (TypeError, ValueError):
+        return None
+
+
 def _to_payload(item: dict) -> PaperPayload | None:
     raw_id = item.get("id") or ""
     # "https://openalex.org/W2741809807" -> "W2741809807"
@@ -161,6 +192,8 @@ def _to_payload(item: dict) -> PaperPayload | None:
         published_at=_parse_date(item),
         categories=topics[:_MAX_CATEGORIES],
         doi=doi,
+        issn_l=_issn_l(primary_location),
+        cited_by_count=_cited_by_count(item),
     )
 
 

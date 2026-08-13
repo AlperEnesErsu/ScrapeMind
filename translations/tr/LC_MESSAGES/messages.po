@@ -2933,6 +2933,18 @@ msgstr ""
 "Eşleşen patent yok. Bu \"hiçbir şey yok\" demek değildir — daha geniş "
 "ifadelerle deneyin."
 
+msgid "Data: SCImago Journal & Country Rank"
+msgstr "Veri: SCImago Journal & Country Rank"
+
+msgid "Citations reported by the source"
+msgstr "Kaynağın bildirdiği atıf sayısı"
+
+msgid "Quartile"
+msgstr "Çeyreklik"
+
+msgid "Quartiles from SCImago Journal & Country Rank (CC BY-NC)."
+msgstr "Çeyreklikler SCImago Journal & Country Rank'ten (CC BY-NC)."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

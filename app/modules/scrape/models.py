@@ -35,8 +35,37 @@ class Paper(BaseModel):
     # (every pre-Faz-2 row + all academic adapters) — no backfill needed.
     kind = db.Column(db.String(16), nullable=True)
 
+    # --- Journal quality signals (Faz 5.3) ---
+    # Linking ISSN, the identifier that survives a journal changing title or
+    # splitting print/online ISSNs. Deliberately a plain indexed column and
+    # *not* a foreign key to `journals`: a paper's ISSN is real whether or not
+    # the Scimago seed happens to know that journal, and an FK would either
+    # reject the paper or force a placeholder row for every unknown ISSN.
+    issn_l = db.Column(db.String(9), nullable=True, index=True)
+    # Citations reported by whichever source last enriched this row. Unlike
+    # every other enrichable field this one is *refreshed* rather than
+    # fill-only — see `_REFRESHABLE_FIELDS` in service.py.
+    cited_by_count = db.Column(db.Integer, nullable=True)
+
     __table_args__ = (
         db.UniqueConstraint("source", "external_id", name="uq_paper_source_external"),
+    )
+
+    #: The `journals` row for this paper's ISSN, when one has been seeded.
+    #:
+    #: `viewonly` and hand-written join condition because there is no foreign
+    #: key here (see `issn_l` above) — SQLAlchemy needs to be told explicitly
+    #: which side is "foreign". Nothing writes through this relationship: the
+    #: journals table is populated only by `scripts/seed_journals.py`.
+    #:
+    #: Left lazy on purpose. Most queries never touch it; the two feed paths
+    #: that render a quartile badge over ~100 cards ask for it explicitly with
+    #: `joinedload`, the same way they do for `video_summary`.
+    journal = db.relationship(
+        "Journal",
+        primaryjoin="foreign(Paper.issn_l) == remote(Journal.issn_l)",
+        viewonly=True,
+        uselist=False,
     )
 
 
@@ -409,6 +438,48 @@ class PaperTranslation(BaseModel):
     __table_args__ = (
         db.UniqueConstraint("paper_id", "target_lang", name="uq_paper_translation_lang"),
     )
+
+
+class Journal(BaseModel):
+    """Journal quality signals, seeded from Scimago + DOAJ (Faz 5.3).
+
+    This is the part of Scopus/WoS that actually mattered for Turkish
+    academia — "is this a Q1 journal" decides promotion and incentive
+    payments — obtained without their licence. See `docs/PHASE5.md` §2 for why
+    the licensed route was rejected and `scripts/seed_journals.py` for the
+    import.
+
+    Keyed on the **linking ISSN** (`issn_l`), not the title: journals get
+    renamed, merged and split, and a print/online ISSN pair is one journal.
+    Papers carry the same column and join on it — no foreign key, because a
+    paper's ISSN is a fact independent of whether this table has heard of that
+    journal (see `Paper.issn_l`).
+
+    `sjr_year` is stored because the Scimago ranking is an annual snapshot: a
+    row reading "Q1" means "Q1 in that year", and the UI has to be able to say
+    which year it is showing rather than implying a timeless verdict.
+
+    **Attribution is a licence condition**, not a courtesy — SJR data is
+    CC BY-NC. Anywhere a quartile is displayed, Scimago must be credited (see
+    `docs/SCRAPING.md` §11). The NC clause is also a live constraint: it is
+    fine while ScrapeMind is non-commercial, and would need revisiting if that
+    ever changes.
+    """
+
+    __tablename__ = "journals"
+
+    issn_l = db.Column(db.String(9), nullable=False, index=True, unique=True)
+    title = db.Column(db.Text, nullable=False)
+    publisher = db.Column(db.Text, nullable=True)
+    # Numeric, not Float: SJR values are published to three decimals and are
+    # compared/ordered in the UI, so exact decimal storage avoids a 0.1 + 0.2
+    # class of surprise in a number users read as authoritative.
+    sjr = db.Column(db.Numeric(10, 3), nullable=True)
+    sjr_quartile = db.Column(db.String(2), nullable=True, index=True)  # "Q1".."Q4"
+    sjr_year = db.Column(db.Integer, nullable=True)
+    h_index = db.Column(db.Integer, nullable=True)
+    is_doaj = db.Column(db.Boolean, nullable=False, default=False, server_default="false")
+    is_oa = db.Column(db.Boolean, nullable=False, default=False, server_default="false")
 
 
 class SourceQuotaUsage(BaseModel):

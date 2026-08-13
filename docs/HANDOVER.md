@@ -34,13 +34,14 @@ ve YouTube kanal aboneliği + transkript özeti var.
 | Kimlik/admin kapılı kaynak altyapısı + haftalık kalıcı kota (Faz 5.1) | ✅ |
 | **Patent kaynakları**: EPO OPS (dünya çapında) + PatentsView (ABD) (Faz 5.2) | ✅ anahtar + admin opt-in gerektirir |
 | **Prior-art araması** + LLM yenilik değerlendirmesi (`/papers/patents`) | ✅ sonuçlar **saklanmaz** |
+| **Dergi kalite katmanı**: SJR quartile rozeti + atıf sayısı + `?quartile=` filtresi (Faz 5.3) | ✅ `journals` tablosu **elle seed edilir** |
 
 **Doğrulama durumu (12 Ağustos 2026):**
 
 ```
-pytest tests/ -q      →  780 passed in ~83s
+pytest tests/ -q      →  842 passed in ~88s
 ruff check app/ tests/  →  All checks passed!
-black --check app/ tests/ →  183 files would be left unchanged
+black --check app/ tests/ →  185 files would be left unchanged
 ```
 
 > ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
@@ -261,9 +262,32 @@ açılan opsiyonel Scopus. Kapsam, 4 artımlı adım, doğrulama ve devir notlar
 > foreign-key ihlaline dönüşür. Yeni route testi yazarken kullanıcıyı audit satırlarıyla
 > birlikte temizle (`test_prior_art.py` ve `test_system_settings.py` kalıbı).
 >
-> Sırada **5.3 (dergi kalite katmanı)** var: Scimago quartile + atıf sayısı.
-> ⚠️ `cited_by_count` fill-only **olamaz** — atıf sayısı zamanla artar, ilk değerinde
-> donarsa yanlış olur. Ayrı bir "her zaman güncelle" seti gerekiyor ([PHASE5.md](PHASE5.md) §5.3).
+> **12 Ağustos 2026 — Faz 5.3 bitti** (`feat/phase5-journal-quality`).
+> - **`Journal` modeli** (Scimago SJR + DOAJ) + `papers.issn_l` / `papers.cited_by_count`.
+>   `papers.issn_l` **foreign key değil**: bir makalenin ISSN'i, o dergiyi seed etmiş
+>   olup olmadığımızdan bağımsız bir gerçek. Join kolon üzerinden yapılıyor.
+> - **`_REFRESHABLE_FIELDS`** — `_enrich`'in ikinci kuralı. `cited_by_count` her
+>   eşleşmede güncellenir (koşan toplam); `None` gelen değer mevcut sayıyı silmez, `0`
+>   siler çünkü gerçek bir değerdir. Detay: [SCRAPING.md](SCRAPING.md) §8.
+> - **`scripts/seed_journals.py`** — Scimago CSV (noktalı virgül + virgüllü ondalık) +
+>   DOAJ CSV, idempotent. `parse_decimal` **`Decimal` döndürür**: string dönerse
+>   SQLAlchemy'nin geri okuduğu `Decimal`'a eşit olmuyor ve her çalıştırma tüm satırları
+>   "güncellendi" sayıyordu (test bunu yakaladı).
+> - **UI**: kartta quartile rozeti + atıf sayısı, kütüphane aramasında `?quartile=Q1`.
+>   `Paper.journal` viewonly ilişki, iki feed yolunda `joinedload` ile çekiliyor.
+> - Migration: `e2b7c94d3f18`.
+>
+> ⚠️ **`journals` tablosu elle doldurulur.** Seed çalıştırılmamış bir kurulumda hiçbir
+> kartta rozet çıkmaz — bu bozukluk değil. Scimago CSV'sini
+> https://www.scimagojr.com/journalrank.php adresinden indirip
+> `python scripts/seed_journals.py --scimago <dosya> --year 2025` çalıştır.
+>
+> ⚠️ **SJR verisi CC BY-NC ve atıf zorunlu.** Quartile'ın göründüğü her yerde Scimago
+> kredilendirilmeli ([SCRAPING.md](SCRAPING.md) §11). Rozet tooltip'indeki ve filtre
+> altındaki atıf metnini kaldırma — lisans şartı.
+>
+> Sırada **5.4 (yazar takibi + opsiyonel Scopus)** var. Mevcut `UserAuthor` modeli
+> genişletilir, yeni tablo açılmaz ([PHASE5.md](PHASE5.md) §5.4).
 
 İki şey buradaki listeyi etkiliyor:
 - Aşağıdaki **§5.4 ② (yazar takibi)** Faz 5.4'e taşındı, orada planlandı.

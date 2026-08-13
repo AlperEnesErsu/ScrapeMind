@@ -2910,6 +2910,18 @@ msgstr ""
 "No patents matched. That is not the same as \"nothing exists\" — try "
 "broader wording."
 
+msgid "Data: SCImago Journal & Country Rank"
+msgstr "Data: SCImago Journal & Country Rank"
+
+msgid "Citations reported by the source"
+msgstr "Citations reported by the source"
+
+msgid "Quartile"
+msgstr "Quartile"
+
+msgid "Quartiles from SCImago Journal & Country Rank (CC BY-NC)."
+msgstr "Quartiles from SCImago Journal & Country Rank (CC BY-NC)."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

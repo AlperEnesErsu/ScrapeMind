@@ -99,7 +99,7 @@ social, humanities, general) seçilir ve ilgi-farkında kaynak seçiciyi besler.
 | `arxiv` | akademik | Hayır | `arxiv` SDK, client-side 3sn gecikme |
 | `semantic_scholar` | akademik | Opsiyonel `SEMANTIC_SCHOLAR_API_KEY` | **OR operatörü yok** → anahtar kelime başına 1 istek |
 | `pubmed` | akademik | Opsiyonel `NCBI_API_KEY` | esearch→efetch iki adım, OR ile tek sorgu |
-| `openalex` | akademik | Hayır (opsiyonel `OPENALEX_MAILTO` → polite pool) | OR ile tek sorgu; abstract `abstract_inverted_index` (kelime→pozisyon) olarak gelir, düz metne geri çevrilir |
+| `openalex` | akademik | Hayır (opsiyonel `OPENALEX_MAILTO` → polite pool) | OR ile tek sorgu; abstract `abstract_inverted_index` (kelime→pozisyon) olarak gelir, düz metne geri çevrilir. **Dergi kalitesinin birincil kaynağı**: gerçek `issn_l` + `cited_by_count` (Faz 5.3) |
 | `crossref` | akademik | Hayır (opsiyonel `CROSSREF_MAILTO` → polite pool) | **OR operatörü yok** → anahtar kelime başına 1 istek; DOI zorunlu (yoksa kayıt atlanır); abstract JATS XML (`<jats:p>...`) olarak gelir, düz metne çevrilir ve **kısmi** — çoğu yayıncı abstract yüklemiyor, bu kaynağın asıl değeri DOI + metadata zenginleştirme |
 | `openai_blog`, `google_ai_blog`, `deepmind_blog`, `huggingface_blog` | besleme | Hayır | Küratörlü, **global** yutulur |
 | `youtube_reach` | besleme | Hayır | `yt-dlp` CLI/Python modülü (`sys.executable`), `kind="video"` |
@@ -321,9 +321,28 @@ Sınır olarak kalan durum: gelen DOI bir satırla, gelen `(source, external_id)
 dokunulmaz. İki satırı birleştirmek (`UserPaper` bağlarını taşımak dahil) upsert'in
 işi değil — gerçek bir migration ister.
 
-> ⚠️ Faz 5.3 `cited_by_count` ekleyecek ve o alan **fill-only olamaz**: atıf sayısı
-> zamanla artar, ilk değerinde donarsa yanlış olur. Ayrı bir "her zaman güncelle"
-> seti gerekecek — bkz. [PHASE5.md](PHASE5.md) §5.3.
+### İki farklı birleştirme kuralı (Faz 5.3)
+
+`_enrich` iki set üzerinde **bilerek farklı** davranır:
+
+| Set | Kural | Neden |
+|---|---|---|
+| `_ENRICHABLE_FIELDS` | **Fill-only** — boşsa doldur, doluyu asla ezme | İki kaynak da dolu değer veriyorsa hangisinin doğru olduğuna karar verecek dayanağımız yok; ilk gelen kalır |
+| `_REFRESHABLE_FIELDS` | **Her zaman güncelle** | Alan zamanla değişen bir şeyi izliyor |
+
+Bugün `_REFRESHABLE_FIELDS` yalnızca `cited_by_count` içeriyor. Atıf sayısı bir
+**koşan toplam**; 2019 tarihli bir makale yıllarca atıf almaya devam eder. Fill-only
+kuralında ilk bildirilen rakamda donardı — bugün 300 atıfı olan bir makale için sonsuza
+kadar "12 atıf" göstermek, hiçbir şey göstermemekten **kötüdür**, çünkü kesin görünür.
+
+İki koruma var: gelen değer `None` ise "bu kaynak söylemedi" demektir ve mevcut gerçek
+sayıyı silmez; `0` ise gerçek bir değerdir ve bayat bir sayının yerini alabilir.
+
+`issn_l` fill-only tarafta kalır — bir makalenin dergisi değişmez.
+
+> Bu sete yeni alan eklerken dikkat: yalnızca **açıkça zamana bağlı** alanlar buraya
+> girer. Geri kalan her şey için "iki dolu değer arasında galip seçemeyiz" doğru
+> varsayılandır.
 
 `ScanRun` her taramayı kaydeder (`status`: `running|ok|partial|skipped|error`;
 negatif kaynak sayacı → `partial`, `reason` → `skipped`). UI Celery'yi yoklamak yerine
@@ -377,6 +396,9 @@ Worker ayrımı ([docker-compose.yml](../docker/docker-compose.yml)):
 | 8 | Prior-art araması **hiçbir şey saklamaz** | Tasarım kararı, eksik değil: tek seferlik fikir kontrolleri `papers`'ı kirletmesin (§11). Sonuç kaydedilemez — kullanıcı ilgilendiği patenti kütüphanesine alamaz. İhtiyaç doğarsa çözüm "otomatik kaydet" değil, açık bir "kütüphaneme ekle" butonudur |
 | 9 | EPO patent ailesi / hukuki durum kullanılmıyor | OPS bunları veriyor, adaptör yalnızca biblio araması yapıyor. "Aileyi göster" için ayrı bir servis çağrısı gerekir |
 | 10 | Patent araması yalnızca başlık+özet tarar | EPO `ti,ab any`, PatentsView `_text_any` — tarifname (claims) metni taranmıyor. Prior-art için asıl metin orada; ikisi de ayrı endpoint ister |
+| 11 | **Quartile yalnızca seed edilmiş dergiler için var** | `journals` tablosu elle yüklenir (`scripts/seed_journals.py`). Seed çalıştırılmamış bir kurulumda hiçbir kartta rozet çıkmaz — bu bozukluk değil, veri yokluğu. `?quartile=Q1` filtresi de bilinmeyen dergili makaleleri **dışarıda bırakır** (bilerek: "Q1 göster" derginin iddiasıdır) |
+| 12 | Crossref'in `issn_l`'i yok | Crossref bir derginin basılı ve elektronik ISSN'ini hangisi bağlayıcı demeden listeler; adaptör ilk geçerli olanı alır. Print/online ayrımı olan dergi iki farklı ISSN altına düşebilir. OpenAlex gerçek `issn_l` verdiği ve fill-only yarışını kazandığı için bu yalnızca Crossref-only kuyruğu etkiler |
+| 13 | Atıf sayısı kaynağa göre değişir | `cited_by_count` "en son yazan kaynak kazanır" — OpenAlex ve Crossref farklı sayılar bildirir ve ikisi de kendi içinde doğrudur. Kartta tek bir rakam görünür; hangi kaynaktan geldiği gösterilmez |
 
 Detaylı yol haritası ve gerekçeler: [HANDOVER.md](HANDOVER.md).
 
@@ -396,6 +418,19 @@ README'deki taahhüt bu katmanın davranış sözleşmesidir:
 - X/Twitter kazınmaz: ücretsiz okuma API'si yok ve kazıma ToS ihlali olur
 - **Tarayıcı otomasyonu kullanılmaz** — gerekçe ve kararın yeniden açılma koşulu:
   [ADR-0001](adr/0001-headless-browser-yok.md)
+
+### Dergi kalite verisi (Faz 5.3)
+
+- **SJR verisi CC BY-NC ve atıf zorunlu.** Quartile'ın göründüğü her yerde Scimago
+  kredilendirilir — rozet tooltip'inde ve kütüphane filtresinin altında. Bu bir nezaket
+  değil **lisans şartıdır**; kaldırma.
+  Atıf metni: "SCImago, (n.d.). SJR — SCImago Journal & Country Rank".
+- **NC şartı canlı bir kısıt.** ScrapeMind ticari olmadığı sürece sorun yok. Proje
+  ticarileşirse bu bağımlılık yeniden değerlendirilmeli — buradaki tek veri parçası ki
+  ticari bir lisans onu otomatik kapsamaz.
+- Veri dosyaları (Scimago CSV, DOAJ CSV) **elle** indirilir, `scripts/seed_journals.py`
+  ile yüklenir. Gecelik bir task bunları çekmez: yıllık anlık görüntüler ve ikisinin de
+  bir scraper'a gömülmeye değer sabit sürümlü URL'i yok.
 
 ### Patentler (Faz 5.2)
 
