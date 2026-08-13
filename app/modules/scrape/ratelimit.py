@@ -161,6 +161,12 @@ def patentsview_slot() -> bool:
     return acquire_slot("patentsview", int(_cfg("SCRAPE_RATE_PATENTSVIEW_PER_MIN", 45)), 60)
 
 
+def scopus_slot() -> bool:
+    """Elsevier documents 9 requests/second for Scopus Search. The weekly
+    20.000 budget in `consume_quota` is the binding limit."""
+    return acquire_slot("scopus", int(_cfg("SCRAPE_RATE_SCOPUS_PER_SEC", 9)), 1)
+
+
 # ----------------------------------------------------------------------------
 # Cumulative weekly quotas — Postgres, fail-closed (Faz 5.1)
 # ----------------------------------------------------------------------------

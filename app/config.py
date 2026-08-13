@@ -163,6 +163,11 @@ class BaseConfig:
         os.getenv("SCRAPE_QUOTA_EPO_OPS_WEEKLY_BYTES", str(3 * 1024**3))
     )
     SCRAPE_QUOTA_PATENTSVIEW_WEEKLY = int(os.getenv("SCRAPE_QUOTA_PATENTSVIEW_WEEKLY", "0"))
+    # Scopus (Faz 5.4). Elsevier's documented weekly allowance is 20.000
+    # search requests; the default leaves headroom because the same key is
+    # typically shared with other institutional tooling.
+    SCRAPE_RATE_SCOPUS_PER_SEC = int(os.getenv("SCRAPE_RATE_SCOPUS_PER_SEC", "9"))
+    SCRAPE_QUOTA_SCOPUS_WEEKLY = int(os.getenv("SCRAPE_QUOTA_SCOPUS_WEEKLY", "15000"))
 
     # Redis cache for RBAC permission sets (see app/core/cache.py). Purely an
     # optimisation: with CACHE_ENABLED=false, or Redis unreachable, everything

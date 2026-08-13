@@ -224,12 +224,12 @@ def test_usage_never_raises(app, db, monkeypatch):
 
 def test_panel_omits_sources_without_a_budget(app, db):
     """A panel of "0 / 0" rows trains admins to ignore the panel, so unmetered
-    sources are left out entirely. Since Faz 5.2 only EPO OPS ships with a
-    default budget (its 4 GB/week tier), so it is the one row expected here."""
+    sources are left out entirely. Two sources ship with a default budget:
+    EPO OPS (its 4 GB/week tier) and Scopus (20.000 requests/week)."""
     from app.modules.dashboard.routes import _source_quota_rows
 
     listed = {row["source"] for row in _source_quota_rows()}
-    assert listed == {"epo_ops"}
+    assert listed == {"epo_ops", "scopus"}
 
 
 def test_panel_lists_a_metered_source(app, db, monkeypatch):

@@ -860,6 +860,39 @@ def keyword_search_terms(keywords: list, source_name: str) -> tuple[list[str], d
     return terms, alias
 
 
+def _hydrate_scopus_payloads(payloads: list) -> list:
+    """Replace Scopus discovery payloads with OpenAlex records where possible.
+
+    This is the working half of the discovery-only design
+    (`docs/adr/0002-elsevier-discovery-only.md`): Scopus tells us a DOI exists,
+    OpenAlex supplies the metadata we are allowed to keep. A hydrated payload
+    is returned under `source="openalex"`, so what lands in `papers` is an
+    OpenAlex record — abstract, authors, ISSN, citations and all.
+
+    A DOI OpenAlex has never heard of keeps its Scopus payload: a title and a
+    link-out, no abstract. That is the residual exposure the ADR names, and it
+    is bounded to the title.
+
+    One request per DOI, which is why Scopus is capped at 25 results a run.
+    A hydration failure is logged and the discovery payload kept — losing the
+    result entirely would be worse than showing a bare title.
+    """
+    from app.modules.scrape.sources.openalex_source import fetch_by_doi
+
+    out = []
+    for payload in payloads:
+        if not payload.doi:
+            out.append(payload)
+            continue
+        try:
+            hydrated = fetch_by_doi(payload.doi)
+        except Exception:  # noqa: BLE001 — a miss must not lose the result
+            logger.warning("scopus_hydration_failed", doi=payload.doi)
+            hydrated = None
+        out.append(hydrated or payload)
+    return out
+
+
 def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
     """Run every enabled source with this user's keywords; persist + link the
     results back to them.
@@ -898,6 +931,8 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
             logger.exception("scrape_source_failed", source=name, user_id=user.id)
             per_source[name] = -1  # sentinel: this source errored
             continue
+        if name == "scopus":
+            payloads = _hydrate_scopus_payloads(payloads)
         per_source[name] = len(payloads)
         hits += len(payloads)
         for payload in payloads:
