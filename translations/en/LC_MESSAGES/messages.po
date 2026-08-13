@@ -2922,6 +2922,74 @@ msgstr "Quartile"
 msgid "Quartiles from SCImago Journal & Country Rank (CC BY-NC)."
 msgstr "Quartiles from SCImago Journal & Country Rank (CC BY-NC)."
 
+msgid "Followed Authors"
+msgstr "Followed Authors"
+
+msgid "Followed authors"
+msgstr "Followed authors"
+
+msgid "ORCID or OpenAlex author id"
+msgstr "ORCID or OpenAlex author id"
+
+msgid "Please enter an ORCID or OpenAlex author id."
+msgstr "Please enter an ORCID or OpenAlex author id."
+
+msgid "No author found for that ORCID or OpenAlex id."
+msgstr "No author found for that ORCID or OpenAlex id."
+
+msgid "Could not reach OpenAlex right now. Please try again."
+msgstr "Could not reach OpenAlex right now. Please try again."
+
+msgid "Author limit reached. Unfollow one before adding another."
+msgstr "Author limit reached. Unfollow one before adding another."
+
+#, python-format
+msgid "Now following %(name)s."
+msgstr "Now following %(name)s."
+
+msgid "Author unfollowed."
+msgstr "Author unfollowed."
+
+msgid ""
+"Get their new publications in your feed automatically. Checked nightly "
+"through OpenAlex."
+msgstr ""
+"Get their new publications in your feed automatically. Checked nightly "
+"through OpenAlex."
+
+msgid "Follow your own publications:"
+msgstr "Follow your own publications:"
+
+msgid ""
+"An identifier rather than a name — names are ambiguous and the wrong "
+"match fills your feed with someone else."
+msgstr ""
+"An identifier rather than a name — names are ambiguous and the wrong "
+"match fills your feed with someone else."
+
+#, python-format
+msgid "%(used)s / %(cap)s authors"
+msgstr "%(used)s / %(cap)s authors"
+
+#, python-format
+msgid "Newest seen: %(when)s"
+msgstr "Newest seen: %(when)s"
+
+msgid "Resume"
+msgstr "Resume"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Unfollow this author?"
+msgstr "Unfollow this author?"
+
+msgid "Unfollow"
+msgstr "Unfollow"
+
+msgid "You are not following anyone yet."
+msgstr "You are not following anyone yet."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

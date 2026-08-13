@@ -107,6 +107,7 @@ social, humanities, general) seçilir ve ilgi-farkında kaynak seçiciyi besler.
 | `web_reach` | besleme | Hayır | ScrapeMind `requests` + `net_guard` SSRF koruması, `kind="news"` |
 | `youtube_channel` | besleme | Hayır | Abonelik tabanlı — YouTube'un ücretsiz, anahtarsız kanal RSS beslemesi (`feeds/videos.xml?channel_id=`), `rss_source.fetch_feed_conditional` üzerinden; `kind="video"`. Transkript ayrı bir adımda `yt-dlp` ile (video başına bir kez, taramaya dahil değil) çekilir — yt-dlp kurulu değilse veya YouTube isteği engellerse (özellikle datacenter IP'lerinden yaygın) özetsiz zarifçe devam eder |
 | `user_feed` | besleme | Hayır | Kullanıcının eklediği özel RSS |
+| `scopus` | akademik | **Evet** — `SCOPUS_API_KEY` (+ kampüs dışı `SCOPUS_INSTTOKEN`) | **Yalnızca keşif, varsayılan kapalı.** `abstract` sabit `None` — Elsevier lisanslı içerik saklanmaz; saklanabilir metadata `openalex_source.fetch_by_doi` ile OpenAlex'ten gelir. DOI'si olmayan kayıt atlanır. Anahtar kurum IP'sine bağlı (401/403 ayrı loglanır). Gerekçe ve kalan risk: [ADR-0002](adr/0002-elsevier-discovery-only.md) |
 | `epo_ops` | **patent** | **Evet** — `EPO_OPS_KEY` + `EPO_OPS_SECRET` | Dünya çapında (DOCDB), TR dahil. Repodaki **tek OAuth'lu** adaptör: client-credentials → 20dk bearer token, modül seviyesinde cache, 401'de bir kez zorla yenilenip istek tekrarlanır. CQL `or` destekler → tüm anahtar kelimeler **tek istekte**. **Bant genişliği ölçer** (4 GB/hafta), çağrı değil: istek öncesi nominal rezervasyon, yanıt sonrası gerçek boyutla kapanış. 404 = "eşleşme yok" (hata değil). `kind="patent"`, `doi=None` |
 | `patentsview` | **patent** | **Evet** — `PATENTSVIEW_API_KEY` | Yalnızca ABD ama çok daha yapılandırılmış: mucit, **hak sahibi**, CPC ayrı nesneler. JSON DSL + `_or` → tek istek. 429'da `Retry-After` **bir kez** ve yalnızca kısaysa beklenir. Hak sahibi `categories`'te `assignee:` önekiyle taşınır (kurum mucit değildir). `kind="patent"`, `doi=None` |
 
@@ -363,6 +364,7 @@ bu tabloyu okur.
 | 02:55 | `channels.ingest_for_all_users` |
 | 03:05 | `patents.ingest_for_all_users` |
 | 03:15 | `scrape.run_for_all_users` |
+| 03:25 | `authors.ingest_for_all_users` |
 | 03:45 | `feeds.link_for_all_users` |
 | 04:00 / 04:15 / 04:30 | audit / revoked token / scan run purge |
 | 07:00 · Pzt 07:30 | `digest.run_for_all_users` (daily / weekly) |
@@ -398,6 +400,8 @@ Worker ayrımı ([docker-compose.yml](../docker/docker-compose.yml)):
 | 10 | Patent araması yalnızca başlık+özet tarar | EPO `ti,ab any`, PatentsView `_text_any` — tarifname (claims) metni taranmıyor. Prior-art için asıl metin orada; ikisi de ayrı endpoint ister |
 | 11 | **Quartile yalnızca seed edilmiş dergiler için var** | `journals` tablosu elle yüklenir (`scripts/seed_journals.py`). Seed çalıştırılmamış bir kurulumda hiçbir kartta rozet çıkmaz — bu bozukluk değil, veri yokluğu. `?quartile=Q1` filtresi de bilinmeyen dergili makaleleri **dışarıda bırakır** (bilerek: "Q1 göster" derginin iddiasıdır) |
 | 12 | Crossref'in `issn_l`'i yok | Crossref bir derginin basılı ve elektronik ISSN'ini hangisi bağlayıcı demeden listeler; adaptör ilk geçerli olanı alır. Print/online ayrımı olan dergi iki farklı ISSN altına düşebilir. OpenAlex gerçek `issn_l` verdiği ve fill-only yarışını kazandığı için bu yalnızca Crossref-only kuyruğu etkiler |
+| 13a | **Scopus başlığı saklanıyor** | OpenAlex hidrasyonu tutmazsa Elsevier kaynaklı başlık `papers`'ta kalır. Bilinçli, sınırlı ve kayıtlı bir risk — [ADR-0002](adr/0002-elsevier-discovery-only.md) |
+| 13b | Yazar takibi yalnızca OpenAlex | OpenAlex'te olmayan bir yazar takip edilemez; ORCID'i olmayan araştırmacı için giriş yolu yok |
 | 13 | Atıf sayısı kaynağa göre değişir | `cited_by_count` "en son yazan kaynak kazanır" — OpenAlex ve Crossref farklı sayılar bildirir ve ikisi de kendi içinde doğrudur. Kartta tek bir rakam görünür; hangi kaynaktan geldiği gösterilmez |
 
 Detaylı yol haritası ve gerekçeler: [HANDOVER.md](HANDOVER.md).
@@ -431,6 +435,26 @@ README'deki taahhüt bu katmanın davranış sözleşmesidir:
 - Veri dosyaları (Scimago CSV, DOAJ CSV) **elle** indirilir, `scripts/seed_journals.py`
   ile yüklenir. Gecelik bir task bunları çekmez: yıllık anlık görüntüler ve ikisinin de
   bir scraper'a gömülmeye değer sabit sürümlü URL'i yok.
+
+### Scopus (Faz 5.4)
+
+- **Elsevier lisanslı içerik kalıcı olarak saklanmaz.** `scopus_source` payload'ı
+  yalnızca DOI + başlık + tarih + Scopus'a link taşır; `abstract` sabit `None`'dır.
+  Bu bir optimizasyon değil, **lisans kısıtıdır** — "zaten API veriyor, alalım" diye
+  değiştirme.
+- Saklanabilir metadata `service._hydrate_scopus_payloads` üzerinden OpenAlex'ten gelir.
+- **Kalan risk açıkça kayıtlı**: OpenAlex hidrasyonu tutmazsa satırda Elsevier kaynaklı
+  bir başlık kalır. Gerekçe, reddedilen alternatifler ve kararın yeniden açılma koşulu:
+  [ADR-0002](adr/0002-elsevier-discovery-only.md).
+
+### Yazar takibi (Faz 5.4)
+
+- `UserAuthor.last_work_at` bir **su seviyesi işareti**: gecelik koşu OpenAlex'ten
+  yalnızca bu tarihten yeni işleri ister. Olmasaydı üretken bir yazarın tüm kariyeri her
+  gece yeniden içeri alınırdı.
+- Duraklatmak satırı ve işareti korur; silip yeniden eklemek ikisini de kaybettirir.
+- Takip **kimlikle** yapılır (ORCID / OpenAlex id), isimle değil: OpenAlex'te binlerce
+  "J. Smith" var ve yanlış eşleşme akışı sessizce başkasının yayınlarıyla doldurur.
 
 ### Patentler (Faz 5.2)
 

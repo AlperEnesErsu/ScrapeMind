@@ -35,13 +35,14 @@ ve YouTube kanal aboneliği + transkript özeti var.
 | **Patent kaynakları**: EPO OPS (dünya çapında) + PatentsView (ABD) (Faz 5.2) | ✅ anahtar + admin opt-in gerektirir |
 | **Prior-art araması** + LLM yenilik değerlendirmesi (`/papers/patents`) | ✅ sonuçlar **saklanmaz** |
 | **Dergi kalite katmanı**: SJR quartile rozeti + atıf sayısı + `?quartile=` filtresi (Faz 5.3) | ✅ `journals` tablosu **elle seed edilir** |
+| **Yazar takibi** (ORCID → OpenAlex, gecelik) + opsiyonel **Scopus** (Faz 5.4) | ✅ Scopus discovery-only, varsayılan kapalı |
 
 **Doğrulama durumu (12 Ağustos 2026):**
 
 ```
-pytest tests/ -q      →  842 passed in ~88s
+pytest tests/ -q      →  917 passed in ~91s
 ruff check app/ tests/  →  All checks passed!
-black --check app/ tests/ →  185 files would be left unchanged
+black --check app/ tests/ →  191 files would be left unchanged
 ```
 
 > ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
@@ -286,8 +287,35 @@ açılan opsiyonel Scopus. Kapsam, 4 artımlı adım, doğrulama ve devir notlar
 > kredilendirilmeli ([SCRAPING.md](SCRAPING.md) §11). Rozet tooltip'indeki ve filtre
 > altındaki atıf metnini kaldırma — lisans şartı.
 >
-> Sırada **5.4 (yazar takibi + opsiyonel Scopus)** var. Mevcut `UserAuthor` modeli
-> genişletilir, yeni tablo açılmaz ([PHASE5.md](PHASE5.md) §5.4).
+> **12 Ağustos 2026 — Faz 5.4 bitti** (`feat/phase5-author-tracking`). **Faz 5 tamam.**
+> - **Yazar takibi** — `UserAuthor` genişletildi (yeni tablo yok): `openalex_id`, `orcid`,
+>   `last_work_at`, `active`. Migration `f4c1e8b52a76`.
+>   `last_work_at` bir **su seviyesi işareti**; olmasaydı üretken bir yazarın tüm kariyeri
+>   her gece yeniden içeri alınırdı.
+> - **Çözümleme takip anında yapılır**, gecelik koşuda değil: hatalı ORCID kullanıcının
+>   gözü önünde patlar, bir gece sonra task log'una gömülmez.
+> - Takip **kimlikle** yapılır, isimle değil — OpenAlex'te binlerce "J. Smith" var.
+> - **`Followed Authors` profil sekmesi** (scrape modülünde, PHASE5'in dediği gibi
+>   academic'te değil — veriyi sahiplenen modülde). Kullanıcının kayıtlı ORCID'i tek
+>   tıkla takip olarak sunulur.
+> - **`authors.ingest_for_all_users` 03:25**, kuyruk `scrape` (patent task'larının
+>   aksine `io` değil — aynı OpenAlex bütçesini harcıyorlar).
+> - **Scopus** — discovery-only, varsayılan kapalı, `abstract` sabit `None`.
+>   Saklanabilir metadata `_hydrate_scopus_payloads` ile OpenAlex'ten gelir.
+>
+> ⚠️ **`scopus_source`'daki `abstract=None` bir lisans kısıtıdır, optimizasyon değil.**
+> "Zaten API veriyor, alalım" diye değiştirme — gerekçe, reddedilen alternatifler ve
+> kararın yeniden açılma koşulu [ADR-0002](adr/0002-elsevier-discovery-only.md)'de.
+> Kalan risk (OpenAlex hidrasyonu tutmazsa Elsevier kaynaklı başlık saklanır) orada
+> açıkça yazılı.
+>
+> ⚠️ Test tuzağı: bir test client'ının `_user_id`'sini değiştirmek Flask-Login'in
+> çözdüğü kullanıcıyı **değiştirmiyor**. Sahiplik testi yazarken satırı doğrudan ikinci
+> kullanıcıya ait yarat — ilk yazdığım hâli 200 dönerken 404 bekliyordu, yani hiçbir şey
+> test etmiyordu.
+>
+> Doğrulama sınırı (5.2–5.4 boyunca aynı): sayfalar **görsel olarak** kontrol edilmedi,
+> giriş gerektiriyor. Render, HTML gövdesini okuyan route testleriyle doğrulandı.
 
 İki şey buradaki listeyi etkiliyor:
 - Aşağıdaki **§5.4 ② (yazar takibi)** Faz 5.4'e taşındı, orada planlandı.

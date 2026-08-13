@@ -35,6 +35,22 @@ class PriorArtForm(FlaskForm):
     submit = SubmitField(_l("Search prior art"))
 
 
+class FollowAuthorForm(FlaskForm):
+    """Follow an author by ORCID or OpenAlex id (Faz 5.4).
+
+    Deliberately not a free-text name search: OpenAlex has thousands of
+    "J. Smith" entries and picking the wrong one silently fills a user's feed
+    with a stranger's papers. An identifier is unambiguous, and the ORCID a
+    researcher already stored on the Identifiers tab is one click away.
+    """
+
+    identifier = StringField(
+        _l("ORCID or OpenAlex author id"),
+        validators=[DataRequired(), Length(max=64)],
+    )
+    submit = SubmitField(_l("Follow"))
+
+
 class UserFeedForm(FlaskForm):
     """Add a custom RSS/Atom feed — see
     app/modules/scrape/service.py:add_user_feed. `label` is optional; the

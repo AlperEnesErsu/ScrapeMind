@@ -56,6 +56,7 @@ from app.modules.scrape.sources import (
     patentsview_source,
     pubmed_source,
     rss_source,
+    scopus_source,
     semantic_scholar_source,
     youtube_channel_source,
 )
@@ -74,6 +75,7 @@ AVAILABLE_SOURCES: dict[str, Any] = {
     youtube_channel_source.SOURCE_NAME: youtube_channel_source,
     epo_ops_source.SOURCE_NAME: epo_ops_source,
     patentsview_source.SOURCE_NAME: patentsview_source,
+    scopus_source.SOURCE_NAME: scopus_source,
 }
 # Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
 # under its own key, sharing the one `rss_source` module — the module's
@@ -234,6 +236,19 @@ SOURCE_META: dict[str, dict] = {
         "credentials_ok": patentsview_source.credentials_ok,
         "requires_admin_optin": "patents_enabled",
     },
+    # Scopus (Faz 5.4) — discovery only, default off. Read
+    # docs/adr/0002-elsevier-discovery-only.md before touching this entry.
+    "scopus": {
+        "label": "Scopus (discovery)",
+        "icon": "bi-search",
+        "desc": "Finds work the open catalogues miss; metadata comes from OpenAlex",
+        "url": "https://www.scopus.com",
+        "topics": ["general"],
+        "category": "academic",
+        "requires_key": True,
+        "credentials_ok": scopus_source.credentials_ok,
+        "requires_admin_optin": "scopus_enabled",
+    },
     "manual": {
         "label": "Manual",
         "icon": "bi-link-45deg",
@@ -259,7 +274,7 @@ for _feed in rss_source.FEEDS:
 # opt-in `effective_source_prefs` keeps them off for every user.
 _DEFAULT = (
     "arxiv,semantic_scholar,pubmed,openalex,crossref,youtube_reach,github_reach,web_reach,"
-    "youtube_channel,epo_ops,patentsview," + ",".join(f["key"] for f in rss_source.FEEDS)
+    "youtube_channel,epo_ops,patentsview,scopus," + ",".join(f["key"] for f in rss_source.FEEDS)
 )
 
 

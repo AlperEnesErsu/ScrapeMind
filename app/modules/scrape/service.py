@@ -28,6 +28,7 @@ from app.modules.scrape.models import (
     Paper,
     PaperNote,
     ScanRun,
+    UserAuthor,
     UserChannel,
     UserFeed,
     UserPaper,
@@ -859,6 +860,39 @@ def keyword_search_terms(keywords: list, source_name: str) -> tuple[list[str], d
     return terms, alias
 
 
+def _hydrate_scopus_payloads(payloads: list) -> list:
+    """Replace Scopus discovery payloads with OpenAlex records where possible.
+
+    This is the working half of the discovery-only design
+    (`docs/adr/0002-elsevier-discovery-only.md`): Scopus tells us a DOI exists,
+    OpenAlex supplies the metadata we are allowed to keep. A hydrated payload
+    is returned under `source="openalex"`, so what lands in `papers` is an
+    OpenAlex record — abstract, authors, ISSN, citations and all.
+
+    A DOI OpenAlex has never heard of keeps its Scopus payload: a title and a
+    link-out, no abstract. That is the residual exposure the ADR names, and it
+    is bounded to the title.
+
+    One request per DOI, which is why Scopus is capped at 25 results a run.
+    A hydration failure is logged and the discovery payload kept — losing the
+    result entirely would be worse than showing a bare title.
+    """
+    from app.modules.scrape.sources.openalex_source import fetch_by_doi
+
+    out = []
+    for payload in payloads:
+        if not payload.doi:
+            out.append(payload)
+            continue
+        try:
+            hydrated = fetch_by_doi(payload.doi)
+        except Exception:  # noqa: BLE001 — a miss must not lose the result
+            logger.warning("scopus_hydration_failed", doi=payload.doi)
+            hydrated = None
+        out.append(hydrated or payload)
+    return out
+
+
 def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
     """Run every enabled source with this user's keywords; persist + link the
     results back to them.
@@ -897,6 +931,8 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
             logger.exception("scrape_source_failed", source=name, user_id=user.id)
             per_source[name] = -1  # sentinel: this source errored
             continue
+        if name == "scopus":
+            payloads = _hydrate_scopus_payloads(payloads)
         per_source[name] = len(payloads)
         hits += len(payloads)
         for payload in payloads:
@@ -912,6 +948,157 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
 
 # Backward-compatible alias — pre-multi-source callers used the arXiv name.
 scrape_arxiv_for_user = scrape_for_user
+
+
+# ----------------------------------------------------------------------------
+# Author following (Faz 5.4)
+# ----------------------------------------------------------------------------
+
+#: Per-user cap on followed authors. Each active follow is one OpenAlex
+#: request per night, so this is a politeness budget against a free API, not a
+#: product limit — hence a module constant rather than an admin setting.
+MAX_USER_AUTHORS = 50
+
+AUTHOR_CAP_MESSAGE = "Author limit reached. Unfollow one before adding another."
+
+
+def list_user_authors(user: User) -> list[UserAuthor]:
+    return UserAuthor.query.filter_by(user_id=user.id).order_by(UserAuthor.author_name.asc()).all()
+
+
+def count_user_authors(user: User) -> int:
+    return UserAuthor.query.filter_by(user_id=user.id).count()
+
+
+def follow_author(user: User, raw: str) -> tuple[UserAuthor | None, str | None]:
+    """Follow an author by ORCID or OpenAlex id. Returns `(row, None)` or
+    `(None, error_message)` — never raises for bad user input.
+
+    Resolution happens here, once, rather than per nightly run: it is the
+    expensive and failure-prone half, and doing it on follow means a typo
+    surfaces immediately in front of the user instead of disappearing into a
+    task log a night later.
+
+    Re-following an author already on the list reactivates a paused row rather
+    than creating a duplicate, and consumes no cap slot — same shape as
+    `add_user_channel`.
+    """
+    from app.modules.scrape.sources.openalex_source import fetch_author
+
+    raw = (raw or "").strip()
+    if not raw:
+        return None, "Please enter an ORCID or OpenAlex author id."
+
+    try:
+        resolved = fetch_author(raw)
+    except Exception:  # noqa: BLE001 — a lookup failure is user-facing, not a 500
+        logger.exception("author_resolve_failed", user_id=user.id)
+        return None, "Could not reach OpenAlex right now. Please try again."
+
+    if resolved is None:
+        return None, "No author found for that ORCID or OpenAlex id."
+
+    existing = UserAuthor.query.filter_by(user_id=user.id, openalex_id=resolved["id"]).first()
+    if existing is not None:
+        if not existing.active:
+            existing.active = True
+            db.session.commit()
+        return existing, None
+
+    if count_user_authors(user) >= MAX_USER_AUTHORS:
+        logger.info("user_author_cap_reached", user_id=user.id, cap=MAX_USER_AUTHORS)
+        return None, AUTHOR_CAP_MESSAGE
+
+    name = resolved["name"] or raw
+    # The table's unique constraint is on (user_id, author_name) and predates
+    # openalex_id. Two different OpenAlex authors can share a display name, so
+    # disambiguate rather than letting the insert fail.
+    if UserAuthor.query.filter_by(user_id=user.id, author_name=name).first() is not None:
+        name = f"{name} ({resolved['id']})"
+
+    row = UserAuthor(
+        user_id=user.id,
+        author_name=name[:128],
+        openalex_id=resolved["id"],
+        orcid=resolved["orcid"],
+        active=True,
+    )
+    db.session.add(row)
+    db.session.commit()
+    logger.info("author_followed", user_id=user.id, openalex_id=resolved["id"])
+    return row, None
+
+
+def unfollow_author(user: User, author_id: int) -> bool:
+    """Delete a follow. Returns whether a row was actually removed."""
+    row = UserAuthor.query.filter_by(id=author_id, user_id=user.id).first()
+    if row is None:
+        return False
+    db.session.delete(row)
+    db.session.commit()
+    return True
+
+
+def toggle_user_author(user: User, author_id: int) -> UserAuthor | None:
+    """Pause/resume a follow, keeping the row and its `last_work_at`
+    high-water mark — deleting and re-adding would lose the latter and
+    re-import the author's back catalogue."""
+    row = UserAuthor.query.filter_by(id=author_id, user_id=user.id).first()
+    if row is None:
+        return None
+    row.active = not row.active
+    db.session.commit()
+    return row
+
+
+def ingest_user_authors(user: User, *, max_results: int = 25) -> dict:
+    """Fetch new works for every author this user follows.
+
+    Returns the same summary shape as the other scan paths (`{"sources": {…},
+    "hits": n, "linked": n}`) so `apply_scan_result` reads it unchanged, with
+    `-1` marking an author whose lookup failed.
+
+    Each author is asked only for works published since `last_work_at`, which
+    is advanced afterwards. A follow with no `openalex_id` (resolution failed
+    at some point) is skipped rather than retried here — re-resolving belongs
+    in the follow path, where a human can see the error.
+    """
+    from app.modules.scrape.sources.openalex_source import works_by_author
+
+    authors = [a for a in list_user_authors(user) if a.active and a.openalex_id]
+    if not authors:
+        return {"hits": 0, "linked": 0, "reason": "no_authors"}
+
+    hits = 0
+    linked = 0
+    summary: dict[str, int] = {}
+    for author in authors:
+        try:
+            payloads = works_by_author(
+                author.openalex_id, since=author.last_work_at, max_results=max_results
+            )
+        except Exception:  # noqa: BLE001 — one bad author must not kill the run
+            logger.exception(
+                "author_ingest_failed", user_id=user.id, openalex_id=author.openalex_id
+            )
+            summary[author.author_name] = -1
+            continue
+
+        summary[author.author_name] = len(payloads)
+        hits += len(payloads)
+        newest = author.last_work_at
+        for payload in payloads:
+            paper = upsert_paper(payload)
+            _, created = link_user_paper(user, paper, matched_keyword=author.author_name[:64])
+            if created:
+                linked += 1
+            if payload.published_at and (newest is None or payload.published_at > newest):
+                newest = payload.published_at
+        author.last_work_at = newest
+
+    db.session.commit()
+    logger.info("author_ingest_done", user_id=user.id, hits=hits, linked=linked)
+    return {"hits": hits, "linked": linked, "sources": summary}
 
 
 def patent_sources(user: User | None = None) -> dict:
@@ -1953,6 +2140,7 @@ class TimelineEvent:
 
 KIND_SCRAPE = "scrape_run"
 KIND_PATENT_SCAN = "patent_run"
+KIND_AUTHOR_SCAN = "author_run"
 KIND_FAVORITED = "favorited"
 KIND_NOTE_ADDED = "note_added"
 KIND_DISMISSED = "dismissed"
@@ -2023,6 +2211,28 @@ def build_timeline(user: User, *, limit: int = 40) -> list[TimelineEvent]:
                 when=r.finished_at or r.started_at,
                 kind=KIND_PATENT_SCAN,
                 title="Manuel patent taraması" if r.trigger == "manual" else "Patent taraması",
+                detail=None,
+                badge=f"+{r.new_items}" if r.new_items else None,
+            )
+        )
+
+    # ---- Author scans ----
+    author_runs = (
+        ScanRun.query.filter(
+            ScanRun.user_id == user.id,
+            ScanRun.kind == "authors",
+            ScanRun.status.in_(("ok", "partial", "error")),
+        )
+        .order_by(desc(ScanRun.started_at))
+        .limit(limit)
+        .all()
+    )
+    for r in author_runs:
+        events.append(
+            TimelineEvent(
+                when=r.finished_at or r.started_at,
+                kind=KIND_AUTHOR_SCAN,
+                title="Takip edilen yazarlar",
                 detail=None,
                 badge=f"+{r.new_items}" if r.new_items else None,
             )
