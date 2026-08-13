@@ -23,6 +23,7 @@ upward so the service layer can isolate a failing source.
 from __future__ import annotations
 
 import os
+import re
 from datetime import UTC, datetime
 
 import requests
@@ -230,3 +231,156 @@ def search_for_keywords(keywords: list[str], *, max_results: int = 25) -> list[P
         return []
     query = " OR ".join(keywords)
     return search(query, max_results=max_results)
+
+
+# ----------------------------------------------------------------------------
+# Author lookups (Faz 5.4) and DOI hydration (Faz 5.4, for Scopus)
+# ----------------------------------------------------------------------------
+
+_AUTHORS_URL = "https://api.openalex.org/authors"
+
+_ORCID_RE = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
+
+
+def normalize_orcid(value: str | None) -> str | None:
+    """Reduce anything ORCID-shaped to the bare `0000-0002-1825-0097` form.
+
+    Users paste the full `https://orcid.org/…` URL as often as the bare id,
+    and sometimes without hyphens. Returns None when the result still is not
+    a valid ORCID — callers treat that as "not an ORCID", not as an error.
+    """
+    if not value:
+        return None
+    candidate = value.strip().upper()
+    for prefix in ("HTTPS://ORCID.ORG/", "HTTP://ORCID.ORG/", "ORCID.ORG/", "ORCID:"):
+        if candidate.startswith(prefix):
+            candidate = candidate[len(prefix) :]
+            break
+    candidate = candidate.strip().strip("/")
+    if "-" not in candidate and len(candidate) == 16:
+        candidate = "-".join(candidate[i : i + 4] for i in range(0, 16, 4))
+    return candidate if _ORCID_RE.match(candidate) else None
+
+
+def _author_id(raw: str | None) -> str | None:
+    """ "https://openalex.org/A5023888391" -> "A5023888391"."""
+    if not raw:
+        return None
+    tail = str(raw).rsplit("/", 1)[-1].strip()
+    return tail or None
+
+
+def fetch_author(orcid_or_id: str) -> dict | None:
+    """Resolve an ORCID or OpenAlex author id to `{"id", "name", "orcid",
+    "works_count"}`.
+
+    Called once, when a user follows someone — not per nightly run. That is
+    the whole reason `UserAuthor.openalex_id` is stored: resolution is the
+    expensive, failure-prone half, and doing it on follow means the user sees
+    the error immediately instead of it vanishing into a task log.
+
+    Returns None when the identifier resolves to nothing (404 is OpenAlex's
+    answer for an unknown ORCID, which is a normal outcome of a typo).
+    """
+    value = (orcid_or_id or "").strip()
+    if not value:
+        return None
+
+    orcid = normalize_orcid(value)
+    if orcid:
+        url = f"{_AUTHORS_URL}/https://orcid.org/{orcid}"
+    else:
+        author_id = _author_id(value)
+        if not author_id or not author_id.upper().startswith("A"):
+            return None
+        url = f"{_AUTHORS_URL}/{author_id}"
+
+    if not openalex_slot():
+        raise SourceThrottledError("openalex rate limit")
+    resp = requests.get(url, headers=_headers(), timeout=_TIMEOUT)
+    if resp.status_code == 404:
+        logger.info("openalex_author_not_found", value=value)
+        return None
+    resp.raise_for_status()
+
+    data = resp.json() or {}
+    author_id = _author_id(data.get("id"))
+    if not author_id:
+        return None
+    return {
+        "id": author_id,
+        "name": (data.get("display_name") or "").strip() or None,
+        "orcid": normalize_orcid(data.get("orcid")),
+        "works_count": data.get("works_count"),
+    }
+
+
+def works_by_author(
+    author_id: str, *, since: datetime | None = None, max_results: int = 25
+) -> list[PaperPayload]:
+    """Recent works by one OpenAlex author, newest first.
+
+    `since` filters server-side with `from_publication_date`, which is what
+    keeps a prolific author from re-importing a career's output every night —
+    the caller passes the high-water mark it already stored
+    (`UserAuthor.last_work_at`).
+
+    OpenAlex's date filter is day-granular and inclusive, so the newest
+    already-seen day comes back again; `upsert_paper` collapses those to the
+    existing rows, and `link_user_paper` reports them as not-new. Re-fetching
+    one day is cheaper than tracking work ids.
+    """
+    author_id = _author_id(author_id)
+    if not author_id:
+        return []
+
+    filters = [f"author.id:{author_id}"]
+    if since is not None:
+        filters.append(f"from_publication_date:{since.date().isoformat()}")
+
+    params: dict[str, str | int] = {
+        "filter": ",".join(filters),
+        "per-page": min(max_results, _MAX_PER_PAGE),
+        "sort": "publication_date:desc",
+    }
+    mailto = _mailto()
+    if mailto:
+        params["mailto"] = mailto
+
+    if not openalex_slot():
+        raise SourceThrottledError("openalex rate limit")
+    resp = requests.get(_API_URL, params=params, headers=_headers(), timeout=_TIMEOUT)
+    resp.raise_for_status()
+
+    items = resp.json().get("results") or []
+    out = [p for p in (_to_payload(i) for i in items) if p is not None]
+    logger.info("openalex_author_works", author_id=author_id, hits=len(out))
+    return out[:max_results]
+
+
+def fetch_by_doi(doi: str) -> PaperPayload | None:
+    """One work, by DOI (Faz 5.4).
+
+    Exists for the Scopus path: Scopus tells us a DOI exists but its licence
+    forbids storing the abstract, so the storable metadata is fetched from
+    OpenAlex instead. See `scopus_source` and
+    `docs/adr/0002-elsevier-discovery-only.md`.
+
+    Returns None for an unknown DOI — OpenAlex does not have everything, and
+    that is a normal outcome rather than a failure.
+    """
+    normalized = normalize_doi(doi)
+    if not normalized:
+        return None
+    if not openalex_slot():
+        raise SourceThrottledError("openalex rate limit")
+
+    resp = requests.get(
+        f"{_API_URL}/https://doi.org/{normalized}",
+        headers=_headers(),
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    return _to_payload(resp.json() or {})

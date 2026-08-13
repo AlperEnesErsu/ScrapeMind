@@ -278,12 +278,41 @@ class Collection(BaseModel):
 
 
 class UserAuthor(BaseModel):
-    """Author followed by a user for tracking newly published papers."""
+    """An author a user follows, to be told when they publish something new.
+
+    The table has existed since PR #4-#6 but nothing ever read it; Faz 5.4 is
+    what makes it load-bearing. Extended rather than replaced — the unique
+    constraint on `(user_id, author_name)` and any rows already written stay
+    valid.
+
+    Why both `orcid` and `openalex_id`. ORCID is what a researcher knows and
+    types; OpenAlex is what the API queries by. Resolution happens once, on
+    follow (`openalex_source.fetch_author`), so the nightly run is a plain
+    id lookup rather than a resolution per author per night. A row with no
+    `openalex_id` is a follow we could not resolve — kept, because the name is
+    still what the user asked for, but skipped by ingestion.
+
+    `last_work_at` is the high-water mark of what we have already ingested for
+    this author. Nightly runs ask OpenAlex only for works published after it,
+    which is what keeps a prolific author from re-importing a career's output
+    every night.
+    """
 
     __tablename__ = "user_authors"
 
     user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
     author_name = db.Column(db.String(128), nullable=False)
+
+    # "A5023888391" — OpenAlex's author id, without the URL prefix.
+    openalex_id = db.Column(db.String(32), nullable=True, index=True)
+    # "0000-0002-1825-0097" — 19 chars including hyphens.
+    orcid = db.Column(db.String(19), nullable=True)
+    last_work_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    # Pause switch, mirroring UserFeed/UserChannel: a paused follow keeps its
+    # row (and its high-water mark) instead of losing both to a delete.
+    active = db.Column(db.Boolean, nullable=False, default=True, server_default="true")
+
+    user = db.relationship("User", backref=db.backref("followed_authors", lazy="dynamic"))
 
     __table_args__ = (db.UniqueConstraint("user_id", "author_name", name="uq_user_author"),)
 
