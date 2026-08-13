@@ -39,6 +39,10 @@ TASK_ROUTES = {
     "channels.ingest_for_all_users": {"queue": "io"},
     "patents.ingest_for_user": {"queue": "io"},
     "patents.ingest_for_all_users": {"queue": "io"},
+    # `scrape`, not `io`: these hit the same OpenAlex budget as the academic
+    # scan, so they belong in the same pool rather than racing it for tokens.
+    "authors.ingest_for_user": {"queue": "scrape"},
+    "authors.ingest_for_all_users": {"queue": "scrape"},
 }
 
 
@@ -117,6 +121,7 @@ def init_celery(flask_app) -> Celery:
 # Side-effect: importing this module registers tasks via decorators.
 # Keep at the bottom to avoid circular imports.
 from app.tasks import (  # noqa: E402, F401
+    author_tasks,
     channel_tasks,
     core_tasks,
     digest_tasks,

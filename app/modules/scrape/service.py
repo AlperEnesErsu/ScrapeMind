@@ -2105,6 +2105,7 @@ class TimelineEvent:
 
 KIND_SCRAPE = "scrape_run"
 KIND_PATENT_SCAN = "patent_run"
+KIND_AUTHOR_SCAN = "author_run"
 KIND_FAVORITED = "favorited"
 KIND_NOTE_ADDED = "note_added"
 KIND_DISMISSED = "dismissed"
@@ -2175,6 +2176,28 @@ def build_timeline(user: User, *, limit: int = 40) -> list[TimelineEvent]:
                 when=r.finished_at or r.started_at,
                 kind=KIND_PATENT_SCAN,
                 title="Manuel patent taraması" if r.trigger == "manual" else "Patent taraması",
+                detail=None,
+                badge=f"+{r.new_items}" if r.new_items else None,
+            )
+        )
+
+    # ---- Author scans ----
+    author_runs = (
+        ScanRun.query.filter(
+            ScanRun.user_id == user.id,
+            ScanRun.kind == "authors",
+            ScanRun.status.in_(("ok", "partial", "error")),
+        )
+        .order_by(desc(ScanRun.started_at))
+        .limit(limit)
+        .all()
+    )
+    for r in author_runs:
+        events.append(
+            TimelineEvent(
+                when=r.finished_at or r.started_at,
+                kind=KIND_AUTHOR_SCAN,
+                title="Takip edilen yazarlar",
                 detail=None,
                 badge=f"+{r.new_items}" if r.new_items else None,
             )

@@ -55,6 +55,14 @@ BEAT_SCHEDULE = {
         "task": "scrape.run_for_all_users",
         "schedule": crontab(hour=3, minute=15),
     },
+    # Per-user author following — after the academic scrape (03:15) so the two
+    # don't contend for the same OpenAlex budget at the same moment. Needs no
+    # keys and no admin opt-in, so unlike patents it always fans out; a user
+    # who follows nobody costs one indexed query.
+    "authors-ingest-nightly": {
+        "task": "authors.ingest_for_all_users",
+        "schedule": crontab(hour=3, minute=25),
+    },
     # Per-user feed relevance scoring + linking — after the nightly scrape so
     # both flows don't contend, before the digest so linked news is included
     # in it.
