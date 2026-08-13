@@ -61,6 +61,12 @@ services:
     environment:
       DATABASE_URL: postgresql://scrapemind:scrapemind@db:5432/scrapemind
       REDIS_URL: redis://redis:6379/0
+    # Overrides the entrypoint's migrate+gunicorn (docker/entrypoint.sh runs
+    # gunicorn unconditionally and never execs "$$@"), so without this the
+    # `command:` below is silently ignored and this container starts a web
+    # server instead of a Celery worker. docker-compose.prod.yml has had this
+    # line all along; dev did not, so the whole `tasks` profile ran gunicorn.
+    entrypoint: []
     command: >
       celery -A app.tasks worker
       -Q celery,scrape,llm -c 4
@@ -85,6 +91,12 @@ services:
     environment:
       DATABASE_URL: postgresql://scrapemind:scrapemind@db:5432/scrapemind
       REDIS_URL: redis://redis:6379/0
+    # Overrides the entrypoint's migrate+gunicorn (docker/entrypoint.sh runs
+    # gunicorn unconditionally and never execs "$$@"), so without this the
+    # `command:` below is silently ignored and this container starts a web
+    # server instead of a Celery worker. docker-compose.prod.yml has had this
+    # line all along; dev did not, so the whole `tasks` profile ran gunicorn.
+    entrypoint: []
     command: >
       celery -A app.tasks worker
       -Q io -P threads -c 16
@@ -109,6 +121,12 @@ services:
     environment:
       DATABASE_URL: postgresql://scrapemind:scrapemind@db:5432/scrapemind
       REDIS_URL: redis://redis:6379/0
+    # Overrides the entrypoint's migrate+gunicorn (docker/entrypoint.sh runs
+    # gunicorn unconditionally and never execs "$$@"), so without this the
+    # `command:` below is silently ignored and this container starts a web
+    # server instead of a Celery worker. docker-compose.prod.yml has had this
+    # line all along; dev did not, so the whole `tasks` profile ran gunicorn.
+    entrypoint: []
     command: celery -A app.tasks beat --loglevel=info
     depends_on:
       redis:

@@ -1,0 +1,20 @@
+# Line endings.
+#
+# Git stores text as LF and, on Windows, `core.autocrlf=true` hands the working
+# tree CRLF. That is fine for Python — but `docker/Dockerfile` COPYs from the
+# working tree, so a Windows checkout bakes CRLF shell scripts into a Linux
+# image. The kernel then reads `#!/bin/sh\r`, looks for an interpreter literally
+# named `sh\r`, and the container dies with the famously unhelpful
+#
+#     exec docker/entrypoint.sh: no such file or directory
+#
+# Every worker/beat container was unstartable on a Windows checkout because of
+# this. Pin the files that Linux has to execute.
+
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf
+docker/entrypoint.sh text eol=lf
+
+# Compiled catalogs are binary — never normalise, never diff as text.
+*.mo binary
