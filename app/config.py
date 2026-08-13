@@ -27,6 +27,19 @@ class BaseConfig:
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+    # Named, not Flask's default "session". Cookies are scoped by host, NOT by
+    # port, so on a developer machine running several local apps every one of
+    # them writes a "session" cookie for `localhost` and they overwrite each
+    # other. Flask can't decrypt a cookie signed with another app's SECRET_KEY,
+    # so it silently discards it — and the first thing the user sees is
+    #
+    #     Bad Request — The CSRF session token is missing.
+    #
+    # which sends you looking at CSRF instead of at cookie collision.
+    SESSION_COOKIE_NAME = "scrapemind_session"
+    # Same reasoning for the "remember me" cookie, which Flask-Login names
+    # "remember_token" by default.
+    REMEMBER_COOKIE_NAME = "scrapemind_remember"
 
     RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")
 
