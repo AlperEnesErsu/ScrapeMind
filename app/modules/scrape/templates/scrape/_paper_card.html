@@ -49,6 +49,22 @@
     {% endif %}
     {% if r.paper.published_at %}<span class="small text-muted">· {{ r.paper.published_at.strftime('%d.%m.%Y') }}</span>{% endif %}
 
+    {# Journal quality (Faz 5.3). The quartile comes from the seeded `journals`
+       table via ISSN; SJR data is CC BY-NC and the attribution in the tooltip
+       is a licence condition, not decoration — see docs/SCRAPING.md §11. #}
+    {% set _journal = r.paper.journal %}
+    {% if _journal and _journal.sjr_quartile %}
+      <span class="badge quartile-badge quartile-{{ _journal.sjr_quartile|lower }}"
+            title="{{ _journal.title }}{% if _journal.sjr_year %} · SJR {{ _journal.sjr_year }}{% endif %} — {{ _('Data: SCImago Journal & Country Rank') }}">
+        {{ _journal.sjr_quartile }}
+      </span>
+    {% endif %}
+    {% if r.paper.cited_by_count is not none %}
+      <span class="small text-muted" title="{{ _('Citations reported by the source') }}">
+        <i class="bi bi-quote"></i>{{ r.paper.cited_by_count }}
+      </span>
+    {% endif %}
+
     <span class="ms-auto small d-flex align-items-center gap-2">
       {% if r.is_favorite %}
         <span class="text-danger d-inline-flex align-items-center gap-1"><i class="bi bi-heart-fill"></i>{{ _('Favorite') }}</span>

@@ -288,6 +288,29 @@ table code {
 .source-badge--news { background: #f3e8ff; color: #6b21a8; }
 [data-bs-theme="dark"] .source-badge--news { background: #3b1264; color: #dcc4f7; }
 
+/* Patent sources (Faz 5.2) */
+.source-epo_ops      { background: #fdf1dd; color: #7a4a05; }
+.source-patentsview  { background: #fdf1dd; color: #7a4a05; }
+[data-bs-theme="dark"] .source-epo_ops     { background: #4a3208; color: #f3d7a3; }
+[data-bs-theme="dark"] .source-patentsview { background: #4a3208; color: #f3d7a3; }
+
+/* SJR quartile (Faz 5.3). Q1 is the signal researchers scan for, so it gets
+   the only saturated colour; Q2-Q4 stay progressively quieter rather than
+   turning the card into a traffic light. A low quartile is not a warning. */
+.quartile-badge {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 7px;
+}
+.quartile-q1 { background: #d9f2e3; color: #10633a; }
+.quartile-q2 { background: #e4f0f8; color: #1c5378; }
+.quartile-q3 { background: #eef0f2; color: #4a5259; }
+.quartile-q4 { background: #f2f2f3; color: #63696e; }
+[data-bs-theme="dark"] .quartile-q1 { background: #0e3f26; color: #a5e0c0; }
+[data-bs-theme="dark"] .quartile-q2 { background: #123449; color: #a8cfe8; }
+[data-bs-theme="dark"] .quartile-q3 { background: #2c3136; color: #c3c9cf; }
+[data-bs-theme="dark"] .quartile-q4 { background: #2a2d30; color: #a9aeb3; }
+
 /* Discover view tabs (Discover / Favorites / Hidden) */
 .view-tabs {
   border-bottom: 1px solid var(--paper-card-border);

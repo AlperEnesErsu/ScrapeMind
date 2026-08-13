@@ -51,6 +51,23 @@ class Paper(BaseModel):
         db.UniqueConstraint("source", "external_id", name="uq_paper_source_external"),
     )
 
+    #: The `journals` row for this paper's ISSN, when one has been seeded.
+    #:
+    #: `viewonly` and hand-written join condition because there is no foreign
+    #: key here (see `issn_l` above) — SQLAlchemy needs to be told explicitly
+    #: which side is "foreign". Nothing writes through this relationship: the
+    #: journals table is populated only by `scripts/seed_journals.py`.
+    #:
+    #: Left lazy on purpose. Most queries never touch it; the two feed paths
+    #: that render a quartile badge over ~100 cards ask for it explicitly with
+    #: `joinedload`, the same way they do for `video_summary`.
+    journal = db.relationship(
+        "Journal",
+        primaryjoin="foreign(Paper.issn_l) == remote(Journal.issn_l)",
+        viewonly=True,
+        uselist=False,
+    )
+
 
 class UserPaper(BaseModel):
     """A paper surfaced to a user by the scraper. The matched-keyword field

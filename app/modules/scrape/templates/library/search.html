@@ -28,6 +28,15 @@
       </select>
     </div>
     <div class="col-md-2">
+      <label class="form-label small">{{ _('Quartile') }}</label>
+      <select name="quartile" class="form-select form-select-sm">
+        <option value="">{{ _('— Any —') }}</option>
+        {% for qt in ('Q1', 'Q2', 'Q3', 'Q4') %}
+          <option value="{{ qt }}" {% if filters.quartile == qt %}selected{% endif %}>{{ qt }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
       <label class="form-label small">{{ _('From') }}</label>
       <input type="date" name="from" value="{{ filters.from }}" class="form-control form-control-sm">
     </div>
@@ -36,6 +45,11 @@
       <input type="date" name="to" value="{{ filters.to }}" class="form-control form-control-sm">
     </div>
   </div>
+  {% if filters.quartile %}
+    {# Attribution is a licence condition of the SJR data, not decoration —
+       see docs/SCRAPING.md §11. #}
+    <div class="form-text mt-1">{{ _('Quartiles from SCImago Journal & Country Rank (CC BY-NC).') }}</div>
+  {% endif %}
   <div class="d-flex align-items-center gap-3 mt-2">
     <div class="form-check">
       <input class="form-check-input" type="checkbox" name="has_notes" value="1" id="has_notes"

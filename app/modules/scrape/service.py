@@ -24,6 +24,7 @@ from app.extensions import db
 from app.modules.academic.service import list_user_keywords
 from app.modules.scrape.doi import normalize_doi
 from app.modules.scrape.models import (
+    Journal,
     Paper,
     PaperNote,
     ScanRun,
@@ -1057,6 +1058,7 @@ def list_user_papers(
     view: str = "discover",
     q: str | None = None,
     kinds: tuple[str, ...] | None = None,
+    quartiles: tuple[str, ...] | None = None,
 ) -> list[UserPaper]:
     """List a user's surfaced papers.
 
@@ -1077,6 +1079,11 @@ def list_user_papers(
     academic sources (arXiv et al. publish daily) always win the top slots;
     a user's own YouTube videos and RSS items get buried and never surface
     on the home page without a dedicated, kind-scoped query.
+
+    `quartiles` restricts to papers whose journal carries one of the given
+    SJR quartiles (e.g. `("Q1",)`). Papers with no seeded journal are excluded
+    — "show me Q1 work" is a claim about the journal, and a paper we know
+    nothing about does not satisfy it.
     """
     from sqlalchemy.orm import joinedload, selectinload
 
@@ -1090,10 +1097,21 @@ def list_user_papers(
             # _paper_card.html's `r.paper.video_summary` check fires one
             # extra SELECT per row (N+1) across the feed's up-to-100 cards.
             joinedload(UserPaper.paper).joinedload(Paper.video_summary),
+            # Same reasoning for the quartile badge (Faz 5.3): the card reads
+            # `r.paper.journal.sjr_quartile`, which is one more SELECT per card
+            # without this.
+            joinedload(UserPaper.paper).joinedload(Paper.journal),
         )
     )
     if kinds:
         query = query.filter(Paper.kind.in_(kinds))
+    if quartiles:
+        # An inner join, not a filter on the outer join above: asking for Q1
+        # means "papers in a Q1 journal", so papers with no journal row are
+        # correctly excluded rather than silently kept.
+        query = query.join(Journal, Paper.issn_l == Journal.issn_l).filter(
+            Journal.sjr_quartile.in_(quartiles)
+        )
     q = (q or "").strip()
     if q:
         like = f"%{q.lower()}%"
@@ -1639,12 +1657,17 @@ def search_user_papers_query(
     date_from=None,
     date_to=None,
     has_notes: bool = False,
+    quartile: str | None = None,
 ):
     """Return a SQLAlchemy query for the user's papers matching the filters.
 
     Returns a query (not a list) so the caller can `.paginate()`. Scoped to the
     user and hides dismissed papers — search is over the live library. All
     filters are ANDed; each is skipped when empty.
+
+    `quartile` ("Q1".."Q4") restricts to papers whose journal carries that SJR
+    quartile; papers with no seeded journal are excluded, because "Q1 only" is
+    a claim about the journal that an unknown one does not satisfy.
     """
     from sqlalchemy.orm import joinedload, selectinload
 
@@ -1656,6 +1679,7 @@ def search_user_papers_query(
             # Same N+1 guard as list_user_papers — this feeds
             # scrape/_paper_card.html via library/search.html too.
             joinedload(UserPaper.paper).joinedload(Paper.video_summary),
+            joinedload(UserPaper.paper).joinedload(Paper.journal),
         )
     )
 
@@ -1672,6 +1696,10 @@ def search_user_papers_query(
         )
     if source:
         query = query.filter(Paper.source == source)
+    if quartile:
+        query = query.join(Journal, Paper.issn_l == Journal.issn_l).filter(
+            Journal.sjr_quartile == quartile
+        )
     if date_from is not None:
         query = query.filter(Paper.published_at >= date_from)
     if date_to is not None:
