@@ -24,7 +24,12 @@ from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app.core.audit.middleware import log_action
-from app.modules.scrape.forms import AiSettingsForm, UserChannelForm, UserFeedForm
+from app.modules.scrape.forms import (
+    AiSettingsForm,
+    FollowAuthorForm,
+    UserChannelForm,
+    UserFeedForm,
+)
 from app.modules.scrape.service import (
     add_note,
     count_user_papers,
@@ -164,12 +169,40 @@ def _ai_ctx(*, clear_forms: bool = False):
     }
 
 
+def _authors_ctx():
+    """Context for the "Followed Authors" profile tab (Faz 5.4).
+
+    Surfaces the user's own ORCID from the Identifiers tab so following your
+    own publications is one click rather than a copy-paste between two
+    screens. Reading it here (rather than putting this UI inside the academic
+    module) keeps the data's owner and its UI in the same module — scrape owns
+    `UserAuthor`, and scrape already imports `academic.service` for keywords.
+    """
+    from app.modules.academic.service import list_user_identifiers
+    from app.modules.scrape.service import MAX_USER_AUTHORS, list_user_authors
+
+    own = [i.value for i in list_user_identifiers(current_user, type_code="orcid")]
+    authors = list_user_authors(current_user)
+    followed_orcids = {a.orcid for a in authors if a.orcid}
+    return {
+        "form": FollowAuthorForm(),
+        "authors": authors,
+        "author_count": len(authors),
+        "max_user_authors": MAX_USER_AUTHORS,
+        # Only ORCIDs not already followed — offering "follow yourself" to
+        # someone who already does is noise.
+        "own_orcids": [o for o in own if o not in followed_orcids],
+    }
+
+
 def _register_tabs():
-    """Tab registry'ye scrape modülünün AI Settings tabını ekle — uygulama
-    başlarken (bu modül import edildiğinde) çağrılır."""
+    """Tab registry'ye scrape modülünün AI Settings ve Followed Authors
+    tablarını ekle — uygulama başlarken (bu modül import edildiğinde)
+    çağrılır."""
     from app.core.settings.tab_registry import register_profile_tab
 
     register_profile_tab("ai", "bi-robot", "AI Settings", _ai_ctx)
+    register_profile_tab("authors", "bi-person-badge", "Followed Authors", _authors_ctx)
 
 
 def _register_system_toggles():
@@ -1091,6 +1124,63 @@ def edit_note_route(note_id: int):
         changes={"tag": note.tag},
     )
     return render_template("scrape/_note_view.html", n=note)
+
+
+# ----------------------------------------------------------------------------
+# Followed authors (Faz 5.4)
+# ----------------------------------------------------------------------------
+
+
+def _render_authors_tab(**flash_kwargs):
+    """Re-render the whole tab. Author lists are short (capped at
+    MAX_USER_AUTHORS) so there is nothing to gain from a finer-grained swap,
+    and one target means add/remove/toggle can't leave the count stale."""
+    return _render_settings_tab("authors", **_authors_ctx(), **flash_kwargs)
+
+
+@scrape_bp.route("/profile/authors/follow", methods=["POST"])
+@login_required
+def submit_author_follow():
+    from app.modules.scrape.service import follow_author
+
+    form = FollowAuthorForm()
+    if not form.validate_on_submit():
+        return _render_authors_tab(
+            flash_kind="danger", flash_msg=_("Please enter an ORCID or OpenAlex author id.")
+        )
+
+    row, error = follow_author(current_user, form.identifier.data)
+    if row is None:
+        return _render_authors_tab(flash_kind="danger", flash_msg=_(error))
+
+    log_action("user.author_followed", entity_type="user_author", entity_id=str(row.id))
+    return _render_authors_tab(
+        flash_kind="success",
+        flash_msg=_("Now following %(name)s.", name=row.author_name),
+    )
+
+
+@scrape_bp.route("/profile/authors/<int:author_id>/pause", methods=["POST"])
+@login_required
+def submit_author_pause(author_id: int):
+    from app.modules.scrape.service import toggle_user_author
+
+    row = toggle_user_author(current_user, author_id)
+    if row is None:
+        abort(404)
+    log_action("user.author_toggled", entity_type="user_author", entity_id=str(author_id))
+    return _render_authors_tab()
+
+
+@scrape_bp.route("/profile/authors/<int:author_id>/delete", methods=["POST"])
+@login_required
+def submit_author_delete(author_id: int):
+    from app.modules.scrape.service import unfollow_author
+
+    if not unfollow_author(current_user, author_id):
+        abort(404)
+    log_action("user.author_unfollowed", entity_type="user_author", entity_id=str(author_id))
+    return _render_authors_tab(flash_kind="info", flash_msg=_("Author unfollowed."))
 
 
 # ----------------------------------------------------------------------------

@@ -1,0 +1,90 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Followed Authors') }}</h6>
+
+<p class="small text-muted">
+  {{ _('Get their new publications in your feed automatically. Checked nightly through OpenAlex.') }}
+</p>
+
+{# One-click follow for the ORCIDs the user already stored on the Identifiers
+   tab — otherwise this is a copy-paste between two screens. Only ORCIDs not
+   already followed are offered. #}
+{% if own_orcids %}
+<div class="alert alert-info py-2 d-flex flex-wrap align-items-center gap-2">
+  <i class="bi bi-person-check"></i>
+  <span class="small">{{ _('Follow your own publications:') }}</span>
+  {% for orcid in own_orcids %}
+    <form hx-post="{{ url_for('scrape.submit_author_follow') }}"
+          hx-target="#tab-content" hx-swap="innerHTML" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="identifier" value="{{ orcid }}">
+      <button type="submit" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-plus-lg me-1"></i>{{ orcid }}
+      </button>
+    </form>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form hx-post="{{ url_for('scrape.submit_author_follow') }}"
+      hx-target="#tab-content" hx-swap="innerHTML" class="mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="form-label small">{{ form.identifier.label.text }}</label>
+  <div class="input-group">
+    {{ form.identifier(class="form-control", placeholder="0000-0002-1825-0097") }}
+    <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+  </div>
+  <div class="form-text">
+    {# An identifier, not a name: OpenAlex has thousands of "J. Smith" entries
+       and the wrong pick silently fills a feed with a stranger's papers. #}
+    {{ _('An identifier rather than a name — names are ambiguous and the wrong match fills your feed with someone else.') }}
+    <span class="ms-1">{{ _('%(used)s / %(cap)s authors', used=author_count, cap=max_user_authors) }}</span>
+  </div>
+</form>
+
+{% if authors %}
+<ul class="list-group">
+  {% for a in authors %}
+  <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="d-flex align-items-center gap-2">
+      <i class="bi bi-person-badge {{ 'text-info' if a.active else 'text-muted' }}"></i>
+      <strong>{{ a.author_name }}</strong>
+      {% if a.orcid %}
+        <a href="https://orcid.org/{{ a.orcid }}" target="_blank" rel="noopener noreferrer"
+           class="small text-muted text-decoration-none">{{ a.orcid }}</a>
+      {% endif %}
+      {% if not a.active %}
+        <span class="badge rounded-pill text-bg-secondary-subtle text-secondary">{{ _('Paused') }}</span>
+      {% endif %}
+      {% if a.last_work_at %}
+        <span class="small text-muted">
+          {{ _('Newest seen: %(when)s', when=a.last_work_at.strftime('%d.%m.%Y')) }}
+        </span>
+      {% endif %}
+    </span>
+    <span class="d-flex gap-1">
+      <form hx-post="{{ url_for('scrape.submit_author_pause', author_id=a.id) }}"
+            hx-target="#tab-content" hx-swap="innerHTML" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                title="{{ _('Resume') if not a.active else _('Pause') }}">
+          <i class="bi {{ 'bi-play' if not a.active else 'bi-pause' }}"></i>
+        </button>
+      </form>
+      <form hx-post="{{ url_for('scrape.submit_author_delete', author_id=a.id) }}"
+            hx-target="#tab-content" hx-swap="innerHTML"
+            hx-confirm="{{ _('Unfollow this author?') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Unfollow') }}">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<div class="empty-state">
+  <i class="bi bi-person-badge"></i>
+  <p class="mb-0 small">{{ _('You are not following anyone yet.') }}</p>
+</div>
+{% endif %}

@@ -2945,6 +2945,74 @@ msgstr "Çeyreklik"
 msgid "Quartiles from SCImago Journal & Country Rank (CC BY-NC)."
 msgstr "Çeyreklikler SCImago Journal & Country Rank'ten (CC BY-NC)."
 
+msgid "Followed Authors"
+msgstr "Takip Edilen Yazarlar"
+
+msgid "Followed authors"
+msgstr "Takip edilen yazarlar"
+
+msgid "ORCID or OpenAlex author id"
+msgstr "ORCID veya OpenAlex yazar kimliği"
+
+msgid "Please enter an ORCID or OpenAlex author id."
+msgstr "Lütfen bir ORCID veya OpenAlex yazar kimliği girin."
+
+msgid "No author found for that ORCID or OpenAlex id."
+msgstr "Bu ORCID veya OpenAlex kimliğiyle yazar bulunamadı."
+
+msgid "Could not reach OpenAlex right now. Please try again."
+msgstr "Şu anda OpenAlex'e ulaşılamıyor. Lütfen tekrar deneyin."
+
+msgid "Author limit reached. Unfollow one before adding another."
+msgstr "Yazar sınırına ulaşıldı. Yenisini eklemeden önce birini bırakın."
+
+#, python-format
+msgid "Now following %(name)s."
+msgstr "%(name)s artık takip ediliyor."
+
+msgid "Author unfollowed."
+msgstr "Yazar takipten çıkarıldı."
+
+msgid ""
+"Get their new publications in your feed automatically. Checked nightly "
+"through OpenAlex."
+msgstr ""
+"Yeni yayınları otomatik olarak akışınıza düşer. Her gece OpenAlex "
+"üzerinden kontrol edilir."
+
+msgid "Follow your own publications:"
+msgstr "Kendi yayınlarınızı takip edin:"
+
+msgid ""
+"An identifier rather than a name — names are ambiguous and the wrong "
+"match fills your feed with someone else."
+msgstr ""
+"İsim değil kimlik — isimler belirsizdir ve yanlış eşleşme akışınızı "
+"başkasının yayınlarıyla doldurur."
+
+#, python-format
+msgid "%(used)s / %(cap)s authors"
+msgstr "%(used)s / %(cap)s yazar"
+
+#, python-format
+msgid "Newest seen: %(when)s"
+msgstr "Görülen en yeni: %(when)s"
+
+msgid "Resume"
+msgstr "Devam ettir"
+
+msgid "Pause"
+msgstr "Duraklat"
+
+msgid "Unfollow this author?"
+msgstr "Bu yazar takipten çıkarılsın mı?"
+
+msgid "Unfollow"
+msgstr "Takibi bırak"
+
+msgid "You are not following anyone yet."
+msgstr "Henüz kimseyi takip etmiyorsunuz."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
