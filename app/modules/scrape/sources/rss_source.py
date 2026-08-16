@@ -25,35 +25,28 @@ import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
-from urllib.parse import urljoin
 
 import feedparser
 import requests
 import structlog
 
-from app.modules.scrape.net_guard import is_public_http_url
+from app.modules.scrape.fetcher import (
+    USER_AGENT as _USER_AGENT,
+)
+from app.modules.scrape.fetcher import (
+    fetch_budget,
+    get_with_redirects,
+    read_capped,
+)
 from app.modules.scrape.sources.payload import PaperPayload
 
 logger = structlog.get_logger()
 
-# Fallbacks used when no Flask app context is available (direct adapter unit
-# tests). Inside a worker or request the values come from config — see `_cfg`.
-_DEFAULT_TIMEOUT = 15
-_DEFAULT_MAX_BYTES = 5 * 1024 * 1024
-_CONNECT_TIMEOUT = 5
-_MAX_REDIRECTS = 3
-
-_USER_AGENT = "ScrapeMind/1.0 (+https://github.com/birmstf/ScrapeMind)"
 _ACCEPT = "application/atom+xml, application/rss+xml, application/xml;q=0.9, */*;q=0.8"
 
 
 def _cfg(key: str, default: Any) -> Any:
-    """Read a Flask config value, tolerating "no app context".
-
-    This module is otherwise pure I/O, but the fetch budget (timeout, body cap,
-    SSRF escape hatch) has to be deployment-configurable and Celery tasks always
-    run inside an app context, so a guarded lookup is the least invasive option.
-    """
+    """Read a Flask config value, tolerating "no app context"."""
     try:
         from flask import current_app
 
@@ -151,61 +144,6 @@ class FeedFetchResult:
     entries: tuple = ()
 
 
-def _get_with_redirects(
-    url: str,
-    headers: dict[str, str],
-    timeout: tuple[int, int],
-    *,
-    allow_private: bool,
-):
-    """GET `url`, following at most `_MAX_REDIRECTS` hops manually.
-
-    Redirects are followed by hand rather than via `allow_redirects=True` so
-    every hop goes back through the SSRF guard — a public URL that 302s to
-    `http://169.254.169.254/` would otherwise sail straight past a validation
-    that only ever saw the first address.
-    """
-    current = url
-    for _hop in range(_MAX_REDIRECTS + 1):
-        ok, _err = is_public_http_url(current, allow_private=allow_private)
-        if not ok:
-            return None, current, "blocked"
-        resp = requests.get(
-            current,
-            headers=headers,
-            timeout=timeout,
-            allow_redirects=False,
-            stream=True,
-        )
-        if resp.status_code in (301, 302, 303, 307, 308):
-            location = resp.headers.get("Location")
-            resp.close()
-            if not location:
-                return None, current, "http_error"
-            current = urljoin(current, location)
-            continue
-        return resp, current, "ok"
-    return None, current, "http_error"
-
-
-def _read_capped(resp, max_bytes: int) -> bytes | None:
-    """Accumulate the response body, aborting past `max_bytes`.
-
-    A feed URL is user-supplied; without a cap a 300 MB "feed" would OOM the
-    worker before feedparser ever saw it.
-    """
-    chunks: list[bytes] = []
-    total = 0
-    for chunk in resp.iter_content(chunk_size=64 * 1024):
-        if not chunk:
-            continue
-        total += len(chunk)
-        if total > max_bytes:
-            return None
-        chunks.append(chunk)
-    return b"".join(chunks)
-
-
 def fetch_feed_conditional(
     feed: dict[str, str],
     *,
@@ -241,12 +179,10 @@ def fetch_feed_conditional(
     if last_modified:
         headers["If-Modified-Since"] = last_modified
 
-    timeout = (_CONNECT_TIMEOUT, int(_cfg("FEED_FETCH_TIMEOUT", _DEFAULT_TIMEOUT)))
-    max_bytes = int(_cfg("FEED_FETCH_MAX_BYTES", _DEFAULT_MAX_BYTES))
-    allow_private = bool(_cfg("FEED_ALLOW_PRIVATE_HOSTS", False))
+    timeout, max_bytes, allow_private = fetch_budget()
 
     try:
-        resp, final_url, hop_status = _get_with_redirects(
+        resp, final_url, hop_status = get_with_redirects(
             url, headers, timeout, allow_private=allow_private
         )
     except requests.Timeout:
@@ -273,7 +209,7 @@ def fetch_feed_conditional(
             return FeedFetchResult([], "http_error", http_status=resp.status_code)
 
         try:
-            raw = _read_capped(resp, max_bytes)
+            raw = read_capped(resp, max_bytes)
         except requests.RequestException:
             logger.warning("rss_fetch_timeout", key=key, url=final_url)
             return FeedFetchResult([], "timeout")

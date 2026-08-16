@@ -35,11 +35,13 @@ from urllib.parse import urlparse
 import requests
 import structlog
 
+from app.modules.scrape.fetcher import USER_AGENT as _USER_AGENT
+from app.modules.scrape.fetcher import cfg as _cfg
+from app.modules.scrape.fetcher import read_capped
 from app.modules.scrape.net_guard import is_public_http_url
 from app.modules.scrape.ratelimit import youtube_channel_slot
-from app.modules.scrape.sources import rss_source
 from app.modules.scrape.sources.payload import PaperPayload
-from app.modules.scrape.sources.rss_source import fetch_feed_conditional
+from app.modules.scrape.sources.rss_source import _strip_html, fetch_feed_conditional
 
 logger = structlog.get_logger()
 
@@ -64,7 +66,6 @@ _MAX_DESCRIPTION_CHARS = 5_000
 # nothing and avoids flagging a slow-but-fine extraction as a hard failure.
 _YTDLP_TIMEOUT = 30
 
-_USER_AGENT = rss_source._USER_AGENT
 
 # A generic, non-leaking error for every resolution failure (bad input, SSRF
 # guard, network failure, no id found, verify-fetch failed) — same principle
@@ -148,14 +149,14 @@ def _resolve_channel_id_from_page(url: str) -> tuple[str | None, str | None]:
     tag. This is a best-effort scrape of a page we don't control the shape
     of, not a stable API — hence the two-pattern fallback.
     """
-    allow_private = bool(rss_source._cfg("FEED_ALLOW_PRIVATE_HOSTS", False))
+    allow_private = bool(_cfg("FEED_ALLOW_PRIVATE_HOSTS", False))
     ok, _err = is_public_http_url(url, allow_private=allow_private)
     if not ok:
         logger.warning("youtube_channel_resolve_blocked", url=url)
         return None, _CHANNEL_ERROR
 
     headers = {"User-Agent": _USER_AGENT}
-    timeout = (_CONNECT_TIMEOUT, int(rss_source._cfg("FEED_FETCH_TIMEOUT", 15)))
+    timeout = (_CONNECT_TIMEOUT, int(_cfg("FEED_FETCH_TIMEOUT", 15)))
     try:
         resp = requests.get(url, headers=headers, timeout=timeout, stream=True)
     except requests.Timeout:
@@ -172,9 +173,9 @@ def _resolve_channel_id_from_page(url: str) -> tuple[str | None, str | None]:
         if resp.status_code >= 400:
             logger.warning("youtube_channel_resolve_http_error", url=url, status=resp.status_code)
             return None, _CHANNEL_ERROR
-        max_bytes = int(rss_source._cfg("FEED_FETCH_MAX_BYTES", 5 * 1024 * 1024))
+        max_bytes = int(_cfg("FEED_FETCH_MAX_BYTES", 5 * 1024 * 1024))
         try:
-            raw = rss_source._read_capped(resp, max_bytes)
+            raw = read_capped(resp, max_bytes)
         except requests.RequestException:
             logger.warning("youtube_channel_resolve_timeout", url=url)
             return None, _CHANNEL_ERROR
@@ -264,7 +265,7 @@ def _entry_description(entry: Any) -> str | None:
         media_group = entry.get("media_group")
         if isinstance(media_group, dict):
             raw = media_group.get("media_description") or media_group.get("description")
-    text = rss_source._strip_html(raw)
+    text = _strip_html(raw)
     if text and len(text) > _MAX_DESCRIPTION_CHARS:
         text = text[:_MAX_DESCRIPTION_CHARS]
     return text
@@ -380,14 +381,14 @@ def _fetch_caption_body(url: str) -> bytes | None:
     """Caption URLs come back inside yt-dlp's JSON — untrusted remote data —
     so they get the same SSRF guard + capped read as any other server-side
     fetch, not a bare `requests.get`."""
-    allow_private = bool(rss_source._cfg("FEED_ALLOW_PRIVATE_HOSTS", False))
+    allow_private = bool(_cfg("FEED_ALLOW_PRIVATE_HOSTS", False))
     ok, _err = is_public_http_url(url, allow_private=allow_private)
     if not ok:
         logger.warning("youtube_transcript_caption_url_blocked")
         return None
 
     headers = {"User-Agent": _USER_AGENT}
-    timeout = (_CONNECT_TIMEOUT, int(rss_source._cfg("FEED_FETCH_TIMEOUT", 15)))
+    timeout = (_CONNECT_TIMEOUT, int(_cfg("FEED_FETCH_TIMEOUT", 15)))
     try:
         resp = requests.get(url, headers=headers, timeout=timeout, stream=True)
     except requests.RequestException:
@@ -398,9 +399,9 @@ def _fetch_caption_body(url: str) -> bytes | None:
         if resp.status_code >= 400:
             logger.warning("youtube_transcript_caption_http_error", status=resp.status_code)
             return None
-        max_bytes = int(rss_source._cfg("FEED_FETCH_MAX_BYTES", 5 * 1024 * 1024))
+        max_bytes = int(_cfg("FEED_FETCH_MAX_BYTES", 5 * 1024 * 1024))
         try:
-            return rss_source._read_capped(resp, max_bytes)
+            return read_capped(resp, max_bytes)
         except requests.RequestException:
             logger.warning("youtube_transcript_caption_timeout")
             return None

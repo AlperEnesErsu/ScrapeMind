@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 import requests
 
+from app.modules.scrape import fetcher
 from app.modules.scrape.net_guard import BLOCKED_MESSAGE, is_public_http_url
 from app.modules.scrape.ratelimit import SourceThrottledError
 from app.modules.scrape.sources import AVAILABLE_SOURCES, SOURCE_META, enabled_sources, rss_source
@@ -891,12 +892,15 @@ class _FakeResponse:
 
 def _allow(monkeypatch):
     """Neutralise the SSRF guard — CI has no outbound DNS, and these tests are
-    about parsing, not about the guard (which has its own tests)."""
-    monkeypatch.setattr(rss_source, "is_public_http_url", lambda url, **kw: (True, None))
+    about parsing, not about the guard (which has its own tests).
+
+    Patched on `fetcher`, not on `rss_source`: redirect following and the
+    per-hop guard call live there now (see ADR-0001 and the module docstring)."""
+    monkeypatch.setattr(fetcher, "is_public_http_url", lambda url, **kw: (True, None))
 
 
 def _serve(monkeypatch, response, *, capture: dict | None = None):
-    """Point `rss_source.requests.get` at a canned response."""
+    """Point the shared fetcher's `requests.get` at a canned response."""
     _allow(monkeypatch)
 
     def _fake_get(url, **kwargs):
@@ -905,7 +909,7 @@ def _serve(monkeypatch, response, *, capture: dict | None = None):
             capture.update(kwargs)
         return response
 
-    monkeypatch.setattr(rss_source.requests, "get", _fake_get)
+    monkeypatch.setattr(fetcher.requests, "get", _fake_get)
 
 
 def test_rss_fetch_feed_maps_entries_to_payloads(monkeypatch):
@@ -952,9 +956,9 @@ def test_rss_fetch_feed_returns_empty_on_network_failure(monkeypatch):
     _allow(monkeypatch)
 
     def _boom(*a, **k):
-        raise rss_source.requests.ConnectionError("network unreachable")
+        raise fetcher.requests.ConnectionError("network unreachable")
 
-    monkeypatch.setattr(rss_source.requests, "get", _boom)
+    monkeypatch.setattr(fetcher.requests, "get", _boom)
     result = rss_source.fetch_feed_conditional(_FAKE_FEED)
     assert result.status == "http_error"
     assert result.payloads == []
@@ -1001,9 +1005,9 @@ def test_rss_fetch_timeout_is_reported(monkeypatch):
     _allow(monkeypatch)
 
     def _slow(*a, **k):
-        raise rss_source.requests.Timeout("read timed out")
+        raise fetcher.requests.Timeout("read timed out")
 
-    monkeypatch.setattr(rss_source.requests, "get", _slow)
+    monkeypatch.setattr(fetcher.requests, "get", _slow)
     res = rss_source.fetch_feed_conditional(_FAKE_FEED)
     assert res.status == "timeout"
     assert res.payloads == []
@@ -1048,8 +1052,8 @@ def test_rss_fetch_revalidates_ssrf_on_each_redirect(monkeypatch):
             )
         raise AssertionError("must not fetch the redirect target")
 
-    monkeypatch.setattr(rss_source, "is_public_http_url", _fake_guard)
-    monkeypatch.setattr(rss_source.requests, "get", _fake_get)
+    monkeypatch.setattr(fetcher, "is_public_http_url", _fake_guard)
+    monkeypatch.setattr(fetcher.requests, "get", _fake_get)
     res = rss_source.fetch_feed_conditional(_FAKE_FEED)
     assert res.status == "blocked"
     assert hops == [_FAKE_FEED["url"]]
@@ -1127,12 +1131,13 @@ def test_fetch_similar_papers_returns_payloads(monkeypatch):
 # YouTube channels (youtube_channel_source) — channel resolution, channel-feed
 # ingestion via rss_source.fetch_feed_conditional, and yt-dlp transcripts.
 #
-# `yc.requests` and `rss_source.requests` are the same module object (both did
-# a plain `import requests`), so monkeypatching `yc.requests.get` also serves
-# the calls `fetch_channel_videos` makes through `rss_source.fetch_feed_conditional`.
+# `yc.requests` and `fetcher.requests` are the same module object (both did a
+# plain `import requests`), so monkeypatching `yc.requests.get` also serves the
+# calls `fetch_channel_videos` makes through `rss_source.fetch_feed_conditional`.
 # The SSRF guard, however, is imported by *name* into each module's own
-# namespace, so both `yc.is_public_http_url` and `rss_source.is_public_http_url`
-# need neutralising separately.
+# namespace, so both `yc.is_public_http_url` (yc's own one-shot GETs) and
+# `fetcher.is_public_http_url` (the shared redirect loop) need neutralising
+# separately.
 # ----------------------------------------------------------------------------
 
 _CHANNEL_ID = "UC" + "A1b2C3d4E5f6G7h8I9j0K1"  # 24 chars: "UC" + 22

@@ -37,8 +37,12 @@ vaat ediyordu, doğru değil.)
 5. Profil tab'ları genişletilebilir: `app/core/settings/tab_registry.py`
 6. Kaynak adaptörleri **duck-typed modül**, ABC yok — `SOURCE_NAME` + `search()` +
    `search_for_keywords()`. Yeni kaynak = modül + `sources/__init__.py`'de 3 satır
-7. Adaptörler modül seviyesinde `requests` kullanır — testler modülün kendi
-   `requests`'ini monkeypatch'liyor, ortak wrapper'ın arkasına saklama
+7. **Tek atışlık GET yapan adaptörler** modül seviyesinde `requests` kullanır — testler
+   modülün kendi `requests`'ini monkeypatch'liyor, ortak wrapper'ın arkasına saklama.
+   **Ama yönlendirme takibi ve SSRF politikası `app/modules/scrape/fetcher.py`'ye
+   aittir**: kullanıcı URL'si alan her yol `get_with_redirects` + `read_capped`
+   kullanır, kendi döngüsünü yazmaz (hop başına yeniden doğrulama garantisi ancak tek
+   yerde tutulursa geçerli). Gerekçe: `docs/adr/0001-headless-browser-yok.md`
 
 ## Klasör Yapısı
 ```
