@@ -828,9 +828,11 @@ class TestStripJats:
 # ----------------------------------------------------------------------------
 # RSS feeds (rss_source) — parsed from a saved fixture, no network
 #
-# `fetch_feed` no longer hands the URL to feedparser (that path had no timeout);
-# it does the HTTP itself and parses the bytes. So the fixture is served through
-# a stubbed `requests.get` rather than smuggled in as the "url".
+# `fetch_feed_conditional` does not hand the URL to feedparser (that path had
+# no timeout); it does the HTTP itself and parses the bytes. So the fixture is
+# served through a stubbed `requests.get` rather than smuggled in as the "url".
+# `.status` is asserted alongside `.payloads` — an empty list alone cannot tell
+# a parse failure apart from a feed that simply had nothing in it.
 # ----------------------------------------------------------------------------
 
 _RSS_FIXTURE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -908,7 +910,9 @@ def _serve(monkeypatch, response, *, capture: dict | None = None):
 
 def test_rss_fetch_feed_maps_entries_to_payloads(monkeypatch):
     _serve(monkeypatch, _FakeResponse(_RSS_FIXTURE))
-    out = rss_source.fetch_feed(_FAKE_FEED)
+    result = rss_source.fetch_feed_conditional(_FAKE_FEED)
+    assert result.status == "ok"
+    out = result.payloads
     assert len(out) == 2
     p = out[0]
     assert p.source == "fake_blog"
@@ -927,7 +931,9 @@ def test_rss_fetch_feed_maps_entries_to_payloads(monkeypatch):
 
 def test_rss_fetch_feed_skips_entries_without_title(monkeypatch):
     _serve(monkeypatch, _FakeResponse(_TITLELESS_FIXTURE))
-    assert rss_source.fetch_feed(_FAKE_FEED) == []
+    result = rss_source.fetch_feed_conditional(_FAKE_FEED)
+    assert result.status == "ok"
+    assert result.payloads == []
 
 
 def test_rss_fetch_feed_returns_empty_on_parse_failure(monkeypatch):
@@ -937,7 +943,9 @@ def test_rss_fetch_feed_returns_empty_on_parse_failure(monkeypatch):
         raise OSError("bad parser")
 
     monkeypatch.setattr(rss_source.feedparser, "parse", _boom)
-    assert rss_source.fetch_feed(_FAKE_FEED) == []
+    result = rss_source.fetch_feed_conditional(_FAKE_FEED)
+    assert result.status == "parse_error"
+    assert result.payloads == []
 
 
 def test_rss_fetch_feed_returns_empty_on_network_failure(monkeypatch):
@@ -947,7 +955,9 @@ def test_rss_fetch_feed_returns_empty_on_network_failure(monkeypatch):
         raise rss_source.requests.ConnectionError("network unreachable")
 
     monkeypatch.setattr(rss_source.requests, "get", _boom)
-    assert rss_source.fetch_feed(_FAKE_FEED) == []
+    result = rss_source.fetch_feed_conditional(_FAKE_FEED)
+    assert result.status == "http_error"
+    assert result.payloads == []
 
 
 def test_rss_fetch_sends_conditional_headers(monkeypatch):

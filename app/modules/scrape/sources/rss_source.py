@@ -3,8 +3,8 @@ Google DeepMind, Hugging Face, ...).
 
 Unlike the academic adapters (arxiv/semantic_scholar/pubmed), these feeds are
 NOT per-user keyword searches — the content is identical for every user. The
-architecture reflects that: `fetch_feed` is keyword-agnostic (no `search`/
-real `search_for_keywords`), and the global ingestion task
+architecture reflects that: `fetch_feed_conditional` is keyword-agnostic (no
+`search`/real `search_for_keywords`), and the global ingestion task
 (`app/tasks/feed_tasks.py:ingest_all`) fetches each feed exactly once for the
 whole deployment. Per-user relevance is scored separately afterwards
 (`ai_service.score_feed_relevance` + `service.link_relevant_feed_items`).
@@ -306,16 +306,6 @@ def fetch_feed_conditional(
     return FeedFetchResult(
         out, "ok", new_etag, new_last_modified, http_status, feed_title, raw_entries
     )
-
-
-def fetch_feed(feed: dict[str, str], *, max_entries: int = 40) -> list[PaperPayload]:
-    """Payload-only wrapper over :func:`fetch_feed_conditional`.
-
-    Kept with its original signature on purpose — callers import it
-    function-locally and tests monkeypatch it with a plain list-returning
-    stub, so the conditional-GET machinery stays opt-in.
-    """
-    return fetch_feed_conditional(feed, max_entries=max_entries).payloads
 
 
 def _entries_to_payloads(parsed: Any, key: str, max_entries: int) -> list[PaperPayload]:

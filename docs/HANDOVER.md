@@ -326,19 +326,38 @@ açılan opsiyonel Scopus. Kapsam, 4 artımlı adım, doğrulama ve devir notlar
   IP'sine bağlı. Gerekçe tablosu [PHASE5.md](PHASE5.md) §2'de — aynı soru tekrar
   gelirse oradan cevaplanır.
 
-§5.1 (conditional GET) Faz 5'ten bağımsız ve çakışmıyor; küçük olduğu için önce
-bitirilebilir.
+### 5.1 ✅ Beslemelerde conditional GET — bitti (16 Ağustos 2026, `feat/feed-conditional-get`)
 
-### 5.1 Beslemelerde conditional GET'i bitir — **küçük ve net**
-`UserFeed.etag`/`last_modified` kolonları **var** ve `add_user_feed` doğrulama
-fetch'inde dolduruyor. Ama iki yutma yolu da (`feed_tasks.ingest_all` ve
-`service.ingest_user_feeds`) `fetch_feed`'i çağırıyor, o da etag'i **geçirmiyor** →
-304 yolu hâlâ ölü, her gece her besleme tam indiriliyor.
+Her iki yutma yolu da (`feed_tasks.ingest_all` ve `service.ingest_user_feeds`) artık
+saklı `etag`/`last_modified`'ı geri gönderiyor; `not_modified` o beslemeyi sıfır
+parse/upsert maliyetiyle kısa devre yapıyor. Kurallar ve saklama yerleri
+[SCRAPING.md](SCRAPING.md) §7.1'de. Uygulamada çıkan üç şey:
 
-`ingest_user_channels` bunu doğru yapıyor — **kalıbı oradan kopyala**: `fetch_feed`
-yerine `fetch_feed_conditional`'ı saklı etag ile çağır, dönen değeri satıra geri yaz,
-`not_modified` durumunu sıfır olarak kaydet. Küratörlü beslemeler için etag'i tutacak
-bir yer gerekiyor (`SystemSettings` yeterli, yeni tablo gerekmez).
+- **`add_user_feed` bir tuzak taşıyordu.** Doğrulama fetch'inin etag'ini satıra
+  yazıyordu ama payload'ları upsert etmiyordu. Conditional GET canlanınca ilk gecelik
+  koşu 304 alıp beslemeyi **kalıcı olarak boş** gösterecekti. Artık doğrulama fetch'i
+  validator saklamıyor; bir besleme aktifleştiğinde (`toggle_user_feed` ile devam,
+  `add_user_feed` ile yeniden ekleme) validator'ları temizleniyor — duraklatılmışken
+  yayınlananların üzerinden 304'le geçilmesin diye.
+  Bunu doğrulayan eski test (`test_add_user_feed_stores_etag_and_last_modified`)
+  **tersine çevrildi**, adı ve docstring'i nedenini anlatıyor.
+- **Sıra önemli:** validator'lar upsert'lerden **sonra** yazılıyor. Ters sıra, döngü
+  ortasında patlarsa hiç kalıcılaştırılmamış öğelerin üzerinden 304'le geçmek olurdu.
+  `ok` olmayan durum (`timeout`, `http_error`) saklı validator'a hiç dokunmuyor.
+- **`rss_source.fetch_feed` kaldırıldı.** Payload-only sarmalayıcı olarak durduğu sürece
+  conditional GET'i sessizce atlamanın kolay yolu oydu — bu hata zaten bir kez tam
+  böyle oluşmuştu. Tek doğru giriş noktası `fetch_feed_conditional`.
+
+Küratörlü beslemelerin DB satırı olmadığı için validator'ları tek bir JSON blob'da:
+`system_settings["feed_validators"]` (`feed_tasks.FEED_VALIDATORS_KEY`). Admin formu
+sabit alan listesi render ettiği için bu makine-sahipli anahtar orada görünmüyor.
+
+> ⚠️ Testte `system_settings`'i temizleyen bir fixture gerekiyor (`clean_validators`,
+> [test_feeds.py](../tests/modules/test_feeds.py)) — `clean_user` o tabloya bilerek
+> dokunmuyor, yoksa saklı bir etag sonraki testin ilk fetch'ine sızıyor.
+
+**Doğrulama:** `pytest tests/ -q` → 927 passed · ruff + black temiz.
+Sayfa görsel olarak kontrol edilmedi (bu değişiklik UI'a dokunmuyor).
 
 ### 5.2 RSS'siz sitelerden scrape + alan seçici
 Kullanıcı URL verir, sistem sayfadaki alanları otomatik çıkarır, isterse CSS

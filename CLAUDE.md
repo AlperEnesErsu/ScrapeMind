@@ -116,22 +116,23 @@ Her commit tek başına test-yeşil, `git bisect` güvenilir. Commit listesi
 - **`fix(deploy)`** — prod worker `-Q` olmadan çalışıyordu, routed task'ların hiçbiri
   tüketilmiyordu
 
-### Faz 5 — planlandı, uygulanmadı: `docs/PHASE5.md`
-Patent kaynakları (EPO OPS 4 GB/hafta ücretsiz + PatentsView) · dergi kalite katmanı
-(Scimago quartile + atıf sayısı) · yazar takibi (mevcut kimlik modelini canlandırır) ·
+### Faz 5 ✅ tam — plan `docs/PHASE5.md`, uygulama PR #42-#45 ile main'de
+5.1 kimlik/admin kapılı kaynaklar + kalıcı haftalık kota (fail-closed) · 5.2 patent
+kaynakları (EPO OPS + PatentsView) + `/papers/patents` prior-art araması · 5.3 dergi
+kalite katmanı (Scimago quartile + atıf sayısı) · 5.4 yazar takibi (ORCID → OpenAlex) +
 admin panelinden açılan, varsayılan kapalı, **discovery-only** Scopus.
+> ⚠️ `journals` tablosu **elle seed edilir** — Scimago CSV'siz hiçbir kartta quartile
+> rozeti çıkmaz, bu bozukluk değil. `scopus_source`'daki `abstract=None` bir **lisans
+> kısıtı**, optimizasyon değil (`docs/adr/0002-elsevier-discovery-only.md`).
 > **WoS Lite / Elsevier tekrar sorulursa:** engel kota değil. WoS Starter ücretsiz
 > katmanı **50 istek/gün** ve atıf döndürmüyor; Elsevier sözleşmesi içeriğin **kalıcı
 > saklanmasını** ve rekabet eden türev servisi yasaklıyor; Scopus anahtarı kurum IP'sine
 > bağlı. Tam tablo ve karar `docs/PHASE5.md §2`.
 
 ### Sıradaki iş (öncelik sırasıyla)
-1. Beslemelerde conditional GET'i bitir — kalıp `ingest_user_channels`'da hazır
-   (Faz 5'ten bağımsız, küçük)
-2. Faz 5.1 — kimlik gerektiren kaynak altyapısı + kalıcı haftalık kota sayacı
-   (Faz 5'in diğer üç adımının ön koşulu)
-3. RSS'siz site scrape'i + alan seçici (önce `docs/adr/0001-headless-browser-yok.md` oku)
-4. Bluesky adaptörü
+1. RSS'siz site scrape'i + alan seçici (önce `docs/adr/0001-headless-browser-yok.md` oku)
+2. Bluesky adaptörü
+3. Uzun vade: pgvector + gerçek RAG · atıf grafiği · OA tam metin · kayıtlı arama + uyarı
 Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
 
 ## Bilinen Kısıtlar / Tuzaklar
@@ -141,9 +142,15 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
   zenginleştirilir (boş alan dolar, dolu alan **asla** ezilmez). `doi` üzerinde UNIQUE
   yok, sadece index — yarış penceresi var. İki yol farklı satırlara işaret ederse DOI
   satırı kazanır, diğeri olduğu gibi kalır; satır birleştirme yok
-- **Conditional GET beslemelerde hâlâ ölü** — `UserFeed.etag` kolonu var ve dolduruluyor,
-  ama iki yutma yolu da `fetch_feed`'i çağırıp etag'i geçirmiyor. `ingest_user_channels`
-  doğru yapıyor, kalıbı oradan al
+- **Conditional GET her iki besleme yolunda da canlı.** Kullanıcı beslemeleri validator'ı
+  `UserFeed` satırında, küratörlü beslemeler `system_settings["feed_validators"]`'te
+  tutuyor. Üç kural: validator'lar **upsert'lerden sonra** yazılır, `ok` olmayan durum
+  saklı validator'a **dokunmaz**, besleme aktifleşince validator'lar **temizlenir**
+  (`add_user_feed`'in doğrulama fetch'i de etag saklamaz — yoksa ilk gecelik koşu 304
+  alıp beslemeyi kalıcı boş gösterir). Detay: `docs/SCRAPING.md §7.1`
+- `rss_source.fetch_feed` **kaldırıldı** — `fetch_feed_conditional` kullan. Kaldırıldı
+  çünkü payload-only sarmalayıcı olarak durduğu sürece conditional GET'i sessizce
+  atlamanın kolay yolu oydu; bu hata zaten bir kez böyle oluştu
 - **BEAT_SCHEDULE saatleri UTC değil**, `BABEL_DEFAULT_TIMEZONE` (Europe/Istanbul).
   Kullanıcıya gösterilen zamanı elle hesaplama — `app/tasks/schedule_info.py` var
 - **`beat` tek replika olmalı** — zamanlama yerel dosyada, ikincisi her şeyi çift tetikler

@@ -292,10 +292,32 @@ Yutulan haberler otomatik olarak kullanıcıya bağlanmaz; `link_relevant_feed_i
 en fazla 50 bağlanmamış `kind="news"` makaleyi **tek** `ai_service.score_feed_relevance`
 çağrısında puanlatır ve ≥60 skorluları bağlar.
 
-> 🐞 **Bilinen açık:** `fetch_feed_conditional` etag/last_modified alıp döndürüyor ama
-> **hiçbir model bunları saklamıyor** — `UserFeed`'de böyle kolon yok ve her iki yutma
-> yolu da bu değerleri geçirmeyen `fetch_feed` sarmalayıcısını çağırıyor. Yani 304
-> yolu şu an ölü kod ve her gece her besleme tam indiriliyor. Bkz. §10.
+### 7.1 Conditional GET
+
+Her iki yol da saklı `etag`/`last_modified`'ı geri gönderir; `not_modified` o beslemeyi
+**sıfır parse/upsert maliyetiyle** kısa devre yapar. Nerede saklandıkları farklı:
+
+| Yol | Validator'ların yeri |
+|---|---|
+| Kullanıcı beslemeleri | `UserFeed.etag` / `UserFeed.last_modified` (satırın kendisi) |
+| Küratörlü beslemeler | `system_settings["feed_validators"]` — tek JSON blob, `{feed_key: {etag, last_modified}}`. Küratörlü beslemeler `rss_source.FEEDS`'te modül sabiti, DB satırı yok; birkaç kısa string için tablo (ve migration) açmaya değmez. Bu anahtarı yalnızca `ingest_all` yazar, admin formu sabit alan listesi render ettiği için orada görünmez |
+
+Üç kural, üçü de bilinçli:
+
+1. **Validator'lar upsert'lerden sonra yazılır.** Döngü ortasında patlarsa eski etag
+   yerinde kalır ve sonraki koşu tam indirir. Ters sıra, hiç kalıcılaştırılmamış
+   öğelerin üzerinden 304'le geçmek demek olurdu.
+2. **`ok` olmayan durum (`timeout`, `http_error`, …) saklı validator'a dokunmaz.** Onu
+   boş değerle ezmek her hatayı bir sonraki koşuda gereksiz tam indirmeye çevirirdi.
+3. **Bir besleme aktifleşince validator'ları temizlenir** (`add_user_feed` ile yeniden
+   ekleme, `toggle_user_feed` ile devam ettirme). Ayrıca `add_user_feed`'in doğrulama
+   fetch'i **etag'ini saklamaz**: o istek URL'yi doğrular, hiçbir şey yutmaz — etag'i
+   saklamak ilk gecelik koşunun 304 alıp beslemeyi kalıcı olarak boş göstermesine yol
+   açardı. İlk koşudaki bir tam indirme bunun bedeli.
+
+> `not_modified` özet sözlüğünde **0** olarak görünür, `-1` hata sentinel'i olarak
+> değil — `apply_scan_result` `-1`'i `partial` koşuya çeviriyor, oysa 304 tam da
+> istediğimiz sonuç.
 
 ---
 
@@ -389,7 +411,7 @@ Worker ayrımı ([docker-compose.yml](../docker/docker-compose.yml)):
 |---|---|---|
 | 1 | **`doi` üzerinde UNIQUE constraint yok** | Sadece index var. İki worker aynı DOI'yi eşzamanlı ekleyebilir. Bugünkü tek gecelik worker'da pratikte imkânsız; constraint eklemek önce mevcut duplicate'leri temizleyen ayrı bir migration ister |
 | 2 | **Satır birleştirme yok** | DOI bir satırla, `(source, external_id)` başka bir satırla eşleşirse DOI satırı kazanır, diğeri olduğu gibi kalır. Birleştirmek `UserPaper` linklerini taşımayı gerektirir — upsert'in işi değil |
-| 3 | **Conditional GET beslemelerde hâlâ ölü** | `UserFeed.etag` kolonu var ve `add_user_feed` dolduruyor, ama iki yutma yolu da `fetch_feed`'i çağırıyor ve etag'i **geçirmiyor** → 304 yolu ölü. `ingest_user_channels` geçiriyor (§7) |
+| 3 | ~~Conditional GET beslemelerde ölü~~ | **Kapandı.** Her iki yutma yolu da validator'ları round-trip ediyor; kullanıcı beslemeleri `UserFeed` satırında, küratörlü beslemeler `system_settings["feed_validators"]`'te saklıyor. Kurallar ve tuzaklar §7.1'de |
 | 3b | YouTube kanal feed'i validator göndermiyor | Ölçüldü: `feeds/videos.xml` yalnızca `Cache-Control: max-age=900` dönüyor, **ETag ve Last-Modified yok**. `UserChannel.etag` bu yüzden hep NULL kalır ve her koşu ~15 girdiyi yeniden indirir. Kolonun boş olması hata değil — düzeltmeye çalışma |
 | 4 | RSS'siz site scrape'i yok | Lab/enstitü haber sayfaları erişilemez. Yol haritası: [ADR-0001](adr/0001-headless-browser-yok.md) + HANDOVER §5 |
 | 5 | Kanal RSS'i son ~15 videoyu verir | Yeni eklenen kanalın geçmişi geri doldurulmaz. Geçmiş için `youtube_reach` anahtar kelime araması var |

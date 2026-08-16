@@ -583,7 +583,15 @@ def test_upsert_paper_no_enrichment_needed_is_a_clean_no_op(db, clean):
     assert Paper.query.get(p1.id).updated_at == first_updated_at
 
 
-def test_add_user_feed_stores_etag_and_last_modified(db, clean, monkeypatch):
+def test_add_user_feed_discards_validators_from_the_validation_fetch(db, clean, monkeypatch):
+    """This used to assert the opposite — that the add-time etag was stored.
+
+    It was storable but wrong once `ingest_user_feeds` actually started
+    replaying validators: this fetch only validates the URL, it upserts
+    nothing, so keeping its etag made the first nightly run answer 304 and
+    skip the very items that proved the feed was readable. The feed then
+    looked permanently empty. One full fetch on the first run is the price.
+    """
     from app.modules.scrape.service import add_user_feed
     from app.modules.scrape.sources.rss_source import FeedFetchResult
 
@@ -601,8 +609,9 @@ def test_add_user_feed_stores_etag_and_last_modified(db, clean, monkeypatch):
     )
     feed, err = add_user_feed(clean, "https://example.com/feed.xml")
     assert err is None
-    assert feed.etag == '"12345"'
-    assert feed.last_modified == "Wed, 21 Oct 2025 07:28:00 GMT"
+    assert feed.label == "Fake Feed"  # the fetch is still used for the label
+    assert feed.etag is None
+    assert feed.last_modified is None
 
 
 # ----------------------------------------------------------------------------
@@ -610,7 +619,8 @@ def test_add_user_feed_stores_etag_and_last_modified(db, clean, monkeypatch):
 # `resolve_channel` is monkeypatched at its source module, not at
 # service.py, because add_user_channel imports it locally inside the
 # function (the same import-inside-function style `ingest_user_feeds` uses
-# for `fetch_feed`), so there is no `service.resolve_channel` name to patch.
+# for `fetch_feed_conditional`), so there is no `service.resolve_channel` name
+# to patch.
 # ----------------------------------------------------------------------------
 
 _RESOLVE_CHANNEL_TARGET = "app.modules.scrape.sources.youtube_channel_source.resolve_channel"
