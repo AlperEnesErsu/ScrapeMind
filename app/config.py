@@ -167,6 +167,12 @@ class BaseConfig:
     # conservative and the real ceiling is the byte budget below.
     SCRAPE_RATE_EPO_OPS_PER_MIN = int(os.getenv("SCRAPE_RATE_EPO_OPS_PER_MIN", "10"))
     SCRAPE_RATE_PATENTSVIEW_PER_MIN = int(os.getenv("SCRAPE_RATE_PATENTSVIEW_PER_MIN", "45"))
+    # Per-host ceiling for the general page scraper (Faz 5.2). Unlike the
+    # buckets above this one is not a published API quota — it is politeness
+    # toward a site that never agreed to be crawled, so it starts low. A
+    # `Crawl-delay` in robots.txt tightens it further but can never loosen it
+    # (`robots.host_slot`).
+    SCRAPE_RATE_HOST_PER_MIN = int(os.getenv("SCRAPE_RATE_HOST_PER_MIN", "10"))
 
     # Cumulative weekly budgets (Faz 5.1 — Postgres, fail-closed). Unlike the
     # rate limits above, 0 means unmetered. EPO's free tier is 4 GB/week; the
