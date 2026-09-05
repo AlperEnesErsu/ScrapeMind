@@ -40,6 +40,27 @@ SOURCE_NAME = "openalex"
 _API_URL = "https://api.openalex.org/works"
 _TIMEOUT = 20  # seconds
 
+# One Session per worker process, not one per call. Every function in this
+# module hits the same host (api.openalex.org), and a nightly run can call
+# `search`/`works_by_author`/`fetch_by_doi` hundreds of times back to back
+# (once per user's scan, once per followed author, once per Scopus hydration)
+# — a fresh TCP+TLS handshake for each of those is pure overhead. `Session`'s
+# default `HTTPAdapter` already caps its pool (10 connections), so this
+# cannot grow unbounded; it is not resized here.
+#
+# One assumption worth stating: `Session` is not documented as thread-safe.
+# Every task that reaches this module runs on the `scrape` queue, which is a
+# prefork pool — one process, one session, no sharing. The threads pool
+# (`-P threads`, dev compose) only consumes `io`. Routing an OpenAlex-touching
+# task to `io` would break that assumption silently, so don't, or give the
+# threaded path its own session.
+#
+# This is a deliberate, narrow exception to "adapters use module-level
+# `requests`" (CLAUDE.md rule 7) for OpenAlex specifically — see the
+# docstring note in this module's tests for the resulting monkeypatch-target
+# change (`oa._session.get`, not `oa.requests.get`).
+_session = requests.Session()
+
 # A malformed/adversarial abstract_inverted_index (untrusted remote JSON)
 # shouldn't be able to produce an unbounded string via a huge position value
 # or a pathological number of words.
@@ -210,7 +231,7 @@ def search(query: str, *, max_results: int = 25) -> list[PaperPayload]:
     if not openalex_slot():
         logger.warning("openalex_rate_limited", query=query)
         raise SourceThrottledError("openalex rate limit")
-    resp = requests.get(
+    resp = _session.get(
         _API_URL,
         params=_params(query, max_results),
         headers=_headers(),
@@ -297,7 +318,7 @@ def fetch_author(orcid_or_id: str) -> dict | None:
 
     if not openalex_slot():
         raise SourceThrottledError("openalex rate limit")
-    resp = requests.get(url, headers=_headers(), timeout=_TIMEOUT)
+    resp = _session.get(url, headers=_headers(), timeout=_TIMEOUT)
     if resp.status_code == 404:
         logger.info("openalex_author_not_found", value=value)
         return None
@@ -349,7 +370,7 @@ def works_by_author(
 
     if not openalex_slot():
         raise SourceThrottledError("openalex rate limit")
-    resp = requests.get(_API_URL, params=params, headers=_headers(), timeout=_TIMEOUT)
+    resp = _session.get(_API_URL, params=params, headers=_headers(), timeout=_TIMEOUT)
     resp.raise_for_status()
 
     items = resp.json().get("results") or []
@@ -375,7 +396,7 @@ def fetch_by_doi(doi: str) -> PaperPayload | None:
     if not openalex_slot():
         raise SourceThrottledError("openalex rate limit")
 
-    resp = requests.get(
+    resp = _session.get(
         f"{_API_URL}/https://doi.org/{normalized}",
         headers=_headers(),
         timeout=_TIMEOUT,

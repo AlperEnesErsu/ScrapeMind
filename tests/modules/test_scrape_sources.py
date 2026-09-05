@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
@@ -18,6 +19,7 @@ from app.modules.scrape.sources import openalex_source as oa
 from app.modules.scrape.sources import pubmed_source as pm
 from app.modules.scrape.sources import semantic_scholar_source as ss
 from app.modules.scrape.sources import youtube_channel_source as yc
+from app.modules.scrape.sources.payload import PaperPayload, PaperPayloadError
 
 _FEED_KEYS = {f["key"] for f in rss_source.FEEDS}
 _REACH_KEYS = {"youtube_reach", "github_reach", "web_reach"}
@@ -38,6 +40,117 @@ def patent_credentials(monkeypatch):
     monkeypatch.setenv("EPO_OPS_SECRET", "s")
     monkeypatch.setenv("PATENTSVIEW_API_KEY", "k")
     monkeypatch.setenv("SCOPUS_API_KEY", "k")
+
+
+# ----------------------------------------------------------------------------
+# PaperPayload — boundary validation on the frozen dataclass every adapter
+# returns. No Pydantic (project convention): a plain `__post_init__` that
+# validates and rejects, never normalises — `frozen=True` means it could not
+# repair a field in place even if that were desirable. See payload.py.
+# ----------------------------------------------------------------------------
+
+
+def _valid_payload_kwargs(**overrides) -> dict:
+    kwargs = dict(
+        source="arxiv",
+        external_id="1",
+        title="A Title",
+        abstract=None,
+        authors=[],
+        url=None,
+        pdf_url=None,
+        published_at=None,
+        categories=[],
+    )
+    kwargs.update(overrides)
+    return kwargs
+
+
+def test_payload_accepts_a_well_formed_row():
+    p = PaperPayload(**_valid_payload_kwargs(authors=["Ada Lovelace"], categories=["cs.LG"]))
+    # as_dict()'s shape is what `Paper(**data)` is built from — pinning the
+    # key set here catches an accidental rename before it reaches the DB layer.
+    assert set(p.as_dict()) == {
+        "source",
+        "external_id",
+        "title",
+        "abstract",
+        "authors",
+        "url",
+        "pdf_url",
+        "published_at",
+        "categories",
+        "kind",
+        "doi",
+        "issn_l",
+        "cited_by_count",
+    }
+
+
+def test_payload_rejects_empty_source():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(source=""))
+
+
+def test_payload_rejects_empty_external_id():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(external_id=""))
+
+
+def test_payload_rejects_empty_title():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(title=""))
+
+
+def test_payload_rejects_whitespace_only_title():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(title="   "))
+
+
+def test_payload_rejects_authors_as_a_bare_string():
+    """A plain string is iterable-of-characters, not a list — the exact shape
+    a careless `authors=name` (instead of `authors=[name]`) would produce."""
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(authors="Ada Lovelace"))
+
+
+def test_payload_rejects_a_non_string_element_in_authors():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(authors=[123]))
+
+
+def test_payload_rejects_categories_as_a_bare_string():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(categories="cs.LG"))
+
+
+def test_payload_rejects_naive_datetime():
+    """The column is `DateTime(timezone=True)` — a naive value shifts silently
+    on write rather than raising there, which is exactly why this is caught
+    at construction time instead."""
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(published_at=datetime(2024, 1, 1)))
+
+
+def test_payload_rejects_published_at_as_a_non_datetime_value():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(published_at="2024-01-01"))
+
+
+def test_payload_accepts_none_or_tz_aware_published_at():
+    assert PaperPayload(**_valid_payload_kwargs(published_at=None)).published_at is None
+    p = PaperPayload(**_valid_payload_kwargs(published_at=datetime(2024, 1, 1, tzinfo=UTC)))
+    assert p.published_at.tzinfo is not None
+
+
+def test_payload_rejects_non_int_cited_by_count():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(cited_by_count="42"))
+
+
+def test_payload_accepts_none_or_int_cited_by_count():
+    assert PaperPayload(**_valid_payload_kwargs(cited_by_count=None)).cited_by_count is None
+    assert PaperPayload(**_valid_payload_kwargs(cited_by_count=0)).cited_by_count == 0
 
 
 # ----------------------------------------------------------------------------
@@ -435,7 +548,7 @@ _OA_ITEM = {
 
 def test_openalex_parses_payload(monkeypatch):
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
     )
     out = oa.search("transformers", max_results=5)
     assert len(out) == 1
@@ -459,14 +572,14 @@ def test_openalex_parses_payload(monkeypatch):
 def test_openalex_url_falls_back_to_landing_page_then_id(monkeypatch):
     item = {**_OA_ITEM, "doi": None}
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
     )
     p = oa.search("x", max_results=1)[0]
     assert p.url == "https://example.com/landing"
 
     item2 = {**item, "primary_location": {}}
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item2]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item2]})
     )
     p2 = oa.search("x", max_results=1)[0]
     assert p2.url == "https://openalex.org/W2741809807"
@@ -475,7 +588,7 @@ def test_openalex_url_falls_back_to_landing_page_then_id(monkeypatch):
 def test_openalex_date_falls_back_to_year(monkeypatch):
     item = {**_OA_ITEM, "publication_date": None}
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
     )
     p = oa.search("x", max_results=1)[0]
     assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2017, 1, 1)
@@ -491,7 +604,7 @@ def test_openalex_skips_records_without_id_or_title():
 
 def test_openalex_reports_issn_and_citations(monkeypatch):
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
     )
     p = oa.search("x", max_results=1)[0]
     assert p.issn_l == "1234-567X"
@@ -529,10 +642,94 @@ def test_openalex_garbage_citation_count_is_dropped():
 
 def test_openalex_search_empty_query_makes_no_http_call(monkeypatch):
     calls = []
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: calls.append(1))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
     assert oa.search("") == []
     assert oa.search("   ") == []
     assert calls == []
+
+
+# --- Connection reuse (a nightly run calls this module hundreds of times) ---
+
+
+def test_openalex_search_goes_through_the_shared_session(monkeypatch):
+    """This module is the one deliberate exception to "adapters call
+    `requests.get` directly at module level" (CLAUDE.md rule 7): every
+    request goes through a module-level `requests.Session` so a nightly
+    run's many calls to the same host reuse one connection pool instead of
+    opening a new TCP+TLS connection per request. Pinning `requests.get`
+    itself to raise makes sure that exception is real, not just the polite
+    default path."""
+    monkeypatch.setenv("OPENALEX_MAILTO", "ops@example.test")
+    calls = []
+
+    def fake_session_get(url, **kwargs):
+        calls.append((url, kwargs))
+        return _fake_response(json_data={"results": []})
+
+    def bare_requests_get_must_not_be_called(*a, **k):
+        raise AssertionError("openalex_source must call _session.get, not requests.get")
+
+    monkeypatch.setattr(oa._session, "get", fake_session_get)
+    monkeypatch.setattr(oa.requests, "get", bare_requests_get_must_not_be_called)
+
+    oa.search("transformers", max_results=5)
+
+    assert len(calls) == 1
+    url, kwargs = calls[0]
+    assert url == oa._API_URL
+    # Polite-pool behaviour is unchanged: mailto in the query, matching
+    # User-Agent, and the same read timeout as before the session switch.
+    assert kwargs["params"]["mailto"] == "ops@example.test"
+    assert kwargs["headers"]["User-Agent"] == "ScrapeMind (mailto:ops@example.test)"
+    assert kwargs["timeout"] == oa._TIMEOUT
+
+
+def test_openalex_fetch_by_doi_goes_through_the_shared_session(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: (calls.append(1), _fake_response(json_data=_OA_ITEM))[1]
+    )
+    monkeypatch.setattr(
+        oa.requests,
+        "get",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("must use _session")),
+    )
+    oa.fetch_by_doi("10.5555/attn2")
+    assert calls == [1]
+
+
+def test_openalex_fetch_author_goes_through_the_shared_session(monkeypatch):
+    calls = []
+
+    def fake_session_get(url, **kwargs):
+        calls.append(url)
+        return _fake_response(json_data={"id": "https://openalex.org/A123", "display_name": "X"})
+
+    monkeypatch.setattr(oa._session, "get", fake_session_get)
+    monkeypatch.setattr(
+        oa.requests,
+        "get",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("must use _session")),
+    )
+    oa.fetch_author("A123")
+    assert len(calls) == 1
+
+
+def test_openalex_works_by_author_goes_through_the_shared_session(monkeypatch):
+    calls = []
+
+    def fake_session_get(url, **kwargs):
+        calls.append(url)
+        return _fake_response(json_data={"results": []})
+
+    monkeypatch.setattr(oa._session, "get", fake_session_get)
+    monkeypatch.setattr(
+        oa.requests,
+        "get",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("must use _session")),
+    )
+    oa.works_by_author("A123")
+    assert len(calls) == 1
 
 
 def test_openalex_keywords_build_or_query(monkeypatch):

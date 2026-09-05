@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 
 import pytest
 import requests
+from flask_babel import force_locale
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash
 
@@ -142,7 +143,7 @@ def test_fetch_author_by_orcid_uses_the_orcid_url(monkeypatch):
         seen["url"] = url
         return _Resp(_author_json())
 
-    monkeypatch.setattr(oa.requests, "get", fake_get)
+    monkeypatch.setattr(oa._session, "get", fake_get)
     got = oa.fetch_author(f"https://orcid.org/{_ORCID}")
 
     assert f"orcid.org/{_ORCID}" in seen["url"]
@@ -156,7 +157,7 @@ def test_fetch_author_by_openalex_id(monkeypatch):
         seen["url"] = url
         return _Resp(_author_json())
 
-    monkeypatch.setattr(oa.requests, "get", fake_get)
+    monkeypatch.setattr(oa._session, "get", fake_get)
     assert oa.fetch_author(_AUTHOR_ID)["id"] == _AUTHOR_ID
     assert seen["url"].endswith(f"/{_AUTHOR_ID}")
 
@@ -164,7 +165,7 @@ def test_fetch_author_by_openalex_id(monkeypatch):
 def test_fetch_author_unknown_identifier_is_none(monkeypatch):
     """404 is OpenAlex's answer for an unknown ORCID — a typo, not a
     failure."""
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(status_code=404))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(status_code=404))
     assert oa.fetch_author(_ORCID) is None
 
 
@@ -172,13 +173,13 @@ def test_fetch_author_rejects_garbage_without_calling(monkeypatch):
     def boom(*args, **kwargs):
         raise AssertionError("should not have called OpenAlex")
 
-    monkeypatch.setattr(oa.requests, "get", boom)
+    monkeypatch.setattr(oa._session, "get", boom)
     assert oa.fetch_author("just a name") is None
     assert oa.fetch_author("") is None
 
 
 def test_fetch_author_server_error_propagates(monkeypatch):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(status_code=500))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(status_code=500))
     with pytest.raises(requests.HTTPError):
         oa.fetch_author(_ORCID)
 
@@ -195,7 +196,7 @@ def test_works_by_author_filters_on_the_author(monkeypatch):
         seen.update(kwargs["params"])
         return _Resp({"results": []})
 
-    monkeypatch.setattr(oa.requests, "get", fake_get)
+    monkeypatch.setattr(oa._session, "get", fake_get)
     oa.works_by_author(_AUTHOR_ID)
 
     assert f"author.id:{_AUTHOR_ID}" in seen["filter"]
@@ -210,7 +211,7 @@ def test_works_by_author_passes_the_high_water_mark(monkeypatch):
         seen.update(kwargs["params"])
         return _Resp({"results": []})
 
-    monkeypatch.setattr(oa.requests, "get", fake_get)
+    monkeypatch.setattr(oa._session, "get", fake_get)
     oa.works_by_author(_AUTHOR_ID, since=datetime(2025, 3, 1, tzinfo=UTC))
 
     assert "from_publication_date:2025-03-01" in seen["filter"]
@@ -223,7 +224,7 @@ def test_works_by_author_without_a_mark_asks_for_everything(monkeypatch):
         seen.update(kwargs["params"])
         return _Resp({"results": []})
 
-    monkeypatch.setattr(oa.requests, "get", fake_get)
+    monkeypatch.setattr(oa._session, "get", fake_get)
     oa.works_by_author(_AUTHOR_ID)
     assert "from_publication_date" not in seen["filter"]
 
@@ -232,7 +233,7 @@ def test_works_by_author_needs_an_id(monkeypatch):
     def boom(*args, **kwargs):
         raise AssertionError("should not have called OpenAlex")
 
-    monkeypatch.setattr(oa.requests, "get", boom)
+    monkeypatch.setattr(oa._session, "get", boom)
     assert oa.works_by_author("") == []
 
 
@@ -243,7 +244,7 @@ def test_works_by_author_needs_an_id(monkeypatch):
 
 def test_fetch_by_doi_returns_a_payload(monkeypatch):
     monkeypatch.setattr(
-        oa.requests,
+        oa._session,
         "get",
         lambda *a, **k: _Resp(
             {
@@ -260,7 +261,7 @@ def test_fetch_by_doi_returns_a_payload(monkeypatch):
 
 def test_fetch_by_doi_unknown_is_none(monkeypatch):
     """OpenAlex does not have everything; a miss is normal."""
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(status_code=404))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(status_code=404))
     assert oa.fetch_by_doi("10.1234/abc") is None
 
 
@@ -268,7 +269,7 @@ def test_fetch_by_doi_rejects_a_non_doi(monkeypatch):
     def boom(*args, **kwargs):
         raise AssertionError("should not have called OpenAlex")
 
-    monkeypatch.setattr(oa.requests, "get", boom)
+    monkeypatch.setattr(oa._session, "get", boom)
     assert oa.fetch_by_doi("not a doi") is None
 
 
@@ -278,7 +279,7 @@ def test_fetch_by_doi_rejects_a_non_doi(monkeypatch):
 
 
 def test_follow_stores_the_resolved_ids(app, db, a_user, monkeypatch):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
 
     row, error = service.follow_author(a_user, f"https://orcid.org/{_ORCID}")
     assert error is None
@@ -294,10 +295,15 @@ def test_follow_rejects_blank_input(app, db, a_user):
 
 
 def test_follow_reports_an_unknown_author(app, db, a_user, monkeypatch):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(status_code=404))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(status_code=404))
     row, error = service.follow_author(a_user, _ORCID)
     assert row is None
-    assert "No author found" in error
+    # The message is a lazy translatable now, so it renders in whatever
+    # locale is active when it is stringified — outside a request that is
+    # BABEL_DEFAULT_LOCALE ("tr" here). Pin the locale instead of asserting
+    # on whichever language the test config happens to default to.
+    with force_locale("en"):
+        assert "No author found" in str(error)
 
 
 def test_follow_surfaces_a_lookup_failure_as_a_message(app, db, a_user, monkeypatch):
@@ -307,14 +313,14 @@ def test_follow_surfaces_a_lookup_failure_as_a_message(app, db, a_user, monkeypa
     def boom(*args, **kwargs):
         raise requests.ConnectionError("down")
 
-    monkeypatch.setattr(oa.requests, "get", boom)
+    monkeypatch.setattr(oa._session, "get", boom)
     row, error = service.follow_author(a_user, _ORCID)
     assert row is None
     assert "OpenAlex" in error
 
 
 def test_refollowing_reactivates_instead_of_duplicating(app, db, a_user, monkeypatch):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
 
     row, _ = service.follow_author(a_user, _ORCID)
     service.toggle_user_author(a_user, row.id)
@@ -330,11 +336,11 @@ def test_refollowing_reactivates_instead_of_duplicating(app, db, a_user, monkeyp
 def test_a_name_clash_is_disambiguated(app, db, a_user, monkeypatch):
     """The table's unique constraint predates openalex_id, and two different
     authors can share a display name."""
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     service.follow_author(a_user, _ORCID)
 
     other = dict(_author_json(), id="https://openalex.org/A999")
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(other))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(other))
     row, error = service.follow_author(a_user, "A999")
 
     assert error is None
@@ -344,19 +350,21 @@ def test_a_name_clash_is_disambiguated(app, db, a_user, monkeypatch):
 
 def test_cap_is_enforced(app, db, a_user, monkeypatch):
     monkeypatch.setattr(service, "MAX_USER_AUTHORS", 1)
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     service.follow_author(a_user, _ORCID)
 
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _Resp(dict(_author_json("Other"), id="A999"))
+        oa._session, "get", lambda *a, **k: _Resp(dict(_author_json("Other"), id="A999"))
     )
     row, error = service.follow_author(a_user, "A999")
     assert row is None
-    assert "limit" in error.lower()
+    assert str(error) == str(service.AUTHOR_CAP_MESSAGE)
+    with force_locale("en"):
+        assert "limit" in str(error).lower()
 
 
 def test_unfollow_removes_the_row(app, db, a_user, monkeypatch):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     row, _ = service.follow_author(a_user, _ORCID)
 
     assert service.unfollow_author(a_user, row.id) is True
@@ -364,7 +372,7 @@ def test_unfollow_removes_the_row(app, db, a_user, monkeypatch):
 
 
 def test_unfollow_of_another_users_row_is_refused(app, db, a_user, monkeypatch):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     row, _ = service.follow_author(a_user, _ORCID)
 
     other = User(
@@ -394,7 +402,7 @@ def test_ingest_without_follows_is_skipped(app, db, a_user):
 
 
 def test_ingest_links_works_and_advances_the_mark(app, db, a_user, monkeypatch, clean_papers):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     row, _ = service.follow_author(a_user, _ORCID)
 
     monkeypatch.setattr(
@@ -420,7 +428,7 @@ def test_ingest_links_works_and_advances_the_mark(app, db, a_user, monkeypatch, 
 def test_second_run_asks_only_for_newer_works(app, db, a_user, monkeypatch, clean_papers):
     """Without the high-water mark a prolific author re-imports a career every
     night."""
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     row, _ = service.follow_author(a_user, _ORCID)
     row.last_work_at = datetime(2025, 6, 1, tzinfo=UTC)
     db.session.commit()
@@ -439,7 +447,7 @@ def test_second_run_asks_only_for_newer_works(app, db, a_user, monkeypatch, clea
 
 
 def test_a_failing_author_uses_the_sentinel(app, db, a_user, monkeypatch, clean_papers):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     row, _ = service.follow_author(a_user, _ORCID)
 
     def boom(*args, **kwargs):
@@ -453,7 +461,7 @@ def test_a_failing_author_uses_the_sentinel(app, db, a_user, monkeypatch, clean_
 
 
 def test_paused_and_unresolved_follows_are_skipped(app, db, a_user, monkeypatch, clean_papers):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(_author_json()))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     paused, _ = service.follow_author(a_user, _ORCID)
     paused.active = False
     unresolved = UserAuthor(user_id=a_user.id, author_name="Unresolved", openalex_id=None)

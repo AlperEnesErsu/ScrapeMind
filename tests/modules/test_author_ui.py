@@ -95,7 +95,7 @@ def logged_in(client, a_user):
 
 def _follow(logged_in, monkeypatch, identifier=_ORCID, payload=None):
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _Resp(payload if payload else _author_json())
+        oa._session, "get", lambda *a, **k: _Resp(payload if payload else _author_json())
     )
     return logged_in.post("/papers/profile/authors/follow", data={"identifier": identifier})
 
@@ -131,7 +131,7 @@ def test_follow_adds_the_author(logged_in, db, a_user, monkeypatch):
 
 
 def test_follow_reports_an_unknown_identifier(logged_in, db, a_user, monkeypatch):
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: _Resp(status_code=404))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(status_code=404))
     resp = logged_in.post("/papers/profile/authors/follow", data={"identifier": _ORCID})
 
     assert resp.status_code == 200
