@@ -62,6 +62,12 @@ class BaseConfig:
         else not bool(MAIL_SERVER)
     )
 
+    # Absolute base URL for links we put in outbound mail and notifications.
+    # A task has an app context but no request, so `url_for(..., _external=True)`
+    # has nothing to build a host from — every such link was hardcoded to
+    # localhost before this existed. Trailing slashes are stripped by callers.
+    APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:5000")
+
     # Celery (Phase 2). Broker + result backend share the same Redis instance.
     _REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", _REDIS_URL)
@@ -103,6 +109,16 @@ class BaseConfig:
     # Ollama — local inference, no API key required.
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5")
+
+    # LLM network budget. Neither SDK is given a timeout by default, so a hung
+    # provider used to pin an `llm` worker until Celery's 600s soft limit fired.
+    # Connect is short (a provider that won't answer the handshake is down);
+    # the read budget has to cover a long generation, hence the wide gap.
+    LLM_CONNECT_TIMEOUT_SECONDS = int(os.getenv("LLM_CONNECT_TIMEOUT_SECONDS", "10"))
+    LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "120"))
+    # Retries for *transient* LLM failures only (429/5xx/timeout). Permanent
+    # errors (400/401/403) are never retried — they cost money and stay broken.
+    LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "2"))
 
     # Fernet key encrypting per-user LLM API keys at rest (UserSettings JSON).
     # If empty, derived from SECRET_KEY (sha256 -> urlsafe base64) so dev/test
