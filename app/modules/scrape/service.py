@@ -14,9 +14,11 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
 
+import requests
 import structlog
 from flask import current_app
 from flask_babel import gettext as _
+from flask_babel import lazy_gettext as _l
 from sqlalchemy import desc
 
 from app.core.models.user import User
@@ -49,7 +51,7 @@ logger = structlog.get_logger()
 #: module constant so the route, the template and the tests agree on it. No
 #: placeholder: the route passes it straight to `_()`, and the panel header
 #: already shows the "42 / 50" count.
-FEED_CAP_MESSAGE = "Feed limit reached. Remove one before adding another."
+FEED_CAP_MESSAGE = _l("Feed limit reached. Remove one before adding another.")
 
 
 # ----------------------------------------------------------------------------
@@ -676,6 +678,18 @@ def upsert_paper(payload: PaperPayload | dict) -> Paper:
     DOI match wins and is the one enriched — the other row is left
     untouched. Merging the two rows (e.g. moving UserPaper links across) is
     out of scope here; it would need a real migration, not an upsert.
+
+    Race safety: the SELECT above and the INSERT below are not atomic, so two
+    workers can both miss the SELECT for the same brand-new (source,
+    external_id) — e.g. the same arXiv paper matching two different users'
+    keywords in concurrent nightly scans — and both fall through to insert.
+    Without `ON CONFLICT`, the loser's plain INSERT would raise
+    `IntegrityError` against `uq_paper_source_external` and force Celery's
+    retry machinery to clean up noise that was never a real failure. Instead
+    the loser's insert becomes a no-op and it re-selects the winner's row
+    (then enriches it with anything its own payload had that the winner's
+    didn't) — same fill-only semantics as the plain-existing-row path above,
+    just reached one step later.
     """
     data = payload.as_dict() if isinstance(payload, PaperPayload) else dict(payload)
     if "doi" in data:
@@ -695,9 +709,21 @@ def upsert_paper(payload: PaperPayload | dict) -> Paper:
             db.session.commit()
         return existing
 
-    paper = Paper(**data)
-    db.session.add(paper)
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    stmt = (
+        pg_insert(Paper.__table__)
+        .values(**data)
+        .on_conflict_do_nothing(index_elements=["source", "external_id"])
+    )
+    db.session.execute(stmt)
     db.session.commit()
+
+    paper = Paper.query.filter_by(source=data["source"], external_id=data["external_id"]).first()
+    if paper is None:  # pragma: no cover — the unique index guarantees a row either way
+        raise RuntimeError("upsert_paper: insert conflicted but no row was found")
+    if _enrich(paper, data):
+        db.session.commit()
     return paper
 
 
@@ -893,6 +919,43 @@ def _hydrate_scopus_payloads(payloads: list) -> list:
     return out
 
 
+#: Wait before the single retry in `_search_with_transient_retry`. A module
+#: constant (not a literal in the loop) so a test can monkeypatch it to 0
+#: instead of a real scan actually pausing 5 seconds.
+TRANSIENT_RETRY_DELAY_SECONDS = 5.0
+
+
+def _search_with_transient_retry(
+    source, terms: list[str], *, max_results: int, source_name: str, user_id: int
+):
+    """Call `source.search_for_keywords`, retrying exactly once on a
+    transient network failure.
+
+    `scrape_for_user` isolates each source behind a broad try/except (see its
+    docstring) so a source's exception never reaches the Celery task — which
+    also means the task's own retry (60/240s backoff) never gets a chance to
+    run for it. Without this, a `ConnectionError` from a one-second network
+    blip costs that source the rest of the night, not just one attempt.
+
+    Deliberately narrow:
+      * `requests.exceptions.ConnectionError` / `Timeout` only — the two
+        shapes an actual network hiccup takes.
+      * No retry for `requests.exceptions.HTTPError` (a 4xx is a permanent
+        rejection; retrying wastes a request against a source with a rate
+        limit) or `SourceThrottledError` (already means "back off" — an
+        immediate retry would defeat the point). Both fall straight through
+        to the caller's except-and-sentinel handling, unchanged.
+      * One retry, not a loop — a source that's still down 5 seconds later is
+        down for the night, and the caller already isolates that outcome.
+    """
+    try:
+        return source.search_for_keywords(terms, max_results=max_results)
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        logger.warning("scrape_source_transient_retry", source=source_name, user_id=user_id)
+        time.sleep(TRANSIENT_RETRY_DELAY_SECONDS)
+        return source.search_for_keywords(terms, max_results=max_results)
+
+
 def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
     """Run every enabled source with this user's keywords; persist + link the
     results back to them.
@@ -903,8 +966,11 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
     The expansion is per-source: see `_PER_KEYWORD_REQUEST_SOURCES`.
 
     Sources are isolated: one source raising (rate limit, network, API change)
-    is logged and skipped so the remaining sources still land. Returns a
-    summary dict with per-source hit counts for the calling task.
+    is logged and skipped so the remaining sources still land. A transient
+    connection failure gets one retry first (see
+    `_search_with_transient_retry`) so a momentary network blip doesn't cost
+    the source the rest of the night. Returns a summary dict with per-source
+    hit counts for the calling task.
     """
     keyword_rows = list_user_keywords(user)
     if not keyword_rows:
@@ -926,7 +992,9 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
         if not terms:
             continue
         try:
-            payloads = source.search_for_keywords(terms, max_results=max_results)
+            payloads = _search_with_transient_retry(
+                source, terms, max_results=max_results, source_name=name, user_id=user.id
+            )
         except Exception:  # noqa: BLE001 — a flaky source must not kill the run
             logger.exception("scrape_source_failed", source=name, user_id=user.id)
             per_source[name] = -1  # sentinel: this source errored
@@ -959,7 +1027,7 @@ scrape_arxiv_for_user = scrape_for_user
 #: product limit — hence a module constant rather than an admin setting.
 MAX_USER_AUTHORS = 50
 
-AUTHOR_CAP_MESSAGE = "Author limit reached. Unfollow one before adding another."
+AUTHOR_CAP_MESSAGE = _l("Author limit reached. Unfollow one before adding another.")
 
 
 def list_user_authors(user: User) -> list[UserAuthor]:
@@ -987,16 +1055,16 @@ def follow_author(user: User, raw: str) -> tuple[UserAuthor | None, str | None]:
 
     raw = (raw or "").strip()
     if not raw:
-        return None, "Please enter an ORCID or OpenAlex author id."
+        return None, _l("Please enter an ORCID or OpenAlex author id.")
 
     try:
         resolved = fetch_author(raw)
     except Exception:  # noqa: BLE001 — a lookup failure is user-facing, not a 500
         logger.exception("author_resolve_failed", user_id=user.id)
-        return None, "Could not reach OpenAlex right now. Please try again."
+        return None, _l("Could not reach OpenAlex right now. Please try again.")
 
     if resolved is None:
-        return None, "No author found for that ORCID or OpenAlex id."
+        return None, _l("No author found for that ORCID or OpenAlex id.")
 
     existing = UserAuthor.query.filter_by(user_id=user.id, openalex_id=resolved["id"]).first()
     if existing is not None:
@@ -1313,12 +1381,31 @@ def list_user_papers(
     return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
 
 
-def list_user_papers_in_window(user: User, start: datetime, end: datetime) -> list[UserPaper]:
+def list_user_papers_in_window(
+    user: User, start: datetime, end: datetime, *, limit: int | None = None
+) -> list[UserPaper]:
     """Papers newly surfaced for `user` inside [start, end) — the digest's
     cost/scope guard: only summarise what's actually new in the window,
     never the whole feed. Mirrors the "discover" view (dismissed excluded),
-    ordered by publish date like `list_user_papers`."""
+    ordered by publish date like `list_user_papers`.
+
+    `limit` bounds the query itself rather than leaving it to the caller to
+    slice an unbounded result — a busy user with dozens of active sources can
+    otherwise land hundreds of rows (each pulling its notes via
+    `selectinload`) just to have `ai_service.generate_digest` throw all but
+    `DIGEST_MAX_ITEMS` away. Defaults to twice that constant rather than the
+    exact figure: the caller still does its own scoring/truncation, so the
+    query leaves it a little room to pick the best items rather than
+    whatever the DB happened to return first. Resolved from `ai_service`
+    lazily (not at module import) to avoid a circular import between the two
+    service modules.
+    """
     from sqlalchemy.orm import selectinload
+
+    if limit is None:
+        from app.modules.scrape.ai_service import DIGEST_MAX_ITEMS
+
+        limit = DIGEST_MAX_ITEMS * 2
 
     query = (
         _user_papers_query(user, "discover")
@@ -1326,7 +1413,7 @@ def list_user_papers_in_window(user: User, start: datetime, end: datetime) -> li
         .options(selectinload(UserPaper.notes))
         .filter(UserPaper.created_at >= start, UserPaper.created_at < end)
     )
-    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).all()
+    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
 
 
 # ----------------------------------------------------------------------------
@@ -1479,7 +1566,7 @@ def add_user_feed(
     """
     normalized = _normalize_feed_url(url)
     if normalized is None:
-        return None, "Please enter a valid feed URL (starting with http:// or https://)."
+        return None, _l("Please enter a valid feed URL (starting with http:// or https://).")
 
     existing = UserFeed.query.filter_by(user_id=user.id, url=normalized).first()
     if existing is not None:
@@ -1511,7 +1598,7 @@ def add_user_feed(
             url=normalized,
             status=parsed_feed.status,
         )
-        return None, "Could not read that feed — check the URL and try again."
+        return None, _l("Could not read that feed — check the URL and try again.")
 
     clean_label = (label or "").strip()[:128] or None
     if not clean_label:
@@ -1659,7 +1746,7 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
 
 #: Shown when a user tries to add channel number max_user_channels() + 1. Kept
 #: as a module constant so the route, the template and the tests agree on it.
-CHANNEL_CAP_MESSAGE = "Channel limit reached. Remove one before adding another."
+CHANNEL_CAP_MESSAGE = _l("Channel limit reached. Remove one before adding another.")
 
 
 def max_user_channels() -> int:
@@ -1722,7 +1809,7 @@ def add_user_channel(
 
     raw = (raw or "").strip()
     if not raw:
-        return None, "Please enter a YouTube channel URL or @handle."
+        return None, _l("Please enter a YouTube channel URL or @handle.")
 
     resolved, error = resolve_channel(raw)
     if resolved is None:

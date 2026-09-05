@@ -6,19 +6,23 @@ in the service to a single fake adapter returning a fixed payload list.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
+import requests
 from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.core.auth.strategies.local import LocalAuthStrategy
 from app.core.models.user import User
 from app.modules.academic.models import IdentifierType, Keyword, UserKeyword
 from app.modules.scrape.models import Paper, UserPaper
+from app.modules.scrape.ratelimit import SourceThrottledError
 from app.modules.scrape.service import (
     link_user_paper,
     list_user_papers,
+    list_user_papers_in_window,
     scrape_for_user,
     upsert_paper,
 )
@@ -198,6 +202,117 @@ def test_scrape_isolates_failing_source(db, clean, monkeypatch):
     result = scrape_for_user(clean)
     assert result["linked"] == 1
     assert result["sources"] == {"broken": -1, "healthy": 1}
+
+
+# ----------------------------------------------------------------------------
+# Transient source retry — a ConnectionError/Timeout gets one retry before
+# the source is marked failed; an HTTPError or SourceThrottledError does not.
+# ----------------------------------------------------------------------------
+
+
+def _kw(db, user, value):
+    kw = Keyword(value=value)
+    db.session.add(kw)
+    db.session.commit()
+    db.session.add(UserKeyword(user_id=user.id, keyword_id=kw.id))
+    db.session.commit()
+
+
+def test_scrape_retries_once_on_transient_connection_error(db, clean, monkeypatch):
+    """A ConnectionError on the first attempt is retried once (with no real
+    wait in the test) and a payload that only succeeds on the second call
+    still lands normally — no -1 sentinel."""
+    from app.modules.scrape import service
+
+    monkeypatch.setattr(service, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
+    _kw(db, clean, "rl")
+
+    calls = {"n": 0}
+
+    def _flaky(keywords, *, max_results=25):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise requests.exceptions.ConnectionError("blip")
+        return [_payload("2401.66601")]
+
+    flaky = SimpleNamespace(SOURCE_NAME="flaky", search_for_keywords=_flaky)
+    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"flaky": flaky})
+
+    result = scrape_for_user(clean)
+    assert calls["n"] == 2
+    assert result["sources"] == {"flaky": 1}
+    assert result["linked"] == 1
+
+
+def test_scrape_retries_once_on_transient_timeout(db, clean, monkeypatch):
+    """Same contract as the ConnectionError case, for Timeout."""
+    from app.modules.scrape import service
+
+    monkeypatch.setattr(service, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
+    _kw(db, clean, "rl")
+
+    calls = {"n": 0}
+
+    def _flaky(keywords, *, max_results=25):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise requests.exceptions.Timeout("slow")
+        return [_payload("2401.66602")]
+
+    flaky = SimpleNamespace(SOURCE_NAME="flaky", search_for_keywords=_flaky)
+    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"flaky": flaky})
+
+    result = scrape_for_user(clean)
+    assert calls["n"] == 2
+    assert result["sources"] == {"flaky": 1}
+
+
+def test_scrape_does_not_retry_http_error(db, clean, monkeypatch):
+    """A 4xx is a permanent failure — retrying it wastes a request against a
+    source that may well be rate-limited. Falls straight to the -1 sentinel,
+    same as before this retry existed."""
+    from app.modules.scrape import service
+
+    monkeypatch.setattr(service, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
+    _kw(db, clean, "rl")
+
+    calls = {"n": 0}
+
+    def _boom(keywords, *, max_results=25):
+        calls["n"] += 1
+        raise requests.exceptions.HTTPError("404 not found")
+
+    broken = SimpleNamespace(SOURCE_NAME="broken", search_for_keywords=_boom)
+    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"broken": broken})
+
+    result = scrape_for_user(clean)
+    assert calls["n"] == 1
+    assert result["sources"] == {"broken": -1}
+
+
+def test_scrape_does_not_retry_throttled_source(db, clean, monkeypatch):
+    """`SourceThrottledError` already means "back off" — retrying 5 seconds
+    later would defeat the point, so the -1 sentinel behaviour must be
+    unchanged."""
+    from app.modules.scrape import service
+
+    monkeypatch.setattr(service, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
+    _kw(db, clean, "rl")
+
+    calls = {"n": 0}
+
+    def _throttled(keywords, *, max_results=25):
+        calls["n"] += 1
+        raise SourceThrottledError("slow down")
+
+    throttled = SimpleNamespace(SOURCE_NAME="throttled", search_for_keywords=_throttled)
+    monkeypatch.setattr(
+        "app.modules.scrape.service.enabled_sources", lambda: {"throttled": throttled}
+    )
+
+    result = scrape_for_user(clean)
+    assert calls["n"] == 1
+    assert result["sources"] == {"throttled": -1}
 
 
 def test_celery_task_through_eager(db, clean, monkeypatch):
@@ -583,6 +698,102 @@ def test_upsert_paper_no_enrichment_needed_is_a_clean_no_op(db, clean):
     assert Paper.query.get(p1.id).updated_at == first_updated_at
 
 
+def test_upsert_paper_refreshes_cited_by_count(db, clean):
+    """`cited_by_count` is refreshed on every match, unlike the fill-only
+    fields — a paper accrues citations over time, so freezing at whatever the
+    first source reported would get more wrong with age, not less."""
+    p1 = upsert_paper(
+        {
+            "source": "openalex",
+            "external_id": "W1000000001",
+            "title": "Cited Paper",
+            "authors": [],
+            "categories": [],
+            "doi": "10.7000/cited",
+            "cited_by_count": 3,
+        }
+    )
+    assert p1.cited_by_count == 3
+
+    p2 = upsert_paper(
+        {
+            "source": "crossref",
+            "external_id": "cited-crossref",
+            "title": "Cited Paper (Crossref)",
+            "authors": [],
+            "categories": [],
+            "doi": "10.7000/cited",
+            "cited_by_count": 41,
+        }
+    )
+    assert p1.id == p2.id
+    assert Paper.query.get(p1.id).cited_by_count == 41
+
+
+def test_upsert_paper_survives_concurrent_insert_race(db, clean, monkeypatch):
+    """Two workers racing to upsert the same brand-new (source, external_id)
+    can both miss the pre-insert SELECT — the exact window `ON CONFLICT DO
+    NOTHING` exists for. Simulated here by forcing upsert_paper's own dedup
+    check to report "not found" once, while a row with that (source,
+    external_id) is already committed underneath it (standing in for the
+    other worker's insert that already landed).
+
+    Must not raise IntegrityError, must return the row that's actually in
+    the table (the "winner"), and must still fill-only enrich it from the
+    payload that lost the race — same semantics as any other match.
+    """
+    real_query = Paper.query
+
+    winner = {
+        "source": "arxiv",
+        "external_id": "2401.77001",
+        "title": "Race Winner",
+        "abstract": None,
+        "authors": [],
+        "categories": [],
+    }
+    db.session.execute(pg_insert(Paper.__table__).values(**winner))
+    db.session.commit()
+
+    class _Miss:
+        @staticmethod
+        def first():
+            return None
+
+    class _BlindOnce:
+        """Stands in for `Paper.query` for exactly the one `.filter_by()`
+        call upsert_paper makes to decide "is this new?" — then gets out of
+        the way so the post-insert re-select (and this test's own
+        assertions) see the real table."""
+
+        def __init__(self):
+            self._used = False
+
+        def filter_by(self, *a, **kw):
+            if not self._used:
+                self._used = True
+                return _Miss()
+            return real_query.filter_by(*a, **kw)
+
+    monkeypatch.setattr(Paper, "query", _BlindOnce())
+
+    paper = upsert_paper(
+        {
+            "source": "arxiv",
+            "external_id": "2401.77001",
+            "title": "Race Loser",
+            "abstract": "Enriches the winner.",
+            "authors": ["A. One"],
+            "categories": ["cs.AI"],
+        }
+    )
+
+    assert paper.title == "Race Winner"  # identity field, never overwritten
+    assert paper.abstract == "Enriches the winner."  # fill-only enrichment still ran
+    assert paper.authors == ["A. One"]  # empty list counts as fillable too
+    assert db.session.query(Paper).filter_by(source="arxiv", external_id="2401.77001").count() == 1
+
+
 def test_add_user_feed_discards_validators_from_the_validation_fetch(db, clean, monkeypatch):
     """This used to assert the opposite — that the add-time etag was stored.
 
@@ -949,3 +1160,32 @@ def test_list_user_papers_without_kinds_returns_everything(db, clean):
 
     rows = list_user_papers(clean)
     assert len(rows) == 2
+
+
+# ----------------------------------------------------------------------------
+# list_user_papers_in_window — the digest's cost/scope guard now bounds the
+# query itself instead of trusting the caller to slice an unbounded result.
+# ----------------------------------------------------------------------------
+
+
+def test_list_user_papers_in_window_respects_limit(db, clean):
+    """A window with more matching rows than `limit` is truncated in the
+    query, not just by the caller — ordering is unaffected (still
+    published_at DESC), only the row count changes."""
+    start = datetime(2026, 1, 1, tzinfo=UTC)
+    end = datetime(2026, 1, 2, tzinfo=UTC)
+    links = []
+    for i in range(5):
+        paper = upsert_paper(_payload(f"2401.win{i:03d}"))
+        link, _ = link_user_paper(clean, paper, matched_keyword="x")
+        link.created_at = start + timedelta(hours=i)
+        links.append(link)
+    db.session.commit()
+
+    rows = list_user_papers_in_window(clean, start, end, limit=3)
+    assert len(rows) == 3
+
+    # An unset limit still falls back to something bounded (twice
+    # ai_service.DIGEST_MAX_ITEMS) rather than reverting to no limit at all.
+    rows_default = list_user_papers_in_window(clean, start, end)
+    assert len(rows_default) == 5  # well under the default cap
