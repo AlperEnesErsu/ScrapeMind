@@ -2990,6 +2990,26 @@ msgstr "Unfollow"
 msgid "You are not following anyone yet."
 msgstr "You are not following anyone yet."
 
+msgid "Daily Briefing Ready"
+msgstr "Daily Briefing Ready"
+
+msgid "Weekly Briefing Ready"
+msgstr "Weekly Briefing Ready"
+
+#, python-format
+msgid "Hello %(name)s,"
+msgstr "Hello %(name)s,"
+
+msgid "Sign in to ScrapeMind to view your detailed summary and new papers:"
+msgstr "Sign in to ScrapeMind to view your detailed summary and new papers:"
+
+msgid ""
+"Best regards,\n"
+"The ScrapeMind Team"
+msgstr ""
+"Best regards,\n"
+"The ScrapeMind Team"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

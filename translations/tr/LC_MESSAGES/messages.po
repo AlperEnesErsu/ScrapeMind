@@ -3013,6 +3013,28 @@ msgstr "Takibi bırak"
 msgid "You are not following anyone yet."
 msgstr "Henüz kimseyi takip etmiyorsunuz."
 
+msgid "Daily Briefing Ready"
+msgstr "Günlük Brifing Hazır"
+
+msgid "Weekly Briefing Ready"
+msgstr "Haftalık Brifing Hazır"
+
+#, python-format
+msgid "Hello %(name)s,"
+msgstr "Merhaba %(name)s,"
+
+msgid "Sign in to ScrapeMind to view your detailed summary and new papers:"
+msgstr ""
+"Detaylı özetinizi ve yeni makalelerinizi incelemek için ScrapeMind'a "
+"giriş yapın:"
+
+msgid ""
+"Best regards,\n"
+"The ScrapeMind Team"
+msgstr ""
+"İyi çalışmalar,\n"
+"ScrapeMind Ekibi"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
