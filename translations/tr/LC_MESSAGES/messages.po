@@ -3035,6 +3035,324 @@ msgstr ""
 "İyi çalışmalar,\n"
 "ScrapeMind Ekibi"
 
+#, python-format
+msgid "%(n)s items"
+msgstr "%(n)s kayıt"
+
+#, python-format
+msgid "%(n)s works matched your followed keywords: %(kws)s"
+msgstr "%(n)s çalışma takip ettiğin anahtar kelimelerle eşleşti: %(kws)s"
+
+#, python-format
+msgid "%(n)s years"
+msgstr "%(n)s yıl"
+
+#, python-format
+msgid "%(name)s added to the group."
+msgstr "%(name)s gruba eklendi."
+
+#, python-format
+msgid "%(used)s / %(cap)s groups"
+msgstr "%(used)s / %(cap)s grup"
+
+#, python-format
+msgid "%(used)s / %(cap)s members"
+msgstr "%(used)s / %(cap)s üye"
+
+#, python-format
+msgid "%(works)s works, %(cites)s citations"
+msgstr "%(works)s çalışma, %(cites)s atıf"
+
+msgid "Add from followed authors"
+msgstr "Takip edilen yazarlardan ekle"
+
+msgid "Add to group"
+msgstr "Gruba ekle"
+
+msgid "Author added to the group."
+msgstr "Yazar gruba eklendi."
+
+msgid "Author group"
+msgstr "Yazar grubu"
+
+msgid "Author groups"
+msgstr "Yazar grupları"
+
+msgid "Author name"
+msgstr "Yazar adı"
+
+msgid "Author not found."
+msgstr "Yazar bulunamadı."
+
+msgid "Author removed from the group."
+msgstr "Yazar gruptan çıkarıldı."
+
+msgid "Back to reports"
+msgstr "Raporlara dön"
+
+msgid "Co-authorship"
+msgstr "Ortak yazarlık"
+
+#, python-format
+msgid "Could not resolve an OpenAlex identity for: %(names)s"
+msgstr "Şunlar için OpenAlex kimliği çözülemedi: %(names)s"
+
+msgid "Create group"
+msgstr "Grup oluştur"
+
+msgid "Created"
+msgstr "Oluşturuldu"
+
+msgid "Daily report limit reached. Please try again tomorrow."
+msgstr "Günlük rapor sınırına ulaşıldı. Lütfen yarın tekrar dene."
+
+msgid "Delete"
+msgstr "Sil"
+
+msgid "Delete group"
+msgstr "Grubu sil"
+
+msgid "Delete this group? Followed authors are kept."
+msgstr "Bu grup silinsin mi? Takip edilen yazarlar korunur."
+
+msgid "Delete this report?"
+msgstr "Bu rapor silinsin mi?"
+
+msgid "Description (optional)"
+msgstr "Açıklama (isteğe bağlı)"
+
+msgid "Emerging"
+msgstr "Yükselen"
+
+msgid "Enter a few keywords and a time range to generate your first one."
+msgstr "İlkini oluşturmak için birkaç anahtar kelime ve bir zaman aralığı gir."
+
+msgid "Fading"
+msgstr "Gerileyen"
+
+msgid "Failed"
+msgstr "Başarısız"
+
+msgid "Fastest-growing topics"
+msgstr "En hızlı büyüyen konular"
+
+msgid "Find an author by name"
+msgstr "İsimle yazar ara"
+
+msgid ""
+"Gather a few authors under a name and generate a retrospective report for"
+" the group. Members are added paused — being in a group never feeds your "
+"nightly briefing."
+msgstr ""
+"Birkaç yazarı bir ad altında topla ve grup için geçmişe dönük bir rapor "
+"oluştur. Üyeler duraklatılmış olarak eklenir — gruba dahil olmak gecelik "
+"brifingini hiçbir zaman beslemez."
+
+msgid ""
+"Generate a retrospective briefing on a topic — a year-by-year narrative "
+"plus the numbers behind it."
+msgstr ""
+"Bir konuda geçmişe dönük brifing oluştur — yıl yıl anlatı ve arkasındaki "
+"sayılar."
+
+msgid "Generate file for this group"
+msgstr "Bu grup için dosya oluştur"
+
+msgid "Generate report"
+msgstr "Rapor oluştur"
+
+msgid "Generating…"
+msgstr "Oluşturuluyor…"
+
+msgid "Group created."
+msgstr "Grup oluşturuldu."
+
+msgid "Group deleted."
+msgstr "Grup silindi."
+
+msgid "Group is full. Remove a member before adding another."
+msgstr "Grup dolu. Yeni üye eklemeden önce birini çıkar."
+
+msgid "Group limit reached. Remove one before adding another."
+msgstr "Grup sınırına ulaşıldı. Yenisini eklemeden önce birini sil."
+
+msgid "Group name"
+msgstr "Grup adı"
+
+msgid "Group not found."
+msgstr "Grup bulunamadı."
+
+msgid "Group renamed."
+msgstr "Grup yeniden adlandırıldı."
+
+msgid "Journal quality (SJR quartile)"
+msgstr "Dergi kalitesi (SJR çeyreklik)"
+
+msgid "Key authors"
+msgstr "Öne çıkan yazarlar"
+
+msgid "Key venues"
+msgstr "Öne çıkan mekânlar"
+
+msgid "Key works"
+msgstr "Öne çıkan çalışmalar"
+
+msgid "Keywords (comma-separated)"
+msgstr "Anahtar kelimeler (virgülle ayrılmış)"
+
+msgid "Members"
+msgstr "Üyeler"
+
+msgid "Members resolved"
+msgstr "Kimliği çözülen üyeler"
+
+msgid "New report"
+msgstr "Yeni rapor"
+
+msgid "No authors found for that name."
+msgstr "Bu isim için yazar bulunamadı."
+
+msgid "No groups yet — create one above to start gathering authors for a report."
+msgstr ""
+"Henüz grup yok — rapor için yazar toplamaya başlamak üzere yukarıdan bir "
+"tane oluştur."
+
+msgid "No members yet."
+msgstr "Henüz üye yok."
+
+msgid "No reports yet."
+msgstr "Henüz rapor yok."
+
+msgid "Open access"
+msgstr "Açık erişim"
+
+msgid "OpenAlex"
+msgstr "OpenAlex"
+
+msgid "OpenAlex is busy right now — please try the search again in a moment."
+msgstr "OpenAlex şu an yoğun — lütfen aramayı birazdan tekrar dene."
+
+msgid "Overlap with your interests"
+msgstr "İlgi alanlarınla kesişim"
+
+msgid "Papers saved with this report"
+msgstr "Bu raporla kaydedilen makaleler"
+
+msgid "Partially ready"
+msgstr "Kısmen hazır"
+
+msgid "Please choose a group and a candidate."
+msgstr "Lütfen bir grup ve bir aday seç."
+
+msgid "Please choose an author."
+msgstr "Lütfen bir yazar seç."
+
+msgid "Please enter a group name."
+msgstr "Lütfen bir grup adı gir."
+
+msgid "Please provide at least one keyword for a topic report."
+msgstr "Konu raporu için en az bir anahtar kelime gir."
+
+msgid "Publications per year"
+msgstr "Yıllara göre yayın sayısı"
+
+msgid "Queued…"
+msgstr "Kuyrukta…"
+
+msgid "Range"
+msgstr "Aralık"
+
+msgid "Ready"
+msgstr "Hazır"
+
+msgid "Relevance to your keywords"
+msgstr "Anahtar kelimelerinle ilgisi"
+
+msgid "Remove from group"
+msgstr "Gruptan çıkar"
+
+msgid "Rename"
+msgstr "Yeniden adlandır"
+
+msgid "Report deleted."
+msgstr "Rapor silindi."
+
+msgid "Report generation failed."
+msgstr "Rapor oluşturulamadı."
+
+msgid "Report queued — it will appear here once generated."
+msgstr "Rapor kuyruğa alındı — hazır olduğunda burada görünecek."
+
+msgid "Report ready"
+msgstr "Rapor hazır"
+
+msgid "Reports"
+msgstr "Raporlar"
+
+msgid ""
+"Search OpenAlex by name and pick the right person from the candidates "
+"below — institution, publication and citation counts are shown because "
+"that\\"
+msgstr ""
+"OpenAlex'te isimle ara ve aşağıdaki adaylardan doğru kişiyi seç — kurum, "
+"yayın ve atıf sayıları gösteriliyor, çünkü aynı adı taşıyan iki "
+"araştırmacıyı ayırt etmenin tek yolu bu."
+
+msgid "Shared topics"
+msgstr "Ortak konular"
+
+msgid "Summary"
+msgstr "Özet"
+
+msgid ""
+"The AI summary could not be fully generated — the numeric summary below "
+"is still accurate."
+msgstr "AI özeti tam olarak üretilemedi — aşağıdaki sayısal özet yine de doğru."
+
+msgid ""
+"This group has no members yet. Add at least one author before generating "
+"a report."
+msgstr "Bu grubun henüz üyesi yok. Rapor oluşturmadan önce en az bir yazar ekle."
+
+msgid "Time range (years)"
+msgstr "Zaman aralığı (yıl)"
+
+msgid "Topic"
+msgstr "Konu"
+
+msgid "Unsupported report type."
+msgstr "Desteklenmeyen rapor türü."
+
+#, python-format
+msgid "Up to %(n)s reports per day."
+msgstr "Günde en fazla %(n)s rapor."
+
+msgid "Venues"
+msgstr "Mekânlar"
+
+msgid "Works in range"
+msgstr "Aralıktaki çalışmalar"
+
+#, python-format
+msgid "Year range must be between %(min)s and %(max)s years."
+msgstr "Yıl aralığı %(min)s ile %(max)s yıl arasında olmalı."
+
+msgid "You already have a group with that name."
+msgstr "Bu adda bir grubun zaten var."
+
+#, python-format
+msgid "Your report \"%(title)s\" has finished generating."
+msgstr "\"%(title)s\" raporun hazırlandı."
+
+msgid "e.g. Jane Smith"
+msgstr "örn. Ayşe Yılmaz"
+
+msgid "e.g. machine learning, retrieval augmented generation"
+msgstr "örn. makine öğrenmesi, retrieval augmented generation"
+
+msgid "menu.reports"
+msgstr "Raporlar"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

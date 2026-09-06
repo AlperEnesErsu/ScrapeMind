@@ -1,0 +1,215 @@
+{# "topic" report sections + stats.
+
+   `sections` is LLM output and `stats` comes straight from the OpenAlex API
+   (row `name`s especially) — both are untrusted text. Autoescape stays on
+   throughout (no |safe anywhere in this file), and the only hrefs drawn
+   below are `stats` rows' own `key`, which is checked for an http(s)
+   scheme first (OpenAlex's group_by `key` is a full entity URL for
+   authors/venues/topics — see openalex_source.aggregate_works).
+
+   `sections.key_works`/`key_authors`/`key_venues` are LLM-authored plain
+   text with no id attached (ai_service.synthesize_report's schema — see
+   its docstring), so they render as text only; inventing a link for them
+   would be showing a URL this report never actually verified. #}
+{% set sections = report.sections or {} %}
+{% set stats = report.stats or {} %}
+
+{% if sections.tldr %}
+  <div class="card card-body mb-3 border-primary-subtle">
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <i class="bi bi-stars text-primary"></i>
+      <strong>{{ _('Summary') }}</strong>
+    </div>
+    <p class="mb-0">{{ sections.tldr }}</p>
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-md-3 col-6">
+    <div class="card card-body text-center py-2">
+      <div class="fs-4 fw-semibold">{{ stats.total if stats.total is not none else '—' }}</div>
+      <div class="small text-muted">{{ _('Works in range') }}</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card card-body text-center py-2">
+      <div class="fs-4 fw-semibold">
+        {% if stats.oa_share is not none %}{{ (stats.oa_share * 100) | round | int }}%{% else %}—{% endif %}
+      </div>
+      <div class="small text-muted">{{ _('Open access') }}</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card card-body text-center py-2">
+      <div class="fs-4 fw-semibold">{{ stats.since_year }}–{{ stats.until_year }}</div>
+      <div class="small text-muted">{{ _('Range') }}</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card card-body text-center py-2">
+      <div class="fs-4 fw-semibold">{{ report.item_count }}</div>
+      <div class="small text-muted">{{ _('Papers saved with this report') }}</div>
+    </div>
+  </div>
+</div>
+
+{% if stats.year_series %}
+  <div class="card card-body mb-3">
+    <div class="small fw-semibold text-uppercase text-muted mb-2">{{ _('Publications per year') }}</div>
+    <div class="d-flex flex-wrap gap-2">
+      {% for row in stats.year_series %}
+        <span class="badge bg-light text-body-secondary border">{{ row.year }}: {{ row.count }}</span>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+{% if sections.timeline %}
+  <div class="card card-body mb-3">
+    <div class="small fw-semibold text-uppercase text-muted mb-2">{{ _('Timeline') }}</div>
+    {% for t in sections.timeline %}
+      <div class="mb-2 pb-2 {% if not loop.last %}border-bottom{% endif %}">
+        <div class="fw-semibold">{{ t.year }}</div>
+        {% if t.themes %}
+          <div class="small text-muted mb-1">{{ t.themes | join(' · ') }}</div>
+        {% endif %}
+        {% if t.notable %}
+          <ul class="small mb-0">
+            {% for n in t.notable %}<li>{{ n }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  {% if sections.emerging %}
+    <div class="col-md-6">
+      <div class="card card-body h-100">
+        <div class="small fw-semibold text-uppercase text-success mb-2">
+          <i class="bi bi-graph-up-arrow me-1"></i>{{ _('Emerging') }}
+        </div>
+        <ul class="small mb-0">
+          {% for e in sections.emerging %}<li>{{ e }}</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+  {% if sections.fading %}
+    <div class="col-md-6">
+      <div class="card card-body h-100">
+        <div class="small fw-semibold text-uppercase text-secondary mb-2">
+          <i class="bi bi-graph-down-arrow me-1"></i>{{ _('Fading') }}
+        </div>
+        <ul class="small mb-0">
+          {% for f in sections.fading %}<li>{{ f }}</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% if stats.growing_topics %}
+  <div class="card card-body mb-3">
+    <div class="small fw-semibold text-uppercase text-muted mb-2">{{ _('Fastest-growing topics') }}</div>
+    <div class="d-flex flex-wrap gap-2">
+      {% for row in stats.growing_topics %}
+        {% set _key = row.key | string %}
+        {% if row.key and (_key.startswith('http://') or _key.startswith('https://')) %}
+          <a href="{{ row.key }}" target="_blank" rel="noopener noreferrer" class="badge bg-success-subtle text-success-emphasis text-decoration-none">
+            {{ row.name }} (+{{ row.growth }})
+          </a>
+        {% else %}
+          <span class="badge bg-success-subtle text-success-emphasis">{{ row.name }} (+{{ row.growth }})</span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+{% if sections.key_works %}
+  <div class="card card-body mb-3">
+    <div class="small fw-semibold text-uppercase text-muted mb-2">{{ _('Key works') }}</div>
+    <ul class="list-unstyled mb-0">
+      {% for kw in sections.key_works %}
+        <li class="mb-2">
+          <div class="fw-semibold">{{ kw.title }}</div>
+          {% if kw.why %}<div class="small text-muted">{{ kw.why }}</div>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  {% if sections.key_authors or stats.top_authors %}
+    <div class="col-md-4">
+      <div class="card card-body h-100">
+        <div class="small fw-semibold text-uppercase text-muted mb-2">{{ _('Key authors') }}</div>
+        {% if sections.key_authors %}
+          <ul class="small mb-0">
+            {% for a in sections.key_authors %}<li>{{ a }}</li>{% endfor %}
+          </ul>
+        {% else %}
+          <ul class="small mb-0">
+            {% for row in stats.top_authors %}
+              <li>
+                {% set _key = row.key | string %}
+                {% if row.key and (_key.startswith('http://') or _key.startswith('https://')) %}
+                  <a href="{{ row.key }}" target="_blank" rel="noopener noreferrer">{{ row.name }}</a>
+                {% else %}{{ row.name }}{% endif %}
+                <span class="text-muted">({{ row.count }})</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+  {% if sections.key_venues or stats.top_venues %}
+    <div class="col-md-4">
+      <div class="card card-body h-100">
+        <div class="small fw-semibold text-uppercase text-muted mb-2">{{ _('Key venues') }}</div>
+        {% if sections.key_venues %}
+          <ul class="small mb-0">
+            {% for v in sections.key_venues %}<li>{{ v }}</li>{% endfor %}
+          </ul>
+        {% else %}
+          <ul class="small mb-0">
+            {% for row in stats.top_venues %}
+              <li>
+                {% set _key = row.key | string %}
+                {% if row.key and (_key.startswith('http://') or _key.startswith('https://')) %}
+                  <a href="{{ row.key }}" target="_blank" rel="noopener noreferrer">{{ row.name }}</a>
+                {% else %}{{ row.name }}{% endif %}
+                <span class="text-muted">({{ row.count }})</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+  {% if stats.journal_quartiles %}
+    <div class="col-md-4">
+      <div class="card card-body h-100">
+        <div class="small fw-semibold text-uppercase text-muted mb-2">{{ _('Journal quality (SJR quartile)') }}</div>
+        <div class="d-flex flex-wrap gap-2">
+          {% for quartile, count in stats.journal_quartiles.items() %}
+            <span class="badge quartile-badge {% if quartile != 'unknown' %}quartile-{{ quartile|lower }}{% else %}bg-light text-body-secondary border{% endif %}">
+              {{ quartile }}: {{ count }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% if sections.for_your_keywords %}
+  <div class="alert alert-secondary">
+    <i class="bi bi-tags me-1"></i>
+    <strong>{{ _('Relevance to your keywords') }}:</strong> {{ sections.for_your_keywords }}
+  </div>
+{% endif %}

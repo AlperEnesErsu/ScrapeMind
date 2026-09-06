@@ -88,3 +88,198 @@
   <p class="mb-0 small">{{ _('You are not following anyone yet.') }}</p>
 </div>
 {% endif %}
+
+{# ------------------------------------------------------------------ #}
+{# Search by name (Faz 6, ADR-0003) — candidates only, the human always    #}
+{# picks. Auto-matching is deliberately absent; see the ADR for why that's #}
+{# now safe next to the identifier-only form above.                       #}
+{# ------------------------------------------------------------------ #}
+<hr class="my-4">
+<h6 class="text-muted mb-3">{{ _('Find an author by name') }}</h6>
+<p class="small text-muted">
+  {{ _('Search OpenAlex by name and pick the right person from the candidates below — institution, publication and citation counts are shown because that\'s the only way to tell two same-named researchers apart.') }}
+</p>
+
+<form hx-post="{{ url_for('scrape.submit_author_search') }}" hx-target="#tab-content" hx-swap="innerHTML" class="mb-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="input-group">
+    {{ search_form.name(class="form-control", placeholder=_('e.g. Jane Smith'), value=search_query|default('', true)) }}
+    <button type="submit" class="btn btn-primary">{{ search_form.submit.label.text }}</button>
+  </div>
+</form>
+
+{# `search_results`/`search_query` are not part of `_authors_ctx()` — they only
+   exist when `_render_authors_tab` was given them (a just-completed search),
+   so a direct tab load (no search yet) leaves them undefined, same effect as
+   the explicit `None` every other action re-renders the tab with. #}
+{% if search_results is defined and search_results is not none %}
+  {% if search_results %}
+  <div class="list-group mb-4">
+    {% for c in search_results %}
+    <div class="list-group-item">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+          <strong>{{ c.name }}</strong>
+          {% if c.orcid %}
+          <a href="https://orcid.org/{{ c.orcid }}" target="_blank" rel="noopener noreferrer"
+             class="small text-muted text-decoration-none ms-1">{{ c.orcid }}</a>
+          {% endif %}
+          <div class="small text-muted">
+            {% if c.institution %}{{ c.institution }} &middot; {% endif %}
+            {{ _('%(works)s works, %(cites)s citations', works=c.works_count or 0, cites=c.cited_by_count or 0) }}
+          </div>
+          {% if c.topics %}
+          <div class="small text-muted">{{ c.topics | join(', ') }}</div>
+          {% endif %}
+        </div>
+        <div class="d-flex flex-wrap gap-1 align-items-start">
+          <form hx-post="{{ url_for('scrape.submit_author_follow') }}" hx-target="#tab-content" hx-swap="innerHTML">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="identifier" value="{{ c.id }}">
+            <button type="submit" class="btn btn-sm btn-outline-primary">{{ _('Follow') }}</button>
+          </form>
+          {% if groups %}
+          <form hx-post="{{ url_for('scrape.submit_author_add_to_group') }}" hx-target="#tab-content"
+                hx-swap="innerHTML" class="d-flex gap-1">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="openalex_id" value="{{ c.id }}">
+            <select name="group_id" class="form-select form-select-sm">
+              {% for g in groups %}
+              <option value="{{ g.id }}">{{ g.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{{ _('Add to group') }}</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state mb-4">
+    <i class="bi bi-search"></i>
+    <p class="mb-0 small">{{ _('No authors found for that name.') }}</p>
+  </div>
+  {% endif %}
+{% endif %}
+
+{# ------------------------------------------------------------------ #}
+{# Author groups (Faz 6) — named sets of followed authors, gathered for an #}
+{# on-demand report. Members join paused (`active=False`); grouping never  #}
+{# feeds the nightly briefing — see service.py's AuthorGroup docstring.    #}
+{# ------------------------------------------------------------------ #}
+<hr class="my-4">
+<h6 class="text-muted mb-3">{{ _('Author groups') }}</h6>
+<p class="small text-muted">
+  {{ _('Gather a few authors under a name and generate a retrospective report for the group. Members are added paused — being in a group never feeds your nightly briefing.') }}
+  <span class="ms-1">{{ _('%(used)s / %(cap)s groups', used=group_count, cap=max_author_groups) }}</span>
+</p>
+
+<form hx-post="{{ url_for('scrape.submit_group_create') }}" hx-target="#tab-content" hx-swap="innerHTML"
+      class="row g-2 mb-4">
+  {{ group_form.csrf_token }}
+  <div class="col-sm-4">
+    {{ group_form.name(class="form-control", placeholder=group_form.name.label.text) }}
+  </div>
+  <div class="col-sm-6">
+    {{ group_form.description(class="form-control", placeholder=group_form.description.label.text) }}
+  </div>
+  <div class="col-sm-2">
+    <button type="submit" class="btn btn-primary w-100">{{ group_form.submit.label.text }}</button>
+  </div>
+</form>
+
+{% if groups %}
+<div class="accordion mb-2" id="author-groups-accordion">
+  {% for g in groups %}
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              data-bs-target="#group-panel-{{ g.id }}">
+        <strong class="me-2">{{ g.name }}</strong>
+        <span class="badge rounded-pill text-bg-secondary-subtle text-secondary me-2">
+          {{ _('%(used)s / %(cap)s members', used=group_members[g.id] | length, cap=max_group_members) }}
+        </span>
+        {% if g.description %}<span class="small text-muted">{{ g.description }}</span>{% endif %}
+      </button>
+    </h2>
+    <div id="group-panel-{{ g.id }}" class="accordion-collapse collapse" data-bs-parent="#author-groups-accordion">
+      <div class="accordion-body">
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <form hx-post="{{ url_for('scrape.submit_group_rename', group_id=g.id) }}" hx-target="#tab-content"
+                hx-swap="innerHTML" class="d-flex gap-1">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="name" class="form-control form-control-sm" value="{{ g.name }}" maxlength="120">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{{ _('Rename') }}</button>
+          </form>
+
+          <form hx-post="{{ url_for('scrape.submit_group_report', group_id=g.id) }}" hx-target="#tab-content"
+                hx-swap="innerHTML" class="d-flex gap-1">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="years" class="form-select form-select-sm">
+              {% for y in year_choices %}
+              <option value="{{ y }}" {{ 'selected' if y == 5 else '' }}>{{ _('%(n)s years', n=y) }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-success">
+              <i class="bi bi-file-earmark-text me-1"></i>{{ _('Generate file for this group') }}
+            </button>
+          </form>
+
+          <form hx-post="{{ url_for('scrape.submit_group_delete', group_id=g.id) }}" hx-target="#tab-content"
+                hx-swap="innerHTML" hx-confirm="{{ _('Delete this group? Followed authors are kept.') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-trash"></i> {{ _('Delete group') }}
+            </button>
+          </form>
+        </div>
+
+        {% if group_members[g.id] %}
+        <ul class="list-group mb-3">
+          {% for m in group_members[g.id] %}
+          <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>
+              {{ m.author_name }}
+              {% if m.institution %}<span class="small text-muted">&mdash; {{ m.institution }}</span>{% endif %}
+            </span>
+            <form hx-post="{{ url_for('scrape.submit_group_member_remove', group_id=g.id, member_id=group_membership_ids[g.id][m.id]) }}"
+                  hx-target="#tab-content" hx-swap="innerHTML">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remove from group') }}">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="small text-muted">{{ _('No members yet.') }}</p>
+        {% endif %}
+
+        {% if group_available_members[g.id] %}
+        <form hx-post="{{ url_for('scrape.submit_group_member_add', group_id=g.id) }}" hx-target="#tab-content"
+              hx-swap="innerHTML" class="d-flex gap-1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="user_author_id" class="form-select form-select-sm">
+            {% for a in group_available_members[g.id] %}
+            <option value="{{ a.id }}">{{ a.author_name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-sm btn-outline-primary">{{ _('Add from followed authors') }}</button>
+        </form>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <i class="bi bi-collection"></i>
+  <p class="mb-0 small">{{ _('No groups yet — create one above to start gathering authors for a report.') }}</p>
+</div>
+{% endif %}

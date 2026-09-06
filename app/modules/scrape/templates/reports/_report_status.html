@@ -1,0 +1,44 @@
+{# Report status pill — the detail page's poll target.
+
+   Same "self-stopping poll" contract as dashboard/_scan_status.html: the
+   root element carries hx-trigger only while the report is still
+   pending/running, so once it lands on a terminal status the polling stops
+   on its own (the terminal render below carries no hx-trigger at all).
+
+   Unlike _scan_status.html, a terminal status here isn't the whole story —
+   report_status (the route behind hx-get below) also sets HX-Refresh once
+   status leaves pending/running, so the browser reloads the full detail
+   page and the now-available stats/sections actually render. This partial
+   only ever needs to draw the pill itself. #}
+{% set _is_pending = report.status in ('pending', 'running') %}
+<div id="report-status-{{ report.id }}" class="mb-3"
+     {% if _is_pending %}
+     hx-get="{{ url_for('scrape.report_status', report_id=report.id) }}"
+     hx-trigger="every 3s"
+     hx-target="#report-status-{{ report.id }}"
+     hx-swap="outerHTML"
+     {% endif %}>
+  {% if report.status == 'pending' %}
+    <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis" data-testid="report-status-pending">
+      <span class="spinner-border spinner-border-sm me-1" style="width:.65rem;height:.65rem;" role="status" aria-hidden="true"></span>
+      {{ _('Queued…') }}
+    </span>
+  {% elif report.status == 'running' %}
+    <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis" data-testid="report-status-running">
+      <span class="spinner-border spinner-border-sm me-1" style="width:.65rem;height:.65rem;" role="status" aria-hidden="true"></span>
+      {{ _('Generating…') }}
+    </span>
+  {% elif report.status == 'ok' %}
+    <span class="badge rounded-pill bg-success-subtle text-success-emphasis" data-testid="report-status-ok">
+      <i class="bi bi-check-circle me-1"></i>{{ _('Ready') }}
+    </span>
+  {% elif report.status == 'partial' %}
+    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis" data-testid="report-status-partial">
+      <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Partially ready') }}
+    </span>
+  {% elif report.status == 'error' %}
+    <span class="badge rounded-pill bg-danger-subtle text-danger-emphasis" data-testid="report-status-error">
+      <i class="bi bi-x-circle me-1"></i>{{ _('Failed') }}
+    </span>
+  {% endif %}
+</div>
