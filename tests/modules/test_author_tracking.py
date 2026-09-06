@@ -61,6 +61,18 @@ def a_user(db):
     yield user
 
     db.session.rollback()
+    # author_group_members has no user_id of its own — go through its parent
+    # group, and delete it before author_groups/user_authors (the two tables
+    # it FKs to).
+    db.session.execute(
+        text(
+            "DELETE FROM author_group_members WHERE group_id IN "
+            "(SELECT id FROM author_groups WHERE user_id = :uid)"
+        ),
+        {"uid": uid},
+    )
+    db.session.execute(text("DELETE FROM author_groups WHERE user_id = :uid"), {"uid": uid})
+    db.session.execute(text("DELETE FROM reports WHERE user_id = :uid"), {"uid": uid})
     db.session.execute(text("DELETE FROM user_authors WHERE user_id = :uid"), {"uid": uid})
     db.session.execute(text("DELETE FROM user_papers WHERE user_id = :uid"), {"uid": uid})
     db.session.execute(text("DELETE FROM audit_logs WHERE user_id = :uid"), {"uid": uid})
@@ -77,13 +89,18 @@ def clean_papers(db):
     db.session.commit()
 
 
-def _author_json(name="Jane Smith"):
-    return {
+def _author_json(name="Jane Smith", *, institution=None, cited_by_count=None):
+    data = {
         "id": f"https://openalex.org/{_AUTHOR_ID}",
         "display_name": name,
         "orcid": f"https://orcid.org/{_ORCID}",
         "works_count": 42,
     }
+    if institution is not None:
+        data["last_known_institutions"] = [{"display_name": institution}]
+    if cited_by_count is not None:
+        data["cited_by_count"] = cited_by_count
+    return data
 
 
 def _work_payload(ext="W1", published=None):
@@ -147,7 +164,14 @@ def test_fetch_author_by_orcid_uses_the_orcid_url(monkeypatch):
     got = oa.fetch_author(f"https://orcid.org/{_ORCID}")
 
     assert f"orcid.org/{_ORCID}" in seen["url"]
-    assert got == {"id": _AUTHOR_ID, "name": "Jane Smith", "orcid": _ORCID, "works_count": 42}
+    assert got == {
+        "id": _AUTHOR_ID,
+        "name": "Jane Smith",
+        "orcid": _ORCID,
+        "works_count": 42,
+        "institution": None,
+        "cited_by_count": None,
+    }
 
 
 def test_fetch_author_by_openalex_id(monkeypatch):
