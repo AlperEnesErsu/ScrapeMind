@@ -293,12 +293,18 @@ def _author_id(raw: str | None) -> str | None:
 
 def fetch_author(orcid_or_id: str) -> dict | None:
     """Resolve an ORCID or OpenAlex author id to `{"id", "name", "orcid",
-    "works_count"}`.
+    "works_count", "institution", "cited_by_count"}`.
 
     Called once, when a user follows someone — not per nightly run. That is
     the whole reason `UserAuthor.openalex_id` is stored: resolution is the
     expensive, failure-prone half, and doing it on follow means the user sees
     the error immediately instead of it vanishing into a task log.
+
+    `institution` reuses `_author_institution` — the same field-shape
+    tolerance `search_authors` needs (a `last_known_institutions` list on
+    current responses, a single `last_known_institution` object on older
+    ones) applies here too, since both endpoints return the same author
+    resource. `cited_by_count` is a plain passthrough, same as `works_count`.
 
     Returns None when the identifier resolves to nothing (404 is OpenAlex's
     answer for an unknown ORCID, which is a normal outcome of a typo).
@@ -333,6 +339,8 @@ def fetch_author(orcid_or_id: str) -> dict | None:
         "name": (data.get("display_name") or "").strip() or None,
         "orcid": normalize_orcid(data.get("orcid")),
         "works_count": data.get("works_count"),
+        "institution": _author_institution(data),
+        "cited_by_count": data.get("cited_by_count"),
     }
 
 
@@ -377,6 +385,295 @@ def works_by_author(
     out = [p for p in (_to_payload(i) for i in items) if p is not None]
     logger.info("openalex_author_works", author_id=author_id, hits=len(out))
     return out[:max_results]
+
+
+# ----------------------------------------------------------------------------
+# Reports (Faz 6) — multi-page aggregation, group-by statistics, author search
+# ----------------------------------------------------------------------------
+
+#: Backstop on the number of *pages* `works_in_range` will ever fetch,
+#: independent of the rows cap below. `REPORT_MAX_WORKS // _MAX_PER_PAGE`
+#: pages is enough in the ordinary case, but that ratio assumes every raw
+#: result becomes one payload — a page where `_to_payload` skips a few
+#: malformed records (missing title/id), or where the server doesn't fill a
+#: page to `per-page`, would make net progress per page smaller than that,
+#: and a tight ratio-based cap could then stop the loop before the rows cap
+#: is ever reached. This constant is deliberately generous instead: large
+#: enough that it never binds in normal operation, existing purely so a
+#: misbehaving server cannot page forever.
+_MAX_REPORT_PAGES = 50
+
+#: Hard ceiling on how many works `works_in_range` will ever hand back. This
+#: is a *reporting* path, not the per-scan `search()` above — a report can
+#: legitimately ask for "everything published on X between 2020 and 2025",
+#: and the live API note above measured a 5-year window at 94,759 hits for a
+#: single query. Without a ceiling that is a report page trying to hold and
+#: render tens of thousands of rows. `max_results` is clamped to this, never
+#: the other way around.
+REPORT_MAX_WORKS = 400
+
+#: `group_by` dimensions this adapter has actually verified against the live
+#: API (see the module's task notes) — OpenAlex accepts many more, but an
+#: unverified one could silently return a shape `_aggregate_item` doesn't
+#: expect. Reject anything else instead of guessing.
+SUPPORTED_GROUP_BY = frozenset(
+    {
+        "publication_year",
+        "authorships.author.id",
+        "primary_location.source.id",
+        "primary_topic.id",
+        "open_access.is_oa",
+    }
+)
+
+
+class UnsupportedGroupByError(ValueError):
+    """Raised by `aggregate_works` for a `group_by` value this adapter has
+    not verified — see `SUPPORTED_GROUP_BY`."""
+
+
+def _date_range_filter(since_year: int, until_year: int) -> str:
+    return f"from_publication_date:{since_year}-01-01,to_publication_date:{until_year}-12-31"
+
+
+def works_in_range(
+    query: str,
+    *,
+    since_year: int,
+    until_year: int,
+    sort: str = "cited_by_count:desc",
+    max_results: int = 200,
+) -> list[PaperPayload]:
+    """Collect works for a report over a whole date range, paging with
+    OpenAlex's cursor (`cursor=*` -> `meta.next_cursor`).
+
+    This is the first multi-page adapter in this repo — every other adapter
+    here answers one page and lets the caller decide whether to ask again.
+    A report is different in kind: "every AI-safety paper from 2020-2025" is
+    one logical request that happens to need several HTTP round trips, and a
+    per-page cap (200, see `_MAX_PER_PAGE`) means a many-thousand-hit query
+    would otherwise silently truncate to page one.
+
+    Three independent guards make an infinite loop impossible even if the
+    API misbehaves or `max_results` is passed in absurdly large:
+      1. `max_results` is clamped to `REPORT_MAX_WORKS` before anything else,
+         so the number of *rows* is always finite.
+      2. The number of *pages* is separately capped at `_MAX_REPORT_PAGES`
+         — belt-and-braces in case a page's net contribution to `out` ever
+         falls short of `per-page` (skipped malformed records, a server that
+         under-fills a page), which would make a tight rows/per-page ratio
+         stop too early.
+      3. The loop also stops the moment a page's `results` is empty, or its
+         `meta.next_cursor` is missing/blank, or repeats the cursor just
+         handed out — the last case guards against a misbehaving server
+         that echoes the same cursor back forever instead of ending the
+         sequence honestly.
+
+    Every page spends one `openalex_slot()` token, same as every other call
+    in this module — a 400-row report at 200/page is 2 requests, not a
+    special-cased bulk exemption from the rate limit.
+    """
+    query = (query or "").strip()
+    if not query:
+        return []
+
+    capped_max = max(0, min(max_results, REPORT_MAX_WORKS))
+    if capped_max == 0:
+        return []
+
+    per_page = min(capped_max, _MAX_PER_PAGE)
+
+    params: dict[str, str | int] = {
+        "filter": _date_range_filter(since_year, until_year),
+        "search": query,
+        "sort": sort,
+        "per-page": per_page,
+    }
+    mailto = _mailto()
+    if mailto:
+        params["mailto"] = mailto
+
+    out: list[PaperPayload] = []
+    cursor = "*"
+    seen_cursors: set[str] = set()
+
+    for _ in range(_MAX_REPORT_PAGES):
+        if len(out) >= capped_max:
+            break
+        if not openalex_slot():
+            logger.warning("openalex_rate_limited", query=query, stage="works_in_range")
+            raise SourceThrottledError("openalex rate limit")
+
+        page_params = dict(params)
+        page_params["cursor"] = cursor
+        resp = _session.get(_API_URL, params=page_params, headers=_headers(), timeout=_TIMEOUT)
+        resp.raise_for_status()
+        data = resp.json() or {}
+
+        items = data.get("results") or []
+        if not items:
+            break
+        for item in items:
+            payload = _to_payload(item)
+            if payload is not None:
+                out.append(payload)
+            if len(out) >= capped_max:
+                break
+
+        next_cursor = (data.get("meta") or {}).get("next_cursor")
+        if not next_cursor or next_cursor == cursor or next_cursor in seen_cursors:
+            break
+        seen_cursors.add(next_cursor)
+        cursor = next_cursor
+
+    logger.info(
+        "openalex_works_in_range_done",
+        query=query,
+        since_year=since_year,
+        until_year=until_year,
+        hits=len(out),
+    )
+    return out[:capped_max]
+
+
+def _aggregate_item(item: dict) -> dict:
+    return {
+        "key": item.get("key"),
+        "name": item.get("key_display_name") or item.get("key"),
+        "count": item.get("count"),
+    }
+
+
+def aggregate_works(query: str, *, since_year: int, until_year: int, group_by: str) -> list[dict]:
+    """One `group_by` request, normalized to `{"key", "name", "count"}` rows.
+
+    This is the LLM-free statistics path for reports — "top authors on this
+    topic", "OA share over time" — answered directly from OpenAlex's own
+    aggregation rather than fetching works and counting client-side (which
+    would need every matching row, not just the <=200 a report can hold).
+
+    `group_by` is restricted to `SUPPORTED_GROUP_BY`, the dimensions actually
+    verified against the live API (see this module's task notes) — accepting
+    an unverified value would mean a caller's typo returns an empty list
+    that looks like "no results" instead of "no such dimension", which is a
+    much worse failure to debug. So it raises instead.
+    """
+    query = (query or "").strip()
+    if group_by not in SUPPORTED_GROUP_BY:
+        raise UnsupportedGroupByError(f"unsupported group_by: {group_by!r}")
+
+    params: dict[str, str | int] = {
+        "filter": _date_range_filter(since_year, until_year),
+        "group_by": group_by,
+    }
+    if query:
+        params["search"] = query
+    mailto = _mailto()
+    if mailto:
+        params["mailto"] = mailto
+
+    if not openalex_slot():
+        logger.warning("openalex_rate_limited", query=query, stage="aggregate_works")
+        raise SourceThrottledError("openalex rate limit")
+
+    resp = _session.get(_API_URL, params=params, headers=_headers(), timeout=_TIMEOUT)
+    resp.raise_for_status()
+    data = resp.json() or {}
+    groups = data.get("group_by") or []
+    out = [_aggregate_item(g) for g in groups]
+    logger.info("openalex_aggregate_done", query=query, group_by=group_by, groups=len(out))
+    return out
+
+
+_MIN_AUTHOR_NAME_LEN = 2
+_MAX_AUTHOR_TOPICS = 3
+
+
+def _author_institution(item: dict) -> str | None:
+    """OpenAlex has changed its shape here across API versions — a list under
+    `last_known_institutions` (current) or a single object under
+    `last_known_institution` (older docs/cached responses still show it).
+    Tolerate both rather than betting on one."""
+    institutions = item.get("last_known_institutions")
+    if isinstance(institutions, list) and institutions:
+        first = institutions[0]
+        if isinstance(first, dict):
+            name = (first.get("display_name") or "").strip()
+            if name:
+                return name
+
+    single = item.get("last_known_institution")
+    if isinstance(single, dict):
+        name = (single.get("display_name") or "").strip()
+        if name:
+            return name
+
+    return None
+
+
+def _author_candidate(item: dict) -> dict | None:
+    author_id = _author_id(item.get("id"))
+    name = (item.get("display_name") or "").strip()
+    if not author_id or not name:
+        return None
+
+    topics = [
+        t.get("display_name")
+        for t in (item.get("topics") or [])
+        if isinstance(t, dict) and t.get("display_name")
+    ][:_MAX_AUTHOR_TOPICS]
+
+    return {
+        "id": author_id,
+        "name": name,
+        "orcid": normalize_orcid(item.get("orcid")),
+        "institution": _author_institution(item),
+        "works_count": item.get("works_count"),
+        "cited_by_count": item.get("cited_by_count"),
+        "topics": topics,
+    }
+
+
+def search_authors(name: str, *, limit: int = 10) -> list[dict]:
+    """Candidate authors by free-text name, for a human to pick from.
+
+    Author-following in this app has, until now, *deliberately* refused a
+    free-text name search — `forms.py`'s docstring called it out explicitly
+    ("Deliberately not a free-text name search") on the grounds that picking
+    an auto-matched "J. Smith" would silently pollute a user's feed with the
+    wrong person's papers. That reasoning still holds against *auto*-picking
+    a match; it does not hold against showing a human a short list of
+    candidates and letting them choose. So this function returns candidates
+    only — it never chooses one itself. Institution, works/citation counts,
+    and topics exist on each candidate precisely because those are what let
+    a person tell "J. Smith the immunologist" apart from "J. Smith the
+    astrophysicist" without opening OpenAlex in a separate tab.
+
+    Returns `[]` for a blank/too-short name (no request made — not worth a
+    slot for input that cannot plausibly be a real query) and for a 404 or an
+    empty result set, all normal outcomes rather than errors.
+    """
+    name = (name or "").strip()
+    if len(name) < _MIN_AUTHOR_NAME_LEN:
+        return []
+
+    params: dict[str, str | int] = {"search": name, "per-page": max(1, limit)}
+    mailto = _mailto()
+    if mailto:
+        params["mailto"] = mailto
+
+    if not openalex_slot():
+        raise SourceThrottledError("openalex rate limit")
+
+    resp = _session.get(_AUTHORS_URL, params=params, headers=_headers(), timeout=_TIMEOUT)
+    if resp.status_code == 404:
+        return []
+    resp.raise_for_status()
+
+    items = (resp.json() or {}).get("results") or []
+    out = [c for c in (_author_candidate(i) for i in items) if c is not None]
+    logger.info("openalex_search_authors_done", name=name, hits=len(out))
+    return out[:limit]
 
 
 def fetch_by_doi(doi: str) -> PaperPayload | None:

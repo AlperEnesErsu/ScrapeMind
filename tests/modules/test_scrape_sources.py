@@ -715,6 +715,43 @@ def test_openalex_fetch_author_goes_through_the_shared_session(monkeypatch):
     assert len(calls) == 1
 
 
+def test_fetch_author_includes_institution_and_cited_by_count(monkeypatch):
+    """`fetch_author` reuses `_author_candidate`'s field shape (Faz 6) so a
+    follow-candidate picker and a group report header don't need a second
+    live call just to disambiguate or label an author."""
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {
+        **_OA_AUTHOR_ITEM,
+        "last_known_institutions": [{"display_name": "Example University"}],
+    }
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _fake_response(json_data=item))
+    got = oa.fetch_author("A5023888391")
+    assert got["institution"] == "Example University"
+    assert got["cited_by_count"] == 5000
+    assert got["works_count"] == 120
+
+
+def test_fetch_author_tolerates_singular_institution_variant(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {
+        **_OA_AUTHOR_ITEM,
+        "last_known_institution": {"display_name": "Singular University"},
+    }
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _fake_response(json_data=item))
+    got = oa.fetch_author("A5023888391")
+    assert got["institution"] == "Singular University"
+
+
+def test_fetch_author_no_institution_field_is_none(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data=_OA_AUTHOR_ITEM)
+    )
+    got = oa.fetch_author("A5023888391")
+    assert got["institution"] is None
+    assert got["cited_by_count"] == 5000
+
+
 def test_openalex_works_by_author_goes_through_the_shared_session(monkeypatch):
     calls = []
 
@@ -769,6 +806,268 @@ class TestDecodeAbstract:
     def test_non_list_value_does_not_raise(self):
         inverted = {"good": [0], "bad": "not-a-list"}
         assert oa._decode_abstract(inverted) == "good"
+
+
+# ----------------------------------------------------------------------------
+# OpenAlex reports (Faz 6) — works_in_range, aggregate_works, search_authors
+# ----------------------------------------------------------------------------
+
+
+def _oa_work(work_id: str) -> dict:
+    return {**_OA_ITEM, "id": f"https://openalex.org/{work_id}"}
+
+
+def test_works_in_range_pages_with_cursor(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    pages = iter(
+        [
+            _fake_response(
+                json_data={
+                    "results": [_oa_work("W1")],
+                    "meta": {"next_cursor": "cursor2"},
+                }
+            ),
+            _fake_response(
+                json_data={
+                    "results": [_oa_work("W2")],
+                    "meta": {"next_cursor": None},
+                }
+            ),
+        ]
+    )
+    seen_cursors = []
+
+    def fake_get(url, **kwargs):
+        seen_cursors.append(kwargs["params"]["cursor"])
+        return next(pages)
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=50)
+    assert [p.external_id for p in out] == ["W1", "W2"]
+    assert seen_cursors[0] == "*"
+    assert seen_cursors[1] == "cursor2"
+
+
+def test_works_in_range_never_exceeds_report_max_works(monkeypatch):
+    """`max_results` is a request, `REPORT_MAX_WORKS` is the law — even a
+    caller that asks for more than the ceiling gets the ceiling."""
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(oa, "REPORT_MAX_WORKS", 3)
+
+    def fake_get(url, **kwargs):
+        cursor = kwargs["params"]["cursor"]
+        # Always claims more is available — the cap, not the server, must stop this.
+        return _fake_response(
+            json_data={
+                "results": [_oa_work(f"W-{cursor}-{i}") for i in range(2)],
+                "meta": {"next_cursor": f"next-{cursor}"},
+            }
+        )
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=1000)
+    assert len(out) == 3
+
+
+def test_works_in_range_stops_when_next_cursor_missing(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(1)
+        return _fake_response(json_data={"results": [_oa_work("W1")], "meta": {}})
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=50)
+    assert len(out) == 1
+    assert len(calls) == 1  # no second page requested
+
+
+def test_works_in_range_stops_on_empty_results(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(1)
+        return _fake_response(json_data={"results": [], "meta": {"next_cursor": "c2"}})
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=50)
+    assert out == []
+    assert len(calls) == 1
+
+
+def test_works_in_range_stops_when_cursor_repeats(monkeypatch):
+    """A misbehaving server that echoes the same cursor forever must not spin
+    this loop forever — the page-count cap is the backstop, but a repeated
+    cursor is caught even sooner."""
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(1)
+        return _fake_response(json_data={"results": [_oa_work("W1")], "meta": {"next_cursor": "*"}})
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    oa.works_in_range("x", since_year=2020, until_year=2021, max_results=50)
+    assert len(calls) == 1
+
+
+def test_works_in_range_empty_query_makes_no_call(monkeypatch):
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    assert oa.works_in_range("", since_year=2020, until_year=2021) == []
+    assert oa.works_in_range("   ", since_year=2020, until_year=2021) == []
+    assert calls == []
+
+
+def test_works_in_range_raises_when_slot_denied(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: False)
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    with pytest.raises(SourceThrottledError):
+        oa.works_in_range("x", since_year=2020, until_year=2021)
+    assert calls == []
+
+
+def test_aggregate_works_normalizes_shape(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session,
+        "get",
+        lambda *a, **k: _fake_response(
+            json_data={
+                "group_by": [
+                    {"key": "2021", "key_display_name": "2021", "count": 10},
+                    {"key": "2020", "key_display_name": "2020", "count": 5},
+                ]
+            }
+        ),
+    )
+    out = oa.aggregate_works("x", since_year=2020, until_year=2021, group_by="publication_year")
+    assert out == [
+        {"key": "2021", "name": "2021", "count": 10},
+        {"key": "2020", "name": "2020", "count": 5},
+    ]
+
+
+def test_aggregate_works_falls_back_to_key_when_no_display_name(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session,
+        "get",
+        lambda *a, **k: _fake_response(json_data={"group_by": [{"key": "true", "count": 3}]}),
+    )
+    out = oa.aggregate_works("x", since_year=2020, until_year=2021, group_by="open_access.is_oa")
+    assert out == [{"key": "true", "name": "true", "count": 3}]
+
+
+def test_aggregate_works_rejects_unknown_group_by(monkeypatch):
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    with pytest.raises(oa.UnsupportedGroupByError):
+        oa.aggregate_works("x", since_year=2020, until_year=2021, group_by="not_a_real_dimension")
+    assert calls == []
+
+
+def test_aggregate_works_raises_when_slot_denied(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: False)
+    with pytest.raises(SourceThrottledError):
+        oa.aggregate_works("x", since_year=2020, until_year=2021, group_by="publication_year")
+
+
+_OA_AUTHOR_ITEM = {
+    "id": "https://openalex.org/A5023888391",
+    "display_name": "Jane Smith",
+    "orcid": "https://orcid.org/0000-0002-1825-0097",
+    "works_count": 120,
+    "cited_by_count": 5000,
+    "topics": [
+        {"display_name": "Immunology"},
+        {"display_name": "Genetics"},
+        {"display_name": "Cell Biology"},
+        {"display_name": "Should Be Truncated"},
+    ],
+}
+
+
+def test_search_authors_normalizes_candidate_with_institutions_list(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {
+        **_OA_AUTHOR_ITEM,
+        "last_known_institutions": [{"display_name": "Example University"}],
+    }
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+    )
+    out = oa.search_authors("Jane Smith", limit=10)
+    assert len(out) == 1
+    c = out[0]
+    assert c["id"] == "A5023888391"
+    assert c["name"] == "Jane Smith"
+    assert c["orcid"] == "0000-0002-1825-0097"
+    assert c["institution"] == "Example University"
+    assert c["works_count"] == 120
+    assert c["cited_by_count"] == 5000
+    # Fixture has 4 topics; capped to the top 3 (_MAX_AUTHOR_TOPICS)
+    assert c["topics"] == ["Immunology", "Genetics", "Cell Biology"]
+
+
+def test_search_authors_tolerates_singular_institution_variant(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {
+        **_OA_AUTHOR_ITEM,
+        "last_known_institution": {"display_name": "Singular University"},
+    }
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+    )
+    out = oa.search_authors("Jane Smith")
+    assert out[0]["institution"] == "Singular University"
+
+
+def test_search_authors_no_institution_field_is_none(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {k: v for k, v in _OA_AUTHOR_ITEM.items()}
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+    )
+    out = oa.search_authors("Jane Smith")
+    assert out[0]["institution"] is None
+
+
+def test_search_authors_blank_or_short_name_makes_no_call(monkeypatch):
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    assert oa.search_authors("") == []
+    assert oa.search_authors("  ") == []
+    assert oa.search_authors("a") == []  # single char, below the minimum
+    assert calls == []
+
+
+def test_search_authors_404_returns_empty_list(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(status=404, json_data={})
+    )
+    assert oa.search_authors("Jane Smith") == []
+
+
+def test_search_authors_empty_results_returns_empty_list(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": []})
+    )
+    assert oa.search_authors("Jane Smith") == []
+
+
+def test_search_authors_raises_when_slot_denied(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: False)
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    with pytest.raises(SourceThrottledError):
+        oa.search_authors("Jane Smith")
+    assert calls == []
 
 
 # ----------------------------------------------------------------------------
