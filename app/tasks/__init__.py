@@ -68,6 +68,10 @@ TASK_ROUTES = {
     "core.purge_audit_logs": {"queue": "io"},
     "core.purge_revoked_tokens": {"queue": "io"},
     "scrape.purge_scan_runs": {"queue": "io"},
+    # On-demand only (no fan-out parent, no BEAT_SCHEDULE entry): one paid
+    # LLM map/reduce batch per run, same pool as the digest/link-for-user
+    # LLM work for the same "capacity for this kind of work" reason.
+    "reports.generate": {"queue": "llm"},
 }
 
 # Tasks deliberately left off TASK_ROUTES, so they land on the default
@@ -197,6 +201,7 @@ from app.tasks import (  # noqa: E402, F401
     digest_tasks,
     feed_tasks,
     patent_tasks,
+    report_tasks,
     scrape_tasks,
 )
 
