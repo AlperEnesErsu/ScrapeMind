@@ -56,9 +56,12 @@ _DEFAULT_AGGREGATE = {
     "authorships.author.id": [{"key": "A1", "name": "Author One", "count": 4}],
     "primary_location.source.id": [{"key": "S1", "name": "Venue One", "count": 4}],
     "primary_topic.id": [{"key": "T1", "name": "Topic One", "count": 4}],
+    # The real shape: OpenAlex keys the boolean "1"/"0" and puts the words in
+    # key_display_name (-> `name`). The fixture used to say key="true", which
+    # is what let a 0%-OA bug through every test in this file.
     "open_access.is_oa": [
-        {"key": "true", "name": "true", "count": 6},
-        {"key": "false", "name": "false", "count": 2},
+        {"key": "1", "name": "true", "count": 6},
+        {"key": "0", "name": "false", "count": 2},
     ],
 }
 
@@ -934,3 +937,40 @@ def test_run_report_author_group_sections_shape(app, db, clean_user, monkeypatch
         # the model: venues/topics come from `stats`, never from `synth`.
         assert "venues" in member and "topics" in member
         assert sections["overlap_with_you"] == "Senin anahtar kelimelerinle kesişiyor."
+
+
+def test_oa_share_reads_openalex_own_boolean_shape(app, db, clean_user, monkeypatch):
+    """`open_access.is_oa` comes back keyed "1"/"0" with "true"/"false" in the
+    display name, not keyed "true".
+
+    Matching on the key alone made every report report 0% open access, and
+    no test caught it because the fixture had invented the friendlier shape.
+    This pins the real one, and the raw-key spelling too, so neither an
+    upstream change nor a normalisation change here can silently zero the
+    figure again.
+    """
+    monkeypatch.setattr(oa, "works_in_range", lambda *a, **kw: [])
+
+    with app.app_context():
+        report, _err = report_service.create_report(
+            clean_user, "topic", {"keywords": ["oa"], "years": 2}
+        )
+        report_service.run_report(report)
+        # 6 of 8 works are open access in _DEFAULT_AGGREGATE.
+        assert report.stats["oa_share"] == 0.75
+
+
+def test_oa_share_is_none_rather_than_zero_when_unknown(app, db, clean_user, monkeypatch):
+    """No OA data at all must read as "unknown", not as "0% open access" —
+    a fabricated zero is worse than an absent figure."""
+    aggregates = dict(_DEFAULT_AGGREGATE)
+    aggregates["open_access.is_oa"] = []
+    monkeypatch.setattr(oa, "aggregate_works", lambda q, **kw: aggregates.get(kw["group_by"], []))
+    monkeypatch.setattr(oa, "works_in_range", lambda *a, **kw: [])
+
+    with app.app_context():
+        report, _err = report_service.create_report(
+            clean_user, "topic", {"keywords": ["oa"], "years": 2}
+        )
+        report_service.run_report(report)
+        assert report.stats["oa_share"] is None

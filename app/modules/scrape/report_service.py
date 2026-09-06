@@ -330,9 +330,20 @@ def _year_series(year_groups: list[dict]) -> list[dict]:
     return rows
 
 
+#: What OpenAlex's `open_access.is_oa` group-by calls "open access". It keys
+#: the boolean as "1"/"0" and puts "true"/"false" in `key_display_name`, so
+#: `aggregate_works` surfaces the words under `name` and the digits under
+#: `key`. Matching only `key == "true"` therefore matched nothing and every
+#: report came out at 0% OA — caught against the live API, not by a test,
+#: because the test's fixture had assumed the friendlier shape.
+_OA_TRUE = frozenset({"true", "1"})
+
+
 def _compute_oa_share(oa_groups: list[dict]) -> float | None:
     """Fraction of works that are open access, from the
-    `open_access.is_oa` group-by (OpenAlex keys this "true"/"false").
+    `open_access.is_oa` group-by. Both the display name and the raw key are
+    checked (see `_OA_TRUE`).
+
     `None` when there is nothing to divide by (empty groups, or a throttled
     call that returned `[]`) — a report with no OA figure at all reads
     better than a fabricated 0%.
@@ -343,7 +354,10 @@ def _compute_oa_share(oa_groups: list[dict]) -> float | None:
     if not total:
         return None
     oa_count = sum(
-        (g.get("count") or 0) for g in oa_groups if str(g.get("key")).strip().lower() == "true"
+        (g.get("count") or 0)
+        for g in oa_groups
+        if str(g.get("name") or "").strip().lower() in _OA_TRUE
+        or str(g.get("key") or "").strip().lower() in _OA_TRUE
     )
     return round(oa_count / total, 4)
 
