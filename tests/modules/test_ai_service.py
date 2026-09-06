@@ -594,3 +594,234 @@ def test_retry_after_header_is_capped(app, monkeypatch):
         assert parsed == {"ok": True}
         assert len(seen_delays) == 1
         assert seen_delays[0] == ai_service._RETRY_AFTER_CAP_SECONDS
+
+
+# --------------------------------------------------------------------------
+# Retrospective report map/reduce (Faz 6) — summarize_report_chunk /
+# synthesize_report. Pure LLM-layer functions, no DB persistence: the
+# aggregation + numeric `stats` backbone live in report_service.py.
+# --------------------------------------------------------------------------
+
+_FAKE_CHUNK_SUMMARY = {
+    "themes": ["transformers", "scaling"],
+    "notable": [{"ref": 1, "why": "çok atıf almış"}],
+    "methods": ["ablation study"],
+}
+
+_FAKE_REPORT = {
+    "tldr": "Alan hızla büyüdü.",
+    "timeline": [{"year": 2023, "themes": ["scaling"], "notable": ["Büyük Model X"]}],
+    "emerging": ["retrieval augmentation"],
+    "fading": ["klasik n-gram yöntemleri"],
+    "key_works": [{"title": "Büyük Model X", "why": "alanı değiştirdi"}],
+    "key_authors": ["A. One"],
+    "key_venues": ["NeurIPS"],
+    "for_your_keywords": "LLM anahtar kelimenizle doğrudan ilgili.",
+}
+
+
+def _report_items(n=2):
+    return [
+        {
+            "title": f"Paper {i}",
+            "abstract": f"Abstract for paper {i}.",
+            "year": 2023,
+            "cited_by_count": 10 * i,
+            "ref": i,
+        }
+        for i in range(1, n + 1)
+    ]
+
+
+def test_summarize_report_chunk_ai_disabled_no_call(app, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: False)
+
+    def _boom(**kw):
+        raise AssertionError("LLM must not be called when AI is disabled")
+
+    monkeypatch.setattr(ai_service, "_call_llm", _boom)
+    with app.app_context():
+        result = ai_service.summarize_report_chunk(_report_items(), context="2023 yılı")
+        assert result is None
+
+
+def test_summarize_report_chunk_empty_items_no_call(app, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+
+    def _boom(**kw):
+        raise AssertionError("LLM must not be called for an empty item list")
+
+    monkeypatch.setattr(ai_service, "_call_llm", _boom)
+    with app.app_context():
+        result = ai_service.summarize_report_chunk([], context="2023 yılı")
+        assert result is None
+
+
+def test_summarize_report_chunk_persists_shape(app, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (_FAKE_CHUNK_SUMMARY, "{}"))
+    with app.app_context():
+        result = ai_service.summarize_report_chunk(_report_items(), context="2023 yılı")
+        assert result == {
+            "themes": ["transformers", "scaling"],
+            "notable": [{"ref": 1, "why": "çok atıf almış"}],
+            "methods": ["ablation study"],
+        }
+
+
+def test_summarize_report_chunk_drops_out_of_range_ref(app, monkeypatch):
+    fake = {
+        "themes": [],
+        "notable": [
+            {"ref": 1, "why": "geçerli"},
+            {"ref": 99, "why": "listede yok"},
+            {"ref": "abc", "why": "geçersiz tip"},
+        ],
+        "methods": [],
+    }
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (fake, "{}"))
+    with app.app_context():
+        result = ai_service.summarize_report_chunk(_report_items(2), context="2023 yılı")
+        assert result["notable"] == [{"ref": 1, "why": "geçerli"}]
+
+
+def test_summarize_report_chunk_truncates_abstract(app, monkeypatch):
+    long_abstract = "x" * (ai_service.REPORT_ABSTRACT_CHARS + 500)
+    items = [
+        {
+            "title": "Long One",
+            "abstract": long_abstract,
+            "year": 2023,
+            "cited_by_count": 5,
+            "ref": 1,
+        }
+    ]
+    captured = {}
+
+    def _fake_call(**kw):
+        captured["user_msg"] = kw["user_msg"]
+        return _FAKE_CHUNK_SUMMARY, "{}"
+
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", _fake_call)
+    with app.app_context():
+        ai_service.summarize_report_chunk(items, context="2023 yılı")
+        truncated = ai_service._truncate(long_abstract, ai_service.REPORT_ABSTRACT_CHARS)
+        assert truncated in captured["user_msg"]
+        assert long_abstract not in captured["user_msg"]
+
+
+def test_summarize_report_chunk_repair_retry_then_none(app, monkeypatch):
+    calls = {"n": 0}
+
+    def _returns_string(**kw):
+        calls["n"] += 1
+        return "not an object", '"not an object"'
+
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", _returns_string)
+    with app.app_context():
+        result = ai_service.summarize_report_chunk(_report_items(), context="2023 yılı")
+        assert result is None
+        assert calls["n"] == 2  # one repair-retry before giving up
+
+
+def test_synthesize_report_ai_disabled_no_call(app, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: False)
+
+    def _boom(**kw):
+        raise AssertionError("LLM must not be called when AI is disabled")
+
+    monkeypatch.setattr(ai_service, "_call_llm", _boom)
+    with app.app_context():
+        result = ai_service.synthesize_report([_FAKE_CHUNK_SUMMARY], {"total": 10})
+        assert result is None
+
+
+def test_synthesize_report_empty_input_no_call(app, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+
+    def _boom(**kw):
+        raise AssertionError("LLM must not be called for empty chunk_summaries + stats")
+
+    monkeypatch.setattr(ai_service, "_call_llm", _boom)
+    with app.app_context():
+        result = ai_service.synthesize_report([], {})
+        assert result is None
+
+
+def test_synthesize_report_persists_shape(app, monkeypatch):
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (_FAKE_REPORT, "{}"))
+    with app.app_context():
+        result = ai_service.synthesize_report([_FAKE_CHUNK_SUMMARY], {"by_year": {"2023": 10}})
+        assert result["tldr"] == "Alan hızla büyüdü."
+        assert result["timeline"] == [
+            {"year": 2023, "themes": ["scaling"], "notable": ["Büyük Model X"]}
+        ]
+        assert result["emerging"] == ["retrieval augmentation"]
+        assert result["fading"] == ["klasik n-gram yöntemleri"]
+        assert result["key_works"] == [{"title": "Büyük Model X", "why": "alanı değiştirdi"}]
+        assert result["key_authors"] == ["A. One"]
+        assert result["key_venues"] == ["NeurIPS"]
+        assert result["for_your_keywords"] == "LLM anahtar kelimenizle doğrudan ilgili."
+
+
+def test_synthesize_report_drops_malformed_timeline_and_key_works(app, monkeypatch):
+    fake = {
+        "tldr": "özet",
+        "timeline": [
+            {"year": 2023, "themes": ["a"], "notable": ["b"]},
+            {"year": "not-a-year", "themes": [], "notable": []},
+            "not-a-dict",
+        ],
+        "emerging": [],
+        "fading": [],
+        "key_works": [
+            {"title": "Valid", "why": "iyi"},
+            {"title": "", "why": "başlıksız"},
+            {"title": "No Why"},
+        ],
+        "key_authors": [],
+        "key_venues": [],
+        "for_your_keywords": "",
+    }
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (fake, "{}"))
+    with app.app_context():
+        result = ai_service.synthesize_report([_FAKE_CHUNK_SUMMARY], {"total": 1})
+        assert len(result["timeline"]) == 1
+        assert result["timeline"][0]["year"] == 2023
+        assert result["key_works"] == [{"title": "Valid", "why": "iyi"}]
+
+
+def test_synthesize_report_serializes_stats_readably(app, monkeypatch):
+    stats = {"by_year": {"2022": 5, "2023": 12}, "top_authors": ["A. One", "B. Two"]}
+    captured = {}
+
+    def _fake_call(**kw):
+        captured["user_msg"] = kw["user_msg"]
+        return _FAKE_REPORT, "{}"
+
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", _fake_call)
+    with app.app_context():
+        ai_service.synthesize_report([_FAKE_CHUNK_SUMMARY], stats)
+        assert "2023" in captured["user_msg"]
+        assert "A. One" in captured["user_msg"]
+
+
+def test_synthesize_report_repair_retry_then_none(app, monkeypatch):
+    calls = {"n": 0}
+
+    def _returns_list(**kw):
+        calls["n"] += 1
+        return ["not", "a", "dict"], "[]"
+
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", _returns_list)
+    with app.app_context():
+        result = ai_service.synthesize_report([_FAKE_CHUNK_SUMMARY], {"total": 1})
+        assert result is None
+        assert calls["n"] == 2  # one repair-retry before giving up
