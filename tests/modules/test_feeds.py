@@ -1,7 +1,7 @@
 """Faz 2 — RSS feed global ingestion + per-user LLM relevance scoring/linking.
 
-No real network: `rss_source.fetch_feed` is monkeypatched to return canned
-`PaperPayload` lists (live-parsing itself is covered in
+No real network: `rss_source.fetch_feed_conditional` is monkeypatched to
+return canned `FeedFetchResult`s (live-parsing itself is covered in
 test_scrape_sources.py). LLM calls go through the same `_call_llm`
 monkeypatch pattern used throughout test_digest.py.
 """
@@ -92,10 +92,34 @@ def clean_user(db):
 # ----------------------------------------------------------------------------
 
 
-def test_ingest_all_upserts_news_papers(app, db, clean_user, monkeypatch):
+@pytest.fixture
+def clean_validators(db):
+    """Drop the curated-feed validator blob around each test that touches it.
+
+    It lives in `system_settings`, which the `clean_user` fixture deliberately
+    does not wipe (other suites own rows in that table), so without this a
+    stored etag would leak into the next test's first fetch.
+    """
+    from app.tasks.feed_tasks import FEED_VALIDATORS_KEY
+
+    stmt = text("DELETE FROM system_settings WHERE key = :k")
+    db.session.execute(stmt, {"k": FEED_VALIDATORS_KEY})
+    db.session.commit()
+    yield
+    db.session.execute(stmt, {"k": FEED_VALIDATORS_KEY})
+    db.session.commit()
+
+
+def _ok(payloads, **kw):
+    return rss_source.FeedFetchResult(payloads, "ok", **kw)
+
+
+def test_ingest_all_upserts_news_papers(app, db, clean_user, clean_validators, monkeypatch):
     payloads = [_news_payload("post-1"), _news_payload("post-2")]
     monkeypatch.setattr(
-        rss_source, "fetch_feed", lambda feed: payloads if feed["key"] == "openai_blog" else []
+        rss_source,
+        "fetch_feed_conditional",
+        lambda feed, **kw: _ok(payloads if feed["key"] == "openai_blog" else []),
     )
     with app.app_context():
         result = feed_tasks.ingest_all.delay().get()
@@ -106,10 +130,12 @@ def test_ingest_all_upserts_news_papers(app, db, clean_user, monkeypatch):
         assert {r.external_id for r in rows} == {"post-1", "post-2"}
 
 
-def test_ingest_all_dedupes_on_rerun(app, db, clean_user, monkeypatch):
+def test_ingest_all_dedupes_on_rerun(app, db, clean_user, clean_validators, monkeypatch):
     payloads = [_news_payload("dup-1")]
     monkeypatch.setattr(
-        rss_source, "fetch_feed", lambda feed: payloads if feed["key"] == "openai_blog" else []
+        rss_source,
+        "fetch_feed_conditional",
+        lambda feed, **kw: _ok(payloads if feed["key"] == "openai_blog" else []),
     )
     with app.app_context():
         feed_tasks.ingest_all.delay().get()
@@ -118,18 +144,119 @@ def test_ingest_all_dedupes_on_rerun(app, db, clean_user, monkeypatch):
         assert Paper.query.filter_by(source="openai_blog", external_id="dup-1").count() == 1
 
 
-def test_ingest_all_survives_one_feed_failing(app, db, clean_user, monkeypatch):
-    def _fetch(feed):
+def test_ingest_all_survives_one_feed_failing(app, db, clean_user, clean_validators, monkeypatch):
+    def _fetch(feed, **kw):
         if feed["key"] == "openai_blog":
             raise RuntimeError("network unreachable")
-        return [_news_payload(f"{feed['key']}-1", source=feed["key"])]
+        return _ok([_news_payload(f"{feed['key']}-1", source=feed["key"])])
 
-    monkeypatch.setattr(rss_source, "fetch_feed", _fetch)
+    monkeypatch.setattr(rss_source, "fetch_feed_conditional", _fetch)
     with app.app_context():
         result = feed_tasks.ingest_all.delay().get()
         assert result["feeds"]["openai_blog"] == -1
         # The other three feeds still landed.
         assert Paper.query.filter_by(kind="news").count() == 3
+
+
+# ----------------------------------------------------------------------------
+# feeds.ingest_all — conditional GET (Faz 5 §5.1)
+# ----------------------------------------------------------------------------
+
+
+def test_ingest_all_stores_and_replays_validators(
+    app, db, clean_user, clean_validators, monkeypatch
+):
+    """Curated feeds have no DB row of their own, so the etag round-trip goes
+    through one `system_settings` blob. Run 1 stores what the server sent; run
+    2 must send it straight back."""
+    from app.core.settings.service import get_system_setting
+    from app.tasks.feed_tasks import FEED_VALIDATORS_KEY
+
+    seen: list[tuple] = []
+
+    def _fetch(feed, **kw):
+        if feed["key"] != "openai_blog":
+            return _ok([])
+        seen.append((kw.get("etag"), kw.get("last_modified")))
+        return _ok(
+            [_news_payload("v-1")],
+            etag='W/"abc"',
+            last_modified="Wed, 13 Aug 2026 09:00:00 GMT",
+        )
+
+    monkeypatch.setattr(rss_source, "fetch_feed_conditional", _fetch)
+    with app.app_context():
+        feed_tasks.ingest_all.delay().get()
+        stored = get_system_setting(FEED_VALIDATORS_KEY, {})
+        assert stored["openai_blog"] == {
+            "etag": 'W/"abc"',
+            "last_modified": "Wed, 13 Aug 2026 09:00:00 GMT",
+        }
+
+        feed_tasks.ingest_all.delay().get()
+        assert seen == [
+            (None, None),
+            ('W/"abc"', "Wed, 13 Aug 2026 09:00:00 GMT"),
+        ]
+
+
+def test_ingest_all_not_modified_skips_upsert(app, db, clean_user, clean_validators, monkeypatch):
+    """304 means zero parsing and zero DB work — and it must read as 0 in the
+    per-feed summary, not as the `-1` error sentinel `apply_scan_result` turns
+    into a `partial` run."""
+    monkeypatch.setattr(
+        rss_source,
+        "fetch_feed_conditional",
+        lambda feed, **kw: rss_source.FeedFetchResult([], "not_modified"),
+    )
+    with app.app_context():
+        result = feed_tasks.ingest_all.delay().get()
+        assert result["not_modified"] == 4
+        assert result["hits"] == 0
+        assert all(v == 0 for v in result["feeds"].values())
+        assert Paper.query.filter_by(kind="news").count() == 0
+
+
+def test_ingest_all_bad_status_keeps_stored_validator(
+    app, db, clean_user, clean_validators, monkeypatch
+):
+    """A timeout must leave the previously stored etag intact. Overwriting it
+    with the failure's empty validators would cost a full re-download on the
+    next run for no reason."""
+    from app.core.settings.service import get_system_setting, set_system_setting
+    from app.tasks.feed_tasks import FEED_VALIDATORS_KEY
+
+    with app.app_context():
+        set_system_setting(FEED_VALIDATORS_KEY, {"openai_blog": {"etag": 'W/"old"'}})
+        monkeypatch.setattr(
+            rss_source,
+            "fetch_feed_conditional",
+            lambda feed, **kw: rss_source.FeedFetchResult([], "timeout"),
+        )
+        result = feed_tasks.ingest_all.delay().get()
+        assert result["feeds"]["openai_blog"] == -1
+        assert get_system_setting(FEED_VALIDATORS_KEY)["openai_blog"] == {"etag": 'W/"old"'}
+
+
+def test_ingest_all_survives_hand_edited_validator_blob(
+    app, db, clean_user, clean_validators, monkeypatch
+):
+    """`system_settings.value` is a JSON column an admin can edit by hand. A
+    non-dict there must not take the nightly ingestion down."""
+    from app.core.settings.service import set_system_setting
+    from app.tasks.feed_tasks import FEED_VALIDATORS_KEY
+
+    with app.app_context():
+        set_system_setting(FEED_VALIDATORS_KEY, "not-a-dict")
+        monkeypatch.setattr(
+            rss_source,
+            "fetch_feed_conditional",
+            lambda feed, **kw: _ok(
+                [_news_payload("hand-1")] if feed["key"] == "openai_blog" else []
+            ),
+        )
+        result = feed_tasks.ingest_all.delay().get()
+        assert result["new"] == 1
 
 
 # ----------------------------------------------------------------------------

@@ -3,9 +3,9 @@ picker (suggested_sources / effective_source_prefs / user_enabled_sources),
 custom user RSS feeds (UserFeed CRUD + ingestion), and the sources-card
 grouping render.
 
-No real network: `fetch_feed_conditional` / `rss_source.fetch_feed` are
-monkeypatched wherever a feed would otherwise be fetched, and `_call_llm` is
-stubbed the same way test_digest.py / test_feeds.py do it.
+No real network: `rss_source.fetch_feed_conditional` is monkeypatched wherever
+a feed would otherwise be fetched, and `_call_llm` is stubbed the same way
+test_digest.py / test_feeds.py do it.
 """
 
 from __future__ import annotations
@@ -475,6 +475,53 @@ def test_list_remove_toggle_user_feed(app, db, clean_user, monkeypatch):
         assert remove_user_feed(clean_user, feed.id) is False  # already gone
 
 
+def test_add_user_feed_does_not_persist_validation_validators(app, db, clean_user, monkeypatch):
+    """The add-time fetch validates the URL; it ingests nothing. Storing its
+    etag would make the first nightly run 304 and skip the very items that
+    proved the feed was readable, leaving the feed permanently empty."""
+    _serve_feed(monkeypatch, _OK_FEED)
+    with app.app_context():
+        feed, err = add_user_feed(clean_user, "https://blog.example.test/feed.xml")
+        assert err is None
+        assert feed.etag is None
+        assert feed.last_modified is None
+
+
+def test_resuming_a_paused_feed_clears_validators(app, db, clean_user, monkeypatch):
+    """A muted feed keeps publishing. Replaying the etag it had when it was
+    paused would 304 straight past the whole gap."""
+    _serve_feed(monkeypatch, _OK_FEED)
+    with app.app_context():
+        feed, _ = add_user_feed(clean_user, "https://blog.example.test/feed.xml")
+        feed.etag = 'W/"from-before-the-pause"'
+        feed.last_modified = "Tue, 12 Aug 2026 10:00:00 GMT"
+        db.session.commit()
+
+        assert toggle_user_feed(clean_user, feed.id) is False  # paused
+        assert db.session.get(UserFeed, feed.id).etag == 'W/"from-before-the-pause"'
+
+        assert toggle_user_feed(clean_user, feed.id) is True  # resumed
+        refreshed = db.session.get(UserFeed, feed.id)
+        assert refreshed.etag is None
+        assert refreshed.last_modified is None
+
+
+def test_re_adding_a_paused_feed_clears_validators(app, db, clean_user, monkeypatch):
+    """Re-adding is the other way back to active, and needs the same reset."""
+    _serve_feed(monkeypatch, _OK_FEED)
+    with app.app_context():
+        feed, _ = add_user_feed(clean_user, "https://blog.example.test/feed.xml")
+        feed.active = False
+        feed.etag = 'W/"stale"'
+        db.session.commit()
+
+        again, err = add_user_feed(clean_user, "https://blog.example.test/feed.xml")
+        assert err is None
+        assert again.id == feed.id
+        assert again.active is True
+        assert again.etag is None
+
+
 # ----------------------------------------------------------------------------
 # Custom feed ingestion (source="user_feed" dedup) + relevance-linking inclusion
 # ----------------------------------------------------------------------------
@@ -484,7 +531,11 @@ def test_ingest_user_feeds_upserts_papers_shared_dedup(app, db, clean_user, monk
     from app.modules.scrape.sources import rss_source
 
     payloads = [_news_payload("cf-1"), _news_payload("cf-2")]
-    monkeypatch.setattr(rss_source, "fetch_feed", lambda feed: payloads)
+    monkeypatch.setattr(
+        rss_source,
+        "fetch_feed_conditional",
+        lambda feed, **kw: rss_source.FeedFetchResult(payloads, "ok"),
+    )
 
     row = UserFeed(user_id=clean_user.id, url="https://blog.example.test/feed.xml", active=True)
     db.session.add(row)
@@ -507,25 +558,112 @@ def test_ingest_user_feeds_upserts_papers_shared_dedup(app, db, clean_user, monk
 def test_ingest_user_feeds_no_active_feeds_short_circuits(app, db, clean_user):
     with app.app_context():
         summary, touched = ingest_user_feeds(clean_user)
-        assert summary == {"hits": 0, "new": 0}
+        assert summary == {"hits": 0, "new": 0, "not_modified": 0}
         assert touched == []
 
 
 def test_ingest_user_feeds_skips_inactive_feeds(app, db, clean_user, monkeypatch):
     from app.modules.scrape.sources import rss_source
 
-    def _boom(feed):
+    def _boom(feed, **kw):
         raise AssertionError("an inactive feed must not be fetched")
 
-    monkeypatch.setattr(rss_source, "fetch_feed", _boom)
+    monkeypatch.setattr(rss_source, "fetch_feed_conditional", _boom)
     row = UserFeed(user_id=clean_user.id, url="https://blog.example.test/feed.xml", active=False)
     db.session.add(row)
     db.session.commit()
 
     with app.app_context():
         summary, touched = ingest_user_feeds(clean_user)
-        assert summary == {"hits": 0, "new": 0}
+        assert summary == {"hits": 0, "new": 0, "not_modified": 0}
         assert touched == []
+
+
+def test_ingest_user_feeds_replays_stored_validators(app, db, clean_user, monkeypatch):
+    """The stored etag/Last-Modified must go back out on the next fetch, and a
+    fresh 200 must overwrite them. Without the round-trip the 304 path below
+    can never trigger — which is exactly the bug this closes."""
+    from app.modules.scrape.sources import rss_source
+
+    seen: list[tuple] = []
+
+    def _fetch(feed, **kw):
+        seen.append((kw.get("etag"), kw.get("last_modified")))
+        return rss_source.FeedFetchResult(
+            [_news_payload("cf-v1")], "ok", 'W/"v2"', "Wed, 13 Aug 2026 10:00:00 GMT"
+        )
+
+    monkeypatch.setattr(rss_source, "fetch_feed_conditional", _fetch)
+    row = UserFeed(
+        user_id=clean_user.id,
+        url="https://blog.example.test/feed.xml",
+        active=True,
+        etag='W/"v1"',
+        last_modified="Tue, 12 Aug 2026 10:00:00 GMT",
+    )
+    db.session.add(row)
+    db.session.commit()
+
+    with app.app_context():
+        ingest_user_feeds(clean_user)
+        assert seen == [('W/"v1"', "Tue, 12 Aug 2026 10:00:00 GMT")]
+        refreshed = db.session.get(UserFeed, row.id)
+        assert refreshed.etag == 'W/"v2"'
+        assert refreshed.last_modified == "Wed, 13 Aug 2026 10:00:00 GMT"
+
+
+def test_ingest_user_feeds_not_modified_does_no_work(app, db, clean_user, monkeypatch):
+    """A 304 must cost zero upserts and contribute nothing to `touched` — the
+    whole point of the conditional GET. It must also leave the stored
+    validators alone rather than nulling them out."""
+    from app.modules.scrape.sources import rss_source
+
+    monkeypatch.setattr(
+        rss_source,
+        "fetch_feed_conditional",
+        lambda feed, **kw: rss_source.FeedFetchResult([], "not_modified", kw.get("etag")),
+    )
+    row = UserFeed(
+        user_id=clean_user.id,
+        url="https://blog.example.test/feed.xml",
+        active=True,
+        etag='W/"unchanged"',
+    )
+    db.session.add(row)
+    db.session.commit()
+
+    with app.app_context():
+        summary, touched = ingest_user_feeds(clean_user)
+        assert summary == {"hits": 0, "new": 0, "not_modified": 1}
+        assert touched == []
+        assert Paper.query.filter_by(source="user_feed").count() == 0
+        assert db.session.get(UserFeed, row.id).etag == 'W/"unchanged"'
+
+
+def test_ingest_user_feeds_bad_status_keeps_old_validators(app, db, clean_user, monkeypatch):
+    """A timeout/http_error must not overwrite a good etag with None — doing so
+    would silently turn every failure into a full re-download next run."""
+    from app.modules.scrape.sources import rss_source
+
+    monkeypatch.setattr(
+        rss_source,
+        "fetch_feed_conditional",
+        lambda feed, **kw: rss_source.FeedFetchResult([], "timeout"),
+    )
+    row = UserFeed(
+        user_id=clean_user.id,
+        url="https://blog.example.test/feed.xml",
+        active=True,
+        etag='W/"keep-me"',
+    )
+    db.session.add(row)
+    db.session.commit()
+
+    with app.app_context():
+        summary, touched = ingest_user_feeds(clean_user)
+        assert summary == {"hits": 0, "new": 0, "not_modified": 0}
+        assert touched == []
+        assert db.session.get(UserFeed, row.id).etag == 'W/"keep-me"'
 
 
 def test_link_relevant_feed_items_includes_custom_feed_candidates(app, db, clean_user, monkeypatch):
@@ -583,7 +721,11 @@ def test_feed_link_task_ingests_custom_feed_then_links(app, db, clean_user, monk
 
     add_user_keyword(clean_user, "x")
     payloads = [_news_payload("task-cf-1", title="Custom Feed Post")]
-    monkeypatch.setattr(rss_source, "fetch_feed", lambda feed: payloads)
+    monkeypatch.setattr(
+        rss_source,
+        "fetch_feed_conditional",
+        lambda feed, **kw: rss_source.FeedFetchResult(payloads, "ok"),
+    )
 
     row = UserFeed(user_id=clean_user.id, url="https://blog.example.test/feed.xml", active=True)
     db.session.add(row)

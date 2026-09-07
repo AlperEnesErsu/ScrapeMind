@@ -1485,6 +1485,11 @@ def add_user_feed(
     if existing is not None:
         if not existing.active:
             existing.active = True
+            # Re-activating forgets the validators — see the note below. While
+            # the feed was paused it kept publishing, and a stale etag would
+            # 304 straight past everything it published in the meantime.
+            existing.etag = None
+            existing.last_modified = None
             db.session.commit()
         return existing, None
 
@@ -1512,13 +1517,16 @@ def add_user_feed(
     if not clean_label:
         clean_label = parsed_feed.title[:128] if parsed_feed.title else None
 
+    # The validators from this fetch are deliberately NOT stored. This request
+    # validates the URL; it does not ingest anything. Persisting its etag would
+    # make the first nightly `ingest_user_feeds` answer 304 and skip the very
+    # items that proved the feed was readable — the feed would look permanently
+    # empty. One full fetch on the first run is the price of that correctness.
     row = UserFeed(
         user_id=user.id,
         url=normalized,
         label=clean_label,
         active=True,
-        etag=parsed_feed.etag,
-        last_modified=parsed_feed.last_modified,
     )
     db.session.add(row)
     db.session.commit()
@@ -1537,11 +1545,20 @@ def remove_user_feed(user: User, feed_id: int) -> bool:
 
 def toggle_user_feed(user: User, feed_id: int) -> bool | None:
     """Flip a feed's active flag. Returns the new value, or None if the feed
-    doesn't exist / isn't owned by this user (caller should 404)."""
+    doesn't exist / isn't owned by this user (caller should 404).
+
+    Resuming a paused feed clears its conditional-GET validators: the feed kept
+    publishing while it was muted, and replaying a months-old etag would 304
+    past the whole gap. Pausing leaves them alone — they are about to be
+    cleared on resume anyway, and a paused feed is never fetched.
+    """
     row = get_user_feed(user, feed_id)
     if row is None:
         return None
     row.active = not row.active
+    if row.active:
+        row.etag = None
+        row.last_modified = None
     db.session.commit()
     return row.active
 
@@ -1557,6 +1574,13 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
     — the normal (source, external_id) dedup in `upsert_paper` means two
     users adding the identical URL land on the same Paper rows.
 
+    Conditional GET: the row's stored `etag`/`last_modified` are sent back on
+    every fetch and a 304 short-circuits that feed at zero parse/upsert cost,
+    the same round-trip `ingest_user_channels` does. A 304 feed contributes
+    nothing to `touched` on purpose — its items were already scored on the run
+    that first ingested them, and re-scoring an unchanged feed every night is
+    exactly the LLM spend this is here to avoid.
+
     Returns (summary_dict, touched_papers) — `touched_papers` is every Paper
     this run's fetch produced (new AND already-existing rows re-fetched from
     the still-active feed), which the caller feeds into
@@ -1564,23 +1588,41 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
     user's own custom-feed content is eligible for relevance scoring even
     though it isn't part of the curated-feed DB query.
     """
-    from app.modules.scrape.sources.rss_source import fetch_feed
+    from app.modules.scrape.sources.rss_source import fetch_feed_conditional
 
     feeds = [f for f in list_user_feeds(user) if f.active]
     if not feeds:
-        return {"hits": 0, "new": 0}, []
+        return {"hits": 0, "new": 0, "not_modified": 0}, []
 
     hits = 0
     new = 0
+    not_modified = 0
     touched: list[Paper] = []
     for f in feeds:
         try:
-            payloads = fetch_feed({"key": "user_feed", "url": f.url})
+            result = fetch_feed_conditional(
+                {"key": "user_feed", "url": f.url},
+                etag=f.etag,
+                last_modified=f.last_modified,
+            )
         except Exception:  # noqa: BLE001 — one broken custom feed must not block the others
             logger.exception("user_feed_fetch_failed", user_id=user.id, feed_id=f.id)
             continue
-        hits += len(payloads)
-        for payload in payloads:
+
+        if result.status == "not_modified":
+            not_modified += 1
+            continue
+        if result.status != "ok":
+            logger.warning(
+                "user_feed_ingest_bad_status",
+                user_id=user.id,
+                feed_id=f.id,
+                status=result.status,
+            )
+            continue
+
+        hits += len(result.payloads)
+        for payload in result.payloads:
             existed = (
                 Paper.query.filter_by(
                     source=payload.source, external_id=payload.external_id
@@ -1591,8 +1633,21 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
             touched.append(paper)
             if not existed:
                 new += 1
-    logger.info("user_feeds_ingest_done", user_id=user.id, hits=hits, new=new)
-    return {"hits": hits, "new": new}, touched
+
+        # Validators are stored only after the upserts land. If the loop above
+        # raises, this feed keeps its old etag and the next run re-fetches in
+        # full — the opposite order would 304 past items we never persisted.
+        f.etag = result.etag
+        f.last_modified = result.last_modified
+        db.session.commit()
+    logger.info(
+        "user_feeds_ingest_done",
+        user_id=user.id,
+        hits=hits,
+        new=new,
+        not_modified=not_modified,
+    )
+    return {"hits": hits, "new": new, "not_modified": not_modified}, touched
 
 
 # ----------------------------------------------------------------------------
