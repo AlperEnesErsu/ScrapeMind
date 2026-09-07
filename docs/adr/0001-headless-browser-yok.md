@@ -73,22 +73,32 @@ Yeni bağımlılıklar: `beautifulsoup4`, `lxml`, `trafilatura`. Tarayıcı yok.
 (`yt-dlp` transkript için, `gh` CLI için `FileNotFoundError` korumasıyla). Yani "opsiyonel
 harici binary" yolu kapalı değil — kapalı olan, o binary'nin *imaja gömülmesi*.
 
-## Açık soru — `fetcher.py` ile kural 7 çelişkisi
+## ~~Açık soru~~ → Çözüldü (16 Ağustos 2026, `feat/web-source`)
 
-HANDOVER §5.4, `rss_source._get_with_redirects`'in ortak bir
-`app/modules/scrape/fetcher.py`'ye taşınmasını istiyor. Bu, **`CLAUDE.md` kural 7 ile
-kısmen çelişiyor**: kural, adaptörlerin `requests`'i ortak bir wrapper arkasına
-saklamamasını söylüyor (testler modülün kendi `requests`'ini monkeypatch'liyor) — ama
-`_get_with_redirects` tam da bir `requests` çağrı yeridir. Çıkarım yapılırsa testler
-`rss_source.requests` yerine `fetcher.requests`'i patch'lemeye geçer.
+**Karar:** kural 7 önerildiği gibi netleştirildi —
 
-Bu çelişki §5.4 yapılırken çözülmeli, önceden değil. Önerilen çözüm: kuralı
-*"yönlendirme takibi ve SSRF politikası tek bir `fetcher`'a aittir; tek atışlık GET
-yapan adaptörler kendi modül seviyesi `requests`'ini kullanmaya devam eder"* diye
-netleştirmek.
+> Yönlendirme takibi ve SSRF politikası tek bir `fetcher`'a aittir; tek atışlık GET
+> yapan adaptörler kendi modül seviyesi `requests`'ini kullanmaya devam eder.
 
-Bu turda çıkarım **yapılmadı**: getirisi ancak `web_source.py` var olduğunda doğuyor,
-şimdi taşımak davranış değiştirmeyen ama test yüzeyi kıran saf risk olurdu.
+Ayrım üslup değil. Kural 7, konserve yanıt testinin test ettiği adaptörü
+monkeypatch'leyebilmesi için var ve sabit, güvenilen bir host'a giden adaptörlerde
+bunun maliyeti yok: OpenAlex kimseyi `169.254.169.254`'e 302'lemeyecek.
+
+Kullanıcı URL'si alan yollar tam tersi durum. Güvenlik özellikleri **hop başına yeniden
+doğrulama** ve bunun her çağırana **aynı** şekilde uygulanması gerekiyor — kopyala-yapıştır
+bir döngünün veremeyeceği garanti tam olarak bu. Bir hop kontrolünü sessizce unutan
+üçüncü bir çağıran, üslup ihlali değil gerçek bir açık olurdu.
+
+Çıkarım sırasında bunun **zaten olmakta olduğu** görüldü: `youtube_channel_source`
+`rss_source._read_capped`, `rss_source._cfg` ve `rss_source._USER_AGENT`'a — yani başka
+bir adaptörün *private* isimlerine — uzanıyordu. Üç çağıranı ortak katmana bağlamak
+bunu da temizledi.
+
+**Test yüzeyi:** `fetcher.requests` ile `rss_source.requests` **aynı modül nesnesi**
+(ikisi de düz `import requests` yapıyor), yani `monkeypatch.setattr(<mod>.requests,
+"get", ...)` her iki isimden de çalışır — çıkarım burada bir şey kırmadı. Kıran şey,
+SSRF guard'ının **isimle** import edilmesiydi: `is_public_http_url` artık `fetcher`'ın
+namespace'inde, dolayısıyla testler onu orada patch'liyor (`_allow` yardımcısı).
 
 ## Kararın yeniden açılma koşulu
 
