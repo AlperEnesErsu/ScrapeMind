@@ -359,29 +359,19 @@ sabit alan listesi render ettiği için bu makine-sahipli anahtar orada görünm
 **Doğrulama:** `pytest tests/ -q` → 927 passed · ruff + black temiz.
 Sayfa görsel olarak kontrol edilmedi (bu değişiklik UI'a dokunmuyor).
 
-### 5.2 RSS'siz sitelerden scrape + alan seçici
+### 5.2 ✅ RSS'siz sitelerden scrape + alan seçici — bitti (PR #47 + PR #48)
 Kullanıcı URL verir, sistem sayfadaki alanları otomatik çıkarır, isterse CSS
 seçiciyle override eder.
 
-- **Önce ortak fetcher'ı çıkar:** redirect takibi + hop başına SSRF revalidation şu an
-  `rss_source._get_with_redirects` içine gömülü. `app/modules/scrape/fetcher.py`'ye
-  taşı, `rss_source` onu kullansın (davranış aynı kalır).
-  ⚠️ Bu, **`CLAUDE.md` kural 7 ile çelişiyor** — çelişkinin çözümü
-  [ADR-0001](adr/0001-headless-browser-yok.md) "Açık soru" bölümünde. Taşımadan önce
-  oku; bu turda bilinçli olarak ertelendi.
-- **robots.txt uyumu ekle:** `app/modules/scrape/robots.py`, host başına
-  `RobotFileParser`, Redis'te 24s cache, `Crawl-delay` okuma. Host başına rate limit
-  için mevcut `acquire_slot(f"host:{netloc}", ...)` yeterli — yeni mekanizma yazma.
-- **Discovery sırası:** ① RSS autodiscovery (`<link rel="alternate">`) — *"RSS'i yok"
-  sanılan sitelerin çoğunda gizli RSS var, en ucuz kazanç burada* → ② JSON-LD →
-  ③ tekrar eden blok sezgisi → ④ trafilatura ile tek makale.
-- Yeni bağımlılıklar: `beautifulsoup4`, `lxml`, `trafilatura`. **Playwright/Selenium
-  yok** — tam gerekçe, reddedilen alternatifler ve kararın hangi koşulda yeniden
-  açılacağı: [ADR-0001](adr/0001-headless-browser-yok.md).
-- Yeni model `UserPage` (`mode`, `selectors` JSON, etag/last_modified), yeni kaynak
-  `web_source.py` (`source="user_page"`, `kind="news"`).
-- **XSS:** önizleme hedef siteden gelen **düz metni** gösterir, ham HTML'i asla.
-  Jinja autoescape açık — hiçbir yerde `|safe` kullanma.
+- **Ortak fetcher:** `app/modules/scrape/fetcher.py` ile hop başına SSRF revalidation
+  ve redirect takibi sağlandı.
+- **robots.txt uyumu:** `app/modules/scrape/robots.py` ile host bazında kurallar,
+  Redis cache ve Crawl-delay okuma eklendi.
+- **Discovery merdiveni:** `web_source.py` içinde 4 basamaklı merdiven (RSS autodiscovery ->
+  JSON-LD -> tekrar eden blok sezgisi -> trafilatura) tamamlandı.
+- **UserPage modeli & UI:** `UserPage` tablosu, kaynak yöneticisi modal/sekmesinde
+  3. sekme (`_page_list.html`), filtreleme, anlık toggle/silme ve Celery zamanlanmış
+  ingest entegrasyonu tamamlandı.
 
 ### 5.3 Sosyal beslemeler
 **X/Twitter için ücretsiz yol yok.** 6 Şubat 2026'da pay-per-use'a geçtiler; okuma
