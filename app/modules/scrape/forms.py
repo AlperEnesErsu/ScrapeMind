@@ -84,3 +84,16 @@ class UserChannelForm(FlaskForm):
     url = StringField(_l("Channel URL or @handle"), validators=[DataRequired(), Length(max=512)])
     label = StringField(_l("Label (optional)"), validators=[Optional(), Length(max=200)])
     submit = SubmitField(_l("Add channel"))
+
+
+class UserPageForm(FlaskForm):
+    """Add a custom web page for non-RSS sites (Faz 5.2).
+
+    `url` is the target page. `label` is optional (auto-filled from page title).
+    `selector` is optional (custom CSS selector for container of repeating items).
+    """
+
+    url = StringField(_l("Web Page URL"), validators=[DataRequired(), Length(max=512)])
+    label = StringField(_l("Label (optional)"), validators=[Optional(), Length(max=128)])
+    selector = StringField(_l("CSS Selector (optional)"), validators=[Optional(), Length(max=256)])
+    submit = SubmitField(_l("Add web page"))

@@ -3013,6 +3013,62 @@ msgstr "Takibi bırak"
 msgid "You are not following anyone yet."
 msgstr "Henüz kimseyi takip etmiyorsunuz."
 
+msgid "Web Page URL"
+msgstr "Web Sayfası URL'i"
+
+msgid "CSS Selector (optional)"
+msgstr "CSS Seçici (opsiyonel)"
+
+msgid "Add web page"
+msgstr "Web sayfası ekle"
+
+msgid "Page limit reached. Remove one before adding another."
+msgstr "Sayfa limitine ulaşıldı. Yeni bir tane eklemeden önce birini silin."
+
+msgid "Please enter a valid page URL (starting with http:// or https://)."
+msgstr "Lütfen geçerli bir sayfa URL'i girin (http:// veya https:// ile başlayan)."
+
+msgid "Web page added."
+msgstr "Web sayfası eklendi."
+
+msgid "Could not add that page."
+msgstr "Bu sayfa eklenemedi."
+
+msgid "Remove this page?"
+msgstr "Bu sayfayı silmek istiyor musunuz?"
+
+msgid "No web pages match this filter."
+msgstr "Bu filtreye uygun web sayfası yok."
+
+msgid "No custom web pages yet — add one below."
+msgstr "Henüz özel bir web sayfası yok — aşağıdan ekleyin."
+
+msgid "Custom web pages"
+msgstr "Özel web sayfaları"
+
+msgid ""
+"Track any web page without RSS — its articles and posts flow into your "
+"feed and briefing via our 4-rung discovery ladder."
+msgstr ""
+"RSS'i olmayan herhangi bir web sayfasını takip edin — içerikleri 4 "
+"basamaklı çıkarım merdivenimizle akışınıza ve bülteninize dahil olsun."
+
+msgid "Leave blank to use the page's title."
+msgstr "Sayfanın kendi başlığını kullanmak için boş bırakın."
+
+msgid "Optional CSS selector for repeating items."
+msgstr "Tekrar eden öğeler için opsiyonel CSS seçici."
+
+msgid "Web pages"
+msgstr "Web sayfaları"
+
+#, python-format
+msgid "%(used)s / %(cap)s pages"
+msgstr "%(used)s / %(cap)s sayfa"
+
+msgid "Filter pages"
+msgstr "Sayfaları filtrele"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

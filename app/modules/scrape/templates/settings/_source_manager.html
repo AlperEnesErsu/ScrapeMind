@@ -92,12 +92,47 @@
 </form>
 {% endmacro %}
 
+{% macro pages_section() %}
+{% if surface == 'tab' %}<h6 class="text-muted mb-3">{{ _('Custom web pages') }}</h6>{% endif %}
+<p class="small text-muted">
+  {{ _('Track any web page without RSS — its articles and posts flow into your feed and briefing via our 4-rung discovery ladder.') }}
+</p>
+
+<div class="mb-3">
+  {% include 'settings/_page_list.html' %}
+</div>
+
+<form hx-post="{{ url_for('scrape.submit_page_add') }}" hx-target="{{ swap_target }}" hx-swap="innerHTML">
+  {{ page_form.csrf_token }}
+  <input type="hidden" name="surface" value="{{ surface }}">
+  <div class="mb-2">
+    <label class="form-label">{{ page_form.url.label.text }}</label>
+    {{ page_form.url(class="form-control", placeholder="https://example.com/blog") }}
+    {% for err in page_form.url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+  </div>
+  <div class="row g-2 mb-2">
+    <div class="col-md-6">
+      <label class="form-label">{{ page_form.label.label.text }}</label>
+      {{ page_form.label(class="form-control") }}
+      {% for err in page_form.label.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      <div class="form-text">{{ _('Leave blank to use the page\'s title.') }}</div>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ page_form.selector.label.text }}</label>
+      {{ page_form.selector(class="form-control", placeholder=".post, article, .news-item") }}
+      {% for err in page_form.selector.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      <div class="form-text">{{ _('Optional CSS selector for repeating items.') }}</div>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary">{{ page_form.submit.label.text }}</button>
+</form>
+{% endmacro %}
+
 {% if surface == 'modal' %}
   {# Tabs only in the modal — it's a fixed-height, scrollable dialog, and
-     stacking both sections meant scrolling past the whole RSS form just to
-     reach "Your YouTube channels". `active_pane` decides which tab opens so
-     an add-form swap (which re-renders this entire partial) lands back on
-     the tab the user was just using instead of resetting to the first one. #}
+     stacking sections meant scrolling past earlier forms to reach later ones.
+     `active_pane` decides which tab opens so an add-form swap lands back on
+     the tab the user was just using. #}
   <ul class="nav nav-tabs mb-3" id="source-manager-tabs" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link {{ 'active' if active_pane == 'feeds' else '' }}" id="source-manager-tab-feeds"
@@ -117,6 +152,15 @@
         <span class="badge rounded-pill text-bg-secondary ms-1">{{ channel_count }}</span>
       </button>
     </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {{ 'active' if active_pane == 'pages' else '' }}" id="source-manager-tab-pages"
+              data-bs-toggle="tab" data-bs-target="#source-manager-pane-pages" type="button" role="tab"
+              aria-controls="source-manager-pane-pages"
+              aria-selected="{{ 'true' if active_pane == 'pages' else 'false' }}">
+        <i class="bi bi-globe me-1"></i>{{ _('Web pages') }}
+        <span class="badge rounded-pill text-bg-secondary ms-1">{{ page_count }}</span>
+      </button>
+    </li>
   </ul>
   <div class="tab-content" id="source-manager-tab-content">
     <div class="tab-pane fade {{ 'show active' if active_pane == 'feeds' else '' }}"
@@ -127,12 +171,18 @@
          id="source-manager-pane-channels" role="tabpanel" aria-labelledby="source-manager-tab-channels">
       {{ channels_section() }}
     </div>
+    <div class="tab-pane fade {{ 'show active' if active_pane == 'pages' else '' }}"
+         id="source-manager-pane-pages" role="tabpanel" aria-labelledby="source-manager-tab-pages">
+      {{ pages_section() }}
+    </div>
   </div>
 {% else %}
   {# The settings tab is a full page with room to spare — keep the stacked
-     layout unchanged; adding tabs here would be an unrequested regression. #}
+     layout unchanged. #}
   <hr class="my-4">
   {{ feeds_section() }}
   <hr class="my-4">
   {{ channels_section() }}
+  <hr class="my-4">
+  {{ pages_section() }}
 {% endif %}

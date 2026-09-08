@@ -183,6 +183,37 @@ class UserChannel(BaseModel):
     __table_args__ = (db.UniqueConstraint("user_id", "channel_id", name="uq_user_channel"),)
 
 
+class UserPage(BaseModel):
+    """A user's own custom web page source for non-RSS sites (Faz 5.2).
+
+    Ingested per-user via `service.ingest_user_pages`. Uses `web_source.discover`
+    to walk the 4-rung discovery ladder (RSS autodiscovery -> JSON-LD ->
+    repeated blocks -> trafilatura).
+
+    `mode` pins the discovery rung that succeeded during validation so subsequent
+    runs don't silently downgrade.
+    `selector` is an optional user-supplied CSS selector to guide block extraction.
+    `active` mirrors UserFeed/UserChannel — a pause switch.
+    `etag` and `last_modified` support conditional GET.
+    """
+
+    __tablename__ = "user_pages"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    url = db.Column(db.String(512), nullable=False)
+    label = db.Column(db.String(128), nullable=True)
+    mode = db.Column(db.String(16), nullable=True)  # "rss", "jsonld", "blocks", "article"
+    selector = db.Column(db.String(256), nullable=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    etag = db.Column(db.String(256), nullable=True)
+    last_modified = db.Column(db.String(256), nullable=True)
+    last_scraped_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    user = db.relationship("User", backref=db.backref("custom_pages", lazy="dynamic"))
+
+    __table_args__ = (db.UniqueConstraint("user_id", "url", name="uq_user_page"),)
+
+
 class ScanRun(BaseModel):
     """One recorded execution of a per-user scan.
 

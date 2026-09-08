@@ -1,0 +1,66 @@
+﻿{# The user's custom web page targets for non-RSS sites (Faz 5.2). #}
+<div id="page-list">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <div class="small text-muted">
+      {{ _('%(used)s / %(cap)s pages', used=page_count, cap=max_user_pages) }}
+    </div>
+    {% if page_count %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('Filter pages') }}">
+        {% for key, label in [('all', _('All')), ('active', _('Active')), ('paused', _('Paused'))] %}
+          <button type="button"
+                  class="btn btn-outline-secondary {% if page_filter == key %}active{% endif %}"
+                  hx-get="{{ url_for('scrape.page_list', filter=key) }}"
+                  hx-target="#page-list" hx-swap="outerHTML">{{ label }}</button>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if page_count >= max_user_pages %}
+    <div class="alert alert-warning py-2 px-3 small">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ _('Page limit reached. Remove one before adding another.') }}
+    </div>
+  {% endif %}
+
+  {% for p in user_pages %}
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-2 p-2 border rounded">
+      <div class="flex-grow-1 text-truncate">
+        <a href="{{ p.url }}" target="_blank" rel="noopener" class="fw-medium">{{ p.label or p.url }}</a>
+        {% if p.mode %}
+          <span class="badge rounded-pill bg-info-subtle text-info-emphasis ms-1">{{ p.mode }}</span>
+        {% endif %}
+        {% if p.selector %}
+          <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis ms-1" title="{{ _('CSS Selector') }}">{{ p.selector }}</span>
+        {% endif %}
+        {% if not p.active %}
+          <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis ms-1">{{ _('Paused') }}</span>
+        {% endif %}
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <form hx-post="{{ url_for('scrape.submit_page_toggle', page_pk=p.id) }}"
+              hx-target="#page-list" hx-swap="outerHTML" class="form-check form-switch mb-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 onchange="this.form.requestSubmit()" {% if p.active %}checked{% endif %}>
+        </form>
+        <form hx-post="{{ url_for('scrape.submit_page_remove', page_pk=p.id) }}"
+              hx-target="#page-list" hx-swap="outerHTML"
+              hx-confirm="{{ _('Remove this page?') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger border-0">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-muted small">
+      {% if page_count %}
+        {{ _('No web pages match this filter.') }}
+      {% else %}
+        {{ _('No custom web pages yet — add one below.') }}
+      {% endif %}
+    </p>
+  {% endfor %}
+</div>
