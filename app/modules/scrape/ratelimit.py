@@ -167,6 +167,11 @@ def scopus_slot() -> bool:
     return acquire_slot("scopus", int(_cfg("SCRAPE_RATE_SCOPUS_PER_SEC", 9)), 1)
 
 
+def bluesky_slot() -> bool:
+    """Bluesky public XRPC AppView slot — default 60 requests/minute."""
+    return acquire_slot("bluesky", int(_cfg("SCRAPE_RATE_BLUESKY_PER_MIN", 60)), 60)
+
+
 # ----------------------------------------------------------------------------
 # Cumulative weekly quotas — Postgres, fail-closed (Faz 5.1)
 # ----------------------------------------------------------------------------

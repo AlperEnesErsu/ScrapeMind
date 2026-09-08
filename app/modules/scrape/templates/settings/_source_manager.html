@@ -128,6 +128,29 @@
 </form>
 {% endmacro %}
 
+{% macro bluesky_section() %}
+{% if surface == 'tab' %}<h6 class="text-muted mb-3">{{ _('Followed Bluesky accounts') }}</h6>{% endif %}
+<p class="small text-muted">
+  {{ _('Follow researchers and academic institutions on Bluesky — their posts flow into your feed and briefing matching your interests.') }}
+</p>
+
+<div class="mb-3">
+  {% include 'settings/_bluesky_list.html' %}
+</div>
+
+<form hx-post="{{ url_for('scrape.submit_bluesky_add') }}" hx-target="{{ swap_target }}" hx-swap="innerHTML">
+  {{ bluesky_form.csrf_token }}
+  <input type="hidden" name="surface" value="{{ surface }}">
+  <div class="mb-2">
+    <label class="form-label">{{ bluesky_form.handle.label.text }}</label>
+    {{ bluesky_form.handle(class="form-control", placeholder="@username.bsky.social or https://bsky.app/profile/...") }}
+    {% for err in bluesky_form.handle.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+    <div class="form-text">{{ _('Enter a handle (e.g. ylecun.bsky.social) or a bsky.app profile link.') }}</div>
+  </div>
+  <button type="submit" class="btn btn-primary">{{ bluesky_form.submit.label.text }}</button>
+</form>
+{% endmacro %}
+
 {% if surface == 'modal' %}
   {# Tabs only in the modal — it's a fixed-height, scrollable dialog, and
      stacking sections meant scrolling past earlier forms to reach later ones.
@@ -161,6 +184,15 @@
         <span class="badge rounded-pill text-bg-secondary ms-1">{{ page_count }}</span>
       </button>
     </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {{ 'active' if active_pane == 'bluesky' else '' }}" id="source-manager-tab-bluesky"
+              data-bs-toggle="tab" data-bs-target="#source-manager-pane-bluesky" type="button" role="tab"
+              aria-controls="source-manager-pane-bluesky"
+              aria-selected="{{ 'true' if active_pane == 'bluesky' else 'false' }}">
+        <i class="bi bi-chat-quote me-1"></i>{{ _('Bluesky') }}
+        <span class="badge rounded-pill text-bg-secondary ms-1">{{ bluesky_count }}</span>
+      </button>
+    </li>
   </ul>
   <div class="tab-content" id="source-manager-tab-content">
     <div class="tab-pane fade {{ 'show active' if active_pane == 'feeds' else '' }}"
@@ -175,6 +207,10 @@
          id="source-manager-pane-pages" role="tabpanel" aria-labelledby="source-manager-tab-pages">
       {{ pages_section() }}
     </div>
+    <div class="tab-pane fade {{ 'show active' if active_pane == 'bluesky' else '' }}"
+         id="source-manager-pane-bluesky" role="tabpanel" aria-labelledby="source-manager-tab-bluesky">
+      {{ bluesky_section() }}
+    </div>
   </div>
 {% else %}
   {# The settings tab is a full page with room to spare — keep the stacked
@@ -185,4 +221,7 @@
   {{ channels_section() }}
   <hr class="my-4">
   {{ pages_section() }}
+  <hr class="my-4">
+  {{ bluesky_section() }}
 {% endif %}
+
