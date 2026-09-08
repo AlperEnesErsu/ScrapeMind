@@ -29,6 +29,7 @@ from app.modules.scrape.forms import (
     FollowAuthorForm,
     UserChannelForm,
     UserFeedForm,
+    UserPageForm,
 )
 from app.modules.scrape.service import (
     add_note,
@@ -126,31 +127,42 @@ def _channel_list_ctx(filter_: str = "all") -> dict:
     }
 
 
-def _source_manager_ctx(*, clear_forms: bool = False) -> dict:
-    """Context for `settings/_source_manager.html` — the two add-forms plus
-    the (cheap) feed/channel list contexts. Deliberately free of
-    `classify_user_topics` / `user_llm_status`, same reasoning as
-    `_feed_list_ctx`: this is what the home-page modal renders on open and
-    what a feed/channel add re-renders, and both need to stay an LLM-free
-    round trip. `_ai_ctx` layers the expensive bits on top for the full-tab
-    render only.
+def _page_list_ctx(filter_: str = "all") -> dict:
+    """Context for the `settings/_page_list.html` partial."""
+    from flask import current_app
 
-    `clear_forms` empties the inputs. A bare `UserFeedForm()` inside a POST
-    request re-populates itself from the submitted formdata, so after a
-    *successful* add the URL the user just added stays sitting in the box —
-    which reads as "that didn't work" and invites a duplicate submit. It
-    matters more in the modal, where you stay put and add several in a row.
-    On failure we deliberately keep the value so it can be corrected.
+    from app.modules.scrape.service import list_user_pages
+
+    pages = list_user_pages(current_user)
+    if filter_ == "active":
+        shown = [p for p in pages if p.active]
+    elif filter_ == "paused":
+        shown = [p for p in pages if not p.active]
+    else:
+        filter_ = "all"
+        shown = pages
+
+    return {
+        "user_pages": shown,
+        "page_count": len(pages),
+        "active_page_count": sum(1 for p in pages if p.active),
+        "page_filter": filter_,
+        "max_user_pages": current_app.config.get("MAX_USER_PAGES", 30),
+    }
+
+
+def _source_manager_ctx(*, clear_forms: bool = False) -> dict:
+    """Context for `settings/_source_manager.html` — the add-forms plus
+    the feed/channel/page list contexts.
     """
-    # Omit the kwarg entirely rather than passing a sentinel: Flask-WTF's
-    # default for `formdata` is a private _Auto marker, and importing that
-    # would couple us to its internals.
     kwargs = {"formdata": None} if clear_forms else {}
     return {
         "feed_form": UserFeedForm(**kwargs),
         "channel_form": UserChannelForm(**kwargs),
+        "page_form": UserPageForm(**kwargs),
         **_feed_list_ctx(),
         **_channel_list_ctx(),
+        **_page_list_ctx(),
     }
 
 
@@ -514,6 +526,86 @@ def submit_channel_toggle(channel_pk: int):
         changes={"active": new_value},
     )
     return render_template("settings/_channel_list.html", **_channel_list_ctx())
+
+
+# ------------------------------------------------------------------ #
+# Custom Web Pages (non-RSS sites) — Faz 5.2
+# ------------------------------------------------------------------ #
+
+
+@scrape_bp.route("/profile/pages/add", methods=["POST"])
+@login_required
+def submit_page_add():
+    from app.modules.scrape.service import add_user_page
+
+    surface = request.form.get("surface")
+    form = UserPageForm()
+    if form.validate_on_submit():
+        page, err = add_user_page(current_user, form.url.data, form.label.data, form.selector.data)
+        if page is not None:
+            log_action(
+                "user.page_added",
+                entity_type="user_page",
+                entity_id=str(page.id),
+                changes={"url": page.url, "mode": page.mode},
+            )
+            return _render_source_manager_result(
+                surface,
+                active_pane="pages",
+                added=True,
+                flash_msg=_("Web page added."),
+                flash_kind="success",
+            )
+        return _render_source_manager_result(
+            surface,
+            active_pane="pages",
+            flash_msg=_(err or "Could not add that page."),
+            flash_kind="danger",
+        )
+    return _render_source_manager_result(
+        surface,
+        active_pane="pages",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+    )
+
+
+@scrape_bp.route("/profile/pages", methods=["GET"])
+@login_required
+def page_list():
+    """The page list on its own — post-mutation swaps target this."""
+    return render_template(
+        "settings/_page_list.html", **_page_list_ctx(request.args.get("filter", "all"))
+    )
+
+
+@scrape_bp.route("/profile/pages/<int:page_pk>/remove", methods=["POST"])
+@login_required
+def submit_page_remove(page_pk: int):
+    from app.modules.scrape.service import remove_user_page
+
+    ok = remove_user_page(current_user, page_pk)
+    if not ok:
+        abort(404)
+    log_action("user.page_removed", entity_type="user_page", entity_id=str(page_pk))
+    return render_template("settings/_page_list.html", **_page_list_ctx())
+
+
+@scrape_bp.route("/profile/pages/<int:page_pk>/toggle", methods=["POST"])
+@login_required
+def submit_page_toggle(page_pk: int):
+    from app.modules.scrape.service import toggle_user_page
+
+    new_value = toggle_user_page(current_user, page_pk)
+    if new_value is None:
+        abort(404)
+    log_action(
+        "user.page_toggled",
+        entity_type="user_page",
+        entity_id=str(page_pk),
+        changes={"active": new_value},
+    )
+    return render_template("settings/_page_list.html", **_page_list_ctx())
 
 
 def _is_htmx() -> bool:

@@ -2990,6 +2990,62 @@ msgstr "Unfollow"
 msgid "You are not following anyone yet."
 msgstr "You are not following anyone yet."
 
+msgid "Web Page URL"
+msgstr "Web Page URL"
+
+msgid "CSS Selector (optional)"
+msgstr "CSS Selector (optional)"
+
+msgid "Add web page"
+msgstr "Add web page"
+
+msgid "Page limit reached. Remove one before adding another."
+msgstr "Page limit reached. Remove one before adding another."
+
+msgid "Please enter a valid page URL (starting with http:// or https://)."
+msgstr "Please enter a valid page URL (starting with http:// or https://)."
+
+msgid "Web page added."
+msgstr "Web page added."
+
+msgid "Could not add that page."
+msgstr "Could not add that page."
+
+msgid "Remove this page?"
+msgstr "Remove this page?"
+
+msgid "No web pages match this filter."
+msgstr "No web pages match this filter."
+
+msgid "No custom web pages yet — add one below."
+msgstr "No custom web pages yet — add one below."
+
+msgid "Custom web pages"
+msgstr "Custom web pages"
+
+msgid ""
+"Track any web page without RSS — its articles and posts flow into your "
+"feed and briefing via our 4-rung discovery ladder."
+msgstr ""
+"Track any web page without RSS — its articles and posts flow into your "
+"feed and briefing via our 4-rung discovery ladder."
+
+msgid "Leave blank to use the page's title."
+msgstr "Leave blank to use the page's title."
+
+msgid "Optional CSS selector for repeating items."
+msgstr "Optional CSS selector for repeating items."
+
+msgid "Web pages"
+msgstr "Web pages"
+
+#, python-format
+msgid "%(used)s / %(cap)s pages"
+msgstr "%(used)s / %(cap)s pages"
+
+msgid "Filter pages"
+msgstr "Filter pages"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
