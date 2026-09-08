@@ -27,6 +27,7 @@ from app.core.audit.middleware import log_action
 from app.modules.scrape.forms import (
     AiSettingsForm,
     FollowAuthorForm,
+    UserBlueskyForm,
     UserChannelForm,
     UserFeedForm,
     UserPageForm,
@@ -151,18 +152,44 @@ def _page_list_ctx(filter_: str = "all") -> dict:
     }
 
 
+def _bluesky_list_ctx(filter_: str = "all") -> dict:
+    """Context for the `settings/_bluesky_list.html` partial."""
+    from flask import current_app
+
+    from app.modules.scrape.service import list_user_bluesky
+
+    accounts = list_user_bluesky(current_user)
+    if filter_ == "active":
+        shown = [a for a in accounts if a.active]
+    elif filter_ == "paused":
+        shown = [a for a in accounts if not a.active]
+    else:
+        filter_ = "all"
+        shown = accounts
+
+    return {
+        "user_bluesky": shown,
+        "bluesky_count": len(accounts),
+        "active_bluesky_count": sum(1 for a in accounts if a.active),
+        "bluesky_filter": filter_,
+        "max_user_bluesky": current_app.config.get("MAX_USER_BLUESKY", 20),
+    }
+
+
 def _source_manager_ctx(*, clear_forms: bool = False) -> dict:
     """Context for `settings/_source_manager.html` — the add-forms plus
-    the feed/channel/page list contexts.
+    the feed/channel/page/bluesky list contexts.
     """
     kwargs = {"formdata": None} if clear_forms else {}
     return {
         "feed_form": UserFeedForm(**kwargs),
         "channel_form": UserChannelForm(**kwargs),
         "page_form": UserPageForm(**kwargs),
+        "bluesky_form": UserBlueskyForm(**kwargs),
         **_feed_list_ctx(),
         **_channel_list_ctx(),
         **_page_list_ctx(),
+        **_bluesky_list_ctx(),
     }
 
 
@@ -606,6 +633,87 @@ def submit_page_toggle(page_pk: int):
         changes={"active": new_value},
     )
     return render_template("settings/_page_list.html", **_page_list_ctx())
+
+
+# ------------------------------------------------------------------ #
+# Bluesky Social Accounts — Faz 5.3
+# ------------------------------------------------------------------ #
+
+
+@scrape_bp.route("/profile/bluesky/add", methods=["POST"])
+@login_required
+def submit_bluesky_add():
+    from app.modules.scrape.service import add_user_bluesky
+
+    surface = request.form.get("surface")
+    form = UserBlueskyForm()
+    if form.validate_on_submit():
+        account, err = add_user_bluesky(current_user, form.handle.data)
+        if account is not None:
+            log_action(
+                "user.bluesky_added",
+                entity_type="user_bluesky",
+                entity_id=str(account.id),
+                changes={"handle": account.handle, "did": account.did},
+            )
+            return _render_source_manager_result(
+                surface,
+                active_pane="bluesky",
+                added=True,
+                flash_msg=_("Bluesky account followed."),
+                flash_kind="success",
+            )
+        return _render_source_manager_result(
+            surface,
+            active_pane="bluesky",
+            flash_msg=_(err or "Could not follow that Bluesky account."),
+            flash_kind="danger",
+        )
+    return _render_source_manager_result(
+        surface,
+        active_pane="bluesky",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+    )
+
+
+@scrape_bp.route("/profile/bluesky", methods=["GET"])
+@login_required
+def bluesky_list():
+    """The bluesky list on its own — post-mutation swaps target this."""
+    return render_template(
+        "settings/_bluesky_list.html",
+        **_bluesky_list_ctx(request.args.get("filter", "all")),
+    )
+
+
+@scrape_bp.route("/profile/bluesky/<int:bluesky_pk>/remove", methods=["POST"])
+@login_required
+def submit_bluesky_remove(bluesky_pk: int):
+    from app.modules.scrape.service import remove_user_bluesky
+
+    ok = remove_user_bluesky(current_user, bluesky_pk)
+    if not ok:
+        abort(404)
+    log_action("user.bluesky_removed", entity_type="user_bluesky", entity_id=str(bluesky_pk))
+    return render_template("settings/_bluesky_list.html", **_bluesky_list_ctx())
+
+
+@scrape_bp.route("/profile/bluesky/<int:bluesky_pk>/toggle", methods=["POST"])
+@login_required
+def submit_bluesky_toggle(bluesky_pk: int):
+    from app.modules.scrape.service import toggle_user_bluesky
+
+    new_value = toggle_user_bluesky(current_user, bluesky_pk)
+    if new_value is None:
+        abort(404)
+    log_action(
+        "user.bluesky_toggled",
+        entity_type="user_bluesky",
+        entity_id=str(bluesky_pk),
+        changes={"active": new_value},
+    )
+    return render_template("settings/_bluesky_list.html", **_bluesky_list_ctx())
 
 
 def _is_htmx() -> bool:

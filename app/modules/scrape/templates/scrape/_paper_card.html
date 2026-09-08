@@ -24,6 +24,8 @@
       <span class="badge bg-primary-subtle text-primary-emphasis"><i class="bi bi-link-45deg me-1"></i>{{ _('Link') }}</span>
     {% elif r.paper.kind == 'patent' %}
       <span class="badge bg-warning-subtle text-warning-emphasis"><i class="bi bi-award me-1"></i>{{ _('Patent') }}</span>
+    {% elif r.paper.kind == 'social' %}
+      <span class="badge bg-primary-subtle text-primary-emphasis"><i class="bi bi-chat-quote me-1"></i>{{ _('Social') }}</span>
     {% endif %}
     {% if r.paper.categories %}
       {# PatentsView carries the owner as an "assignee:" category (an

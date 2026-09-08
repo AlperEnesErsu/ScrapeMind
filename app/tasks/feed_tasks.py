@@ -138,6 +138,7 @@ def link_for_user(self, user_id: int, *, threshold: int = 60) -> dict:
     from app.modules.scrape.service import (
         acquire_user_lock,
         apply_scan_result,
+        ingest_user_bluesky,
         ingest_user_feeds,
         ingest_user_pages,
         link_relevant_feed_items,
@@ -158,9 +159,14 @@ def link_for_user(self, user_id: int, *, threshold: int = 60) -> dict:
         with record_scan_run(user_id, "feeds") as run:
             ingest_result, touched = ingest_user_feeds(user)
             page_result, touched_pages = ingest_user_pages(user)
-            touched_all = touched + touched_pages
+            bluesky_result, touched_bluesky = ingest_user_bluesky(user)
+            touched_all = touched + touched_pages + touched_bluesky
             res = link_relevant_feed_items(user, threshold=threshold, extra_candidates=touched_all)
-            total_hits = ingest_result.get("hits", 0) + page_result.get("hits", 0)
+            total_hits = (
+                ingest_result.get("hits", 0)
+                + page_result.get("hits", 0)
+                + bluesky_result.get("hits", 0)
+            )
             apply_scan_result(run, {**res, "hits": total_hits})
         return res
     except Exception as exc:  # noqa: BLE001

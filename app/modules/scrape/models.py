@@ -214,6 +214,34 @@ class UserPage(BaseModel):
     __table_args__ = (db.UniqueConstraint("user_id", "url", name="uq_user_page"),)
 
 
+class UserBluesky(BaseModel):
+    """A user's followed Bluesky account (Faz 5.3 — social feeds).
+
+    Posts are ingested per-user via `service.ingest_user_bluesky` using
+    Bluesky's public AppView XRPC API (`app.bsky.feed.getAuthorFeed`).
+
+    `did` is the decentralized identifier (e.g. `did:plc:...`), stable across handle changes.
+    `handle` is the user handle (e.g. `ylecun.bsky.social` or `nature.com`).
+    `display_name` and `avatar_url` are cached for UI rendering.
+    `active` mirrors UserFeed/UserChannel/UserPage — a pause switch.
+    `last_post_at` tracks the high-water mark of ingested posts.
+    """
+
+    __tablename__ = "user_bluesky"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    did = db.Column(db.String(128), nullable=False)
+    handle = db.Column(db.String(128), nullable=False)
+    display_name = db.Column(db.String(256), nullable=True)
+    avatar_url = db.Column(db.Text, nullable=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    last_post_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    user = db.relationship("User", backref=db.backref("bluesky_accounts", lazy="dynamic"))
+
+    __table_args__ = (db.UniqueConstraint("user_id", "did", name="uq_user_bluesky"),)
+
+
 class ScanRun(BaseModel):
     """One recorded execution of a per-user scan.
 

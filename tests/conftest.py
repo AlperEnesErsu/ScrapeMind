@@ -153,6 +153,7 @@ def auth_client(app, db):
         "user_feeds",
         "user_channels",
         "user_pages",
+        "user_bluesky",
         "scan_runs",
         "user_keywords",
         "notifications",

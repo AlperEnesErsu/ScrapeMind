@@ -3069,6 +3069,70 @@ msgstr "%(used)s / %(cap)s sayfa"
 msgid "Filter pages"
 msgstr "Sayfaları filtrele"
 
+msgid "Bluesky account limit reached. Remove one before adding another."
+msgstr ""
+"Bluesky hesabı sınırına ulaşıldı. Yeni bir tane eklemeden önce birini "
+"kaldırın."
+
+msgid "Please enter a valid Bluesky handle or profile link."
+msgstr "Lütfen geçerli bir Bluesky kullanıcı adı veya profil bağlantısı girin."
+
+msgid "Could not verify that Bluesky account — please try again."
+msgstr "Bu Bluesky hesabı doğrulanamadı — lütfen tekrar deneyin."
+
+msgid "Bluesky handle or profile URL"
+msgstr "Bluesky kullanıcı adı veya profil URL'si"
+
+msgid "Follow on Bluesky"
+msgstr "Bluesky'da Takip Et"
+
+msgid "Bluesky account followed."
+msgstr "Bluesky hesabı takibe alındı."
+
+msgid "Could not follow that Bluesky account."
+msgstr "Bu Bluesky hesabı takibe alınamadı."
+
+msgid "Followed Bluesky accounts"
+msgstr "Takip Edilen Bluesky Hesapları"
+
+msgid ""
+"Follow researchers and academic institutions on Bluesky — their posts "
+"flow into your feed and briefing matching your interests."
+msgstr ""
+"Bluesky'daki araştırmacıları ve akademik kurumları takip edin — "
+"gönderileri ilgi alanlarınıza göre filtrelenerek akışınıza ve özetinize "
+"gelsin."
+
+msgid "Enter a handle (e.g. ylecun.bsky.social) or a bsky.app profile link."
+msgstr ""
+"Bir kullanıcı adı (örn. ylecun.bsky.social) veya bsky.app profil "
+"bağlantısı girin."
+
+#, python-format
+msgid "%(used)s / %(cap)s accounts"
+msgstr "%(used)s / %(cap)s hesap"
+
+msgid "Filter Bluesky accounts"
+msgstr "Bluesky hesaplarını filtrele"
+
+msgid "Unfollow this Bluesky account?"
+msgstr "Bu Bluesky hesabını takipten çıkarmak istiyor musunuz?"
+
+msgid "No Bluesky accounts match this filter."
+msgstr "Bu filtreyle eşleşen Bluesky hesabı yok."
+
+msgid "No followed Bluesky accounts yet — follow one below."
+msgstr "Henüz takip edilen Bluesky hesabı yok — aşağıdan birini takip edin."
+
+msgid "Social"
+msgstr "Sosyal"
+
+msgid "Bluesky"
+msgstr "Bluesky"
+
+msgid "Academic and topical discussions from followed Bluesky accounts"
+msgstr "Takip edilen Bluesky hesaplarından akademik ve güncel tartışmalar"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
