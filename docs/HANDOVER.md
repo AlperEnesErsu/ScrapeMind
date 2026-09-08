@@ -373,17 +373,14 @@ seçiciyle override eder.
   3. sekme (`_page_list.html`), filtreleme, anlık toggle/silme ve Celery zamanlanmış
   ingest entegrasyonu tamamlandı.
 
-### 5.3 Sosyal beslemeler
-**X/Twitter için ücretsiz yol yok.** 6 Şubat 2026'da pay-per-use'a geçtiler; okuma
-$0.005/post, ücretsiz katman ~100 post/ay ve fiilen yazma için. Kazıma ToS ihlali
-ve README'deki etik taahhütle çelişir. Yerine:
-
-- **Bluesky** — `https://public.api.bsky.app` üzerinden `app.bsky.feed.getAuthorFeed`
-  auth'suz ve ücretsiz; Jetstream (`wss://jetstream2.us-east.bsky.network/subscribe`)
-  auth'suz JSON firehose. Akademik Twitter kitlesinin önemli kısmı orada.
+### 5.3 ✅ Sosyal beslemeler — bitti (PR #49, `feat/bluesky-social-source`)
+- **Bluesky** — `https://public.api.bsky.app` üzerinden `app.bsky.actor.getProfile`
+  ve `app.bsky.feed.getAuthorFeed` (filter=`posts_no_replies`) auth'suz ve ücretsiz.
+  `bluesky_source.py` adaptörü, `UserBluesky` modeli, Celery `link_for_user`
+  zamanlanmış görevi, `_bluesky_list.html` ve kaynak yöneticisi 4. sekme entegrasyonu tamamlandı.
+  Gönderiler `kind="social"` olarak etiketlenir ve kartta `Social` rozeti alır.
 - **Mastodon** — hesap başına yerleşik RSS (`https://sunucu/@kullanici.rss`).
-  **Bugünkü altyapıyla zaten çalışıyor** — kullanıcı özel besleme olarak ekleyebilir.
-  Kod değil, dokümantasyon işi.
+  **Bugünkü altyapıyla zaten çalışıyor** — kullanıcı özel besleme (`UserFeed`) olarak ekleyebilir.
 
 ### 5.4 Daha uzun vade
 1. **pgvector + gerçek RAG.** README pgvector vaat ediyor, repoda tek satır yok.
