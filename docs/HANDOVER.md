@@ -233,6 +233,24 @@ SCRAPEMIND_DB_PORT=5433 docker compose -f docker/docker-compose.yml   -p scrapem
 (kullanici/sifre `scrapemind`, compose'un tanimladigi gibi). Eski paylasimli
 Postgres'teki `scrapemind` veritabani duruyor ama artik kullanilmiyor.
 
+#### `development.bat` bu container'i baslatmaz
+`development.bat`, `.env.local` varsa `:skip_docker`'a atliyor ve hicbir
+container ayaga kaldirmiyor. Postgres myoChtBt'nin container'iyken bu dogruydu
+— baskasi baslatiyordu. Artik Postgres ScrapeMind'in kendisinin, yani script
+onu baslatmadigi halde ona baglanmaya calisiyor; container kapaliysa
+`connection refused` alirsin ve script bunun sebebini soylemez.
+
+Mevcut container'a `--restart unless-stopped` verildi, yani Docker Desktop
+acildiginda kendisi geliyor:
+```bash
+docker update --restart unless-stopped scrapemind-db-1
+```
+Container yeniden yaratilirsa (`docker compose down` vb.) bu politika gider —
+o zaman ya komutu tekrarla ya da `docker/docker-compose.yml`'deki `db`
+servisine `restart: unless-stopped` ekle. Compose'a eklenmedi cunku o dosya
+ayni zamanda deploy'da kullaniliyor ve orada politikayi kimin belirleyecegi
+ayri bir karar.
+
 #### Bunun altindaki asil tuzak: re-parent edilmis migration + damgali DB
 Faz 6 zinciri (`4360c046a92e` → `7b3ce9d10a45`) ile main'in zinciri
 (`08f12848f0d1` → `eb3c1118d2f5` → `f135d2517c0e`) ayni parent'tan,
