@@ -543,7 +543,7 @@ Startup'ta `app/modules/__init__.py` tüm klasörleri tarar, manifest'leri DB'ye
 
 ### 🟧 Faz 6 — İleri Auth & Ölçek
 - [x] pgvector + semantik arama / gerçek RAG
-- [ ] Yazar takibi (OpenAlex author id) + atıf grafiği
+- [x] Yazar takibi (OpenAlex author id) + atıf grafiği (Citation graph)
 - [ ] `LdapAuthStrategy` (gerçek implementation)
 - [ ] Audit log partition
 - [ ] Sentry, Prometheus

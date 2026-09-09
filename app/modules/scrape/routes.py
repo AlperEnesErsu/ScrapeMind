@@ -19,7 +19,7 @@ from __future__ import annotations
 import time
 
 import structlog
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
@@ -960,7 +960,7 @@ def detail(user_paper_id: int):
     mark_seen(link)
 
     mode = request.args.get("mode", "original")
-    if mode not in {"original", "tr", "ai", "chat"}:
+    if mode not in {"original", "tr", "ai", "chat", "graph"}:
         mode = "original"
 
     # RAG Chat messages
@@ -991,6 +991,96 @@ def detail(user_paper_id: int):
         ),
         no_transcript=False,
         chat_messages=chat_messages,
+    )
+
+
+@scrape_bp.route("/<int:user_paper_id>/citation-graph", methods=["GET"])
+@login_required
+def citation_graph(user_paper_id: int):
+    """Return JSON citation graph (references + citations) for this paper."""
+    from app.modules.scrape.citation_service import get_citation_graph_for_user
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+
+    graph_data = get_citation_graph_for_user(link.paper, current_user, link.id)
+    return jsonify(graph_data)
+
+
+@scrape_bp.route("/<int:user_paper_id>/citation-graph/add", methods=["POST"])
+@login_required
+def add_citation_paper(user_paper_id: int):
+    """Add a paper found in the citation graph into user's library."""
+    from datetime import UTC, datetime
+
+    from app.modules.scrape.doi import normalize_doi
+    from app.modules.scrape.service import link_user_paper, upsert_paper
+    from app.modules.scrape.sources.payload import PaperPayload
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+
+    data = request.get_json(silent=True) or request.form
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"status": "error", "message": "Title is required"}), 400
+
+    raw_doi = data.get("doi")
+    norm_doi = normalize_doi(raw_doi) if raw_doi else None
+
+    raw_year = data.get("year")
+    pub_date = None
+    if raw_year:
+        try:
+            pub_date = datetime(int(raw_year), 1, 1, tzinfo=UTC)
+        except (ValueError, TypeError):
+            pass
+
+    authors_val = data.get("authors")
+    if isinstance(authors_val, str):
+        authors = [a.strip() for a in authors_val.split(",") if a.strip()]
+    elif isinstance(authors_val, list):
+        authors = [str(a).strip() for a in authors_val if str(a).strip()]
+    else:
+        authors = []
+
+    ext_id = data.get("id") or norm_doi or f"cit_{abs(hash(title)) % 10000000}"
+    url = data.get("url") or (f"https://doi.org/{norm_doi}" if norm_doi else None)
+
+    payload = PaperPayload(
+        source="openalex",
+        external_id=str(ext_id),
+        title=title,
+        abstract=None,
+        authors=authors,
+        url=url,
+        pdf_url=None,
+        published_at=pub_date,
+        categories=[data.get("venue")] if data.get("venue") else [],
+        kind="paper",
+        doi=norm_doi,
+    )
+
+    paper = upsert_paper(payload)
+    new_link, created = link_user_paper(current_user, paper, matched_keyword="citation_graph")
+
+    if paper.embedding is None:
+        try:
+            from app.tasks.embedding_tasks import embed_paper_task
+
+            embed_paper_task.delay(paper.id)
+        except Exception:
+            pass
+
+    return jsonify(
+        {
+            "status": "ok",
+            "created": created,
+            "user_paper_id": new_link.id,
+            "paper_id": paper.id,
+        }
     )
 
 

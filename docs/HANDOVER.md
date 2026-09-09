@@ -40,9 +40,9 @@ ve YouTube kanal aboneliği + transkript özeti var.
 **Doğrulama durumu (12 Ağustos 2026):**
 
 ```
-pytest tests/ -q      →  994 passed in ~96s
+pytest tests/ -q      →  1004 passed in ~97s
 ruff check app/ tests/  →  All checks passed!
-black --check app/ tests/ →  205 files would be left unchanged
+black --check app/ tests/ →  208 files would be left unchanged
 ```
 
 > ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
@@ -395,7 +395,11 @@ seçiciyle override eder.
    ORCID/Scopus/WoS kimlik modeli zaten var (PR #4-#6) ama gerçek bir özelliğe
    bağlanmadı; OpenAlex adaptörü artık mevcut olduğu için author id üzerinden
    "bu yazarın yeni yayınları" beslemesi en yakın büyük kazanç.
-3. **Atıf grafiği** — OpenAlex/S2 `referenced_works` + `cited_by`.
+3. ✅ **Atıf grafiği (Citation Graph) — bitti (PR #51, `feat/citation-graph`).**
+   - OpenAlex API (`referenced_works` + `cites:{work_id}`) ve Semantic Scholar Graph API fallback desteği ile makale referans/atıf ağı çekme servisi (`citation_service.py`).
+   - Redis 24 saat önbellekleme (`get_json`/`set_json`).
+   - Kullanıcının kütüphane durumuyla dinamik zenginleştirme (`decorate_with_user_library`).
+   - Makale detay sayfasına 5. mod olarak interaktif `vis-network` canvas'ı, lejant, filtreler (Referanslar / Atıflar) ve tek tıkla kütüphaneye ekleme (`/papers/<id>/citation-graph/add`).
 4. **Açık erişim tam metin** — OpenAlex `best_oa_location`. Etik sınır net: sadece OA.
 5. **Kayıtlı arama + uyarı** — bildirim altyapısı (`add_notification`) hazır.
 6. **Zotero/Mendeley dışa aktarım** — BibTeX var, API entegrasyonu doğal devam.

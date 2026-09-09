@@ -255,7 +255,7 @@ ScrapeMind/
 - ✅ **Faz 3** — RSS beslemeler + kullanıcı beslemeleri · konu sınıflandırma + kaynak seçici · TR→EN anahtar kelime çevirisi · tarama geçmişi + durum paneli · digest · çok sağlayıcılı LLM
 - ✅ **Faz 4** — DOI tekilleştirme + zenginleştirme · OpenAlex + Crossref · YouTube kanal aboneliği + transkript özeti · admin panelinden düzenlenebilir limitler
 - ✅ **Faz 5** — Beslemelerde conditional GET · RSS'siz site scrape'i (UserPage) + alan seçici · Bluesky sosyal beslemeleri (UserBluesky) · Patent kaynakları (EPO OPS, PatentsView) · Dergi kalite katmanı (Scimago SJR, DOAJ) · Yazar takibi (UserAuthor)
-- 🔶 **Faz 5.4** *(devam ediyor)* — ✅ pgvector + gerçek RAG · ⏳ Atıf grafiği · ⏳ Açık erişim tam metin · ⏳ Kayıtlı arama + uyarı
+- 🔶 **Faz 5.4** *(devam ediyor)* — ✅ pgvector + gerçek RAG · ✅ Atıf grafiği (Citation graph) · ⏳ Açık erişim tam metin · ⏳ Kayıtlı arama + uyarı
 - 🔮 **Sonrası** — LDAP · Zotero/Mendeley entegrasyonu
 
 Detaylı plan: [PROJECT.md](PROJECT.md) · Sıradaki iş ve gerekçeleri: [docs/HANDOVER.md](docs/HANDOVER.md)
