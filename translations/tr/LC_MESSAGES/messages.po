@@ -3133,6 +3133,21 @@ msgstr "Bluesky"
 msgid "Academic and topical discussions from followed Bluesky accounts"
 msgstr "Takip edilen Bluesky hesaplarından akademik ve güncel tartışmalar"
 
+msgid "Semantic search (pgvector)"
+msgstr "Semantik arama (pgvector)"
+
+msgid "Semantic vector match via pgvector"
+msgstr "pgvector ile anlamsal vektör eşleşmesi"
+
+msgid "Semantic vector search (pgvector)"
+msgstr "Semantik vektör araması (pgvector)"
+
+msgid "Semantic"
+msgstr "Semantik"
+
+msgid "match"
+msgstr "eşleşme"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

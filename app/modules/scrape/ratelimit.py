@@ -265,7 +265,8 @@ def consume_quota(name: str, *, cost: int = 1, bytes_: int = 0) -> bool:
     try:
         for _attempt in range(2):
             row = db.session.execute(
-                text(f"""
+                text(
+                    f"""
                     UPDATE source_quota_usage
                        SET requests_used = requests_used + :cost,
                            bytes_used    = bytes_used + :bytes,
@@ -274,7 +275,8 @@ def consume_quota(name: str, *, cost: int = 1, bytes_: int = 0) -> bool:
                        AND window_start = :window
                        AND {where_budget}
                  RETURNING id
-                    """),  # noqa: S608 — `where_budget` is built from literals above
+                    """
+                ),  # noqa: S608 — `where_budget` is built from literals above
                 params,
             ).first()
             if row is not None:

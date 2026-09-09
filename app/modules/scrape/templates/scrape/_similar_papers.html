@@ -18,7 +18,11 @@
              title="{{ sim.paper.title }}">{{ sim.paper.title }}</a>
           <div class="d-flex align-items-center gap-2 mt-auto">
             <span class="badge source-badge source-{{ sim.paper.source }} py-1" style="font-size: 0.65rem;">{{ sim.paper.source }}</span>
-            {% if sim.matched_keyword %}
+            {% if sim.similarity_score %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle py-1" style="font-size: 0.65rem;" title="{{ _('Semantic vector match via pgvector') }}">
+                <i class="bi bi-stars me-1"></i>%{{ (sim.similarity_score * 100) | round | int }} {{ _('match') }}
+              </span>
+            {% elif sim.matched_keyword %}
               <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-tag-fill me-1"></i>{{ sim.matched_keyword }}</span>
             {% endif %}
           </div>

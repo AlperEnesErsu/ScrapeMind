@@ -334,7 +334,12 @@ def test_bluesky_routes_lifecycle(auth_client, monkeypatch):
     monkeypatch.setattr(
         bluesky_source,
         "resolve_account",
-        lambda inp: ("did:plc:route1", "route.bsky.social", "Route User", "https://cdn.bsky.app/a.png"),
+        lambda inp: (
+            "did:plc:route1",
+            "route.bsky.social",
+            "Route User",
+            "https://cdn.bsky.app/a.png",
+        ),
     )
 
     # Add via POST

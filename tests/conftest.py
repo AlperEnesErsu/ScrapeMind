@@ -70,6 +70,15 @@ def app():
     app.config["SQLALCHEMY_DATABASE_URI"] = test_db_url
 
     with app.app_context():
+        # Ensure pgvector extension is enabled in PostgreSQL before create_all
+        try:
+            from sqlalchemy import text
+
+            _db.session.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            _db.session.commit()
+        except Exception:
+            _db.session.rollback()
+
         _db.create_all()
         yield app
         # Make sure no transaction holds locks before we DROP — Postgres will

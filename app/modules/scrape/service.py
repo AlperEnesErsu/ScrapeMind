@@ -593,7 +593,7 @@ def _is_empty(value: object) -> bool:
     """
     if value is None:
         return True
-    if isinstance(value, (str, list, tuple)):
+    if isinstance(value, str | list | tuple):
         return len(value) == 0
     return False
 
@@ -1250,6 +1250,7 @@ def list_user_papers(
     q: str | None = None,
     kinds: tuple[str, ...] | None = None,
     quartiles: tuple[str, ...] | None = None,
+    semantic: bool = False,
 ) -> list[UserPaper]:
     """List a user's surfaced papers.
 
@@ -1259,22 +1260,15 @@ def list_user_papers(
         * "dismissed" — hidden bin (recovery)
         * "all"      — everything, no filter
 
-    `q` is an optional case-insensitive substring match against the
-    paper's title, abstract, or matched keyword. Trimmed; empty == no
-    filter.
+    `q` is an optional search term. If `semantic=True`, pgvector cosine distance
+    is used to retrieve semantically related papers even when keywords do not
+    literally match.
 
     `kinds` restricts to specific `Paper.kind` values (e.g. `("video",
-    "news")`). Default `None` means no filter — every existing caller is
-    unaffected. This exists because the home page orders everything by
-    `Paper.published_at DESC` across every kind, and the high-volume
-    academic sources (arXiv et al. publish daily) always win the top slots;
-    a user's own YouTube videos and RSS items get buried and never surface
-    on the home page without a dedicated, kind-scoped query.
+    "news")`).
 
     `quartiles` restricts to papers whose journal carries one of the given
-    SJR quartiles (e.g. `("Q1",)`). Papers with no seeded journal are excluded
-    — "show me Q1 work" is a claim about the journal, and a paper we know
-    nothing about does not satisfy it.
+    SJR quartiles (e.g. `("Q1",)`).
     """
     from sqlalchemy.orm import joinedload, selectinload
 
@@ -1283,28 +1277,44 @@ def list_user_papers(
         .join(Paper)
         .options(
             selectinload(UserPaper.notes),
-            # `UserPaper.paper` is already `lazy="joined"` on the model, but
-            # `Paper.video_summary` (uselist=False) is not — without this,
-            # _paper_card.html's `r.paper.video_summary` check fires one
-            # extra SELECT per row (N+1) across the feed's up-to-100 cards.
             joinedload(UserPaper.paper).joinedload(Paper.video_summary),
-            # Same reasoning for the quartile badge (Faz 5.3): the card reads
-            # `r.paper.journal.sjr_quartile`, which is one more SELECT per card
-            # without this.
             joinedload(UserPaper.paper).joinedload(Paper.journal),
         )
     )
     if kinds:
         query = query.filter(Paper.kind.in_(kinds))
     if quartiles:
-        # An inner join, not a filter on the outer join above: asking for Q1
-        # means "papers in a Q1 journal", so papers with no journal row are
-        # correctly excluded rather than silently kept.
         query = query.join(Journal, Paper.issn_l == Journal.issn_l).filter(
             Journal.sjr_quartile.in_(quartiles)
         )
+
     q = (q or "").strip()
-    if q:
+    is_semantic_active = False
+    if q and semantic:
+        from app.modules.scrape.embedding_service import get_embedding
+
+        query_vector = get_embedding(q, user=user)
+        if query_vector is not None:
+            is_semantic_active = True
+            query = query.filter(
+                db.or_(
+                    db.and_(
+                        Paper.embedding.is_not(None),
+                        Paper.embedding.cosine_distance(query_vector) < 0.70,
+                    ),
+                    db.func.lower(Paper.title).like(f"%{q.lower()}%"),
+                    db.func.lower(Paper.abstract).like(f"%{q.lower()}%"),
+                    db.func.lower(UserPaper.matched_keyword).like(f"%{q.lower()}%"),
+                )
+            ).order_by(
+                db.case(
+                    (Paper.embedding.is_not(None), Paper.embedding.cosine_distance(query_vector)),
+                    else_=1.0,
+                ).asc(),
+                desc(Paper.published_at),
+            )
+
+    if q and not is_semantic_active:
         like = f"%{q.lower()}%"
         query = query.filter(
             db.or_(
@@ -1314,7 +1324,11 @@ def list_user_papers(
                 db.func.lower(db.cast(Paper.authors, db.String)).like(like),
             )
         )
-    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
+
+    if not is_semantic_active:
+        query = query.order_by(desc(Paper.published_at), desc(UserPaper.created_at))
+
+    return query.limit(limit).all()
 
 
 def list_user_papers_in_window(user: User, start: datetime, end: datetime) -> list[UserPaper]:
@@ -2202,12 +2216,16 @@ def search_user_papers_query(
     date_to=None,
     has_notes: bool = False,
     quartile: str | None = None,
+    semantic: bool = False,
 ):
     """Return a SQLAlchemy query for the user's papers matching the filters.
 
     Returns a query (not a list) so the caller can `.paginate()`. Scoped to the
     user and hides dismissed papers — search is over the live library. All
     filters are ANDed; each is skipped when empty.
+
+    If `semantic=True`, pgvector cosine distance ranks papers by semantic
+    similarity to `q`.
 
     `quartile` ("Q1".."Q4") restricts to papers whose journal carries that SJR
     quartile; papers with no seeded journal are excluded, because "Q1 only" is
@@ -2228,7 +2246,32 @@ def search_user_papers_query(
     )
 
     q = (q or "").strip()
-    if q:
+    is_semantic_active = False
+    if q and semantic:
+        from app.modules.scrape.embedding_service import get_embedding
+
+        query_vector = get_embedding(q, user=user)
+        if query_vector is not None:
+            is_semantic_active = True
+            query = query.filter(
+                db.or_(
+                    db.and_(
+                        Paper.embedding.is_not(None),
+                        Paper.embedding.cosine_distance(query_vector) < 0.70,
+                    ),
+                    db.func.lower(Paper.title).like(f"%{q.lower()}%"),
+                    db.func.lower(Paper.abstract).like(f"%{q.lower()}%"),
+                    db.func.lower(UserPaper.matched_keyword).like(f"%{q.lower()}%"),
+                )
+            ).order_by(
+                db.case(
+                    (Paper.embedding.is_not(None), Paper.embedding.cosine_distance(query_vector)),
+                    else_=1.0,
+                ).asc(),
+                desc(Paper.published_at),
+            )
+
+    if q and not is_semantic_active:
         like = f"%{q.lower()}%"
         query = query.filter(
             db.or_(
@@ -2252,7 +2295,10 @@ def search_user_papers_query(
         # Only papers the user has written at least one note on.
         query = query.filter(UserPaper.notes.any())
 
-    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at))
+    if not is_semantic_active:
+        query = query.order_by(desc(Paper.published_at), desc(UserPaper.created_at))
+
+    return query
 
 
 def distinct_user_sources(user: User) -> list[str]:

@@ -70,6 +70,12 @@ BEAT_SCHEDULE = {
         "task": "feeds.link_for_all_users",
         "schedule": crontab(hour=3, minute=45),
     },
+    # Vector embeddings backfill — embeds newly surfaced papers where embedding
+    # is NULL so semantic search & RAG have full coverage.
+    "embeddings-backfill-nightly": {
+        "task": "embeddings.embed_pending_papers",
+        "schedule": crontab(hour=3, minute=55),
+    },
     # Audit retention sweep — after the nightly scrape so the two never
     # contend. AUDIT_RETENTION_DAYS=0 turns the sweep into a no-op.
     "audit-purge-nightly": {
