@@ -6,6 +6,8 @@ A user_paper junction tracks which papers were surfaced for whom — that's how
 the "For you" dashboard card stays per-user.
 """
 
+from pgvector.sqlalchemy import Vector
+
 from app.core.base_model import BaseModel
 from app.extensions import db
 
@@ -47,8 +49,18 @@ class Paper(BaseModel):
     # fill-only — see `_REFRESHABLE_FIELDS` in service.py.
     cited_by_count = db.Column(db.Integer, nullable=True)
 
+    # Vector embedding for semantic search & RAG (Faz 5.4).
+    # 1536 dimensions matches text-embedding-3-small and standard modern models.
+    embedding = db.Column(Vector(1536), nullable=True)
+
     __table_args__ = (
         db.UniqueConstraint("source", "external_id", name="uq_paper_source_external"),
+        db.Index(
+            "ix_papers_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
     )
 
     #: The `journals` row for this paper's ISSN, when one has been seeded.
@@ -181,6 +193,65 @@ class UserChannel(BaseModel):
     user = db.relationship("User", backref=db.backref("youtube_channels", lazy="dynamic"))
 
     __table_args__ = (db.UniqueConstraint("user_id", "channel_id", name="uq_user_channel"),)
+
+
+class UserPage(BaseModel):
+    """A user's own custom web page source for non-RSS sites (Faz 5.2).
+
+    Ingested per-user via `service.ingest_user_pages`. Uses `web_source.discover`
+    to walk the 4-rung discovery ladder (RSS autodiscovery -> JSON-LD ->
+    repeated blocks -> trafilatura).
+
+    `mode` pins the discovery rung that succeeded during validation so subsequent
+    runs don't silently downgrade.
+    `selector` is an optional user-supplied CSS selector to guide block extraction.
+    `active` mirrors UserFeed/UserChannel — a pause switch.
+    `etag` and `last_modified` support conditional GET.
+    """
+
+    __tablename__ = "user_pages"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    url = db.Column(db.String(512), nullable=False)
+    label = db.Column(db.String(128), nullable=True)
+    mode = db.Column(db.String(16), nullable=True)  # "rss", "jsonld", "blocks", "article"
+    selector = db.Column(db.String(256), nullable=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    etag = db.Column(db.String(256), nullable=True)
+    last_modified = db.Column(db.String(256), nullable=True)
+    last_scraped_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    user = db.relationship("User", backref=db.backref("custom_pages", lazy="dynamic"))
+
+    __table_args__ = (db.UniqueConstraint("user_id", "url", name="uq_user_page"),)
+
+
+class UserBluesky(BaseModel):
+    """A user's followed Bluesky account (Faz 5.3 — social feeds).
+
+    Posts are ingested per-user via `service.ingest_user_bluesky` using
+    Bluesky's public AppView XRPC API (`app.bsky.feed.getAuthorFeed`).
+
+    `did` is the decentralized identifier (e.g. `did:plc:...`), stable across handle changes.
+    `handle` is the user handle (e.g. `ylecun.bsky.social` or `nature.com`).
+    `display_name` and `avatar_url` are cached for UI rendering.
+    `active` mirrors UserFeed/UserChannel/UserPage — a pause switch.
+    `last_post_at` tracks the high-water mark of ingested posts.
+    """
+
+    __tablename__ = "user_bluesky"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    did = db.Column(db.String(128), nullable=False)
+    handle = db.Column(db.String(128), nullable=False)
+    display_name = db.Column(db.String(256), nullable=True)
+    avatar_url = db.Column(db.Text, nullable=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    last_post_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    user = db.relationship("User", backref=db.backref("bluesky_accounts", lazy="dynamic"))
+
+    __table_args__ = (db.UniqueConstraint("user_id", "did", name="uq_user_bluesky"),)
 
 
 class ScanRun(BaseModel):

@@ -117,7 +117,7 @@ def _token(*, force_refresh: bool = False) -> str:
     if not force_refresh:
         cached = _token_cache.get("value")
         expires_at = _token_cache.get("expires_at")
-        if cached and isinstance(expires_at, (int, float)) and time.time() < expires_at:
+        if cached and isinstance(expires_at, int | float) and time.time() < expires_at:
             return str(cached)
     return _fetch_token()
 

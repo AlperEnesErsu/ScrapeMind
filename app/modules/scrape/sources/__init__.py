@@ -49,6 +49,7 @@ import structlog
 
 from app.modules.scrape.sources import (
     arxiv_source,
+    bluesky_source,
     crossref_source,
     epo_ops_source,
     external_sources,
@@ -76,6 +77,7 @@ AVAILABLE_SOURCES: dict[str, Any] = {
     epo_ops_source.SOURCE_NAME: epo_ops_source,
     patentsview_source.SOURCE_NAME: patentsview_source,
     scopus_source.SOURCE_NAME: scopus_source,
+    bluesky_source.SOURCE_NAME: bluesky_source,
 }
 # Every RSS feed (app/modules/scrape/sources/rss_source.py:FEEDS) registers
 # under its own key, sharing the one `rss_source` module — the module's
@@ -249,6 +251,14 @@ SOURCE_META: dict[str, dict] = {
         "credentials_ok": scopus_source.credentials_ok,
         "requires_admin_optin": "scopus_enabled",
     },
+    "bluesky": {
+        "label": "Bluesky",
+        "icon": "bi-chat-quote",
+        "desc": "Academic and topical discussions from followed Bluesky accounts",
+        "url": "https://bsky.app",
+        "topics": ["general", "ai", "cs", "social"],
+        "category": "feed",
+    },
     "manual": {
         "label": "Manual",
         "icon": "bi-link-45deg",
@@ -274,7 +284,8 @@ for _feed in rss_source.FEEDS:
 # opt-in `effective_source_prefs` keeps them off for every user.
 _DEFAULT = (
     "arxiv,semantic_scholar,pubmed,openalex,crossref,youtube_reach,github_reach,web_reach,"
-    "youtube_channel,epo_ops,patentsview,scopus," + ",".join(f["key"] for f in rss_source.FEEDS)
+    "youtube_channel,epo_ops,patentsview,scopus,bluesky,"
+    + ",".join(f["key"] for f in rss_source.FEEDS)
 )
 
 

@@ -72,6 +72,10 @@ TASK_ROUTES = {
     # LLM map/reduce batch per run, same pool as the digest/link-for-user
     # LLM work for the same "capacity for this kind of work" reason.
     "reports.generate": {"queue": "llm"},
+    # Embedding generation is a paid provider call per paper, so it shares the
+    # `llm` pool's capacity rather than flooding `io` with billable work.
+    "embeddings.embed_paper": {"queue": "llm"},
+    "embeddings.embed_pending_papers": {"queue": "llm"},
 }
 
 # Tasks deliberately left off TASK_ROUTES, so they land on the default
@@ -199,6 +203,7 @@ from app.tasks import (  # noqa: E402, F401
     channel_tasks,
     core_tasks,
     digest_tasks,
+    embedding_tasks,
     feed_tasks,
     patent_tasks,
     report_tasks,

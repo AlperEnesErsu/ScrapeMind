@@ -30,6 +30,7 @@ _CHANNEL_KEYS = {"youtube_channel"}
 _PATENT_KEYS = {"epo_ops", "patentsview"}
 #: Also key-gated, and additionally admin-opt-in gated (Faz 5.4).
 _LICENSED_KEYS = {"scopus"}
+_BLUESKY_KEYS = {"bluesky"}
 
 
 @pytest.fixture
@@ -165,7 +166,7 @@ def test_registry_has_academic_adapters_and_feeds():
         "pubmed",
         "openalex",
         "crossref",
-    } | _FEED_KEYS | _REACH_KEYS | _CHANNEL_KEYS | _PATENT_KEYS | _LICENSED_KEYS == set(
+    } | _FEED_KEYS | _REACH_KEYS | _CHANNEL_KEYS | _PATENT_KEYS | _LICENSED_KEYS | _BLUESKY_KEYS == set(
         AVAILABLE_SOURCES
     )
 
@@ -186,6 +187,7 @@ def test_enabled_sources_defaults_to_all(monkeypatch, patent_credentials):
         | _CHANNEL_KEYS
         | _PATENT_KEYS
         | _LICENSED_KEYS
+        | _BLUESKY_KEYS
     )
 
 

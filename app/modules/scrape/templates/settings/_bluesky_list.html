@@ -1,0 +1,70 @@
+{# The user's followed Bluesky accounts (Faz 5.3). #}
+<div id="bluesky-list">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <div class="small text-muted">
+      {{ _('%(used)s / %(cap)s accounts', used=bluesky_count, cap=max_user_bluesky) }}
+    </div>
+    {% if bluesky_count %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('Filter Bluesky accounts') }}">
+        {% for key, label in [('all', _('All')), ('active', _('Active')), ('paused', _('Paused'))] %}
+          <button type="button"
+                  class="btn btn-outline-secondary {% if bluesky_filter == key %}active{% endif %}"
+                  hx-get="{{ url_for('scrape.bluesky_list', filter=key) }}"
+                  hx-target="#bluesky-list" hx-swap="outerHTML">{{ label }}</button>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if bluesky_count >= max_user_bluesky %}
+    <div class="alert alert-warning py-2 px-3 small">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ _('Bluesky account limit reached. Remove one before adding another.') }}
+    </div>
+  {% endif %}
+
+  {% for a in user_bluesky %}
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-2 p-2 border rounded">
+      <div class="d-flex align-items-center gap-2 text-truncate flex-grow-1">
+        {% if a.avatar_url %}
+          <img src="{{ a.avatar_url }}" alt="" class="rounded-circle flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
+        {% else %}
+          <i class="bi bi-person-circle fs-4 text-muted flex-shrink-0"></i>
+        {% endif %}
+        <div class="text-truncate">
+          <a href="https://bsky.app/profile/{{ a.handle }}" target="_blank" rel="noopener" class="fw-medium text-decoration-none">
+            {{ a.display_name or a.handle }}
+          </a>
+          <div class="small text-muted">@{{ a.handle }}</div>
+        </div>
+        {% if not a.active %}
+          <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis ms-1">{{ _('Paused') }}</span>
+        {% endif %}
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <form hx-post="{{ url_for('scrape.submit_bluesky_toggle', bluesky_pk=a.id) }}"
+              hx-target="#bluesky-list" hx-swap="outerHTML" class="form-check form-switch mb-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input class="form-check-input" type="checkbox" role="switch"
+                 onchange="this.form.requestSubmit()" {% if a.active %}checked{% endif %}>
+        </form>
+        <form hx-post="{{ url_for('scrape.submit_bluesky_remove', bluesky_pk=a.id) }}"
+              hx-target="#bluesky-list" hx-swap="outerHTML"
+              hx-confirm="{{ _('Unfollow this Bluesky account?') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger border-0">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-muted small">
+      {% if bluesky_count %}
+        {{ _('No Bluesky accounts match this filter.') }}
+      {% else %}
+        {{ _('No followed Bluesky accounts yet — follow one below.') }}
+      {% endif %}
+    </p>
+  {% endfor %}
+</div>

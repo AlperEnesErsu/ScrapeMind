@@ -125,6 +125,33 @@ class UserChannelForm(FlaskForm):
     submit = SubmitField(_l("Add channel"))
 
 
+class UserPageForm(FlaskForm):
+    """Add a custom web page for non-RSS sites (Faz 5.2).
+
+    `url` is the target page. `label` is optional (auto-filled from page title).
+    `selector` is optional (custom CSS selector for container of repeating items).
+    """
+
+    url = StringField(_l("Web Page URL"), validators=[DataRequired(), Length(max=512)])
+    label = StringField(_l("Label (optional)"), validators=[Optional(), Length(max=128)])
+    selector = StringField(_l("CSS Selector (optional)"), validators=[Optional(), Length(max=256)])
+    submit = SubmitField(_l("Add web page"))
+
+
+class UserBlueskyForm(FlaskForm):
+    """Follow a Bluesky account (Faz 5.3 — social feeds).
+
+    `handle` accepts a Bluesky handle (e.g. `ylecun.bsky.social` or `@nature.com`),
+    a profile URL (`https://bsky.app/profile/...`), or a DID.
+    """
+
+    handle = StringField(
+        _l("Bluesky handle or profile URL"),
+        validators=[DataRequired(), Length(max=256)],
+    )
+    submit = SubmitField(_l("Follow on Bluesky"))
+
+
 class ReportForm(FlaskForm):
     """Request a new "topic" retrospective report (Faz 6) — see
     app/modules/scrape/report_service.py:create_report.

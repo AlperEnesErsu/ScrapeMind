@@ -2990,6 +2990,196 @@ msgstr "Unfollow"
 msgid "You are not following anyone yet."
 msgstr "You are not following anyone yet."
 
+msgid "Web Page URL"
+msgstr "Web Page URL"
+
+msgid "CSS Selector (optional)"
+msgstr "CSS Selector (optional)"
+
+msgid "Add web page"
+msgstr "Add web page"
+
+msgid "Page limit reached. Remove one before adding another."
+msgstr "Page limit reached. Remove one before adding another."
+
+msgid "Please enter a valid page URL (starting with http:// or https://)."
+msgstr "Please enter a valid page URL (starting with http:// or https://)."
+
+msgid "Web page added."
+msgstr "Web page added."
+
+msgid "Could not add that page."
+msgstr "Could not add that page."
+
+msgid "Remove this page?"
+msgstr "Remove this page?"
+
+msgid "No web pages match this filter."
+msgstr "No web pages match this filter."
+
+msgid "No custom web pages yet — add one below."
+msgstr "No custom web pages yet — add one below."
+
+msgid "Custom web pages"
+msgstr "Custom web pages"
+
+msgid ""
+"Track any web page without RSS — its articles and posts flow into your "
+"feed and briefing via our 4-rung discovery ladder."
+msgstr ""
+"Track any web page without RSS — its articles and posts flow into your "
+"feed and briefing via our 4-rung discovery ladder."
+
+msgid "Leave blank to use the page's title."
+msgstr "Leave blank to use the page's title."
+
+msgid "Optional CSS selector for repeating items."
+msgstr "Optional CSS selector for repeating items."
+
+msgid "Web pages"
+msgstr "Web pages"
+
+#, python-format
+msgid "%(used)s / %(cap)s pages"
+msgstr "%(used)s / %(cap)s pages"
+
+msgid "Filter pages"
+msgstr "Filter pages"
+
+msgid "Bluesky account limit reached. Remove one before adding another."
+msgstr "Bluesky account limit reached. Remove one before adding another."
+
+msgid "Please enter a valid Bluesky handle or profile link."
+msgstr "Please enter a valid Bluesky handle or profile link."
+
+msgid "Could not verify that Bluesky account — please try again."
+msgstr "Could not verify that Bluesky account — please try again."
+
+msgid "Bluesky handle or profile URL"
+msgstr "Bluesky handle or profile URL"
+
+msgid "Follow on Bluesky"
+msgstr "Follow on Bluesky"
+
+msgid "Bluesky account followed."
+msgstr "Bluesky account followed."
+
+msgid "Could not follow that Bluesky account."
+msgstr "Could not follow that Bluesky account."
+
+msgid "Followed Bluesky accounts"
+msgstr "Followed Bluesky accounts"
+
+msgid ""
+"Follow researchers and academic institutions on Bluesky — their posts "
+"flow into your feed and briefing matching your interests."
+msgstr ""
+"Follow researchers and academic institutions on Bluesky — their posts "
+"flow into your feed and briefing matching your interests."
+
+msgid "Enter a handle (e.g. ylecun.bsky.social) or a bsky.app profile link."
+msgstr "Enter a handle (e.g. ylecun.bsky.social) or a bsky.app profile link."
+
+#, python-format
+msgid "%(used)s / %(cap)s accounts"
+msgstr "%(used)s / %(cap)s accounts"
+
+msgid "Filter Bluesky accounts"
+msgstr "Filter Bluesky accounts"
+
+msgid "Unfollow this Bluesky account?"
+msgstr "Unfollow this Bluesky account?"
+
+msgid "No Bluesky accounts match this filter."
+msgstr "No Bluesky accounts match this filter."
+
+msgid "No followed Bluesky accounts yet — follow one below."
+msgstr "No followed Bluesky accounts yet — follow one below."
+
+msgid "Social"
+msgstr "Social"
+
+msgid "Bluesky"
+msgstr "Bluesky"
+
+msgid "Academic and topical discussions from followed Bluesky accounts"
+msgstr "Academic and topical discussions from followed Bluesky accounts"
+
+msgid "Semantic search (pgvector)"
+msgstr "Semantic search (pgvector)"
+
+msgid "Semantic vector match via pgvector"
+msgstr "Semantic vector match via pgvector"
+
+msgid "Semantic vector search (pgvector)"
+msgstr "Semantic vector search (pgvector)"
+
+msgid "Semantic"
+msgstr "Semantic"
+
+msgid "match"
+msgstr "match"
+
+msgid "Citation graph"
+msgstr "Citation graph"
+
+msgid "Loading citation network…"
+msgstr "Loading citation network…"
+
+msgid "Reset view"
+msgstr "Reset view"
+
+msgid "Center paper"
+msgstr "Center paper"
+
+msgid "References (cites)"
+msgstr "References (cites)"
+
+msgid "Citations (cited by)"
+msgstr "Citations (cited by)"
+
+msgid "Loading citation graph…"
+msgstr "Loading citation graph…"
+
+msgid "No citation data available"
+msgstr "No citation data available"
+
+msgid "External sources could not find references or citations for this paper."
+msgstr "External sources could not find references or citations for this paper."
+
+msgid "In your library"
+msgstr "In your library"
+
+msgid "Reference"
+msgstr "Reference"
+
+msgid "Citation"
+msgstr "Citation"
+
+msgid "Unknown authors"
+msgstr "Unknown authors"
+
+msgid "Open in ScrapeMind"
+msgstr "Open in ScrapeMind"
+
+msgid "Adding…"
+msgstr "Adding…"
+
+msgid "Added to library"
+msgstr "Added to library"
+
+msgid "No external citation data available."
+msgstr "No external citation data available."
+
+msgid "references"
+msgstr "references"
+
+msgid "citations"
+msgstr "citations"
+
+msgid "Add to library"
+msgstr "Add to library"
+
 msgid "Daily Briefing Ready"
 msgstr "Daily Briefing Ready"
 

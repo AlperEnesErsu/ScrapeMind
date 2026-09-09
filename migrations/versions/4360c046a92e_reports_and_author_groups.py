@@ -1,7 +1,7 @@
 """reports + author_groups/author_group_members, user_authors OpenAlex snapshot
 
 Revision ID: 4360c046a92e
-Revises: f4c1e8b52a76
+Revises: f135d2517c0e
 Create Date: 2026-09-05 10:00:00.000000
 
 Faz 6: `reports` holds one row per generated topic/author-group briefing
@@ -13,9 +13,15 @@ deliberately different promise.
 
 The three new `user_authors` columns are an OpenAlex snapshot (institution,
 works_count, cited_by_count) for the follow-candidate picker and an author
-group's report header — same pattern as f4c1e8b52a76, which is why this
-revises straight off it: all three are nullable, so existing rows come back
-unchanged until the next resolution fills them in.
+group's report header — same pattern as f4c1e8b52a76: all three are
+nullable, so existing rows come back unchanged until the next resolution
+fills them in.
+
+Originally written against f4c1e8b52a76. It was re-pointed at f135d2517c0e
+when this branch merged main, which had grown its own chain off the same
+parent (user_pages -> user_bluesky -> pgvector) — two heads off one parent
+merge cleanly in git and then fail `flask db upgrade`. Nothing here touches
+what that chain adds, so linearising is a rename, not a rewrite.
 """
 
 import sqlalchemy as sa
@@ -23,7 +29,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "4360c046a92e"
-down_revision = "f4c1e8b52a76"
+down_revision = "f135d2517c0e"
 branch_labels = None
 depends_on = None
 

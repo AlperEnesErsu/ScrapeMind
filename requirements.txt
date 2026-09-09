@@ -25,6 +25,7 @@ requests==2.32.3
 # DB
 psycopg2-binary==2.9.12
 SQLAlchemy==2.0.36
+pgvector>=0.3.6
 
 # Config
 python-dotenv==1.0.1

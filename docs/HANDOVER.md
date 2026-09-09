@@ -40,9 +40,9 @@ ve YouTube kanal aboneliği + transkript özeti var.
 **Doğrulama durumu (12 Ağustos 2026):**
 
 ```
-pytest tests/ -q      →  917 passed in ~91s
+pytest tests/ -q      →  1004 passed in ~97s
 ruff check app/ tests/  →  All checks passed!
-black --check app/ tests/ →  191 files would be left unchanged
+black --check app/ tests/ →  208 files would be left unchanged
 ```
 
 > ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
@@ -359,52 +359,47 @@ sabit alan listesi render ettiği için bu makine-sahipli anahtar orada görünm
 **Doğrulama:** `pytest tests/ -q` → 927 passed · ruff + black temiz.
 Sayfa görsel olarak kontrol edilmedi (bu değişiklik UI'a dokunmuyor).
 
-### 5.2 RSS'siz sitelerden scrape + alan seçici
+### 5.2 ✅ RSS'siz sitelerden scrape + alan seçici — bitti (PR #47 + PR #48)
 Kullanıcı URL verir, sistem sayfadaki alanları otomatik çıkarır, isterse CSS
 seçiciyle override eder.
 
-- **Önce ortak fetcher'ı çıkar:** redirect takibi + hop başına SSRF revalidation şu an
-  `rss_source._get_with_redirects` içine gömülü. `app/modules/scrape/fetcher.py`'ye
-  taşı, `rss_source` onu kullansın (davranış aynı kalır).
-  ⚠️ Bu, **`CLAUDE.md` kural 7 ile çelişiyor** — çelişkinin çözümü
-  [ADR-0001](adr/0001-headless-browser-yok.md) "Açık soru" bölümünde. Taşımadan önce
-  oku; bu turda bilinçli olarak ertelendi.
-- **robots.txt uyumu ekle:** `app/modules/scrape/robots.py`, host başına
-  `RobotFileParser`, Redis'te 24s cache, `Crawl-delay` okuma. Host başına rate limit
-  için mevcut `acquire_slot(f"host:{netloc}", ...)` yeterli — yeni mekanizma yazma.
-- **Discovery sırası:** ① RSS autodiscovery (`<link rel="alternate">`) — *"RSS'i yok"
-  sanılan sitelerin çoğunda gizli RSS var, en ucuz kazanç burada* → ② JSON-LD →
-  ③ tekrar eden blok sezgisi → ④ trafilatura ile tek makale.
-- Yeni bağımlılıklar: `beautifulsoup4`, `lxml`, `trafilatura`. **Playwright/Selenium
-  yok** — tam gerekçe, reddedilen alternatifler ve kararın hangi koşulda yeniden
-  açılacağı: [ADR-0001](adr/0001-headless-browser-yok.md).
-- Yeni model `UserPage` (`mode`, `selectors` JSON, etag/last_modified), yeni kaynak
-  `web_source.py` (`source="user_page"`, `kind="news"`).
-- **XSS:** önizleme hedef siteden gelen **düz metni** gösterir, ham HTML'i asla.
-  Jinja autoescape açık — hiçbir yerde `|safe` kullanma.
+- **Ortak fetcher:** `app/modules/scrape/fetcher.py` ile hop başına SSRF revalidation
+  ve redirect takibi sağlandı.
+- **robots.txt uyumu:** `app/modules/scrape/robots.py` ile host bazında kurallar,
+  Redis cache ve Crawl-delay okuma eklendi.
+- **Discovery merdiveni:** `web_source.py` içinde 4 basamaklı merdiven (RSS autodiscovery ->
+  JSON-LD -> tekrar eden blok sezgisi -> trafilatura) tamamlandı.
+- **UserPage modeli & UI:** `UserPage` tablosu, kaynak yöneticisi modal/sekmesinde
+  3. sekme (`_page_list.html`), filtreleme, anlık toggle/silme ve Celery zamanlanmış
+  ingest entegrasyonu tamamlandı.
 
-### 5.3 Sosyal beslemeler
-**X/Twitter için ücretsiz yol yok.** 6 Şubat 2026'da pay-per-use'a geçtiler; okuma
-$0.005/post, ücretsiz katman ~100 post/ay ve fiilen yazma için. Kazıma ToS ihlali
-ve README'deki etik taahhütle çelişir. Yerine:
-
-- **Bluesky** — `https://public.api.bsky.app` üzerinden `app.bsky.feed.getAuthorFeed`
-  auth'suz ve ücretsiz; Jetstream (`wss://jetstream2.us-east.bsky.network/subscribe`)
-  auth'suz JSON firehose. Akademik Twitter kitlesinin önemli kısmı orada.
+### 5.3 ✅ Sosyal beslemeler — bitti (PR #49, `feat/bluesky-social-source`)
+- **Bluesky** — `https://public.api.bsky.app` üzerinden `app.bsky.actor.getProfile`
+  ve `app.bsky.feed.getAuthorFeed` (filter=`posts_no_replies`) auth'suz ve ücretsiz.
+  `bluesky_source.py` adaptörü, `UserBluesky` modeli, Celery `link_for_user`
+  zamanlanmış görevi, `_bluesky_list.html` ve kaynak yöneticisi 4. sekme entegrasyonu tamamlandı.
+  Gönderiler `kind="social"` olarak etiketlenir ve kartta `Social` rozeti alır.
 - **Mastodon** — hesap başına yerleşik RSS (`https://sunucu/@kullanici.rss`).
-  **Bugünkü altyapıyla zaten çalışıyor** — kullanıcı özel besleme olarak ekleyebilir.
-  Kod değil, dokümantasyon işi.
+  **Bugünkü altyapıyla zaten çalışıyor** — kullanıcı özel besleme (`UserFeed`) olarak ekleyebilir.
 
 ### 5.4 Daha uzun vade
-1. **pgvector + gerçek RAG.** README pgvector vaat ediyor, repoda tek satır yok.
-   `ask_paper` "RAG chat" diye anılıyor ama başlık+abstract'ı prompt'a dolduruyor;
-   `_get_similar_papers` de embedding tabanlı değil. Docker imajını
-   `pgvector/pgvector:pg17`'ye çevirmek gerekir.
+1. ✅ **pgvector + gerçek RAG — bitti (PR #50, `feat/pgvector-rag-integration`).**
+   - Docker Postgres servisi `pgvector/pgvector:pg17` imajına güncellendi.
+   - `papers.embedding` kolonu (`vector(1536)`) ve HNSW cosine distance indeksi (`ix_papers_embedding_hnsw`) eklendi (Migration `f135d2517c0e`).
+   - `embedding_service.py` modülü eklendi: OpenRouter, OpenAI ve Ollama uyumlu, testler için deterministik mock vektör desteği.
+   - `_get_internal_similar` pgvector cosine distance ile çalışacak şekilde güncellendi, eşleşme yüzdesi (`similarity_score`) eklendi, boşluklarda kategori/anahtar kelimeye graceful fallback korundu.
+   - Kütüphane araması (`/library/search`) ve keşif akışına (`/`) `semantic=1` parametresi ve arayüz toggle'ı eklendi.
+   - `ask_paper` ("RAG chat") çok boyutlu gerçek bağlam aramasına yükseltildi: kullanıcının sorusu vektörleştirilerek hem makale içi yapılandırılmış analiz/notlardan hem de kütüphanedeki en yakın 2-3 ilişkili makaleden dinamik bağlam çekilir.
+   - `embedding_tasks.py` Celery görevleri (`embed_paper`, `embed_pending_papers`) eklendi ve gece 03:55 zamanlamasına bağlandı.
 2. ~~**Yazar takibi.**~~ → **Faz 5.4'e taşındı**, bkz. [PHASE5.md](PHASE5.md).
    ORCID/Scopus/WoS kimlik modeli zaten var (PR #4-#6) ama gerçek bir özelliğe
    bağlanmadı; OpenAlex adaptörü artık mevcut olduğu için author id üzerinden
    "bu yazarın yeni yayınları" beslemesi en yakın büyük kazanç.
-3. **Atıf grafiği** — OpenAlex/S2 `referenced_works` + `cited_by`.
+3. ✅ **Atıf grafiği (Citation Graph) — bitti (PR #51, `feat/citation-graph`).**
+   - OpenAlex API (`referenced_works` + `cites:{work_id}`) ve Semantic Scholar Graph API fallback desteği ile makale referans/atıf ağı çekme servisi (`citation_service.py`).
+   - Redis 24 saat önbellekleme (`get_json`/`set_json`).
+   - Kullanıcının kütüphane durumuyla dinamik zenginleştirme (`decorate_with_user_library`).
+   - Makale detay sayfasına 5. mod olarak interaktif `vis-network` canvas'ı, lejant, filtreler (Referanslar / Atıflar) ve tek tıkla kütüphaneye ekleme (`/papers/<id>/citation-graph/add`).
 4. **Açık erişim tam metin** — OpenAlex `best_oa_location`. Etik sınır net: sadece OA.
 5. **Kayıtlı arama + uyarı** — bildirim altyapısı (`add_notification`) hazır.
 6. **Zotero/Mendeley dışa aktarım** — BibTeX var, API entegrasyonu doğal devam.

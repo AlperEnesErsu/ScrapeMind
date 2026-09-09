@@ -19,7 +19,7 @@ from __future__ import annotations
 import time
 
 import structlog
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
@@ -30,8 +30,10 @@ from app.modules.scrape.forms import (
     AuthorSearchForm,
     FollowAuthorForm,
     ReportForm,
+    UserBlueskyForm,
     UserChannelForm,
     UserFeedForm,
+    UserPageForm,
 )
 from app.modules.scrape.service import (
     add_note,
@@ -129,31 +131,68 @@ def _channel_list_ctx(filter_: str = "all") -> dict:
     }
 
 
-def _source_manager_ctx(*, clear_forms: bool = False) -> dict:
-    """Context for `settings/_source_manager.html` — the two add-forms plus
-    the (cheap) feed/channel list contexts. Deliberately free of
-    `classify_user_topics` / `user_llm_status`, same reasoning as
-    `_feed_list_ctx`: this is what the home-page modal renders on open and
-    what a feed/channel add re-renders, and both need to stay an LLM-free
-    round trip. `_ai_ctx` layers the expensive bits on top for the full-tab
-    render only.
+def _page_list_ctx(filter_: str = "all") -> dict:
+    """Context for the `settings/_page_list.html` partial."""
+    from flask import current_app
 
-    `clear_forms` empties the inputs. A bare `UserFeedForm()` inside a POST
-    request re-populates itself from the submitted formdata, so after a
-    *successful* add the URL the user just added stays sitting in the box —
-    which reads as "that didn't work" and invites a duplicate submit. It
-    matters more in the modal, where you stay put and add several in a row.
-    On failure we deliberately keep the value so it can be corrected.
+    from app.modules.scrape.service import list_user_pages
+
+    pages = list_user_pages(current_user)
+    if filter_ == "active":
+        shown = [p for p in pages if p.active]
+    elif filter_ == "paused":
+        shown = [p for p in pages if not p.active]
+    else:
+        filter_ = "all"
+        shown = pages
+
+    return {
+        "user_pages": shown,
+        "page_count": len(pages),
+        "active_page_count": sum(1 for p in pages if p.active),
+        "page_filter": filter_,
+        "max_user_pages": current_app.config.get("MAX_USER_PAGES", 30),
+    }
+
+
+def _bluesky_list_ctx(filter_: str = "all") -> dict:
+    """Context for the `settings/_bluesky_list.html` partial."""
+    from flask import current_app
+
+    from app.modules.scrape.service import list_user_bluesky
+
+    accounts = list_user_bluesky(current_user)
+    if filter_ == "active":
+        shown = [a for a in accounts if a.active]
+    elif filter_ == "paused":
+        shown = [a for a in accounts if not a.active]
+    else:
+        filter_ = "all"
+        shown = accounts
+
+    return {
+        "user_bluesky": shown,
+        "bluesky_count": len(accounts),
+        "active_bluesky_count": sum(1 for a in accounts if a.active),
+        "bluesky_filter": filter_,
+        "max_user_bluesky": current_app.config.get("MAX_USER_BLUESKY", 20),
+    }
+
+
+def _source_manager_ctx(*, clear_forms: bool = False) -> dict:
+    """Context for `settings/_source_manager.html` — the add-forms plus
+    the feed/channel/page/bluesky list contexts.
     """
-    # Omit the kwarg entirely rather than passing a sentinel: Flask-WTF's
-    # default for `formdata` is a private _Auto marker, and importing that
-    # would couple us to its internals.
     kwargs = {"formdata": None} if clear_forms else {}
     return {
         "feed_form": UserFeedForm(**kwargs),
         "channel_form": UserChannelForm(**kwargs),
+        "page_form": UserPageForm(**kwargs),
+        "bluesky_form": UserBlueskyForm(**kwargs),
         **_feed_list_ctx(),
         **_channel_list_ctx(),
+        **_page_list_ctx(),
+        **_bluesky_list_ctx(),
     }
 
 
@@ -560,6 +599,167 @@ def submit_channel_toggle(channel_pk: int):
     return render_template("settings/_channel_list.html", **_channel_list_ctx())
 
 
+# ------------------------------------------------------------------ #
+# Custom Web Pages (non-RSS sites) — Faz 5.2
+# ------------------------------------------------------------------ #
+
+
+@scrape_bp.route("/profile/pages/add", methods=["POST"])
+@login_required
+def submit_page_add():
+    from app.modules.scrape.service import add_user_page
+
+    surface = request.form.get("surface")
+    form = UserPageForm()
+    if form.validate_on_submit():
+        page, err = add_user_page(current_user, form.url.data, form.label.data, form.selector.data)
+        if page is not None:
+            log_action(
+                "user.page_added",
+                entity_type="user_page",
+                entity_id=str(page.id),
+                changes={"url": page.url, "mode": page.mode},
+            )
+            return _render_source_manager_result(
+                surface,
+                active_pane="pages",
+                added=True,
+                flash_msg=_("Web page added."),
+                flash_kind="success",
+            )
+        return _render_source_manager_result(
+            surface,
+            active_pane="pages",
+            flash_msg=_(err or "Could not add that page."),
+            flash_kind="danger",
+        )
+    return _render_source_manager_result(
+        surface,
+        active_pane="pages",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+    )
+
+
+@scrape_bp.route("/profile/pages", methods=["GET"])
+@login_required
+def page_list():
+    """The page list on its own — post-mutation swaps target this."""
+    return render_template(
+        "settings/_page_list.html", **_page_list_ctx(request.args.get("filter", "all"))
+    )
+
+
+@scrape_bp.route("/profile/pages/<int:page_pk>/remove", methods=["POST"])
+@login_required
+def submit_page_remove(page_pk: int):
+    from app.modules.scrape.service import remove_user_page
+
+    ok = remove_user_page(current_user, page_pk)
+    if not ok:
+        abort(404)
+    log_action("user.page_removed", entity_type="user_page", entity_id=str(page_pk))
+    return render_template("settings/_page_list.html", **_page_list_ctx())
+
+
+@scrape_bp.route("/profile/pages/<int:page_pk>/toggle", methods=["POST"])
+@login_required
+def submit_page_toggle(page_pk: int):
+    from app.modules.scrape.service import toggle_user_page
+
+    new_value = toggle_user_page(current_user, page_pk)
+    if new_value is None:
+        abort(404)
+    log_action(
+        "user.page_toggled",
+        entity_type="user_page",
+        entity_id=str(page_pk),
+        changes={"active": new_value},
+    )
+    return render_template("settings/_page_list.html", **_page_list_ctx())
+
+
+# ------------------------------------------------------------------ #
+# Bluesky Social Accounts — Faz 5.3
+# ------------------------------------------------------------------ #
+
+
+@scrape_bp.route("/profile/bluesky/add", methods=["POST"])
+@login_required
+def submit_bluesky_add():
+    from app.modules.scrape.service import add_user_bluesky
+
+    surface = request.form.get("surface")
+    form = UserBlueskyForm()
+    if form.validate_on_submit():
+        account, err = add_user_bluesky(current_user, form.handle.data)
+        if account is not None:
+            log_action(
+                "user.bluesky_added",
+                entity_type="user_bluesky",
+                entity_id=str(account.id),
+                changes={"handle": account.handle, "did": account.did},
+            )
+            return _render_source_manager_result(
+                surface,
+                active_pane="bluesky",
+                added=True,
+                flash_msg=_("Bluesky account followed."),
+                flash_kind="success",
+            )
+        return _render_source_manager_result(
+            surface,
+            active_pane="bluesky",
+            flash_msg=_(err or "Could not follow that Bluesky account."),
+            flash_kind="danger",
+        )
+    return _render_source_manager_result(
+        surface,
+        active_pane="bluesky",
+        flash_msg=_("Please correct the errors below."),
+        flash_kind="danger",
+    )
+
+
+@scrape_bp.route("/profile/bluesky", methods=["GET"])
+@login_required
+def bluesky_list():
+    """The bluesky list on its own — post-mutation swaps target this."""
+    return render_template(
+        "settings/_bluesky_list.html",
+        **_bluesky_list_ctx(request.args.get("filter", "all")),
+    )
+
+
+@scrape_bp.route("/profile/bluesky/<int:bluesky_pk>/remove", methods=["POST"])
+@login_required
+def submit_bluesky_remove(bluesky_pk: int):
+    from app.modules.scrape.service import remove_user_bluesky
+
+    ok = remove_user_bluesky(current_user, bluesky_pk)
+    if not ok:
+        abort(404)
+    log_action("user.bluesky_removed", entity_type="user_bluesky", entity_id=str(bluesky_pk))
+    return render_template("settings/_bluesky_list.html", **_bluesky_list_ctx())
+
+
+@scrape_bp.route("/profile/bluesky/<int:bluesky_pk>/toggle", methods=["POST"])
+@login_required
+def submit_bluesky_toggle(bluesky_pk: int):
+    from app.modules.scrape.service import toggle_user_bluesky
+
+    new_value = toggle_user_bluesky(current_user, bluesky_pk)
+    if new_value is None:
+        abort(404)
+    log_action(
+        "user.bluesky_toggled",
+        entity_type="user_bluesky",
+        entity_id=str(bluesky_pk),
+        changes={"active": new_value},
+    )
+    return render_template("settings/_bluesky_list.html", **_bluesky_list_ctx())
+
+
 def _is_htmx() -> bool:
     return request.headers.get("HX-Request") == "true"
 
@@ -606,7 +806,8 @@ def feed():
     if view not in {"discover", "favorites", "dismissed", "all"}:
         view = "discover"
     q = request.args.get("q", "").strip()
-    rows = list_user_papers(current_user, limit=100, view=view, q=q or None)
+    semantic = request.args.get("semantic") == "1"
+    rows = list_user_papers(current_user, limit=100, view=view, q=q or None, semantic=semantic)
     counts = {
         "discover": count_user_papers(current_user, view="discover"),
         "favorites": count_user_papers(current_user, view="favorites"),
@@ -617,6 +818,7 @@ def feed():
         view=view,
         counts=counts,
         q=q,
+        semantic=semantic,
         user_keywords=list_user_keywords(current_user),
         # For the sidebar `_sources_card.html`, which shows the next-scan time
         # and the custom-feed counts. The scrape control itself lives in the
@@ -681,29 +883,73 @@ def add_link_route():
 
 
 def _get_internal_similar(link, limit=4):
-    """Papers already in the user's own library that resemble this one — same
-    matched keyword first, then same-category as a fallback. Cheap (DB only),
-    so it's the always-available half of the Similar Papers panel."""
+    """Papers already in the user's own library that resemble this one.
+
+    Uses pgvector cosine distance if the current paper has an embedding,
+    attaching a `similarity_score` (0.0 .. 1.0) to each result.
+    Falls back to matched keyword and category heuristics when embeddings
+    are absent or return fewer than `limit` results.
+    """
     from sqlalchemy import desc
 
-    from app.modules.scrape.models import UserPaper
+    from app.extensions import db
+    from app.modules.scrape.models import Paper, UserPaper
 
-    q = UserPaper.query.filter(
-        UserPaper.user_id == link.user_id, UserPaper.id != link.id, UserPaper.dismissed_at.is_(None)
-    )
-    if link.matched_keyword:
-        q = q.filter(UserPaper.matched_keyword == link.matched_keyword)
-    similar = q.order_by(desc(UserPaper.created_at)).limit(limit).all()
+    similar = []
+    seen_ids = set()
+
+    # 1. Vector similarity (pgvector)
+    if link.paper and link.paper.embedding is not None:
+        dist_col = Paper.embedding.cosine_distance(link.paper.embedding).label("dist")
+        vector_matches = (
+            db.session.query(UserPaper, dist_col)
+            .join(Paper, UserPaper.paper_id == Paper.id)
+            .filter(
+                UserPaper.user_id == link.user_id,
+                UserPaper.id != link.id,
+                UserPaper.dismissed_at.is_(None),
+                Paper.embedding.is_not(None),
+            )
+            .order_by(dist_col.asc())
+            .limit(limit)
+            .all()
+        )
+        for up, dist in vector_matches:
+            if dist is not None and dist < 0.85:
+                up.similarity_score = max(0.0, min(1.0, round(1.0 - float(dist), 2)))
+                similar.append(up)
+                seen_ids.add(up.id)
+
+    # 2. Heuristic fallback (keyword/category) if we still need more items
     if len(similar) < limit:
-        cat_list = link.paper.categories or []
+        q = UserPaper.query.filter(
+            UserPaper.user_id == link.user_id,
+            UserPaper.id != link.id,
+            UserPaper.dismissed_at.is_(None),
+        )
+        if seen_ids:
+            q = q.filter(UserPaper.id.notin_(seen_ids))
+        if link.matched_keyword:
+            kw_matches = (
+                q.filter(UserPaper.matched_keyword == link.matched_keyword)
+                .order_by(desc(UserPaper.created_at))
+                .limit(limit - len(similar))
+                .all()
+            )
+            for m in kw_matches:
+                similar.append(m)
+                seen_ids.add(m.id)
+
+    if len(similar) < limit:
+        cat_list = link.paper.categories or [] if link.paper else []
         if cat_list:
             fallback_q = UserPaper.query.filter(
                 UserPaper.user_id == link.user_id,
                 UserPaper.id != link.id,
                 UserPaper.dismissed_at.is_(None),
             )
-            if link.matched_keyword:
-                fallback_q = fallback_q.filter(UserPaper.matched_keyword != link.matched_keyword)
+            if seen_ids:
+                fallback_q = fallback_q.filter(UserPaper.id.notin_(seen_ids))
             others = fallback_q.order_by(desc(UserPaper.created_at)).limit(20).all()
             for o in others:
                 if len(similar) >= limit:
@@ -711,6 +957,8 @@ def _get_internal_similar(link, limit=4):
                 o_cats = o.paper.categories or []
                 if any(c in o_cats for c in cat_list):
                     similar.append(o)
+                    seen_ids.add(o.id)
+
     return similar[:limit]
 
 
@@ -756,7 +1004,7 @@ def detail(user_paper_id: int):
     mark_seen(link)
 
     mode = request.args.get("mode", "original")
-    if mode not in {"original", "tr", "ai", "chat"}:
+    if mode not in {"original", "tr", "ai", "chat", "graph"}:
         mode = "original"
 
     # RAG Chat messages
@@ -787,6 +1035,96 @@ def detail(user_paper_id: int):
         ),
         no_transcript=False,
         chat_messages=chat_messages,
+    )
+
+
+@scrape_bp.route("/<int:user_paper_id>/citation-graph", methods=["GET"])
+@login_required
+def citation_graph(user_paper_id: int):
+    """Return JSON citation graph (references + citations) for this paper."""
+    from app.modules.scrape.citation_service import get_citation_graph_for_user
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+
+    graph_data = get_citation_graph_for_user(link.paper, current_user, link.id)
+    return jsonify(graph_data)
+
+
+@scrape_bp.route("/<int:user_paper_id>/citation-graph/add", methods=["POST"])
+@login_required
+def add_citation_paper(user_paper_id: int):
+    """Add a paper found in the citation graph into user's library."""
+    from datetime import UTC, datetime
+
+    from app.modules.scrape.doi import normalize_doi
+    from app.modules.scrape.service import link_user_paper, upsert_paper
+    from app.modules.scrape.sources.payload import PaperPayload
+
+    link = get_user_paper(current_user, user_paper_id)
+    if link is None:
+        abort(404)
+
+    data = request.get_json(silent=True) or request.form
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"status": "error", "message": "Title is required"}), 400
+
+    raw_doi = data.get("doi")
+    norm_doi = normalize_doi(raw_doi) if raw_doi else None
+
+    raw_year = data.get("year")
+    pub_date = None
+    if raw_year:
+        try:
+            pub_date = datetime(int(raw_year), 1, 1, tzinfo=UTC)
+        except (ValueError, TypeError):
+            pass
+
+    authors_val = data.get("authors")
+    if isinstance(authors_val, str):
+        authors = [a.strip() for a in authors_val.split(",") if a.strip()]
+    elif isinstance(authors_val, list):
+        authors = [str(a).strip() for a in authors_val if str(a).strip()]
+    else:
+        authors = []
+
+    ext_id = data.get("id") or norm_doi or f"cit_{abs(hash(title)) % 10000000}"
+    url = data.get("url") or (f"https://doi.org/{norm_doi}" if norm_doi else None)
+
+    payload = PaperPayload(
+        source="openalex",
+        external_id=str(ext_id),
+        title=title,
+        abstract=None,
+        authors=authors,
+        url=url,
+        pdf_url=None,
+        published_at=pub_date,
+        categories=[data.get("venue")] if data.get("venue") else [],
+        kind="paper",
+        doi=norm_doi,
+    )
+
+    paper = upsert_paper(payload)
+    new_link, created = link_user_paper(current_user, paper, matched_keyword="citation_graph")
+
+    if paper.embedding is None:
+        try:
+            from app.tasks.embedding_tasks import embed_paper_task
+
+            embed_paper_task.delay(paper.id)
+        except Exception:
+            pass
+
+    return jsonify(
+        {
+            "status": "ok",
+            "created": created,
+            "user_paper_id": new_link.id,
+            "paper_id": paper.id,
+        }
     )
 
 

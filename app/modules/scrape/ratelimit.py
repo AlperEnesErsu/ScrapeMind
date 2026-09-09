@@ -167,6 +167,11 @@ def scopus_slot() -> bool:
     return acquire_slot("scopus", int(_cfg("SCRAPE_RATE_SCOPUS_PER_SEC", 9)), 1)
 
 
+def bluesky_slot() -> bool:
+    """Bluesky public XRPC AppView slot — default 60 requests/minute."""
+    return acquire_slot("bluesky", int(_cfg("SCRAPE_RATE_BLUESKY_PER_MIN", 60)), 60)
+
+
 # ----------------------------------------------------------------------------
 # Cumulative weekly quotas — Postgres, fail-closed (Faz 5.1)
 # ----------------------------------------------------------------------------
@@ -260,7 +265,8 @@ def consume_quota(name: str, *, cost: int = 1, bytes_: int = 0) -> bool:
     try:
         for _attempt in range(2):
             row = db.session.execute(
-                text(f"""
+                text(
+                    f"""
                     UPDATE source_quota_usage
                        SET requests_used = requests_used + :cost,
                            bytes_used    = bytes_used + :bytes,
@@ -269,7 +275,8 @@ def consume_quota(name: str, *, cost: int = 1, bytes_: int = 0) -> bool:
                        AND window_start = :window
                        AND {where_budget}
                  RETURNING id
-                    """),  # noqa: S608 — `where_budget` is built from literals above
+                    """
+                ),  # noqa: S608 — `where_budget` is built from literals above
                 params,
             ).first()
             if row is not None:

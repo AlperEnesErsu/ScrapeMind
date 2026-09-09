@@ -25,6 +25,12 @@
        class="mode-toggle__btn{% if mode == 'chat' %} mode-toggle__btn--active{% endif %}">
       <i class="bi bi-chat-dots-fill text-primary me-1"></i>{{ _('Ask Paper') }}
     </a>
+    <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='graph') }}"
+       hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='graph') }}"
+       hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
+       class="mode-toggle__btn{% if mode == 'graph' %} mode-toggle__btn--active{% endif %}">
+      <i class="bi bi-diagram-3-fill text-warning me-1"></i>{{ _('Citation graph') }}
+    </a>
   </div>
 
   <div class="paper-detail__body">
@@ -40,6 +46,8 @@
         {% endif %}
       {% elif mode == 'chat' %}
         {% include 'scrape/_paper_chat.html' %}
+      {% elif mode == 'graph' %}
+        {% include 'scrape/_citation_graph.html' %}
       {% endif %}
       
       {# Similar papers — lazy-loaded on reveal so the Semantic Scholar network

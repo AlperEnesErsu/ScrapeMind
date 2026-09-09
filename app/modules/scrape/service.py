@@ -33,8 +33,10 @@ from app.modules.scrape.models import (
     PaperNote,
     ScanRun,
     UserAuthor,
+    UserBluesky,
     UserChannel,
     UserFeed,
+    UserPage,
     UserPaper,
     UserSource,
 )
@@ -54,6 +56,8 @@ logger = structlog.get_logger()
 #: placeholder: the route passes it straight to `_()`, and the panel header
 #: already shows the "42 / 50" count.
 FEED_CAP_MESSAGE = _l("Feed limit reached. Remove one before adding another.")
+PAGE_CAP_MESSAGE = _l("Page limit reached. Remove one before adding another.")
+BLUESKY_CAP_MESSAGE = _l("Bluesky account limit reached. Remove one before adding another.")
 
 
 # ----------------------------------------------------------------------------
@@ -593,7 +597,7 @@ def _is_empty(value: object) -> bool:
     """
     if value is None:
         return True
-    if isinstance(value, (str, list, tuple)):
+    if isinstance(value, str | list | tuple):
         return len(value) == 0
     return False
 
@@ -1546,6 +1550,7 @@ def list_user_papers(
     q: str | None = None,
     kinds: tuple[str, ...] | None = None,
     quartiles: tuple[str, ...] | None = None,
+    semantic: bool = False,
 ) -> list[UserPaper]:
     """List a user's surfaced papers.
 
@@ -1555,22 +1560,15 @@ def list_user_papers(
         * "dismissed" — hidden bin (recovery)
         * "all"      — everything, no filter
 
-    `q` is an optional case-insensitive substring match against the
-    paper's title, abstract, or matched keyword. Trimmed; empty == no
-    filter.
+    `q` is an optional search term. If `semantic=True`, pgvector cosine distance
+    is used to retrieve semantically related papers even when keywords do not
+    literally match.
 
     `kinds` restricts to specific `Paper.kind` values (e.g. `("video",
-    "news")`). Default `None` means no filter — every existing caller is
-    unaffected. This exists because the home page orders everything by
-    `Paper.published_at DESC` across every kind, and the high-volume
-    academic sources (arXiv et al. publish daily) always win the top slots;
-    a user's own YouTube videos and RSS items get buried and never surface
-    on the home page without a dedicated, kind-scoped query.
+    "news")`).
 
     `quartiles` restricts to papers whose journal carries one of the given
-    SJR quartiles (e.g. `("Q1",)`). Papers with no seeded journal are excluded
-    — "show me Q1 work" is a claim about the journal, and a paper we know
-    nothing about does not satisfy it.
+    SJR quartiles (e.g. `("Q1",)`).
     """
     from sqlalchemy.orm import joinedload, selectinload
 
@@ -1579,28 +1577,44 @@ def list_user_papers(
         .join(Paper)
         .options(
             selectinload(UserPaper.notes),
-            # `UserPaper.paper` is already `lazy="joined"` on the model, but
-            # `Paper.video_summary` (uselist=False) is not — without this,
-            # _paper_card.html's `r.paper.video_summary` check fires one
-            # extra SELECT per row (N+1) across the feed's up-to-100 cards.
             joinedload(UserPaper.paper).joinedload(Paper.video_summary),
-            # Same reasoning for the quartile badge (Faz 5.3): the card reads
-            # `r.paper.journal.sjr_quartile`, which is one more SELECT per card
-            # without this.
             joinedload(UserPaper.paper).joinedload(Paper.journal),
         )
     )
     if kinds:
         query = query.filter(Paper.kind.in_(kinds))
     if quartiles:
-        # An inner join, not a filter on the outer join above: asking for Q1
-        # means "papers in a Q1 journal", so papers with no journal row are
-        # correctly excluded rather than silently kept.
         query = query.join(Journal, Paper.issn_l == Journal.issn_l).filter(
             Journal.sjr_quartile.in_(quartiles)
         )
+
     q = (q or "").strip()
-    if q:
+    is_semantic_active = False
+    if q and semantic:
+        from app.modules.scrape.embedding_service import get_embedding
+
+        query_vector = get_embedding(q, user=user)
+        if query_vector is not None:
+            is_semantic_active = True
+            query = query.filter(
+                db.or_(
+                    db.and_(
+                        Paper.embedding.is_not(None),
+                        Paper.embedding.cosine_distance(query_vector) < 0.70,
+                    ),
+                    db.func.lower(Paper.title).like(f"%{q.lower()}%"),
+                    db.func.lower(Paper.abstract).like(f"%{q.lower()}%"),
+                    db.func.lower(UserPaper.matched_keyword).like(f"%{q.lower()}%"),
+                )
+            ).order_by(
+                db.case(
+                    (Paper.embedding.is_not(None), Paper.embedding.cosine_distance(query_vector)),
+                    else_=1.0,
+                ).asc(),
+                desc(Paper.published_at),
+            )
+
+    if q and not is_semantic_active:
         like = f"%{q.lower()}%"
         query = query.filter(
             db.or_(
@@ -1610,7 +1624,11 @@ def list_user_papers(
                 db.func.lower(db.cast(Paper.authors, db.String)).like(like),
             )
         )
-    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
+
+    if not is_semantic_active:
+        query = query.order_by(desc(Paper.published_at), desc(UserPaper.created_at))
+
+    return query.limit(limit).all()
 
 
 def list_user_papers_in_window(
@@ -2200,6 +2218,304 @@ def ingest_user_channels(user: User) -> tuple[dict, list[int]]:
     return summary, new_paper_ids
 
 
+def list_user_pages(user: User) -> list[UserPage]:
+    """Every custom web page this user tracks, in stable order (newest first)."""
+    return UserPage.query.filter_by(user_id=user.id).order_by(desc(UserPage.created_at)).all()
+
+
+def get_user_page(user: User, page_id: int) -> UserPage | None:
+    """Read one page row, asserting ownership."""
+    return UserPage.query.filter_by(id=page_id, user_id=user.id).first()
+
+
+def count_user_pages(user: User) -> int:
+    return UserPage.query.filter_by(user_id=user.id).count()
+
+
+def add_user_page(
+    user: User, url: str, label: str | None = None, selector: str | None = None
+) -> tuple[UserPage | None, str | None]:
+    """Validate + normalize the URL, verify against robots.txt and SSRF guards,
+    discover items via web_source.discover ladder, and auto-fill label.
+    Returns (page, None) on success or (None, error_message) on failure.
+    """
+    from app.modules.scrape.sources.web_source import discover
+
+    normalized = _normalize_feed_url(url)
+    if normalized is None:
+        return None, "Please enter a valid page URL (starting with http:// or https://)."
+
+    clean_selector = (selector or "").strip()[:256] or None
+
+    existing = UserPage.query.filter_by(user_id=user.id, url=normalized).first()
+    if existing is not None:
+        if not existing.active:
+            existing.active = True
+            existing.etag = None
+            existing.last_modified = None
+            if clean_selector:
+                existing.selector = clean_selector
+            db.session.commit()
+        return existing, None
+
+    max_pages = current_app.config.get("MAX_USER_PAGES", 30)
+    if count_user_pages(user) >= max_pages:
+        logger.info("user_page_cap_reached", user_id=user.id, cap=max_pages)
+        return None, PAGE_CAP_MESSAGE
+
+    allow_private = current_app.config.get("FEED_ALLOW_PRIVATE_HOSTS", False)
+    ok, guard_error = is_public_http_url(normalized, allow_private=allow_private)
+    if not ok:
+        return None, guard_error
+
+    result = discover(normalized, selector=clean_selector)
+    if result.status == "robots_denied":
+        return None, f"Website robots.txt denied access: {result.detail or 'Not allowed'}"
+    if result.status != "ok" or not result.payloads:
+        logger.warning(
+            "user_page_validate_failed",
+            user_id=user.id,
+            url=normalized,
+            status=result.status,
+            detail=result.detail,
+        )
+        return (
+            None,
+            result.detail
+            or "Could not extract any items from that page — try naming a CSS selector.",
+        )
+
+    clean_label = (label or "").strip()[:128] or None
+    if not clean_label:
+        clean_label = (result.title or "").strip()[:128] or None
+
+    row = UserPage(
+        user_id=user.id,
+        url=normalized,
+        label=clean_label,
+        mode=result.mode,
+        selector=clean_selector,
+        active=True,
+    )
+    db.session.add(row)
+    db.session.commit()
+    logger.info(
+        "user_page_added", user_id=user.id, page_id=row.id, url=normalized, mode=result.mode
+    )
+    return row, None
+
+
+def remove_user_page(user: User, page_id: int) -> bool:
+    row = get_user_page(user, page_id)
+    if row is None:
+        return False
+    db.session.delete(row)
+    db.session.commit()
+    return True
+
+
+def toggle_user_page(user: User, page_id: int) -> bool | None:
+    """Flip a page's active flag. Returns the new value, or None if not found."""
+    row = get_user_page(user, page_id)
+    if row is None:
+        return None
+    row.active = not row.active
+    if row.active:
+        row.etag = None
+        row.last_modified = None
+    db.session.commit()
+    return row.active
+
+
+def ingest_user_pages(user: User) -> tuple[dict, list[Paper]]:
+    """Fetch this user's active custom web pages and upsert new Papers
+    (`source="user_page"`, `kind="news"`).
+
+    Returns `(summary, touched_papers)`.
+    """
+    from app.modules.scrape.sources.web_source import discover
+
+    pages = [p for p in list_user_pages(user) if p.active]
+    if not pages:
+        return {"hits": 0, "new": 0, "not_modified": 0}, []
+
+    hits = 0
+    new = 0
+    not_modified = 0
+    touched: list[Paper] = []
+    for p in pages:
+        try:
+            result = discover(
+                p.url,
+                etag=p.etag,
+                last_modified=p.last_modified,
+                mode=p.mode,
+                selector=p.selector,
+            )
+        except Exception:
+            logger.exception("user_page_fetch_failed", user_id=user.id, page_id=p.id)
+            continue
+
+        if result.status == "not_modified":
+            not_modified += 1
+            continue
+        if result.status != "ok":
+            logger.warning(
+                "user_page_ingest_bad_status",
+                user_id=user.id,
+                page_id=p.id,
+                status=result.status,
+            )
+            continue
+
+        hits += len(result.payloads)
+        for payload in result.payloads:
+            existed = (
+                Paper.query.filter_by(
+                    source=payload.source, external_id=payload.external_id
+                ).first()
+                is not None
+            )
+            paper = upsert_paper(payload)
+            touched.append(paper)
+            if not existed:
+                new += 1
+
+        p.etag = result.etag
+        p.last_modified = result.last_modified
+        p.last_scraped_at = datetime.now(UTC)
+
+    db.session.commit()
+    return {"hits": hits, "new": new, "not_modified": not_modified}, touched
+
+
+def list_user_bluesky(user: User) -> list[UserBluesky]:
+    """Every Bluesky account this user tracks, newest first."""
+    return UserBluesky.query.filter_by(user_id=user.id).order_by(desc(UserBluesky.created_at)).all()
+
+
+def get_user_bluesky(user: User, bluesky_id: int) -> UserBluesky | None:
+    """Read one Bluesky account row, asserting ownership."""
+    return UserBluesky.query.filter_by(id=bluesky_id, user_id=user.id).first()
+
+
+def count_user_bluesky(user: User) -> int:
+    return UserBluesky.query.filter_by(user_id=user.id).count()
+
+
+def add_user_bluesky(user: User, handle_or_url: str) -> tuple[UserBluesky | None, str | None]:
+    """Validate and resolve a Bluesky account, saving it to UserBluesky.
+
+    Returns (account, None) on success or (None, error_message) on failure.
+    """
+    from app.modules.scrape.sources.bluesky_source import resolve_account
+
+    clean_input = (handle_or_url or "").strip()
+    if not clean_input:
+        return None, "Please enter a valid Bluesky handle or profile link."
+
+    max_accounts = current_app.config.get("MAX_USER_BLUESKY", 20)
+    if count_user_bluesky(user) >= max_accounts:
+        logger.info("user_bluesky_cap_reached", user_id=user.id, cap=max_accounts)
+        return None, BLUESKY_CAP_MESSAGE
+
+    try:
+        did, handle, display_name, avatar_url = resolve_account(clean_input)
+    except ValueError as exc:
+        return None, str(exc)
+    except Exception as exc:
+        logger.warning("user_bluesky_resolve_error", user_id=user.id, exc=str(exc))
+        return None, "Could not verify that Bluesky account — please try again."
+
+    existing = UserBluesky.query.filter_by(user_id=user.id, did=did).first()
+    if existing is not None:
+        if not existing.active:
+            existing.active = True
+            existing.handle = handle
+            existing.display_name = display_name
+            existing.avatar_url = avatar_url
+            db.session.commit()
+        return existing, None
+
+    row = UserBluesky(
+        user_id=user.id,
+        did=did,
+        handle=handle,
+        display_name=display_name,
+        avatar_url=avatar_url,
+        active=True,
+    )
+    db.session.add(row)
+    db.session.commit()
+    logger.info("user_bluesky_added", user_id=user.id, bluesky_id=row.id, handle=handle, did=did)
+    return row, None
+
+
+def remove_user_bluesky(user: User, bluesky_id: int) -> bool:
+    row = get_user_bluesky(user, bluesky_id)
+    if row is None:
+        return False
+    db.session.delete(row)
+    db.session.commit()
+    return True
+
+
+def toggle_user_bluesky(user: User, bluesky_id: int) -> bool | None:
+    """Flip a Bluesky account's active flag. Returns the new value, or None if not found."""
+    row = get_user_bluesky(user, bluesky_id)
+    if row is None:
+        return None
+    row.active = not row.active
+    db.session.commit()
+    return row.active
+
+
+def ingest_user_bluesky(user: User) -> tuple[dict, list[Paper]]:
+    """Fetch recent posts from this user's active Bluesky accounts and upsert Papers
+    (`source="bluesky"`, `kind="social"`).
+
+    Returns `(summary, touched_papers)`.
+    """
+    from app.modules.scrape.sources.bluesky_source import fetch_author_posts
+
+    accounts = [a for a in list_user_bluesky(user) if a.active]
+    if not accounts:
+        return {"hits": 0, "new": 0}, []
+
+    hits = 0
+    new = 0
+    touched: list[Paper] = []
+    for a in accounts:
+        try:
+            payloads = fetch_author_posts(a.did or a.handle, since=a.last_post_at, limit=30)
+        except Exception:
+            logger.exception("user_bluesky_fetch_failed", user_id=user.id, bluesky_id=a.id)
+            continue
+
+        hits += len(payloads)
+        max_published_at = a.last_post_at
+        for payload in payloads:
+            existed = (
+                Paper.query.filter_by(
+                    source=payload.source, external_id=payload.external_id
+                ).first()
+                is not None
+            )
+            paper = upsert_paper(payload)
+            touched.append(paper)
+            if not existed:
+                new += 1
+            if payload.published_at and (
+                max_published_at is None or payload.published_at > max_published_at
+            ):
+                max_published_at = payload.published_at
+
+        a.last_post_at = max_published_at
+
+    db.session.commit()
+    return {"hits": hits, "new": new}, touched
+
+
 def count_user_papers(user: User, view: str = "discover") -> int:
     """COUNT(*) for the same view filters list_user_papers uses. Library /
     Discover tab badges use this instead of materialising 500 rows just to
@@ -2219,12 +2535,16 @@ def search_user_papers_query(
     date_to=None,
     has_notes: bool = False,
     quartile: str | None = None,
+    semantic: bool = False,
 ):
     """Return a SQLAlchemy query for the user's papers matching the filters.
 
     Returns a query (not a list) so the caller can `.paginate()`. Scoped to the
     user and hides dismissed papers — search is over the live library. All
     filters are ANDed; each is skipped when empty.
+
+    If `semantic=True`, pgvector cosine distance ranks papers by semantic
+    similarity to `q`.
 
     `quartile` ("Q1".."Q4") restricts to papers whose journal carries that SJR
     quartile; papers with no seeded journal are excluded, because "Q1 only" is
@@ -2245,7 +2565,32 @@ def search_user_papers_query(
     )
 
     q = (q or "").strip()
-    if q:
+    is_semantic_active = False
+    if q and semantic:
+        from app.modules.scrape.embedding_service import get_embedding
+
+        query_vector = get_embedding(q, user=user)
+        if query_vector is not None:
+            is_semantic_active = True
+            query = query.filter(
+                db.or_(
+                    db.and_(
+                        Paper.embedding.is_not(None),
+                        Paper.embedding.cosine_distance(query_vector) < 0.70,
+                    ),
+                    db.func.lower(Paper.title).like(f"%{q.lower()}%"),
+                    db.func.lower(Paper.abstract).like(f"%{q.lower()}%"),
+                    db.func.lower(UserPaper.matched_keyword).like(f"%{q.lower()}%"),
+                )
+            ).order_by(
+                db.case(
+                    (Paper.embedding.is_not(None), Paper.embedding.cosine_distance(query_vector)),
+                    else_=1.0,
+                ).asc(),
+                desc(Paper.published_at),
+            )
+
+    if q and not is_semantic_active:
         like = f"%{q.lower()}%"
         query = query.filter(
             db.or_(
@@ -2269,7 +2614,10 @@ def search_user_papers_query(
         # Only papers the user has written at least one note on.
         query = query.filter(UserPaper.notes.any())
 
-    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at))
+    if not is_semantic_active:
+        query = query.order_by(desc(Paper.published_at), desc(UserPaper.created_at))
+
+    return query
 
 
 def distinct_user_sources(user: User) -> list[str]:

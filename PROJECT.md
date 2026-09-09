@@ -537,13 +537,13 @@ Startup'ta `app/modules/__init__.py` tüm klasörleri tarar, manifest'leri DB'ye
 
 ### 🔶 Faz 5 — Web Scrape & Sosyal
 - [ ] Beslemelerde conditional GET'i bitir (kalıp `ingest_user_channels`'da hazır)
-- [ ] RSS'siz sitelerden scrape + alan seçici (robots.txt uyumu dahil) — önce [ADR-0001](docs/adr/0001-headless-browser-yok.md)
-- [ ] Bluesky adaptörü
+- [x] RSS'siz sitelerden scrape + alan seçici (UserPage, robots.txt uyumu dahil)
+- [x] Bluesky adaptörü (UserBluesky)
 - [ ] `doi` üzerinde UNIQUE constraint (önce mevcut duplicate temizliği)
 
 ### 🟧 Faz 6 — İleri Auth & Ölçek
-- [ ] pgvector + semantik arama / gerçek RAG
-- [ ] Yazar takibi (OpenAlex author id) + atıf grafiği
+- [x] pgvector + semantik arama / gerçek RAG
+- [x] Yazar takibi (OpenAlex author id) + atıf grafiği (Citation graph)
 - [ ] `LdapAuthStrategy` (gerçek implementation)
 - [ ] Audit log partition
 - [ ] Sentry, Prometheus

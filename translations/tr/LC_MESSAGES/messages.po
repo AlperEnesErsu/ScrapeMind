@@ -3013,6 +3013,201 @@ msgstr "Takibi bırak"
 msgid "You are not following anyone yet."
 msgstr "Henüz kimseyi takip etmiyorsunuz."
 
+msgid "Web Page URL"
+msgstr "Web Sayfası URL'i"
+
+msgid "CSS Selector (optional)"
+msgstr "CSS Seçici (opsiyonel)"
+
+msgid "Add web page"
+msgstr "Web sayfası ekle"
+
+msgid "Page limit reached. Remove one before adding another."
+msgstr "Sayfa limitine ulaşıldı. Yeni bir tane eklemeden önce birini silin."
+
+msgid "Please enter a valid page URL (starting with http:// or https://)."
+msgstr "Lütfen geçerli bir sayfa URL'i girin (http:// veya https:// ile başlayan)."
+
+msgid "Web page added."
+msgstr "Web sayfası eklendi."
+
+msgid "Could not add that page."
+msgstr "Bu sayfa eklenemedi."
+
+msgid "Remove this page?"
+msgstr "Bu sayfayı silmek istiyor musunuz?"
+
+msgid "No web pages match this filter."
+msgstr "Bu filtreye uygun web sayfası yok."
+
+msgid "No custom web pages yet — add one below."
+msgstr "Henüz özel bir web sayfası yok — aşağıdan ekleyin."
+
+msgid "Custom web pages"
+msgstr "Özel web sayfaları"
+
+msgid ""
+"Track any web page without RSS — its articles and posts flow into your "
+"feed and briefing via our 4-rung discovery ladder."
+msgstr ""
+"RSS'i olmayan herhangi bir web sayfasını takip edin — içerikleri 4 "
+"basamaklı çıkarım merdivenimizle akışınıza ve bülteninize dahil olsun."
+
+msgid "Leave blank to use the page's title."
+msgstr "Sayfanın kendi başlığını kullanmak için boş bırakın."
+
+msgid "Optional CSS selector for repeating items."
+msgstr "Tekrar eden öğeler için opsiyonel CSS seçici."
+
+msgid "Web pages"
+msgstr "Web sayfaları"
+
+#, python-format
+msgid "%(used)s / %(cap)s pages"
+msgstr "%(used)s / %(cap)s sayfa"
+
+msgid "Filter pages"
+msgstr "Sayfaları filtrele"
+
+msgid "Bluesky account limit reached. Remove one before adding another."
+msgstr ""
+"Bluesky hesabı sınırına ulaşıldı. Yeni bir tane eklemeden önce birini "
+"kaldırın."
+
+msgid "Please enter a valid Bluesky handle or profile link."
+msgstr "Lütfen geçerli bir Bluesky kullanıcı adı veya profil bağlantısı girin."
+
+msgid "Could not verify that Bluesky account — please try again."
+msgstr "Bu Bluesky hesabı doğrulanamadı — lütfen tekrar deneyin."
+
+msgid "Bluesky handle or profile URL"
+msgstr "Bluesky kullanıcı adı veya profil URL'si"
+
+msgid "Follow on Bluesky"
+msgstr "Bluesky'da Takip Et"
+
+msgid "Bluesky account followed."
+msgstr "Bluesky hesabı takibe alındı."
+
+msgid "Could not follow that Bluesky account."
+msgstr "Bu Bluesky hesabı takibe alınamadı."
+
+msgid "Followed Bluesky accounts"
+msgstr "Takip Edilen Bluesky Hesapları"
+
+msgid ""
+"Follow researchers and academic institutions on Bluesky — their posts "
+"flow into your feed and briefing matching your interests."
+msgstr ""
+"Bluesky'daki araştırmacıları ve akademik kurumları takip edin — "
+"gönderileri ilgi alanlarınıza göre filtrelenerek akışınıza ve özetinize "
+"gelsin."
+
+msgid "Enter a handle (e.g. ylecun.bsky.social) or a bsky.app profile link."
+msgstr ""
+"Bir kullanıcı adı (örn. ylecun.bsky.social) veya bsky.app profil "
+"bağlantısı girin."
+
+#, python-format
+msgid "%(used)s / %(cap)s accounts"
+msgstr "%(used)s / %(cap)s hesap"
+
+msgid "Filter Bluesky accounts"
+msgstr "Bluesky hesaplarını filtrele"
+
+msgid "Unfollow this Bluesky account?"
+msgstr "Bu Bluesky hesabını takipten çıkarmak istiyor musunuz?"
+
+msgid "No Bluesky accounts match this filter."
+msgstr "Bu filtreyle eşleşen Bluesky hesabı yok."
+
+msgid "No followed Bluesky accounts yet — follow one below."
+msgstr "Henüz takip edilen Bluesky hesabı yok — aşağıdan birini takip edin."
+
+msgid "Social"
+msgstr "Sosyal"
+
+msgid "Bluesky"
+msgstr "Bluesky"
+
+msgid "Academic and topical discussions from followed Bluesky accounts"
+msgstr "Takip edilen Bluesky hesaplarından akademik ve güncel tartışmalar"
+
+msgid "Semantic search (pgvector)"
+msgstr "Semantik arama (pgvector)"
+
+msgid "Semantic vector match via pgvector"
+msgstr "pgvector ile anlamsal vektör eşleşmesi"
+
+msgid "Semantic vector search (pgvector)"
+msgstr "Semantik vektör araması (pgvector)"
+
+msgid "Semantic"
+msgstr "Semantik"
+
+msgid "match"
+msgstr "eşleşme"
+
+msgid "Citation graph"
+msgstr "Atıf grafiği"
+
+msgid "Loading citation network…"
+msgstr "Atıf ağı yükleniyor…"
+
+msgid "Reset view"
+msgstr "Görünümü sıfırla"
+
+msgid "Center paper"
+msgstr "Merkez makale"
+
+msgid "References (cites)"
+msgstr "Referanslar (atıf yapılanlar)"
+
+msgid "Citations (cited by)"
+msgstr "Atıflar (atıf yapanlar)"
+
+msgid "Loading citation graph…"
+msgstr "Atıf grafiği yükleniyor…"
+
+msgid "No citation data available"
+msgstr "Atıf verisi bulunamadı"
+
+msgid "External sources could not find references or citations for this paper."
+msgstr "Harici kaynaklarda bu makale için referans veya atıf verisi bulunamadı."
+
+msgid "In your library"
+msgstr "Kütüphanenizde"
+
+msgid "Reference"
+msgstr "Referans"
+
+msgid "Citation"
+msgstr "Atıf"
+
+msgid "Unknown authors"
+msgstr "Bilinmeyen yazarlar"
+
+msgid "Open in ScrapeMind"
+msgstr "ScrapeMind'da Aç"
+
+msgid "Adding…"
+msgstr "Ekleniyor…"
+
+msgid "Added to library"
+msgstr "Kütüphaneye eklendi"
+
+msgid "No external citation data available."
+msgstr "Harici atıf verisi bulunamadı."
+
+msgid "references"
+msgstr "referans"
+
+msgid "citations"
+msgstr "atıf"
+
+msgid "Add to library"
+msgstr "Kütüphaneye ekle"
+
 msgid "Daily Briefing Ready"
 msgstr "Günlük Brifing Hazır"
 
