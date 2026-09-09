@@ -43,6 +43,8 @@ TASK_ROUTES = {
     # scan, so they belong in the same pool rather than racing it for tokens.
     "authors.ingest_for_user": {"queue": "scrape"},
     "authors.ingest_for_all_users": {"queue": "scrape"},
+    "embeddings.embed_paper": {"queue": "llm"},
+    "embeddings.embed_pending_papers": {"queue": "llm"},
 }
 
 
@@ -125,6 +127,7 @@ from app.tasks import (  # noqa: E402, F401
     channel_tasks,
     core_tasks,
     digest_tasks,
+    embedding_tasks,
     feed_tasks,
     patent_tasks,
     scrape_tasks,

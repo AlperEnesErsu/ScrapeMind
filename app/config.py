@@ -110,6 +110,15 @@ class BaseConfig:
     # so rotating SECRET_KEY doesn't strand every stored key.
     LLM_ENC_KEY = os.getenv("LLM_ENC_KEY", "")
 
+    # Embeddings / pgvector (Faz 5.4) — provider for semantic search & RAG.
+    # Defaults to matching LLM_PROVIDER or openrouter. Model defaults to
+    # text-embedding-3-small (1536 dim).
+    EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "")
+    EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+    EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1536"))
+    EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "")
+    EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "")
+
     # Audit log retention — rows older than this many days are purged by the
     # nightly `core.purge_audit_logs` task. 0 disables purging (keep forever).
     AUDIT_RETENTION_DAYS = int(os.getenv("AUDIT_RETENTION_DAYS", "180"))

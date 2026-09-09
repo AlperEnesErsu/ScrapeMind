@@ -174,6 +174,7 @@ def search():
     q = (request.args.get("q") or "").strip()
     source = (request.args.get("source") or "").strip() or None
     has_notes = request.args.get("has_notes") == "1"
+    semantic = request.args.get("semantic") == "1"
     # Whitelisted rather than passed through: this value reaches a SQL filter,
     # and only four quartiles exist.
     quartile = (request.args.get("quartile") or "").strip().upper()
@@ -194,6 +195,7 @@ def search():
         date_to=date_to,
         has_notes=has_notes,
         quartile=quartile or None,
+        semantic=semantic,
     )
     results = query.paginate(page=page, per_page=20, error_out=False)
 
@@ -208,6 +210,7 @@ def search():
             "to": request.args.get("to", ""),
             "has_notes": has_notes,
             "quartile": quartile,
+            "semantic": semantic,
         },
     )
 

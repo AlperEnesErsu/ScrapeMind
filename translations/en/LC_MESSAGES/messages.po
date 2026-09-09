@@ -3105,6 +3105,21 @@ msgstr "Bluesky"
 msgid "Academic and topical discussions from followed Bluesky accounts"
 msgstr "Academic and topical discussions from followed Bluesky accounts"
 
+msgid "Semantic search (pgvector)"
+msgstr "Semantic search (pgvector)"
+
+msgid "Semantic vector match via pgvector"
+msgstr "Semantic vector match via pgvector"
+
+msgid "Semantic vector search (pgvector)"
+msgstr "Semantic vector search (pgvector)"
+
+msgid "Semantic"
+msgstr "Semantic"
+
+msgid "match"
+msgstr "match"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

@@ -40,9 +40,9 @@ ve YouTube kanal aboneliği + transkript özeti var.
 **Doğrulama durumu (12 Ağustos 2026):**
 
 ```
-pytest tests/ -q      →  917 passed in ~91s
+pytest tests/ -q      →  994 passed in ~96s
 ruff check app/ tests/  →  All checks passed!
-black --check app/ tests/ →  191 files would be left unchanged
+black --check app/ tests/ →  205 files would be left unchanged
 ```
 
 > ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
@@ -383,10 +383,14 @@ seçiciyle override eder.
   **Bugünkü altyapıyla zaten çalışıyor** — kullanıcı özel besleme (`UserFeed`) olarak ekleyebilir.
 
 ### 5.4 Daha uzun vade
-1. **pgvector + gerçek RAG.** README pgvector vaat ediyor, repoda tek satır yok.
-   `ask_paper` "RAG chat" diye anılıyor ama başlık+abstract'ı prompt'a dolduruyor;
-   `_get_similar_papers` de embedding tabanlı değil. Docker imajını
-   `pgvector/pgvector:pg17`'ye çevirmek gerekir.
+1. ✅ **pgvector + gerçek RAG — bitti (PR #50, `feat/pgvector-rag-integration`).**
+   - Docker Postgres servisi `pgvector/pgvector:pg17` imajına güncellendi.
+   - `papers.embedding` kolonu (`vector(1536)`) ve HNSW cosine distance indeksi (`ix_papers_embedding_hnsw`) eklendi (Migration `f135d2517c0e`).
+   - `embedding_service.py` modülü eklendi: OpenRouter, OpenAI ve Ollama uyumlu, testler için deterministik mock vektör desteği.
+   - `_get_internal_similar` pgvector cosine distance ile çalışacak şekilde güncellendi, eşleşme yüzdesi (`similarity_score`) eklendi, boşluklarda kategori/anahtar kelimeye graceful fallback korundu.
+   - Kütüphane araması (`/library/search`) ve keşif akışına (`/`) `semantic=1` parametresi ve arayüz toggle'ı eklendi.
+   - `ask_paper` ("RAG chat") çok boyutlu gerçek bağlam aramasına yükseltildi: kullanıcının sorusu vektörleştirilerek hem makale içi yapılandırılmış analiz/notlardan hem de kütüphanedeki en yakın 2-3 ilişkili makaleden dinamik bağlam çekilir.
+   - `embedding_tasks.py` Celery görevleri (`embed_paper`, `embed_pending_papers`) eklendi ve gece 03:55 zamanlamasına bağlandı.
 2. ~~**Yazar takibi.**~~ → **Faz 5.4'e taşındı**, bkz. [PHASE5.md](PHASE5.md).
    ORCID/Scopus/WoS kimlik modeli zaten var (PR #4-#6) ama gerçek bir özelliğe
    bağlanmadı; OpenAlex adaptörü artık mevcut olduğu için author id üzerinden

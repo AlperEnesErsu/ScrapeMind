@@ -762,7 +762,8 @@ def feed():
     if view not in {"discover", "favorites", "dismissed", "all"}:
         view = "discover"
     q = request.args.get("q", "").strip()
-    rows = list_user_papers(current_user, limit=100, view=view, q=q or None)
+    semantic = request.args.get("semantic") == "1"
+    rows = list_user_papers(current_user, limit=100, view=view, q=q or None, semantic=semantic)
     counts = {
         "discover": count_user_papers(current_user, view="discover"),
         "favorites": count_user_papers(current_user, view="favorites"),
@@ -773,6 +774,7 @@ def feed():
         view=view,
         counts=counts,
         q=q,
+        semantic=semantic,
         user_keywords=list_user_keywords(current_user),
         # For the sidebar `_sources_card.html`, which shows the next-scan time
         # and the custom-feed counts. The scrape control itself lives in the
@@ -837,29 +839,73 @@ def add_link_route():
 
 
 def _get_internal_similar(link, limit=4):
-    """Papers already in the user's own library that resemble this one — same
-    matched keyword first, then same-category as a fallback. Cheap (DB only),
-    so it's the always-available half of the Similar Papers panel."""
+    """Papers already in the user's own library that resemble this one.
+
+    Uses pgvector cosine distance if the current paper has an embedding,
+    attaching a `similarity_score` (0.0 .. 1.0) to each result.
+    Falls back to matched keyword and category heuristics when embeddings
+    are absent or return fewer than `limit` results.
+    """
     from sqlalchemy import desc
 
-    from app.modules.scrape.models import UserPaper
+    from app.extensions import db
+    from app.modules.scrape.models import Paper, UserPaper
 
-    q = UserPaper.query.filter(
-        UserPaper.user_id == link.user_id, UserPaper.id != link.id, UserPaper.dismissed_at.is_(None)
-    )
-    if link.matched_keyword:
-        q = q.filter(UserPaper.matched_keyword == link.matched_keyword)
-    similar = q.order_by(desc(UserPaper.created_at)).limit(limit).all()
+    similar = []
+    seen_ids = set()
+
+    # 1. Vector similarity (pgvector)
+    if link.paper and link.paper.embedding is not None:
+        dist_col = Paper.embedding.cosine_distance(link.paper.embedding).label("dist")
+        vector_matches = (
+            db.session.query(UserPaper, dist_col)
+            .join(Paper, UserPaper.paper_id == Paper.id)
+            .filter(
+                UserPaper.user_id == link.user_id,
+                UserPaper.id != link.id,
+                UserPaper.dismissed_at.is_(None),
+                Paper.embedding.is_not(None),
+            )
+            .order_by(dist_col.asc())
+            .limit(limit)
+            .all()
+        )
+        for up, dist in vector_matches:
+            if dist is not None and dist < 0.85:
+                up.similarity_score = max(0.0, min(1.0, round(1.0 - float(dist), 2)))
+                similar.append(up)
+                seen_ids.add(up.id)
+
+    # 2. Heuristic fallback (keyword/category) if we still need more items
     if len(similar) < limit:
-        cat_list = link.paper.categories or []
+        q = UserPaper.query.filter(
+            UserPaper.user_id == link.user_id,
+            UserPaper.id != link.id,
+            UserPaper.dismissed_at.is_(None),
+        )
+        if seen_ids:
+            q = q.filter(UserPaper.id.notin_(seen_ids))
+        if link.matched_keyword:
+            kw_matches = (
+                q.filter(UserPaper.matched_keyword == link.matched_keyword)
+                .order_by(desc(UserPaper.created_at))
+                .limit(limit - len(similar))
+                .all()
+            )
+            for m in kw_matches:
+                similar.append(m)
+                seen_ids.add(m.id)
+
+    if len(similar) < limit:
+        cat_list = link.paper.categories or [] if link.paper else []
         if cat_list:
             fallback_q = UserPaper.query.filter(
                 UserPaper.user_id == link.user_id,
                 UserPaper.id != link.id,
                 UserPaper.dismissed_at.is_(None),
             )
-            if link.matched_keyword:
-                fallback_q = fallback_q.filter(UserPaper.matched_keyword != link.matched_keyword)
+            if seen_ids:
+                fallback_q = fallback_q.filter(UserPaper.id.notin_(seen_ids))
             others = fallback_q.order_by(desc(UserPaper.created_at)).limit(20).all()
             for o in others:
                 if len(similar) >= limit:
@@ -867,6 +913,8 @@ def _get_internal_similar(link, limit=4):
                 o_cats = o.paper.categories or []
                 if any(c in o_cats for c in cat_list):
                     similar.append(o)
+                    seen_ids.add(o.id)
+
     return similar[:limit]
 
 

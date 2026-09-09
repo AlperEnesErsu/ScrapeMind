@@ -6,6 +6,8 @@ A user_paper junction tracks which papers were surfaced for whom — that's how
 the "For you" dashboard card stays per-user.
 """
 
+from pgvector.sqlalchemy import Vector
+
 from app.core.base_model import BaseModel
 from app.extensions import db
 
@@ -47,8 +49,18 @@ class Paper(BaseModel):
     # fill-only — see `_REFRESHABLE_FIELDS` in service.py.
     cited_by_count = db.Column(db.Integer, nullable=True)
 
+    # Vector embedding for semantic search & RAG (Faz 5.4).
+    # 1536 dimensions matches text-embedding-3-small and standard modern models.
+    embedding = db.Column(Vector(1536), nullable=True)
+
     __table_args__ = (
         db.UniqueConstraint("source", "external_id", name="uq_paper_source_external"),
+        db.Index(
+            "ix_papers_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
     )
 
     #: The `journals` row for this paper's ISSN, when one has been seeded.

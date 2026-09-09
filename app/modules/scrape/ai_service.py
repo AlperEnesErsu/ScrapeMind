@@ -743,8 +743,9 @@ def get_or_generate_video_summary(
 
 
 def ask_paper(paper: Paper, question: str, history: list[dict] = None, *, user=None) -> str | None:
-    """Ask a question about a paper using the resolved LLM, with abstract and
-    notes context.
+    """Ask a question about a paper using the resolved LLM, with multi-source
+    RAG context retrieval (abstract, structured analysis, user notes, and
+    semantically retrieved cross-paper library context).
 
     history is a list of dicts: [{'role': 'user'|'assistant', 'content': '...'}]
     """
@@ -754,22 +755,81 @@ def ask_paper(paper: Paper, question: str, history: list[dict] = None, *, user=N
     title = (paper.title or "").strip()
     abstract = (paper.abstract or "").strip()
 
-    from app.modules.scrape.models import UserPaper
+    from app.modules.scrape.models import PaperAnalysis, UserPaper
 
+    # 1. Gather current paper analysis if available
+    analysis = PaperAnalysis.query.filter_by(paper_id=paper.id).first()
+    analysis_text = ""
+    if analysis:
+        parts = []
+        if analysis.tldr:
+            parts.append(f"TL;DR: {analysis.tldr}")
+        if analysis.method:
+            parts.append("Yöntem: " + "; ".join(analysis.method))
+        if analysis.findings:
+            parts.append("Temel Bulgular: " + "; ".join(analysis.findings))
+        if analysis.limitations:
+            parts.append("Kısıtlamalar: " + "; ".join(analysis.limitations))
+        if parts:
+            analysis_text = "\n\n--- YAPILANDIRILMIŞ MAKALE ANALİZİ ---\n" + "\n".join(parts)
+
+    # 2. Gather user notes if available
     notes_text = ""
     if user is not None:
         user_paper = UserPaper.query.filter_by(user_id=user.id, paper_id=paper.id).first()
         if user_paper and user_paper.notes:
-            notes_text = "\n\nKullanıcının bu makale üzerine aldığı notlar:\n" + "\n".join(
+            notes_text = "\n\n--- KULLANICININ BU MAKALE ÜZERİNE NOTLARI ---\n" + "\n".join(
                 f"- [{n.tag or 'Not'}]: {n.body}" for n in user_paper.notes
             )
 
-    system_prompt = f"""Sen akademik bir araştırma asistanısın. Sana başlığı ve özeti verilen şu bilimsel makale hakkında soruları yanıtlayacaksın.
-Cevaplarını DAİMA samimi, net, markdown formatında ve Türkçe olarak ver. Eğer yanıt makalede yer almıyorsa, bunu açıkça belirt.
+    # 3. True RAG: Semantic retrieval from user's library based on question
+    rag_library_text = ""
+    if user is not None and question:
+        try:
+            from app.modules.scrape.embedding_service import get_embedding
+
+            q_vector = get_embedding(question, user=user)
+            if q_vector is not None:
+                dist_col = Paper.embedding.cosine_distance(q_vector).label("dist")
+                related_papers = (
+                    db.session.query(Paper, dist_col)
+                    .join(UserPaper, UserPaper.paper_id == Paper.id)
+                    .filter(
+                        UserPaper.user_id == user.id,
+                        Paper.id != paper.id,
+                        UserPaper.dismissed_at.is_(None),
+                        Paper.embedding.is_not(None),
+                    )
+                    .order_by(dist_col.asc())
+                    .limit(3)
+                    .all()
+                )
+                close_papers = [
+                    (p, dist) for p, dist in related_papers if dist is not None and dist < 0.70
+                ]
+                if close_papers:
+                    rag_lines = []
+                    for idx, (p, dist) in enumerate(close_papers, 1):
+                        sim_pct = int(round((1.0 - float(dist)) * 100))
+                        p_summary = (p.abstract or "")[:400]
+                        rag_lines.append(
+                            f'[{idx}] "{p.title}" (Alaka: %{sim_pct})\nÖzet: {p_summary}'
+                        )
+                    rag_library_text = (
+                        "\n\n--- KULLANICININ KÜTÜPHANESİNDEN ÇEKİLEN İLGİLİ DİĞER ÇALIŞMALAR (RAG BAĞLAMI) ---\n"
+                        + "\n\n".join(rag_lines)
+                    )
+        except Exception:  # noqa: BLE001
+            pass
+
+    system_prompt = f"""Sen akademik bir araştırma asistanısın. Sana başlığı, özeti ve kütüphaneden anlamsal olarak çekilen ilgili bağlamları verilen şu bilimsel çalışma hakkında soruları yanıtlayacaksın.
+Cevaplarını DAİMA samimi, net, bilimsel ciddiyette, markdown formatında ve Türkçe olarak ver.
+Eğer varsa analiz bulgularına ve kullanıcının kütüphanesindeki ilgili diğer çalışmalara atıfta bulunarak karşılaştırma yap.
+Eğer yanıt verilen bağlamda yer almıyorsa, bunu açıkça belirt.
 
 Makale Başlığı: {title}
 Makale Özeti:
-{abstract}{notes_text}"""
+{abstract}{analysis_text}{notes_text}{rag_library_text}"""
 
     convo = ""
     if history:

@@ -39,7 +39,7 @@ Gelecek projelerde sadece `app/modules/` boşaltılıp yeni modüller eklenerek 
 | Web framework | Flask 3.x + Blueprint + plugin discovery |
 | ORM | SQLAlchemy 2.x (Flask-SQLAlchemy 3.x) |
 | Migration | Alembic (Flask-Migrate) |
-| DB | PostgreSQL 17 (pgvector henüz **yok** — semantik arama/RAG için planlı) |
+| DB | PostgreSQL 17 + pgvector (semantik arama, HNSW indeksleme ve RAG entegrasyonu) |
 | Auth | Flask-Login + passlib (argon2) + Authlib (OAuth) |
 | Form | Flask-WTF + WTForms |
 | **i18n** | **Flask-Babel — TR + EN (Faz 1'den itibaren)** |
@@ -254,8 +254,9 @@ ScrapeMind/
 - ✅ **Faz 2** — Celery + Redis · arXiv + Semantic Scholar + PubMed · Discover/Library UI · AI analiz & TR çeviri · 2FA (TOTP) · SMTP · Avatar upload · [API v1 (JWT)](docs/API_V1.md) + token revocation · Audit retention
 - ✅ **Faz 3** — RSS beslemeler + kullanıcı beslemeleri · konu sınıflandırma + kaynak seçici · TR→EN anahtar kelime çevirisi · tarama geçmişi + durum paneli · digest · çok sağlayıcılı LLM
 - ✅ **Faz 4** — DOI tekilleştirme + zenginleştirme · OpenAlex + Crossref · YouTube kanal aboneliği + transkript özeti · admin panelinden düzenlenebilir limitler
-- 🔶 **Faz 5** *(sıradaki)* — ⏳ beslemelerde conditional GET · ⏳ RSS'siz site scrape'i + alan seçici · ⏳ Bluesky adaptörü
-- 🔮 **Sonrası** — pgvector + semantik arama/RAG · yazar takibi (OpenAlex author id) · atıf grafiği · LDAP
+- ✅ **Faz 5** — Beslemelerde conditional GET · RSS'siz site scrape'i (UserPage) + alan seçici · Bluesky sosyal beslemeleri (UserBluesky) · Patent kaynakları (EPO OPS, PatentsView) · Dergi kalite katmanı (Scimago SJR, DOAJ) · Yazar takibi (UserAuthor)
+- 🔶 **Faz 5.4** *(devam ediyor)* — ✅ pgvector + gerçek RAG · ⏳ Atıf grafiği · ⏳ Açık erişim tam metin · ⏳ Kayıtlı arama + uyarı
+- 🔮 **Sonrası** — LDAP · Zotero/Mendeley entegrasyonu
 
 Detaylı plan: [PROJECT.md](PROJECT.md) · Sıradaki iş ve gerekçeleri: [docs/HANDOVER.md](docs/HANDOVER.md)
 
