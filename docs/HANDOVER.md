@@ -194,6 +194,46 @@ docker rm -f docker-db-1 && docker compose -f docker/docker-compose.yml up -d db
 ```
 Veri named volume'da, kaybolmaz.
 
+### 4.9 pgvector paylaşımlı Postgres'te yok — `create_all()` burada ölür
+Faz 5.4 `Paper.embedding`'i `VECTOR(1536)` olarak ekledi. `tests/conftest.py`
+her koşudan önce `CREATE EXTENSION IF NOT EXISTS vector` deniyor **ama
+`try/except` ile yutuyor** — extension yoksa sessizce geçiyor, ardından
+`_db.create_all()` şu satırda ölüyor:
+
+```
+sqlalchemy.exc.ProgrammingError: type "vector" does not exist
+[SQL: CREATE TABLE papers (... embedding VECTOR(1536), ...)]
+```
+
+Bu "kod bozuk" gibi okunur, değildir. `docker/docker-compose.yml`'deki `db`
+servisi `pgvector/pgvector:pg17`'ye sabitlendi, ama **bu makine o servisi
+kullanmıyor** (bkz. üstteki paylaşımlı altyapı notu): Postgres, myoChtBt'nin
+compose'unun kaldırdığı `myo_postgres17` container'ı ve o **`postgres:17-alpine`**
+— stok imaj, pgvector içermiyor. Yani arkadaşının makinesinde geçen testler
+burada toplu hâlde patlar; fark kodda değil, imajda.
+
+Kontrol:
+```bash
+docker exec myo_postgres17 psql -U postgres -tAc   "SELECT name FROM pg_available_extensions WHERE name='vector';"
+# boş dönüyorsa extension yok
+```
+
+İki çıkış yolu var, ikisi de bir bedelle geliyor — bu yüzden karar burada
+verilmedi, bilinçli açık bırakıldı:
+
+1. **ScrapeMind'a ayrı bir pgvector container'ı** (`SCRAPEMIND_DB_PORT=5433` +
+   `docker compose -f docker/docker-compose.yml up -d db`). myoChtBt'ye
+   dokunmaz, ama `scrapemind` dev veritabanındaki mevcut veri yeni container'a
+   taşınmadıkça boş başlar.
+2. **`myo_postgres17`'nin imajını `pgvector/pgvector:pg17` yapmak.** Volume
+   korunur, PG major sürümü aynı. Ama alpine (musl) → debian (glibc) geçişi
+   collation'ı değiştirir; myoChtBt'nin metin index'leri için `REINDEX`
+   gerekebilir. Başkasının verisi, o yüzden onun kararı.
+
+Ayrıca `TEST_DATABASE_URL` kökteki `.env`'de bulunmak **zorunda** (§4.5) ama
+`.env.example`'da girdisi yoktu — eklendi. Yeni bir checkout'ta ilk yapılacak
+şey odur.
+
 ### 4.7 Mimari kurallar (ihlal etme)
 1. `app/core/` asla `app/modules/`'dan import **etmez**.
 2. `is_superuser` bypass **yalnızca** `app/core/auth/decorators.py:permission_required`'da.
