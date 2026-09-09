@@ -3148,6 +3148,66 @@ msgstr "Semantik"
 msgid "match"
 msgstr "eşleşme"
 
+msgid "Citation graph"
+msgstr "Atıf grafiği"
+
+msgid "Loading citation network…"
+msgstr "Atıf ağı yükleniyor…"
+
+msgid "Reset view"
+msgstr "Görünümü sıfırla"
+
+msgid "Center paper"
+msgstr "Merkez makale"
+
+msgid "References (cites)"
+msgstr "Referanslar (atıf yapılanlar)"
+
+msgid "Citations (cited by)"
+msgstr "Atıflar (atıf yapanlar)"
+
+msgid "Loading citation graph…"
+msgstr "Atıf grafiği yükleniyor…"
+
+msgid "No citation data available"
+msgstr "Atıf verisi bulunamadı"
+
+msgid "External sources could not find references or citations for this paper."
+msgstr "Harici kaynaklarda bu makale için referans veya atıf verisi bulunamadı."
+
+msgid "In your library"
+msgstr "Kütüphanenizde"
+
+msgid "Reference"
+msgstr "Referans"
+
+msgid "Citation"
+msgstr "Atıf"
+
+msgid "Unknown authors"
+msgstr "Bilinmeyen yazarlar"
+
+msgid "Open in ScrapeMind"
+msgstr "ScrapeMind'da Aç"
+
+msgid "Adding…"
+msgstr "Ekleniyor…"
+
+msgid "Added to library"
+msgstr "Kütüphaneye eklendi"
+
+msgid "No external citation data available."
+msgstr "Harici atıf verisi bulunamadı."
+
+msgid "references"
+msgstr "referans"
+
+msgid "citations"
+msgstr "atıf"
+
+msgid "Add to library"
+msgstr "Kütüphaneye ekle"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

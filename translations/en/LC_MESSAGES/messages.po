@@ -3120,6 +3120,66 @@ msgstr "Semantic"
 msgid "match"
 msgstr "match"
 
+msgid "Citation graph"
+msgstr "Citation graph"
+
+msgid "Loading citation network…"
+msgstr "Loading citation network…"
+
+msgid "Reset view"
+msgstr "Reset view"
+
+msgid "Center paper"
+msgstr "Center paper"
+
+msgid "References (cites)"
+msgstr "References (cites)"
+
+msgid "Citations (cited by)"
+msgstr "Citations (cited by)"
+
+msgid "Loading citation graph…"
+msgstr "Loading citation graph…"
+
+msgid "No citation data available"
+msgstr "No citation data available"
+
+msgid "External sources could not find references or citations for this paper."
+msgstr "External sources could not find references or citations for this paper."
+
+msgid "In your library"
+msgstr "In your library"
+
+msgid "Reference"
+msgstr "Reference"
+
+msgid "Citation"
+msgstr "Citation"
+
+msgid "Unknown authors"
+msgstr "Unknown authors"
+
+msgid "Open in ScrapeMind"
+msgstr "Open in ScrapeMind"
+
+msgid "Adding…"
+msgstr "Adding…"
+
+msgid "Added to library"
+msgstr "Added to library"
+
+msgid "No external citation data available."
+msgstr "No external citation data available."
+
+msgid "references"
+msgstr "references"
+
+msgid "citations"
+msgstr "citations"
+
+msgid "Add to library"
+msgstr "Add to library"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
