@@ -76,7 +76,7 @@ Manuel:
 python -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
-docker compose -f docker/docker-compose.yml up -d db redis
+SCRAPEMIND_DB_PORT=5433 docker compose -f docker/docker-compose.yml -p scrapemind up -d db redis
 pybabel compile -d translations
 set FLASK_APP=wsgi.py
 flask db upgrade
@@ -85,6 +85,12 @@ flask run --debug
 ```
 
 Varsayılan admin: `admin` / `admin1234`.
+
+> **Veritabanı 5433'te.** Faz 5.4'ten beri pgvector gerekiyor; paylaşımlı
+> `myo_postgres17` (myoChtBt'nin, `postgres:17-alpine`) onu sağlayamıyor, o
+> yüzden ScrapeMind kendi `pgvector/pgvector:pg17` container'ında. `.env`'de
+> `DATABASE_URL` **ve** `TEST_DATABASE_URL` `localhost:5433`'e bakmalı.
+> Gerekçe, geçmiş ve eski bir veritabanının nasıl onarılacağı: §4.9.
 
 **Arka plan işleri** (opsiyonel, `tasks` profili):
 ```bash
@@ -194,46 +200,6 @@ docker rm -f docker-db-1 && docker compose -f docker/docker-compose.yml up -d db
 ```
 Veri named volume'da, kaybolmaz.
 
-### 4.9 pgvector paylaşımlı Postgres'te yok — `create_all()` burada ölür
-Faz 5.4 `Paper.embedding`'i `VECTOR(1536)` olarak ekledi. `tests/conftest.py`
-her koşudan önce `CREATE EXTENSION IF NOT EXISTS vector` deniyor **ama
-`try/except` ile yutuyor** — extension yoksa sessizce geçiyor, ardından
-`_db.create_all()` şu satırda ölüyor:
-
-```
-sqlalchemy.exc.ProgrammingError: type "vector" does not exist
-[SQL: CREATE TABLE papers (... embedding VECTOR(1536), ...)]
-```
-
-Bu "kod bozuk" gibi okunur, değildir. `docker/docker-compose.yml`'deki `db`
-servisi `pgvector/pgvector:pg17`'ye sabitlendi, ama **bu makine o servisi
-kullanmıyor** (bkz. üstteki paylaşımlı altyapı notu): Postgres, myoChtBt'nin
-compose'unun kaldırdığı `myo_postgres17` container'ı ve o **`postgres:17-alpine`**
-— stok imaj, pgvector içermiyor. Yani arkadaşının makinesinde geçen testler
-burada toplu hâlde patlar; fark kodda değil, imajda.
-
-Kontrol:
-```bash
-docker exec myo_postgres17 psql -U postgres -tAc   "SELECT name FROM pg_available_extensions WHERE name='vector';"
-# boş dönüyorsa extension yok
-```
-
-İki çıkış yolu var, ikisi de bir bedelle geliyor — bu yüzden karar burada
-verilmedi, bilinçli açık bırakıldı:
-
-1. **ScrapeMind'a ayrı bir pgvector container'ı** (`SCRAPEMIND_DB_PORT=5433` +
-   `docker compose -f docker/docker-compose.yml up -d db`). myoChtBt'ye
-   dokunmaz, ama `scrapemind` dev veritabanındaki mevcut veri yeni container'a
-   taşınmadıkça boş başlar.
-2. **`myo_postgres17`'nin imajını `pgvector/pgvector:pg17` yapmak.** Volume
-   korunur, PG major sürümü aynı. Ama alpine (musl) → debian (glibc) geçişi
-   collation'ı değiştirir; myoChtBt'nin metin index'leri için `REINDEX`
-   gerekebilir. Başkasının verisi, o yüzden onun kararı.
-
-Ayrıca `TEST_DATABASE_URL` kökteki `.env`'de bulunmak **zorunda** (§4.5) ama
-`.env.example`'da girdisi yoktu — eklendi. Yeni bir checkout'ta ilk yapılacak
-şey odur.
-
 ### 4.7 Mimari kurallar (ihlal etme)
 1. `app/core/` asla `app/modules/`'dan import **etmez**.
 2. `is_superuser` bypass **yalnızca** `app/core/auth/decorators.py:permission_required`'da.
@@ -245,6 +211,64 @@ Repo halka açık. Commit/PR/dokümana gizli bilgi (şifre, API anahtarı, gerç
 yazma. `.env` asla commit'lenmez; yeni config eklerken `.env.example`'ı placeholder
 ile güncelle. Örneklerde `example.com` / `example.test` kullan.
 
+
+### 4.9 pgvector ve ScrapeMind'in kendi veritabani (bu makinede 5433)
+Faz 5.4 `Paper.embedding`'i `VECTOR(1536)` yapti. Paylasimli `myo_postgres17`
+(myoChtBt'nin compose'u, `postgres:17-alpine`) pgvector icermiyor ve alpine'in
+hazir `postgresql-pgvector` paketi `postgresql18`'e bagli — PG 17.9 icin ise
+yaramaz. Iki belirti ayni koke cikiyor:
+
+- testlerde `conftest`'in `CREATE EXTENSION` denemesi `try/except` icinde
+  yutuluyor, sonra `create_all()` `type "vector" does not exist` ile oluyor;
+- uygulamada `Paper`'a dokunan her sorgu `papers_1.embedding does not exist`
+  diyor (`papers_1` tablo degil, SQLAlchemy'nin join alias'i).
+
+**Cozuldu:** ScrapeMind artik kendi Postgres'inde. `myo_postgres17` hic
+degismedi, verisi yerinde; `scrapemind` DB'si oradan `pg_dump` ile kopyalandi.
+
+```bash
+SCRAPEMIND_DB_PORT=5433 docker compose -f docker/docker-compose.yml   -p scrapemind up -d db          # pgvector/pgvector:pg17, volume scrapemind_pg_data
+```
+`.env`: `DATABASE_URL` ve `TEST_DATABASE_URL` → `localhost:5433`
+(kullanici/sifre `scrapemind`, compose'un tanimladigi gibi). Eski paylasimli
+Postgres'teki `scrapemind` veritabani duruyor ama artik kullanilmiyor.
+
+#### Bunun altindaki asil tuzak: re-parent edilmis migration + damgali DB
+Faz 6 zinciri (`4360c046a92e` → `7b3ce9d10a45`) ile main'in zinciri
+(`08f12848f0d1` → `eb3c1118d2f5` → `f135d2517c0e`) ayni parent'tan,
+`f4c1e8b52a76`'dan sarkiyordu. Merge sirasinda Faz 6'nin parent'i main'in
+head'ine baglandi — repo icin dogru, **ama zaten eski zincirin ucunda damgali
+bir veritabani icin degil**. O DB `alembic_version = 7b3ce9d10a45` diyor, kod
+da ayni revizyonu head sayiyor, dolayisiyla:
+
+```
+flask db current   →  7b3ce9d10a45 (head)     # "yapacak is yok"
+flask db upgrade   →  no-op
+gercek             →  user_pages, user_bluesky, papers.embedding yok
+```
+
+Alembic uc migration'i **sessizce** atlanmis sayiyor. Hata vermiyor, bu yuzden
+fark edilmesi zor. Kontrol: sema ile damgayi karsilastir, damgaya guvenme.
+
+```bash
+docker exec scrapemind-db-1 psql -U scrapemind -d scrapemind -tAc   "SELECT count(*) FROM information_schema.columns
+   WHERE table_name='papers' AND column_name='embedding';"   # 0 ise damga yalan soyluyor
+```
+
+Onarim (bu makinede uygulanan yol — veri kaybi yok, `reports` tablosu
+downgrade edilmeden kaliyor): eksik araligin SQL'ini offline uret ve uygula.
+
+```bash
+flask db upgrade f4c1e8b52a76:f135d2517c0e --sql > missing.sql
+docker exec -i scrapemind-db-1 psql -U scrapemind -d scrapemind < missing.sql
+```
+Uretilen dosyadaki `UPDATE alembic_version ... WHERE version_num = '<eski>'`
+satirlari eslesmez (`UPDATE 0`) — damga zaten dogru degerde oldugu icin
+istenen davranis budur, duzeltmeye calisma.
+
+Temiz bir checkout'ta ya da main tabanli bir DB'de bu sorun **yok**: sira
+dogru islediginden `flask db upgrade` her seyi kendisi yapar. Tuzak yalnizca
+merge'den once eski zincirin ucuna kadar upgrade edilmis veritabanlarinda.
 ---
 
 ## 5. Sıradaki İş
