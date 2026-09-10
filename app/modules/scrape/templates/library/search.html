@@ -14,13 +14,13 @@
 <form method="get" class="card card-body mb-3">
   <div class="row g-2">
     <div class="col-md-5">
-      <label class="form-label small">{{ _('Text') }}</label>
-      <input type="search" name="q" value="{{ filters.q }}" class="form-control form-control-sm"
+      <label class="form-label small" for="lib-q">{{ _('Text') }}</label>
+      <input type="search" name="q" id="lib-q" value="{{ filters.q }}" class="form-control form-control-sm"
              placeholder="{{ _('Title, abstract, author, keyword…') }}" autofocus>
     </div>
     <div class="col-md-3">
-      <label class="form-label small">{{ _('Source') }}</label>
-      <select name="source" class="form-select form-select-sm">
+      <label class="form-label small" for="lib-source">{{ _('Source') }}</label>
+      <select name="source" id="lib-source" class="form-select form-select-sm">
         <option value="">{{ _('— Any —') }}</option>
         {% for s in sources %}
           <option value="{{ s }}" {% if filters.source == s %}selected{% endif %}>{{ s.replace('_', ' ') }}</option>
@@ -28,8 +28,8 @@
       </select>
     </div>
     <div class="col-md-2">
-      <label class="form-label small">{{ _('Quartile') }}</label>
-      <select name="quartile" class="form-select form-select-sm">
+      <label class="form-label small" for="lib-quartile">{{ _('Quartile') }}</label>
+      <select name="quartile" id="lib-quartile" class="form-select form-select-sm">
         <option value="">{{ _('— Any —') }}</option>
         {% for qt in ('Q1', 'Q2', 'Q3', 'Q4') %}
           <option value="{{ qt }}" {% if filters.quartile == qt %}selected{% endif %}>{{ qt }}</option>
@@ -37,12 +37,12 @@
       </select>
     </div>
     <div class="col-md-2">
-      <label class="form-label small">{{ _('From') }}</label>
-      <input type="date" name="from" value="{{ filters.from }}" class="form-control form-control-sm">
+      <label class="form-label small" for="lib-from">{{ _('From') }}</label>
+      <input type="date" name="from" id="lib-from" value="{{ filters.from }}" class="form-control form-control-sm">
     </div>
     <div class="col-md-2">
-      <label class="form-label small">{{ _('To') }}</label>
-      <input type="date" name="to" value="{{ filters.to }}" class="form-control form-control-sm">
+      <label class="form-label small" for="lib-to">{{ _('To') }}</label>
+      <input type="date" name="to" id="lib-to" value="{{ filters.to }}" class="form-control form-control-sm">
     </div>
   </div>
   {% if filters.quartile %}
@@ -50,7 +50,7 @@
        see docs/SCRAPING.md §11. #}
     <div class="form-text mt-1">{{ _('Quartiles from SCImago Journal & Country Rank (CC BY-NC).') }}</div>
   {% endif %}
-  <div class="d-flex align-items-center gap-3 mt-2">
+  <div class="d-flex flex-wrap align-items-center gap-3 mt-2">
     <div class="form-check">
       <input class="form-check-input" type="checkbox" name="has_notes" value="1" id="has_notes"
              {% if filters.has_notes %}checked{% endif %}>
@@ -68,6 +68,41 @@
     </button>
     <a href="{{ url_for('library.search') }}" class="btn btn-sm btn-outline-secondary">{{ _('Reset') }}</a>
   </div>
+</form>
+
+{# Saving carries the filters that are on screen, so the saved search is the
+   search the user is already looking at rather than a form filled in twice.
+   A separate <form> because the one above is a GET filter and this is a POST;
+   the values are mirrored as hidden inputs. #}
+<form method="post" action="{{ url_for('alerts.create') }}"
+      class="d-flex flex-wrap align-items-end gap-2 mb-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="q" value="{{ filters.q }}">
+  <input type="hidden" name="source" value="{{ filters.source }}">
+  <input type="hidden" name="quartile" value="{{ filters.quartile }}">
+  <input type="hidden" name="from" value="{{ filters.from }}">
+  <input type="hidden" name="to" value="{{ filters.to }}">
+  <input type="hidden" name="has_notes" value="{{ '1' if filters.has_notes else '' }}">
+  <input type="hidden" name="semantic" value="{{ '1' if filters.semantic else '' }}">
+
+  <div>
+    <label class="form-label small mb-1" for="saved-search-name">
+      {{ _('Save this search') }}
+    </label>
+    <input type="text" name="name" id="saved-search-name" required maxlength="120"
+           class="form-control form-control-sm saved-search-name"
+           placeholder="{{ _('e.g. thermal management') }}">
+  </div>
+  <div>
+    <label class="form-label small mb-1" for="saved-search-cadence">{{ _('Tell me') }}</label>
+    <select name="cadence" id="saved-search-cadence" class="form-select form-select-sm w-auto">
+      <option value="weekly">{{ _('Weekly') }}</option>
+      <option value="daily">{{ _('Daily') }}</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-bell me-1" aria-hidden="true"></i>{{ _('Save search') }}
+  </button>
 </form>
 
 <p class="small text-muted">{{ results.total }} {{ _('results') }}</p>

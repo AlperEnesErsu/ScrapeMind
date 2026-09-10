@@ -3554,6 +3554,105 @@ msgstr "Dil değişiklikleri bir sonraki sayfa yüklemesinde geçerli olur."
 msgid "Jump to date"
 msgstr "Tarihe git"
 
+msgid "Saved searches"
+msgstr "Kayıtlı aramalar"
+
+msgid "Saved Searches"
+msgstr "Kayıtlı Aramalar"
+
+msgid "No saved searches yet."
+msgstr "Henüz kayıtlı arama yok."
+
+msgid ""
+"Run a search in your library, then save it — you will be told when new "
+"papers match."
+msgstr ""
+"Kütüphanende bir arama yap ve kaydet — yeni eşleşme çıktığında haber "
+"veririz."
+
+msgid "Go to library search"
+msgstr "Kütüphane aramasına git"
+
+msgid "Waiting"
+msgstr "Bekleyen"
+
+msgid "Frequency"
+msgstr "Sıklık"
+
+msgid "(no text)"
+msgstr "(metin yok)"
+
+msgid "semantic"
+msgstr "anlamsal"
+
+#, python-format
+msgid "%(n)d+ (too broad)"
+msgstr "%(n)d+ (fazla geniş)"
+
+msgid "Delete this saved search?"
+msgstr "Bu kayıtlı arama silinsin mi?"
+
+#, python-format
+msgid "%(used)d of %(max)d saved searches used."
+msgstr "%(max)d kayıtlı aramanın %(used)d tanesi kullanıldı."
+
+msgid "Turning one off pauses it without losing what has already been announced."
+msgstr "Bir aramayı kapatmak onu duraklatır; daha önce bildirilenler kaybolmaz."
+
+msgid "Save this search"
+msgstr "Bu aramayı kaydet"
+
+msgid "e.g. thermal management"
+msgstr "ör. ısıl yönetim"
+
+msgid "Tell me"
+msgstr "Bana haber ver"
+
+msgid "Save search"
+msgstr "Aramayı kaydet"
+
+msgid "Give the saved search a name."
+msgstr "Kayıtlı aramaya bir ad ver."
+
+#, python-format
+msgid "You already have %(count)d saved searches, which is the maximum."
+msgstr "Zaten %(count)d kayıtlı araman var, bu üst sınır."
+
+#, python-format
+msgid "You already have a saved search called “%(name)s”."
+msgstr "“%(name)s” adında bir kayıtlı araman zaten var."
+
+msgid "Saved. You will be told when new papers match it."
+msgstr "Kaydedildi. Yeni eşleşme çıktığında haber vereceğiz."
+
+msgid "Updated."
+msgstr "Güncellendi."
+
+#, python-format
+msgid "Deleted “%(name)s”."
+msgstr "“%(name)s” silindi."
+
+#, python-format
+msgid "New results for “%(name)s”"
+msgstr "“%(name)s” için yeni sonuçlar"
+
+#, python-format
+msgid "%(count)d new paper(s) match this saved search."
+msgstr "Bu kayıtlı aramayla eşleşen %(count)d yeni makale var."
+
+#, python-format
+msgid "…and %(more)d more."
+msgstr "…ve %(more)d tane daha."
+
+#, python-format
+msgid ""
+"This search matched more than %(cap)d papers, so only the first %(cap)d "
+"are listed. Narrowing it will make these alerts more useful."
+msgstr ""
+"Bu arama %(cap)d makaleden fazlasıyla eşleşti, bu yüzden yalnızca ilk "
+"%(cap)d tanesi listelendi. Aramayı daraltmak bu bildirimleri daha "
+"kullanışlı yapar."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

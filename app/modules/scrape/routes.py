@@ -283,9 +283,11 @@ def _register_tabs():
     tablarını ekle — uygulama başlarken (bu modül import edildiğinde)
     çağrılır."""
     from app.core.settings.tab_registry import register_profile_tab
+    from app.modules.scrape.alert_routes import alerts_tab_ctx
 
     register_profile_tab("ai", "bi-robot", "AI Settings", _ai_ctx)
     register_profile_tab("authors", "bi-person-badge", "Followed Authors", _authors_ctx)
+    register_profile_tab("alerts", "bi-bell", "Saved Searches", alerts_tab_ctx)
 
 
 def _register_system_toggles():

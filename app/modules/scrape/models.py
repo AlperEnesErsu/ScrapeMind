@@ -632,6 +632,100 @@ class Journal(BaseModel):
     is_oa = db.Column(db.Boolean, nullable=False, default=False, server_default="false")
 
 
+class SavedSearch(BaseModel):
+    """A library search the user asked to be told about (Faz 7.1).
+
+    Deliberately the *saved form of the library search*, not a second search
+    engine: `q` plus `filters` are the arguments `search_user_papers_query`
+    already takes, so a saved search cannot drift from what the search box
+    does.
+    """
+
+    __tablename__ = "saved_searches"
+
+    # CASCADE: a saved search is wholly owned by its user and means nothing
+    # without them. Without it, deleting a user fails on this constraint --
+    # which is how the omission was found, in another module's fixture.
+    user_id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"),
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name = db.Column(db.String(120), nullable=False)
+    q = db.Column(db.Text, nullable=True)
+    #: The rest of `search_user_papers_query`'s keyword arguments -- source,
+    #: quartile, date_from, date_to, has_notes. JSON rather than columns
+    #: because this mirrors a signature that has already grown twice; a new
+    #: filter should not need a migration here as well as there.
+    filters = db.Column(db.JSON, nullable=True)
+    semantic = db.Column(db.Boolean, nullable=False, default=False, server_default="false")
+
+    #: "daily" | "weekly" | "off". Same vocabulary as the digest preference on
+    #: purpose -- to a user these are one concept, and two words for it would
+    #: be the interface's problem rather than theirs.
+    cadence = db.Column(db.String(16), nullable=False, default="weekly", server_default="weekly")
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default="true")
+    #: When the alert task last *ran* for this search. Diagnostic only -- what
+    #: has been announced is `SavedSearchNotification`, not this. See the
+    #: warning on that class.
+    last_run_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    user = db.relationship("User", backref=db.backref("saved_searches", lazy="dynamic"))
+
+    __table_args__ = (db.UniqueConstraint("user_id", "name", name="uq_saved_search_user_name"),)
+
+    def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        return f"<SavedSearch {self.id} {self.name!r} {self.cadence}>"
+
+
+class SavedSearchNotification(BaseModel):
+    """One (saved search, paper) pair the user has already been told about.
+
+    **This table is the feature, and a timestamp would have been the bug.**
+
+    The obvious implementation is a watermark: announce whatever matches and
+    was created since `last_run_at`. The digest can do that because its
+    question is "what arrived in this window". A saved search's question is
+    different, and a paper can start matching long after it arrived:
+
+    * a DOI match fills an empty `abstract`, and the term is in it;
+    * the OA full text lands (Faz 7.0) and the term is in the body;
+    * the user widens the query itself.
+
+    None of those papers are new. All of them are the moment this feature
+    exists for, and a watermark silently drops every one.
+
+    So the answer is not "when did we last look" but "what have we already
+    said", which is exactly one row per thing said.
+    """
+
+    __tablename__ = "saved_search_notifications"
+
+    saved_search_id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"),
+        db.ForeignKey("saved_searches.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    paper_id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"),
+        db.ForeignKey("papers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    saved_search = db.relationship(
+        "SavedSearch", backref=db.backref("announced", lazy="dynamic", cascade="all, delete-orphan")
+    )
+
+    __table_args__ = (
+        # The uniqueness *is* the guarantee: two concurrent runs cannot both
+        # announce the same paper, whatever the application logic does.
+        db.UniqueConstraint("saved_search_id", "paper_id", name="uq_saved_search_notification"),
+    )
+
+
 class SourceQuotaUsage(BaseModel):
     """Cumulative weekly consumption of one licensed/metered source's quota
     (Faz 5.1).
