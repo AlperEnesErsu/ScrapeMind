@@ -126,11 +126,6 @@
   let currentFilter = 'all';
   let selectedNodeData = null;
 
-  function isDarkMode() {
-    return document.documentElement.getAttribute('data-bs-theme') === 'dark' ||
-           document.documentElement.getAttribute('data-theme') === 'dark';
-  }
-
   function loadVisScript(callback) {
     if (window.vis && window.vis.Network) {
       callback();
@@ -166,13 +161,13 @@
     renderNetwork();
   }
 
-  function getNodeStyle(node, dark) {
+  function getNodeStyle(node) {
     const isCenter = node.is_center;
     const inLib = node.in_library;
     let bg = isCenter ? '#0d6efd' : (node.type === 'reference' ? '#198754' : '#6f42c1');
     let border = inLib ? '#ffc107' : bg;
     let borderWidth = inLib ? 3 : 1;
-    let textColor = dark ? '#ffffff' : '#212529';
+    let textColor = '#212529';
 
     // Size based on citations or center
     let size = isCenter ? 26 : Math.min(22, Math.max(12, 10 + Math.log10(Math.max(1, node.citation_count || 1)) * 3));
@@ -200,8 +195,8 @@
       font: {
         color: textColor,
         size: isCenter ? 14 : 11,
-        strokeWidth: dark ? 2 : 1,
-        strokeColor: dark ? '#1a1d20' : '#ffffff',
+        strokeWidth: 1,
+        strokeColor: '#ffffff',
       },
       rawNode: node
     };
@@ -209,7 +204,6 @@
 
   function renderNetwork() {
     if (!fullData) return;
-    const dark = isDarkMode();
 
     let filteredNodes = fullData.nodes.filter(n => {
       if (n.is_center) return true;
@@ -221,13 +215,13 @@
     const nodeIds = new Set(filteredNodes.map(n => n.id));
     let filteredEdges = fullData.edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
 
-    const visNodes = new vis.DataSet(filteredNodes.map(n => getNodeStyle(n, dark)));
+    const visNodes = new vis.DataSet(filteredNodes.map(n => getNodeStyle(n)));
     const visEdges = new vis.DataSet(filteredEdges.map(e => ({
       from: e.source,
       to: e.target,
       arrows: 'to',
       color: {
-        color: dark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.2)',
+        color: 'rgba(0, 0, 0, 0.2)',
         highlight: '#0d6efd'
       },
       smooth: { type: 'continuous' }

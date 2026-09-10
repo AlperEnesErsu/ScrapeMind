@@ -100,9 +100,7 @@ def change_password(
     return True, None
 
 
-def update_preferences(
-    user: User, locale: str, timezone: str, theme: str, digest: str = "off"
-) -> None:
+def update_preferences(user: User, locale: str, timezone: str, digest: str = "off") -> None:
     user.locale = locale
     user.timezone = timezone
     settings = user.settings
@@ -110,17 +108,10 @@ def update_preferences(
         settings = UserSettings(user_id=user.id, settings={})
         db.session.add(settings)
     copy = dict(settings.settings or {})
-    copy["theme"] = theme
     # Guard against a hand-crafted POST — only accept known cadences.
     copy["digest"] = digest if digest in ("off", "daily", "weekly") else "off"
     settings.settings = copy
     db.session.commit()
-
-
-def get_theme(user: User) -> str:
-    if user.settings and user.settings.settings:
-        return user.settings.settings.get("theme", "light")
-    return "light"
 
 
 def get_digest_pref(user: User) -> str:

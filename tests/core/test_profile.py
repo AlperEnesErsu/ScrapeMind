@@ -6,7 +6,6 @@ from app.core.models.user import User
 from app.core.settings.service import (
     change_password,
     get_digest_pref,
-    get_theme,
     update_email,
     update_personal_info,
     update_preferences,
@@ -94,17 +93,11 @@ def test_change_password_wrong_current(db, user):
 
 def test_update_preferences_creates_settings(db, user):
     assert user.settings is None
-    update_preferences(user, "en", "UTC", "dark")
+    update_preferences(user, "en", "UTC")
     assert user.locale == "en"
     assert user.timezone == "UTC"
     db.session.refresh(user)
     assert user.settings is not None
-    assert user.settings.settings["theme"] == "dark"
-    assert get_theme(user) == "dark"
-
-
-def test_get_theme_defaults_light(db, user):
-    assert get_theme(user) == "light"
 
 
 def test_digest_pref_defaults_off(db, user):
@@ -112,7 +105,7 @@ def test_digest_pref_defaults_off(db, user):
 
 
 def test_update_preferences_stores_digest(db, user):
-    update_preferences(user, "en", "UTC", "dark", "weekly")
+    update_preferences(user, "en", "UTC", "weekly")
     db.session.refresh(user)
     assert user.settings.settings["digest"] == "weekly"
     assert get_digest_pref(user) == "weekly"
@@ -120,14 +113,14 @@ def test_update_preferences_stores_digest(db, user):
 
 def test_update_preferences_rejects_unknown_digest(db, user):
     # A hand-crafted POST with a bogus cadence falls back to "off".
-    update_preferences(user, "en", "UTC", "dark", "hourly")
+    update_preferences(user, "en", "UTC", "hourly")
     db.session.refresh(user)
     assert user.settings.settings["digest"] == "off"
 
 
 def test_update_preferences_default_digest_is_off(db, user):
     # Callers that omit the digest arg (older call sites) must not enable it.
-    update_preferences(user, "en", "UTC", "dark")
+    update_preferences(user, "en", "UTC")
     db.session.refresh(user)
     assert user.settings.settings["digest"] == "off"
 

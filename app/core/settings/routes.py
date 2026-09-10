@@ -3,7 +3,6 @@ from flask import (
     abort,
     current_app,
     flash,
-    jsonify,
     redirect,
     render_template,
     request,
@@ -34,7 +33,6 @@ from app.core.settings.forms import (
 from app.core.settings.service import (
     change_password,
     get_digest_pref,
-    get_theme,
     update_email,
     update_personal_info,
     update_preferences,
@@ -84,7 +82,6 @@ def _prefs_ctx():
     if request.method == "GET":
         form.locale.data = current_user.locale
         form.timezone.data = current_user.timezone
-        form.theme.data = get_theme(current_user)
         form.digest.data = get_digest_pref(current_user)
     return {"form": form}
 
@@ -275,7 +272,6 @@ def submit_prefs():
             current_user,
             form.locale.data,
             form.timezone.data,
-            form.theme.data,
             form.digest.data,
         )
         log_action(
@@ -285,7 +281,6 @@ def submit_prefs():
             changes={
                 "locale": form.locale.data,
                 "timezone": form.timezone.data,
-                "theme": form.theme.data,
                 "digest": form.digest.data,
             },
         )
@@ -537,26 +532,6 @@ def system():
         form=form,
         system_toggles=[(t, toggle_credentials_ok(t)) for t in toggles],
     )
-
-
-@settings_bp.route("/theme", methods=["POST"])
-@login_required
-def set_theme():
-    from app.core.models.settings import UserSettings
-
-    data = request.get_json(silent=True) or {}
-    theme = data.get("theme", "light")
-    if theme not in ("light", "dark"):
-        return jsonify({"error": "invalid theme"}), 400
-    user_settings = current_user.settings
-    if user_settings is None:
-        user_settings = UserSettings(user_id=current_user.id, settings={})
-        db.session.add(user_settings)
-    settings_copy = dict(user_settings.settings or {})
-    settings_copy["theme"] = theme
-    user_settings.settings = settings_copy
-    db.session.commit()
-    return jsonify({"theme": theme})
 
 
 @settings_bp.route("/set-locale/<lang>", methods=["GET"])
