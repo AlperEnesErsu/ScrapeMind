@@ -2,9 +2,9 @@
   <li class="p-2 border-bottom" style="min-width: 280px; max-width: 320px;">
     <div class="d-flex justify-content-between align-items-start">
       <span class="small fw-semibold text-body">{{ n.title }}</span>
-      <span class="small text-muted font-monospace" style="font-size: 0.65rem;">{{ n.created_at.strftime('%H:%M') }}</span>
+      <span class="small text-muted font-monospace" style="font-size: var(--text-2xs);">{{ n.created_at.strftime('%H:%M') }}</span>
     </div>
-    <div class="small text-muted mt-1" style="font-size: 0.8rem; word-break: break-word;">{{ n.message }}</div>
+    <div class="small text-muted mt-1" style="font-size: var(--text-sm); word-break: break-word;">{{ n.message }}</div>
   </li>
 {% else %}
   <li class="text-center text-muted py-3 small" style="min-width: 250px;">

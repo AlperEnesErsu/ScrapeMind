@@ -31,36 +31,6 @@ if (sidebar && mobileToggle) {
   });
 }
 
-// Dark / light theme toggle — wire up both the dropdown item AND the new
-// visible topbar button. Persists to localStorage immediately (so a failed
-// /settings/theme call doesn't leave the user with a mismatched preference)
-// AND fires the API so server-rendered pages match on next load.
-function toggleTheme() {
-  const html = document.documentElement;
-  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  html.setAttribute('data-theme', next);
-  html.setAttribute('data-bs-theme', next);
-  try { localStorage.setItem('theme', next); } catch (e) { /* private mode */ }
-  fetch('/settings/theme', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-    body: JSON.stringify({ theme: next }),
-  }).catch(() => {}); // best-effort — localStorage is the source of truth
-}
-
-document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
-document.getElementById('theme-toggle-topbar')?.addEventListener('click', toggleTheme);
-
-// Hydrate from localStorage on every page load so a logged-out user (or one
-// whose /settings/theme write failed) still gets the right scheme.
-try {
-  const stored = localStorage.getItem('theme');
-  if (stored && document.documentElement.getAttribute('data-theme') !== stored) {
-    document.documentElement.setAttribute('data-theme', stored);
-    document.documentElement.setAttribute('data-bs-theme', stored);
-  }
-} catch (e) { /* private mode */ }
-
 function getCsrfToken() {
   const meta = document.querySelector('meta[name="csrf-token"]');
   return meta ? meta.getAttribute('content') : '';

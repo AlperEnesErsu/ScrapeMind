@@ -8,11 +8,11 @@
   {{ form.csrf_token }}
   <div class="row g-3">
     <div class="col-md-6">
-      <label class="form-label">{{ form.app_name.label.text }}</label>
+      {{ form.app_name.label(class="form-label") }}
       {{ form.app_name(class="form-control", required=True) }}
     </div>
     <div class="col-md-6">
-      <label class="form-label">{{ form.default_locale.label.text }}</label>
+      {{ form.default_locale.label(class="form-label") }}
       {{ form.default_locale(class="form-select") }}
       <div class="form-text">{{ _('Used for anonymous visitors before they pick a language.') }}</div>
     </div>
@@ -35,7 +35,7 @@
 
     <div class="col-12"><hr class="my-1"></div>
     <div class="col-md-6">
-      <label class="form-label">{{ form.max_user_channels.label.text }}</label>
+      {{ form.max_user_channels.label(class="form-label") }}
       {{ form.max_user_channels(class="form-control", min="0", max="200") }}
       <div class="form-text">{{ _('Takes effect immediately for new subscriptions, no restart needed.') }}</div>
     </div>

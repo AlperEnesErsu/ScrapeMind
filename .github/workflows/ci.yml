@@ -52,8 +52,9 @@ jobs:
         run: ruff check app/ tests/
 
       - name: Lint — black
-        # tests/ is linted too, so it cannot drift until someone runs black
-        # over the whole tree and produces an unrelated diff.
+        # tests/ is linted too: the design-system gates live there, and a
+        # formatter that only sees app/ lets tests/ drift until someone runs
+        # black locally over the whole tree and produces an unrelated diff.
         run: black --check app/ tests/
 
       - name: Type check — mypy (advisory)

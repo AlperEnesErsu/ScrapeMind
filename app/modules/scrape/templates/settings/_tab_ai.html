@@ -38,7 +38,7 @@
 <form hx-post="{{ url_for('scrape.submit_ai_save') }}" hx-target="#tab-content" hx-swap="innerHTML">
   {{ form.csrf_token }}
   <div class="mb-3">
-    <label class="form-label">{{ form.openrouter_api_key.label.text }}</label>
+    {{ form.openrouter_api_key.label(class="form-label") }}
     {{ form.openrouter_api_key(class="form-control", placeholder="sk-or-v1-...", autocomplete="off") }}
     {% for err in form.openrouter_api_key.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     <div class="form-text">
@@ -47,7 +47,7 @@
     </div>
   </div>
   <div class="mb-3">
-    <label class="form-label">{{ form.model.label.text }}</label>
+    {{ form.model.label(class="form-label") }}
     {{ form.model(class="form-control", placeholder="qwen/qwen-2.5-72b-instruct:free") }}
     {% for err in form.model.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     <div class="form-text">{{ _('Optional — overrides the deployment default model for your requests only.') }}</div>

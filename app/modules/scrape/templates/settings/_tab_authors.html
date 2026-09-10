@@ -28,7 +28,7 @@
 <form hx-post="{{ url_for('scrape.submit_author_follow') }}"
       hx-target="#tab-content" hx-swap="innerHTML" class="mb-4">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <label class="form-label small">{{ form.identifier.label.text }}</label>
+  {{ form.identifier.label(class="form-label small") }}
   <div class="input-group">
     {{ form.identifier(class="form-control", placeholder="0000-0002-1825-0097") }}
     <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>

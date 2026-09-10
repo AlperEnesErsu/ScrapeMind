@@ -8,20 +8,20 @@
   </h4>
   <span class="small text-muted">{{ _('Papers matched against your research interests.') }}</span>
 
-  <form method="get" class="ms-auto d-flex gap-2 align-items-center">
+  <form method="get" class="ms-auto d-flex flex-wrap gap-2 align-items-center">
     {% if view != 'discover' %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
     <div class="position-relative">
       <i class="bi bi-search position-absolute top-50 translate-middle-y ms-2 text-muted" style="left:0;"></i>
       <input type="search" name="q" value="{{ q or '' }}"
-             class="form-control form-control-sm ps-4"
-             placeholder="{{ _('Filter — title, abstract, keyword') }}"
-             style="width: 260px;">
+             class="form-control form-control-sm ps-4 discover-filter"
+             placeholder="{{ _('Filter — title, abstract, keyword') }}">
     </div>
     <div class="form-check form-switch m-0" title="{{ _('Semantic vector search (pgvector)') }}">
       <input class="form-check-input" type="checkbox" name="semantic" value="1" id="feed-semantic-switch" role="switch"
+             aria-label="{{ _('Semantic vector search (pgvector)') }}"
              {% if semantic %}checked{% endif %} onchange="this.form.submit()">
       <label class="form-check-label small text-muted d-none d-xl-inline" for="feed-semantic-switch">
-        <i class="bi bi-stars text-primary"></i>
+        <i class="bi bi-stars text-primary" aria-hidden="true"></i>
       </label>
     </div>
   </form>
@@ -83,7 +83,7 @@
   <i class="bi bi-funnel"></i>
   {{ _('Filtering: %(term)s', term=q) }}
   {% if semantic %}
-    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1" style="font-size: 0.7rem;">
+    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1" style="font-size: var(--text-2xs);">
       <i class="bi bi-stars me-1"></i>{{ _('Semantic') }}
     </span>
   {% endif %}
@@ -145,7 +145,7 @@
         {% endfor %}
       {% else %}
     <div class="empty-state py-5 text-center">
-      <i class="bi bi-newspaper" style="font-size: 36px; color: var(--bs-secondary-color);"></i>
+      <i class="bi bi-newspaper" style="font-size: var(--icon-xl); color: var(--bs-secondary-color);"></i>
       <div class="mt-2 fw-medium">
         {% if view == 'favorites' %}{{ _('No favorites yet.') }}
         {% elif view == 'dismissed' %}{{ _('Nothing hidden.') }}

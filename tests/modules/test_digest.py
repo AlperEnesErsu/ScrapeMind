@@ -532,7 +532,7 @@ def _set_digest_pref(user_id, cadence):
     # Fetch a fresh user so the settings relationship reflects any row a prior
     # call inserted (in production each call is its own request).
     u = User.query.get(user_id)
-    update_preferences(u, u.locale or "tr", u.timezone or "UTC", "light", cadence)
+    update_preferences(u, u.locale or "tr", u.timezone or "UTC", cadence)
 
 
 def test_digest_fanout_only_queues_opted_in_users(app, db, clean_user, monkeypatch):

@@ -9,22 +9,22 @@
   {{ form.csrf_token }}
   <div class="row g-3">
     <div class="col-md-6">
-      <label class="form-label">{{ form.username.label.text }}</label>
+      {{ form.username.label(class="form-label") }}
       {{ form.username(class="form-control", required=True, placeholder="john_doe") }}
       {% for err in form.username.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>
     <div class="col-md-6">
-      <label class="form-label">{{ form.full_name.label.text }}</label>
+      {{ form.full_name.label(class="form-label") }}
       {{ form.full_name(class="form-control", required=True, placeholder="John Doe") }}
       {% for err in form.full_name.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>
     <div class="col-md-6">
-      <label class="form-label">{{ form.email.label.text }}</label>
+      {{ form.email.label(class="form-label") }}
       {{ form.email(class="form-control", type="email", required=True, placeholder="john@example.com") }}
       {% for err in form.email.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>
     <div class="col-md-6">
-      <label class="form-label">{{ form.password.label.text }}</label>
+      {{ form.password.label(class="form-label") }}
       {{ form.password(class="form-control", type="password", required=True) }}
       <div class="form-text small text-muted">
         {{ _('Must be at least 8 characters, with uppercase, lowercase, and a digit.') }}
@@ -32,7 +32,7 @@
       {% for err in form.password.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>
     <div class="col-md-6">
-      <label class="form-label">{{ form.avatar_url.label.text }}</label>
+      {{ form.avatar_url.label(class="form-label") }}
       {{ form.avatar_url(class="form-control", placeholder="https://...") }}
       {% for err in form.avatar_url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>

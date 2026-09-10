@@ -80,7 +80,6 @@ def _init_extensions(app: Flask) -> None:
     migrate.init_app(app, db)
     login_manager.init_app(app)
     oauth.init_app(app)
-    babel.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
 

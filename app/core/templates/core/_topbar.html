@@ -7,7 +7,7 @@
     </button>
 
     <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{{ url_for('dashboard.index') }}">
-      <i class="bi bi-brain"></i> ScrapeMind
+      {% include 'core/_logo.html' %} ScrapeMind
     </a>
 
     <div class="d-flex align-items-center gap-3 ms-auto">
@@ -31,7 +31,7 @@
         <i class="bi bi-search"></i>
       </button>
 
-      {# Notifications bell (🔔) #}
+      {# Notifications bell #}
       <div class="dropdown">
         <button class="btn btn-sm btn-outline-secondary position-relative" 
                 type="button" 
@@ -42,11 +42,11 @@
                 hx-target="#notifications-list"
                 hx-trigger="click"
                 onclick="document.getElementById('notification-badge')?.remove();"
-                title="{{ _('Notifications') }}">
-          <i class="bi bi-bell"></i>
+                title="{{ _('Notifications') }}" aria-label="{{ _('Notifications') }}">
+          <i class="bi bi-bell" aria-hidden="true"></i>
           {% set unread_count = current_user.notifications.filter_by(is_read=False).count() if current_user.is_authenticated else 0 %}
           {% if unread_count > 0 %}
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-badge" style="font-size: 0.55rem; padding: 0.25em 0.4em;">
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-badge" style="font-size: var(--text-2xs); padding: 0.25em 0.4em;">
               {{ unread_count }}
             </span>
           {% endif %}
@@ -58,18 +58,13 @@
         </ul>
       </div>
 
-      {# Theme toggle — visible button (used to be buried in user dropdown). #}
-      <button class="btn btn-sm btn-outline-secondary" id="theme-toggle-topbar"
-              aria-label="{{ _('Toggle theme') }}" title="{{ _('Toggle theme') }}">
-        <i class="bi bi-circle-half"></i>
-      </button>
-
       {# Language picker — preserves the current ?view=, ?tab=, ?mode= so a
          locale swap on /library/?view=notes lands you back where you were. #}
       {% set _qs = request.args.to_dict(flat=True) %}
       <div class="dropdown">
-        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-          {{ g.locale | upper }}
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
+                aria-label="{{ _('Change language') }}">
+          {{ (g.locale or 'tr') | upper }}
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           {% for lang in ['tr', 'en'] %}
@@ -88,12 +83,6 @@
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" href="{{ url_for('settings.profile') }}"><i class="bi bi-person me-2"></i>{{ _('Profile') }}</a></li>
           <li><a class="dropdown-item" href="{{ url_for('settings.system') }}"><i class="bi bi-gear me-2"></i>{{ _('Settings') }}</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li>
-            <button class="dropdown-item" id="theme-toggle">
-              <i class="bi bi-moon-stars me-2"></i>{{ _('Toggle Theme') }}
-            </button>
-          </li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>{{ _('Sign Out') }}</a></li>
         </ul>

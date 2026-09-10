@@ -3520,6 +3520,12 @@ msgstr "e.g. machine learning, retrieval augmented generation"
 msgid "menu.reports"
 msgstr "menu.reports"
 
+msgid "Language changes apply on next page load."
+msgstr "Language changes apply on next page load."
+
+msgid "Jump to date"
+msgstr "Jump to date"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

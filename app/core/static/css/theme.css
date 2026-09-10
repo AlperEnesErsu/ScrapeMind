@@ -1,35 +1,315 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
+/* IBM Plex replaces Outfit, whose rounded geometric shapes read as a consumer
+   app and pulled against the mark. Plex was drawn for technical documentation,
+   carries a full Latin Extended set (Turkish needs g-breve, i-dotless, s-cedilla
+   and the capital dotted I, which many display faces ship broken), and brings a
+   mono sibling this app genuinely needs -- it renders DOIs, crontabs and task
+   names, and those want a monospace with unambiguous digits. */
 body {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-size: var(--text-md);
 }
 
-:root,
-[data-bs-theme="light"] {
-  --sidebar-bg: #f8fafc;
+code, kbd, pre, samp, .font-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Bootstrap ships <code> in #d63384, a pink that belongs to no part of this
+   palette and that the audit measured failing contrast inside the warning
+   alert on /admin/tasks, where the worker command is printed. */
+code {
+  color: var(--brand-800);
+}
+
+/* --- Design tokens -------------------------------------------------------
+   The palette derives from the mark, which is a pomegranate: --brand-* is the
+   rind, and --neutral-* is a grey biased toward it, so the neutrals read as
+   chosen rather than inherited. Ratios in the comments are measured against
+   --neutral-50; anything used for body text clears WCAG AA (4.5:1).
+
+   One rule the palette cannot enforce by itself. The brand is red and so is
+   danger: they sit 17 degrees apart on the wheel, which is not enough to tell
+   a Save from a Delete at a glance, and there is no redder or oranger danger
+   that still clears AA without colliding with --warning (38 degrees). So
+   destructive actions are separated by FORM, not hue -- they take an outline
+   treatment and never appear as a filled button beside a filled primary. */
+:root {
+  --brand-50:  #FDF5F6;
+  --brand-100: #F9E4E7;
+  --brand-200: #F0C4CA;
+  --brand-300: #E29CA6;
+  --brand-400: #CE6B79;
+  --brand-500: #C24456;  /*  4.7:1 -- lightest step still safe for body text */
+  --brand-600: #A62F41;  /*  6.5:1 -- the mark's own colour, used in favicons */
+  --brand-700: #7A1F2B;  /*  9.7:1 -- primary */
+  --brand-800: #5E1721;  /* 12.4:1 */
+  --brand-900: #3E0F17;  /* 15.6:1 */
+
+  --neutral-50:  #FBF9F9;  /* page ground */
+  --neutral-100: #F4F0F1;
+  --neutral-200: #E7DFE0;  /* hairline rules */
+  --neutral-300: #D4C9CB;
+  --neutral-400: #A99A9D;
+  --neutral-500: #857578;  /*  4.2:1 -- large text only */
+  --neutral-600: #6E5F62;  /*  5.8:1 -- muted body text */
+  --neutral-700: #524649;
+  --neutral-800: #362E30;
+  --neutral-900: #1C1517;  /* 17.1:1 -- ink */
+
+  --success: #1F6F4A;  /* 5.8:1 */
+  --warning: #8A5A06;  /* 5.7:1 */
+  --danger:  #C0341C;  /* 5.3:1 -- see the form rule above */
+  --danger-hover: #9E2B17;
+  --danger-soft:  #E3A294;  /* disabled state only, never for text */
+  --info:    #1F5A80;  /* 7.1:1 */
+
+  /* Type scale. There were twenty different font sizes in this file and
+     thirty-five more inline in the templates, several below 11px -- a value
+     nobody chose, it just accumulated. These nine steps replace all of them.
+     11px is the floor: it is the smallest size that stays legible for a badge,
+     and anything under it was a bug rather than a decision. */
+  --text-2xs:  11px;   /* badges, overline labels -- the floor */
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-base: 14px;
+  --text-md:   15px;   /* body */
+  --text-lg:   17px;
+  --text-xl:   21px;
+  --text-2xl:  26px;
+  --text-3xl:  32px;
+
+  --leading-tight: 1.2;
+  --leading-snug:  1.35;
+  --leading-body:  1.55;
+
+  /* Prose measure. Long full-width lines are the readability failure this app
+     is most exposed to -- abstracts and AI summaries run wide otherwise. */
+  --measure: 68ch;
+
+  /* Icon sizes. Separate from the type scale on purpose: an empty-state
+     illustration and a status dot are glyphs, not text, and sizing them off
+     the reading scale is what produced the 7px and 36px literals below. */
+
+  /* Categorical palette. Six hues plus a neutral, chosen by maximising the
+     smallest pairwise distance under normal vision AND simulated deuteranopia
+     and protanopia -- the worst pair measures 41 across all three, where the
+     ad-hoc set it replaces collapsed to 15 (amber against orange, magenta
+     against slate). Six is the cap: at nine, no arrangement stayed separable.
+     Every hue is kept 30 degrees clear of the brand so a source badge never
+     reads as brand chrome. Every tint/ink pair clears AA on its own tint. */
+  --cat-blue-tint:    #E4EBF6;  --cat-blue-ink:    #143D7B;  /*  8.8:1 */
+  --cat-teal-tint:    #E4F6F4;  --cat-teal-ink:    #147B6D;  /*  4.6:1 */
+  --cat-green-tint:   #E4F6EA;  --cat-green-ink:   #147B36;  /*  4.8:1 */
+  --cat-orange-tint:  #F6EBE4;  --cat-orange-ink:  #7B3D14;  /*  7.1:1 */
+  --cat-indigo-tint:  #E8E4F6;  --cat-indigo-ink:  #29147B;  /* 11.4:1 */
+  --cat-magenta-tint: #F6E4F0;  --cat-magenta-ink: #7B1459;  /*  8.3:1 */
+  --cat-slate-tint:   #EAE8E9;  --cat-slate-ink:   #4A4245;  /*  8.0:1 */
+
+  /* Quartiles are ordinal, not categorical, so they take a sequential ramp in
+     one hue: saturation falls and lightness rises from Q1 to Q4. The tint
+     luminance increases monotonically, which is what makes the order survive
+     greyscale and colour-blind vision. */
+  --q1-tint: #C9E3E9;  --q1-ink: #185662;  /* 6.2:1 */
+  --q2-tint: #DBE8EB;  --q2-ink: #1D5B67;  /* 6.1:1 */
+  --q3-tint: #E9EEEF;  --q3-ink: #2A5F6A;  /* 6.1:1 */
+  --q4-tint: #F1F3F3;  --q4-ink: #36646D;  /* 5.9:1 */
+
+  --icon-dot: 8px;    /* the circle-fill status indicators */
+  --icon-xl:  36px;   /* empty-state illustrations */
+
+  --sidebar-bg: var(--neutral-100);
   --sidebar-width: 240px;
   --topbar-bg: #ffffff;
-  --nav-link-hover-bg: #f1f5f9;
-  --nav-link-active-bg: #6366f1;
+  --nav-link-hover-bg: var(--neutral-200);
+  --nav-link-active-bg: var(--brand-700);
   --nav-link-active-color: #ffffff;
-  --bs-primary: #6366f1;
-  --bs-primary-rgb: 99, 102, 241;
-  --bs-body-bg: #f8fafc;
+  --bs-primary: #7A1F2B;
+  --bs-primary-rgb: 122, 31, 43;
+  --bs-link-color: #7A1F2B;
+  --bs-link-color-rgb: 122, 31, 43;
+  --bs-link-hover-color: #5E1721;
+  --bs-body-bg: var(--neutral-50);
   --card-border-radius: 12px;
 }
 
-[data-bs-theme="dark"] {
-  --sidebar-bg: #0f172a;
-  --topbar-bg: #0f172a;
-  --nav-link-hover-bg: #1e293b;
-  --nav-link-active-bg: #4f46e5;
-  --nav-link-active-color: #ffffff;
-  --bs-primary: #818cf8;
-  --bs-primary-rgb: 129, 140, 248;
-  --bs-body-bg: #0b0f19;
-  --bs-card-bg: #111827;
-  --card-border-radius: 12px;
+/* Bootstrap compiles its button colours to literals, so --bs-primary alone
+   does not reach .btn-primary -- these re-point the per-component variables
+   the button actually reads. */
+.btn-primary {
+  --bs-btn-bg: var(--brand-700);
+  --bs-btn-border-color: var(--brand-700);
+  --bs-btn-hover-bg: var(--brand-800);
+  --bs-btn-hover-border-color: var(--brand-800);
+  --bs-btn-active-bg: var(--brand-900);
+  --bs-btn-active-border-color: var(--brand-900);
+  --bs-btn-disabled-bg: var(--brand-300);
+  --bs-btn-disabled-border-color: var(--brand-300);
+  --bs-btn-focus-shadow-rgb: 122, 31, 43;
+}
+
+/* Deliberately neutral, not brand. A garnet outline sitting beside a danger
+   outline is the pair that actually confuses people -- two red-edged buttons,
+   one of which deletes. Keeping the brand on the FILLED primary preserves the
+   warmth; making the secondary neutral leaves the destructive action as the
+   only red-edged control in any row. */
+.btn-outline-primary {
+  --bs-btn-color: var(--neutral-800);
+  --bs-btn-border-color: var(--neutral-300);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: var(--neutral-800);
+  --bs-btn-hover-border-color: var(--neutral-800);
+  --bs-btn-active-bg: var(--neutral-900);
+  --bs-btn-active-border-color: var(--neutral-900);
+  --bs-btn-disabled-color: var(--neutral-400);
+  --bs-btn-disabled-border-color: var(--neutral-200);
+  --bs-btn-focus-shadow-rgb: 28, 21, 23;
+}
+
+/* The counterpart to the form rule: a destructive action is an outline, and
+   filling it is what makes it indistinguishable from the primary. */
+.btn-danger {
+  --bs-btn-bg: var(--danger);
+  --bs-btn-border-color: var(--danger);
+  --bs-btn-hover-bg: var(--danger-hover);
+  --bs-btn-hover-border-color: var(--danger-hover);
+  --bs-btn-disabled-bg: var(--danger-soft);
+  --bs-btn-disabled-border-color: var(--danger-soft);
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--danger);
+  --bs-btn-border-color: var(--danger);
+  --bs-btn-hover-bg: var(--danger);
+  --bs-btn-hover-border-color: var(--danger);
+  --bs-btn-disabled-color: var(--danger-soft);
+  --bs-btn-disabled-border-color: var(--danger-soft);
+}
+
+/* Bootstrap's semantic utilities keep their compiled-in colours unless they
+   are re-pointed too. Re-pointing only the buttons left .text-danger at
+   #dc3545 (4.32:1), .text-muted at #6c757d (4.45:1) and .text-warning at
+   #ffc107 (1.55:1) -- all measured below AA on this ground, all invisible
+   until a state-aware audit rendered them. Bootstrap's own utilities carry
+   !important, so matching it is what makes these win. */
+.text-danger  { color: var(--danger) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-success { color: var(--success) !important; }
+.text-info    { color: var(--info) !important; }
+.text-primary { color: var(--brand-700) !important; }
+.text-muted,
+.text-secondary,
+.text-body-secondary,
+.text-body-tertiary { color: var(--neutral-600) !important; }
+
+/* The paired utilities set a background AND the text on it; splitting them
+   is how garnet text ended up on Bootstrap blue. White clears AA on all four
+   backgrounds (5.3:1 at worst, on --danger). */
+.text-bg-primary   { background-color: var(--brand-700) !important; color: #fff !important; }
+.text-bg-secondary { background-color: var(--neutral-600) !important; color: #fff !important; }
+.text-bg-success   { background-color: var(--success) !important;    color: #fff !important; }
+.text-bg-warning   { background-color: var(--warning) !important;    color: #fff !important; }
+.text-bg-danger    { background-color: var(--danger) !important;     color: #fff !important; }
+.text-bg-info      { background-color: var(--info) !important;       color: #fff !important; }
+
+.bg-primary   { background-color: var(--brand-700) !important; }
+.bg-success   { background-color: var(--success) !important; }
+.bg-warning   { background-color: var(--warning) !important; }
+.bg-danger    { background-color: var(--danger) !important; }
+.bg-info      { background-color: var(--info) !important; }
+
+/* A badge inherits no colour of its own, so a recoloured background needs the
+   foreground stated with it or it keeps Bootstrap's dark default. */
+.badge.bg-primary,
+.badge.bg-success,
+.badge.bg-warning,
+.badge.bg-danger,
+.badge.bg-info { color: #fff !important; }
+
+.border-primary { border-color: var(--brand-700) !important; }
+.border-danger  { border-color: var(--danger) !important; }
+
+/* The audit measured these still carrying Bootstrap's own colours: outline
+   secondary at #6c757d (4.47:1) and the warning variants at #ffc107 (1.55:1).
+   Buttons read per-component variables, so the utility mapping above does not
+   reach them. */
+.btn-secondary {
+  --bs-btn-bg: var(--neutral-600);
+  --bs-btn-border-color: var(--neutral-600);
+  --bs-btn-hover-bg: var(--neutral-700);
+  --bs-btn-hover-border-color: var(--neutral-700);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--neutral-700);
+  --bs-btn-border-color: var(--neutral-300);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: var(--neutral-700);
+  --bs-btn-hover-border-color: var(--neutral-700);
+  --bs-btn-active-bg: var(--neutral-800);
+  --bs-btn-active-border-color: var(--neutral-800);
+  --bs-btn-disabled-color: var(--neutral-400);
+  --bs-btn-disabled-border-color: var(--neutral-200);
+}
+
+.btn-warning {
+  --bs-btn-bg: var(--warning);
+  --bs-btn-border-color: var(--warning);
+  --bs-btn-color: #ffffff;
+  --bs-btn-hover-bg: #6F4805;
+  --bs-btn-hover-border-color: #6F4805;
+  --bs-btn-hover-color: #ffffff;
+}
+
+.btn-outline-warning {
+  --bs-btn-color: var(--warning);
+  --bs-btn-border-color: var(--warning);
+  --bs-btn-hover-bg: var(--warning);
+  --bs-btn-hover-border-color: var(--warning);
+  --bs-btn-hover-color: #ffffff;
+}
+
+.btn-success {
+  --bs-btn-bg: var(--success);
+  --bs-btn-border-color: var(--success);
+  --bs-btn-hover-bg: #175538;
+  --bs-btn-hover-border-color: #175538;
+}
+
+.btn-outline-success {
+  --bs-btn-color: var(--success);
+  --bs-btn-border-color: var(--success);
+  --bs-btn-hover-bg: var(--success);
+  --bs-btn-hover-border-color: var(--success);
+}
+
+.btn-info {
+  --bs-btn-bg: var(--info);
+  --bs-btn-border-color: var(--info);
+  --bs-btn-color: #ffffff;
+  --bs-btn-hover-bg: #17445F;
+  --bs-btn-hover-border-color: #17445F;
+  --bs-btn-hover-color: #ffffff;
+}
+
+/* The heatmap cells became buttons so they are keyboard-reachable; these strip
+   the button chrome back to the square the div used to be. */
+button.heatmap-day {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.heatmap-day:focus-visible {
+  outline: 2px solid var(--brand-700);
+  outline-offset: 1px;
+}
+
+.heatmap-day--empty {
+  cursor: default;
 }
 
 /* Sidebar */
@@ -75,12 +355,6 @@ body {
   z-index: 1050;
 }
 
-/* Small contrast fix: dim form-text in dark mode (Bootstrap default is OK
-   but sits a bit too dark on our 1f2125 sidebar/topbar shade). */
-[data-bs-theme="dark"] .form-text {
-  color: #9ba1a8;
-}
-
 /* --- UI polish --- */
 
 /* Section heading rhythm */
@@ -97,18 +371,9 @@ main h4 {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-[data-bs-theme="dark"] .card {
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-}
-
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
-}
-
-[data-bs-theme="dark"] .card:hover {
-  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.3), 0 4px 12px -2px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Tighten data-tables and align badges nicely */
@@ -118,7 +383,7 @@ main h4 {
 
 /* Empty-state row inside tables */
 .table .text-muted.py-4 {
-  font-size: 0.875rem;
+  font-size: var(--text-base);
 }
 
 /* Status badges: unify radius and weight across all panels */
@@ -135,7 +400,7 @@ form.card.card-body {
 /* Sidebar links: more breathing room */
 #sidebar .nav-link {
   padding: 0.5rem 0.75rem;
-  font-size: 0.9375rem;
+  font-size: var(--text-base);
 }
 
 #sidebar .nav-link i {
@@ -145,12 +410,23 @@ form.card.card-body {
 
 /* Topbar brand: stronger presence */
 #topbar .navbar-brand {
-  font-size: 1.05rem;
+  font-size: var(--text-lg);
   letter-spacing: -0.01em;
 }
 
-#topbar .navbar-brand i {
-  color: var(--bs-primary);
+/* The mark is inlined (see scripts/render_favicon.py) so it can take its
+   colour from the brand token rather than being baked into the file. */
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  color: var(--brand-700);
+  flex: none;
+}
+
+/* On the signed-out card the mark is the only branding, so it carries more. */
+.card-title .brand-mark {
+  width: 30px;
+  height: 30px;
 }
 
 /* Auth pages: card a bit more elegant */
@@ -161,10 +437,6 @@ body:not(:has(#sidebar)) main {
 body:not(:has(#sidebar)) .card.shadow-sm {
   border: none;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
-}
-
-[data-bs-theme="dark"] body:not(:has(#sidebar)) .card.shadow-sm {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Dashboard metric cards: hover lift */
@@ -207,10 +479,38 @@ table code {
 }
 
 .empty-state i {
-  font-size: 2rem;
+  font-size: var(--text-3xl);
   opacity: 0.4;
   display: block;
   margin-bottom: 0.5rem;
+}
+
+/* A flex child defaults to min-width:auto, which refuses to shrink below its
+   content's intrinsic width -- so #page-content sized itself to its widest
+   descendant and pushed the document to 741px inside a 320px viewport. Every
+   page failed WCAG 1.4.10 (reflow) because of this one line's absence; the
+   forty-odd "overflowing" elements the audit listed were all just its children.
+   The wrappers that legitimately scroll sideways (.table-responsive, the
+   heatmap) keep doing so -- this only lets their container shrink. */
+#page-content,
+#wrapper > main {
+  min-width: 0;
+}
+
+/* 1.5rem of padding either side is a tenth of a 320px screen. */
+@media (max-width: 575.98px) {
+  #page-content {
+    padding: 1rem !important;
+  }
+}
+
+/* The discover filter used a fixed 260px, which is wider than a 280px screen
+   once its siblings and the page padding are counted. Fluid up to that width
+   instead -- the only element still failing reflow after #page-content. */
+.discover-filter {
+  width: 100%;
+  max-width: 260px;
+  min-width: 0;
 }
 
 /* Mobile sidebar — off-canvas below 768px */
@@ -241,22 +541,12 @@ table code {
   --paper-card-muted: rgba(0, 0, 0, 0.55);
   --paper-action-bg: transparent;
   --paper-action-hover: rgba(0, 0, 0, 0.06);
-  --paper-favorite: #e84a5f;
-  --paper-favorite-bg: rgba(232, 74, 95, 0.12);
+  /* Was #e84a5f, a pink from before the palette existed. Favourite is the one
+     place a brand-coloured accent is right: it marks the user's own choice. */
+  --paper-favorite: var(--brand-600);
+  --paper-favorite-bg: var(--brand-50);
   --paper-note: #0d8a6a;
   --paper-note-bg: rgba(13, 138, 106, 0.12);
-}
-
-[data-bs-theme="dark"] {
-  --paper-card-bg: #25272c;
-  --paper-card-border: rgba(255, 255, 255, 0.08);
-  --paper-card-hover-border: rgba(255, 255, 255, 0.20);
-  --paper-card-muted: rgba(255, 255, 255, 0.55);
-  --paper-action-hover: rgba(255, 255, 255, 0.08);
-  --paper-favorite: #ff7185;
-  --paper-favorite-bg: rgba(255, 113, 133, 0.15);
-  --paper-note: #4dc9a5;
-  --paper-note-bg: rgba(77, 201, 165, 0.15);
 }
 
 /* Source badges — one per scraper. Stays consistent in both themes. */
@@ -267,49 +557,59 @@ table code {
   padding: 3px 8px;
 }
 
-.source-arxiv      { background: #e6f1fb; color: #0c447c; }
-.source-semantic_scholar { background: #faece7; color: #993c1d; }
-.source-pubmed     { background: #eaf3de; color: #27500a; }
-.source-youtube_reach { background: #fdeaea; color: #8c1c1c; }
-.source-github_reach  { background: #ecedef; color: #2b3137; }
-.source-web_reach     { background: #e7f4f2; color: #12554c; }
-.source-manual        { background: #eceaf9; color: #3c2f8f; }
+/* The class comes straight off Paper.source, so a source with no rule here
+   renders unstyled -- which is what openalex, crossref, scopus, bluesky,
+   youtube_channel and user_page were doing: six of the fourteen registered
+   sources, including two of the five academic ones. All fourteen are listed
+   now, grouped by family, because colour cannot carry fourteen distinctions
+   and the badge prints the source name beside it anyway. Sharing a hue inside
+   a family is the point: amber comes to mean patent. */
+.source-arxiv            { background: var(--cat-blue-tint);    color: var(--cat-blue-ink); }
 
-[data-bs-theme="dark"] .source-arxiv      { background: #133655; color: #b5d4f4; }
-[data-bs-theme="dark"] .source-semantic_scholar { background: #4a1f10; color: #f5c4b3; }
-[data-bs-theme="dark"] .source-pubmed     { background: #1c3a0a; color: #c0dd97; }
-[data-bs-theme="dark"] .source-youtube_reach { background: #4d1414; color: #f6bcbc; }
-[data-bs-theme="dark"] .source-github_reach  { background: #2f3338; color: #ced3d9; }
-[data-bs-theme="dark"] .source-web_reach     { background: #10403a; color: #a9ded6; }
-[data-bs-theme="dark"] .source-manual        { background: #2a2360; color: #c7bff5; }
+.source-openalex,
+.source-crossref         { background: var(--cat-teal-tint);    color: var(--cat-teal-ink); }
 
-/* RSS/industry-announcement feeds (Paper.kind == "news") share one accent —
-   distinct from the academic sources above — regardless of which feed. */
-.source-badge--news { background: #f3e8ff; color: #6b21a8; }
-[data-bs-theme="dark"] .source-badge--news { background: #3b1264; color: #dcc4f7; }
+.source-pubmed           { background: var(--cat-green-tint);   color: var(--cat-green-ink); }
+
+.source-semantic_scholar,
+.source-scopus           { background: var(--cat-indigo-tint);  color: var(--cat-indigo-ink); }
 
 /* Patent sources (Faz 5.2) */
-.source-epo_ops      { background: #fdf1dd; color: #7a4a05; }
-.source-patentsview  { background: #fdf1dd; color: #7a4a05; }
-[data-bs-theme="dark"] .source-epo_ops     { background: #4a3208; color: #f3d7a3; }
-[data-bs-theme="dark"] .source-patentsview { background: #4a3208; color: #f3d7a3; }
+.source-epo_ops,
+.source-patentsview      { background: var(--cat-orange-tint);  color: var(--cat-orange-ink); }
+
+/* Video and social */
+.source-youtube_reach,
+.source-youtube_channel,
+.source-bluesky          { background: var(--cat-magenta-tint); color: var(--cat-magenta-ink); }
+
+/* The open web, and anything added by hand */
+.source-github_reach,
+.source-web_reach,
+.source-user_page,
+.source-manual           { background: var(--cat-slate-tint);   color: var(--cat-slate-ink); }
+
+/* RSS/industry-announcement feeds (Paper.kind == "news") replace the source
+   badge entirely, so this is a kind rather than a seventh source family. */
+.source-badge--news { background: var(--cat-magenta-tint); color: var(--cat-magenta-ink); }
 
 /* SJR quartile (Faz 5.3). Q1 is the signal researchers scan for, so it gets
    the only saturated colour; Q2-Q4 stay progressively quieter rather than
-   turning the card into a traffic light. A low quartile is not a warning. */
+   turning the card into a traffic light. A low quartile is not a warning.
+   That was always the intent; the implementation contradicted it by giving Q2
+   a different hue -- blue against Q1 green, which reads as a category rather
+   than a step down -- and Q3 and Q4 two greys nobody could tell apart. One
+   hue, falling saturation, rising lightness: an ordinal encoding for ordinal
+   data, and one that survives greyscale. */
 .quartile-badge {
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 3px 7px;
 }
-.quartile-q1 { background: #d9f2e3; color: #10633a; }
-.quartile-q2 { background: #e4f0f8; color: #1c5378; }
-.quartile-q3 { background: #eef0f2; color: #4a5259; }
-.quartile-q4 { background: #f2f2f3; color: #63696e; }
-[data-bs-theme="dark"] .quartile-q1 { background: #0e3f26; color: #a5e0c0; }
-[data-bs-theme="dark"] .quartile-q2 { background: #123449; color: #a8cfe8; }
-[data-bs-theme="dark"] .quartile-q3 { background: #2c3136; color: #c3c9cf; }
-[data-bs-theme="dark"] .quartile-q4 { background: #2a2d30; color: #a9aeb3; }
+.quartile-q1 { background: var(--q1-tint); color: var(--q1-ink); }
+.quartile-q2 { background: var(--q2-tint); color: var(--q2-ink); }
+.quartile-q3 { background: var(--q3-tint); color: var(--q3-ink); }
+.quartile-q4 { background: var(--q4-tint); color: var(--q4-ink); }
 
 /* Discover view tabs (Discover / Favorites / Hidden) */
 .view-tabs {
@@ -323,7 +623,7 @@ table code {
   gap: 6px;
   padding: 6px 12px;
   border-radius: 16px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--bs-secondary-color);
   text-decoration: none;
   background: transparent;
@@ -331,22 +631,21 @@ table code {
 }
 
 .view-tab:hover {
-  background: var(--paper-action-hover);
-  color: var(--bs-body-color);
+  background: var(--neutral-100);
+  color: var(--neutral-900);
 }
 
+/* The tint was a leftover Bootstrap blue at 12% alpha with garnet text sitting
+   on it -- 2.27:1 measured. Opaque brand tint instead, so the pair is one
+   decision rather than two that drifted. */
 .view-tab--active {
-  background: rgba(13, 110, 253, 0.12);
-  color: var(--bs-primary);
+  background: var(--brand-50);
+  color: var(--brand-700);
   font-weight: 500;
 }
 
-[data-bs-theme="dark"] .view-tab--active {
-  background: rgba(61, 139, 253, 0.18);
-}
-
 .view-tab__count {
-  font-size: 11px;
+  font-size: var(--text-2xs);
   padding: 1px 7px;
   border-radius: 10px;
   background: var(--bs-tertiary-bg);
@@ -354,7 +653,7 @@ table code {
 }
 
 .view-tab--active .view-tab__count {
-  background: rgba(13, 110, 253, 0.18);
+  background: var(--brand-100);
 }
 
 /* Paper card */
@@ -382,13 +681,13 @@ table code {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--bs-secondary-color);
   margin-bottom: 6px;
 }
 
 .paper-card__title {
-  font-size: 14.5px;
+  font-size: var(--text-base);
   font-weight: 500;
   line-height: 1.4;
   color: var(--bs-body-color);
@@ -445,7 +744,7 @@ table code {
   background: var(--paper-action-bg);
   border: none;
   color: var(--bs-body-color);
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1;
 }
 
@@ -478,25 +777,21 @@ table code {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11.5px;
+  font-size: var(--text-2xs);
   padding: 3px 9px;
   border-radius: 12px;
   font-weight: 500;
   line-height: 1.3;
 }
 
-.kw-pill--0 { background: #eeedfe; color: #3c3489; }
-.kw-pill--1 { background: #fbeaf0; color: #72243e; }
-.kw-pill--2 { background: #e1f5ee; color: #085041; }
-.kw-pill--3 { background: #faeeda; color: #633806; }
-.kw-pill--4 { background: #e6f1fb; color: #0c447c; }
+/* Five of the six categorical hues, indexed off the keyword so a given term
+   keeps the same colour between visits. */
+.kw-pill--0 { background: var(--cat-indigo-tint);  color: var(--cat-indigo-ink); }
+.kw-pill--1 { background: var(--cat-magenta-tint); color: var(--cat-magenta-ink); }
+.kw-pill--2 { background: var(--cat-teal-tint);    color: var(--cat-teal-ink); }
+.kw-pill--3 { background: var(--cat-orange-tint);  color: var(--cat-orange-ink); }
+.kw-pill--4 { background: var(--cat-blue-tint);    color: var(--cat-blue-ink); }
 .kw-pill--cat { background: var(--bs-tertiary-bg); color: var(--bs-secondary-color); }
-
-[data-bs-theme="dark"] .kw-pill--0 { background: #2d2a4f; color: #afa9ec; }
-[data-bs-theme="dark"] .kw-pill--1 { background: #4b1528; color: #ed93b1; }
-[data-bs-theme="dark"] .kw-pill--2 { background: #04342c; color: #5dcaa5; }
-[data-bs-theme="dark"] .kw-pill--3 { background: #412402; color: #fac775; }
-[data-bs-theme="dark"] .kw-pill--4 { background: #042c53; color: #85b7eb; }
 
 /* Paper detail layout — abstract + side notes panel */
 .paper-detail__body {
@@ -513,14 +808,14 @@ table code {
 }
 
 .paper-detail__title {
-  font-size: 22px;
+  font-size: var(--text-xl);
   font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1.3;
 }
 
 .paper-detail__abstract .abstract-text {
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.7;
   color: var(--bs-body-color);
 }
@@ -537,7 +832,7 @@ table code {
   color: var(--bs-primary);
   font-weight: 500;
   padding: 2px 8px;
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 /* Notes side panel */
@@ -562,10 +857,13 @@ table code {
   border-left: 2px solid var(--bs-border-color);
 }
 
-.note-card--deney { border-left-color: #534ab7; }
-.note-card--soru { border-left-color: #0f6e56; }
-.note-card--sonuç { border-left-color: #ba7517; }
-.note-card--okuma { border-left-color: #0c447c; }
+/* These four carried different values from the tags they belong to -- #534ab7
+   against the tag #3c3489, and so on: two sets of colours for one meaning.
+   Same token now, so a note stripe and its tag cannot drift apart again. */
+.note-card--deney { border-left-color: var(--cat-indigo-ink); }
+.note-card--soru { border-left-color: var(--cat-green-ink); }
+.note-card--sonuç { border-left-color: var(--cat-orange-ink); }
+.note-card--okuma { border-left-color: var(--cat-blue-ink); }
 
 .note-card__body {
   line-height: 1.5;
@@ -574,7 +872,7 @@ table code {
 }
 
 .note-tag {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   padding: 1px 6px;
   border-radius: 6px;
   background: var(--bs-tertiary-bg);
@@ -582,15 +880,10 @@ table code {
   text-transform: lowercase;
 }
 
-.note-tag--deney { background: #eeedfe; color: #3c3489; }
-.note-tag--soru { background: #e1f5ee; color: #085041; }
-.note-tag--sonuç { background: #faeeda; color: #633806; }
-.note-tag--okuma { background: #e6f1fb; color: #0c447c; }
-
-[data-bs-theme="dark"] .note-tag--deney { background: #2d2a4f; color: #afa9ec; }
-[data-bs-theme="dark"] .note-tag--soru { background: #04342c; color: #5dcaa5; }
-[data-bs-theme="dark"] .note-tag--sonuç { background: #412402; color: #fac775; }
-[data-bs-theme="dark"] .note-tag--okuma { background: #042c53; color: #85b7eb; }
+.note-tag--deney { background: var(--cat-indigo-tint); color: var(--cat-indigo-ink); }
+.note-tag--soru { background: var(--cat-green-tint); color: var(--cat-green-ink); }
+.note-tag--sonuç { background: var(--cat-orange-tint); color: var(--cat-orange-ink); }
+.note-tag--okuma { background: var(--cat-blue-tint); color: var(--cat-blue-ink); }
 
 .note-add {
   background: var(--paper-card-bg);
@@ -604,7 +897,7 @@ table code {
   border: none;
   background: transparent;
   resize: none;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .note-add__body:focus {
@@ -612,7 +905,7 @@ table code {
 }
 
 .note-tag-btn {
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   padding: 2px 9px;
   border: 1px solid var(--paper-card-border);
   background: transparent;
@@ -620,14 +913,18 @@ table code {
   border-radius: 12px;
 }
 
-.btn-check:checked + .note-tag-btn--deney { background: #eeedfe; color: #3c3489; border-color: #eeedfe; }
-.btn-check:checked + .note-tag-btn--soru { background: #e1f5ee; color: #085041; border-color: #e1f5ee; }
-.btn-check:checked + .note-tag-btn--sonuc { background: #faeeda; color: #633806; border-color: #faeeda; }
+/* The third place these four colours were written out. The stripe on the note
+   card, the tag on it and this filter button all mean the same thing, and all
+   three carried their own hex values. */
+.btn-check:checked + .note-tag-btn--deney { background: var(--cat-indigo-tint); color: var(--cat-indigo-ink); border-color: var(--cat-indigo-tint); }
+.btn-check:checked + .note-tag-btn--soru { background: var(--cat-green-tint); color: var(--cat-green-ink); border-color: var(--cat-green-tint); }
+.btn-check:checked + .note-tag-btn--sonuc { background: var(--cat-orange-tint); color: var(--cat-orange-ink); border-color: var(--cat-orange-tint); }
+.btn-check:checked + .note-tag-btn--okuma { background: var(--cat-blue-tint); color: var(--cat-blue-ink); border-color: var(--cat-blue-tint); }
 .btn-check:checked + .note-tag-btn { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
 
 .text-muted-2 {
   color: var(--paper-card-muted);
-  font-size: 0.85em;
+  font-size: var(--text-sm);
 }
 
 /* ============================================================
@@ -667,7 +964,7 @@ table code {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: var(--text-2xs);
 }
 
 .timeline-event--scrape_run .timeline-event__dot {
@@ -683,9 +980,9 @@ table code {
 }
 
 .timeline-event--note_added .timeline-event__dot {
-  background: rgba(186, 117, 23, 0.12);
-  border-color: rgba(186, 117, 23, 0.45);
-  color: #ba7517;
+  background: var(--cat-orange-tint);
+  border-color: var(--cat-orange-ink);
+  color: var(--cat-orange-ink);
 }
 
 .timeline-event--dismissed .timeline-event__dot {
@@ -694,14 +991,9 @@ table code {
 }
 
 .timeline-event--keyword_added .timeline-event__dot {
-  background: #eeedfe;
-  border-color: #534ab7;
-  color: #3c3489;
-}
-
-[data-bs-theme="dark"] .timeline-event--keyword_added .timeline-event__dot {
-  background: #2d2a4f;
-  color: #afa9ec;
+  background: var(--cat-indigo-tint);
+  border-color: var(--cat-indigo-ink);
+  color: var(--cat-indigo-ink);
 }
 
 .timeline-event__when {
@@ -725,7 +1017,7 @@ table code {
 }
 
 .timeline-event__title {
-  font-size: 13.5px;
+  font-size: var(--text-sm);
   font-weight: 500;
   color: var(--bs-body-color);
   text-decoration: none;
@@ -738,7 +1030,7 @@ a.timeline-event__title:hover {
 }
 
 .timeline-event__label {
-  font-size: 11px;
+  font-size: var(--text-2xs);
   padding: 2px 8px;
   border-radius: 10px;
   background: var(--bs-tertiary-bg);
@@ -798,7 +1090,7 @@ a.timeline-event__title:hover {
 
 .mode-toggle__btn {
   padding: 6px 14px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   border-radius: 7px;
   color: var(--bs-secondary-color);
   text-decoration: none;
@@ -823,12 +1115,8 @@ a.timeline-event__title:hover {
   color: #534ab7;
 }
 
-[data-bs-theme="dark"] .text-purple {
-  color: #afa9ec;
-}
-
 .paper-detail__title-tr {
-  font-size: 17px;
+  font-size: var(--text-lg);
   font-weight: 500;
   line-height: 1.4;
 }
@@ -844,7 +1132,7 @@ a.timeline-event__title:hover {
 }
 
 .ai-tldr p {
-  font-size: 14.5px;
+  font-size: var(--text-base);
   line-height: 1.65;
 }
 
@@ -870,7 +1158,7 @@ a.timeline-event__title:hover {
 .ai-card__list {
   margin: 0;
   padding-left: 18px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 
@@ -894,7 +1182,7 @@ a.timeline-event__title:hover {
 
 .ai-empty i,
 .ai-disabled i {
-  font-size: 28px;
+  font-size: var(--text-2xl);
   color: var(--bs-secondary-color);
   display: block;
   margin-bottom: 10px;
@@ -905,13 +1193,8 @@ a.timeline-event__title:hover {
   color: #534ab7;
 }
 
-[data-bs-theme="dark"] .ai-empty i.bi-stars,
-[data-bs-theme="dark"] .ai-empty i.bi-translate {
-  color: #afa9ec;
-}
-
 .ai-foot code {
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 /* htmx-indicator: hidden by default, shown when its target request is in-flight */
@@ -926,32 +1209,14 @@ a.timeline-event__title:hover {
 
 /* Premium Stat Cards with variables matching theme */
 :root {
-  --stat-interests-bg: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  --stat-favorites-bg: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-  --stat-notes-bg: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --stat-readlater-bg: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  /* Four metrics, so four hues -- but drawn from the semantic roles rather
+     than the neon set they used to be, which shouted next to the brand.
+     White text clears AA on every one of these (5.6:1 at worst). */
+  --stat-interests-bg: linear-gradient(135deg, var(--brand-700) 0%, var(--brand-900) 100%);
+  --stat-favorites-bg: linear-gradient(135deg, #8A5A06 0%, #634004 100%);
+  --stat-notes-bg: linear-gradient(135deg, #1F6F4A 0%, #164F35 100%);
+  --stat-readlater-bg: linear-gradient(135deg, #1F5A80 0%, #16405B 100%);
 }
-
-[data-bs-theme="dark"] {
-  --stat-interests-bg: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%);
-  --stat-favorites-bg: linear-gradient(135deg, #831843 0%, #500724 100%);
-  --stat-notes-bg: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
-  --stat-readlater-bg: linear-gradient(135deg, #78350f 0%, #451a03 100%);
-  
-  /* Contrast adjustments for dark mode */
-  --bs-primary: #818cf8;
-  --bs-primary-rgb: 129, 140, 248;
-}
-
-[data-bs-theme="dark"] .text-warning { color: #ffd073 !important; }
-[data-bs-theme="dark"] .text-success { color: #6ee7b7 !important; }
-[data-bs-theme="dark"] .text-info { color: #67e8f9 !important; }
-[data-bs-theme="dark"] .text-danger { color: #fca5a5 !important; }
-[data-bs-theme="dark"] .text-primary { color: #818cf8 !important; }
-[data-bs-theme="dark"] .text-bg-primary { background-color: rgba(129, 140, 248, 0.2) !important; color: #818cf8 !important; }
-[data-bs-theme="dark"] .text-bg-success { background-color: rgba(110, 231, 183, 0.2) !important; color: #6ee7b7 !important; }
-[data-bs-theme="dark"] .text-bg-warning { background-color: rgba(255, 208, 115, 0.2) !important; color: #ffd073 !important; }
-[data-bs-theme="dark"] .text-bg-secondary { background-color: rgba(156, 163, 175, 0.2) !important; color: #d1d5db !important; }
 
 .stat-card {
   color: #ffffff !important;
@@ -978,13 +1243,13 @@ a.timeline-event__title:hover {
   padding: 0.4rem 0.85rem;
   border-radius: 999px;
   color: #ffffff !important;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .stat-pill i {
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   opacity: 0.85;
 }
 
@@ -1020,9 +1285,6 @@ a.timeline-event__title:hover {
   height: 1.2em;
   background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--paper-card-bg) 80%);
 }
-[data-bs-theme="dark"] .paper-card__abstract::after {
-  background: linear-gradient(to right, rgba(37, 39, 44, 0), var(--paper-card-bg) 80%);
-}
 
 /* RAG Chat interface styling */
 .chat-container {
@@ -1050,7 +1312,7 @@ a.timeline-event__title:hover {
   max-width: 80%;
   padding: 9px 13px;
   border-radius: 10px;
-  font-size: 13.5px;
+  font-size: var(--text-sm);
   line-height: 1.5;
   word-break: break-word;
 }
@@ -1060,10 +1322,6 @@ a.timeline-event__title:hover {
   background: var(--bs-primary);
   color: #ffffff;
   border-bottom-right-radius: 2px;
-}
-
-[data-bs-theme="dark"] .chat-message--user {
-  background: var(--nav-link-active-bg);
 }
 
 .chat-message--assistant {
@@ -1088,7 +1346,7 @@ a.timeline-event__title:hover {
   border: 1px solid var(--paper-card-border);
   border-radius: 8px;
   padding: 6px 12px;
-  font-size: 13.5px;
+  font-size: var(--text-sm);
   resize: none;
   height: 38px;
   background: transparent;
@@ -1103,7 +1361,7 @@ a.timeline-event__title:hover {
 
 /* Keyboard shortcuts hint panel */
 .shortcuts-hint {
-  font-size: 11px;
+  font-size: var(--text-2xs);
   color: var(--bs-secondary-color);
   background: var(--bs-tertiary-bg);
   padding: 6px 12px;
@@ -1134,11 +1392,6 @@ a.timeline-event__title:hover {
 .heatmap-day[data-level="3"] { background-color: rgba(99, 102, 241, 0.75); }
 .heatmap-day[data-level="4"] { background-color: rgba(99, 102, 241, 1); }
 
-[data-bs-theme="dark"] .heatmap-day[data-level="1"] { background-color: rgba(129, 140, 248, 0.25); }
-[data-bs-theme="dark"] .heatmap-day[data-level="2"] { background-color: rgba(129, 140, 248, 0.5); }
-[data-bs-theme="dark"] .heatmap-day[data-level="3"] { background-color: rgba(129, 140, 248, 0.75); }
-[data-bs-theme="dark"] .heatmap-day[data-level="4"] { background-color: rgba(129, 140, 248, 1); }
-
 .paper-card--focused {
   border-color: var(--bs-primary) !important;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
@@ -1151,7 +1404,7 @@ a.timeline-event__title:hover {
   left: 0;
   height: 3px;
   width: 0%;
-  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+  background: linear-gradient(90deg, var(--brand-700), var(--brand-500), var(--brand-300));
   z-index: 9999;
   transition: width 0.3s ease;
 }
@@ -1186,3 +1439,23 @@ a.timeline-event__title:hover {
   100% { transform: translateX(100%); }
 }
 
+
+/* Data alignment. Every column of digits in this app -- citation counts, quota
+   figures, run durations, the heatmap -- lines up only with tabular figures;
+   IBM Plex Sans defaults to proportional, which makes columns wobble. */
+.table,
+.stat-card,
+.metric-value,
+time,
+code {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Prose measure. Applied where the app actually renders long-form text rather
+   than globally, so tables and cards keep the full width they need. */
+.paper-card__abstract,
+.ai-tldr,
+.paper-detail__abstract,
+.empty-state p {
+  max-width: var(--measure);
+}
