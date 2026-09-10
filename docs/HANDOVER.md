@@ -1,6 +1,6 @@
 # Devir Dokümanı
 
-> **Tarih:** 6 Ağustos 2026 · **Branch:** `feat/openalex-crossref-youtube-channels` · **Hedef:** `main`
+> **Tarih:** 10 Eylül 2026 · **Branch:** `main` · **Açık dal yok**
 >
 > Bu dosya projeyi devralan geliştirici için yazıldı. Sırayla oku: §1 durum → §2 kurulum
 > → §3 commit geçmişi → §4 tuzaklar → §5 sıradaki iş.
@@ -9,10 +9,9 @@
 
 ## 1. Nerede Duruyoruz
 
-**Faz 0, 1 ve 2 tam.** Faz 3 de fiilen kapandı: RSS beslemeler, kaynak seçici,
-çok sağlayıcılı LLM, digest ve ScanRun `main`'e merge edildi. Üstüne bu dalda
-5 akademik kaynak (OpenAlex + Crossref dahil), DOI tekilleştirme/zenginleştirme
-ve YouTube kanal aboneliği + transkript özeti var.
+**Faz 0-6 tamamı `main`'de, açık dal yok.** En son inen üç iş: Faz 6 (retrospektif
+raporlar + yazar grupları, §5.5), tasarım sistemi (§5.6) ve CI'ın onarımı — pipeline
+9 Eylül'den beri kırmızıydı ve bunu kimse fark etmemişti (§4.10).
 
 Çalışan özellikler, kabaca:
 
@@ -36,17 +35,28 @@ ve YouTube kanal aboneliği + transkript özeti var.
 | **Prior-art araması** + LLM yenilik değerlendirmesi (`/papers/patents`) | ✅ sonuçlar **saklanmaz** |
 | **Dergi kalite katmanı**: SJR quartile rozeti + atıf sayısı + `?quartile=` filtresi (Faz 5.3) | ✅ `journals` tablosu **elle seed edilir** |
 | **Yazar takibi** (ORCID → OpenAlex, gecelik) + opsiyonel **Scopus** (Faz 5.4) | ✅ Scopus discovery-only, varsayılan kapalı |
+| pgvector + gerçek RAG, atıf grafiği (Faz 5.4) | ✅ `Paper.embedding` `VECTOR(1536)` — DB'nin pgvector olması **şart** (§4.9) |
+| **Retrospektif raporlar** + yazar grupları + OpenAlex aralık hasadı (Faz 6) | ✅ on-demand, llm kuyruğunda (§5.5) |
+| **Tasarım sistemi**: nar işareti, garnet palet, tip ölçeği, CVD-güvenli kategorik palet | ✅ [DESIGN.md](DESIGN.md) — **arayüze dokunmadan önce oku** |
+| Dark mode | ❌ bilerek kaldırıldı — token'lar üzerinden geri gelebilir (§5.6) |
 
-**Doğrulama durumu (12 Ağustos 2026):**
+**Doğrulama durumu (10 Eylül 2026):**
 
 ```
-pytest tests/ -q      →  1004 passed in ~97s
-ruff check app/ tests/  →  All checks passed!
-black --check app/ tests/ →  208 files would be left unchanged
+pytest -q                        →  1193 passed in ~110s
+pytest --cov=app                 →  %81.51  (CI eşiği 80)
+ruff check app/ tests/ scripts/  →  All checks passed!
+black --check app/ tests/ scripts/ →  225 files would be left unchanged
+python scripts/mypy_ratchet.py   →  95 errors, baseline'da (yükselemez)
+node scripts/audit_ui.mjs …      →  7 sayfa, 0 WCAG ihlali, 280/320/414px'te taşma yok
 ```
+
+CI iki iş koşuyor: `lint-and-test` ve `ui-audit`. İkincisi tarayıcı indirdiği için
+ayrı — erişilebilirlik ve reflow regresyonlarını `pytest` göremez.
 
 > ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
-> var ve formatlayıcı 21 eski migration'ı gereksizce yeniden yazar.
+> var ve formatlayıcı 21 eski migration'ı gereksizce yeniden yazar. `scripts/` artık
+> **kapsam içinde** (CI oradan üç script çalıştırıyor).
 
 Yani devraldığında yeşil bir ağaç var. Uyarıların çoğu SQLAlchemy `Query.get()`
 `LegacyAPIWarning`'i — testlerde, davranışı etkilemiyor, ama `Session.get()`'e
@@ -114,6 +124,11 @@ Test DB ayrı (`scrapemind_test`), her oturumda `create_all`/`drop_all`.
 
 ## 3. Commit Geçmişi
 
+> **10 Eylül 2026.** Bu bölüm tarihsel: aşağıdaki tablo Faz 4'ün dalını anlatıyor ve
+> o dal çoktan `main`'de. Sonraki turların commit'leri için `git log` ve PR
+> açıklamaları daha güvenilir — #42-#45 (Faz 5), #53 (Faz 6), #54 (tasarım sistemi),
+> #52/#56/#57 (CI ve düzeltmeler).
+>
 > **10 Ağustos 2026 güncellemesi.** Aşağıdaki dal (`feat/openalex-crossref-youtube-channels`)
 > `main`'e merge edildi. Merge sırasında iki isim çakışması vardı — dal hâlâ
 > `agent_reach_source` diyordu, `main` onu `external_sources`'a çevirmişti — ve merge
@@ -287,6 +302,32 @@ istenen davranis budur, duzeltmeye calisma.
 Temiz bir checkout'ta ya da main tabanli bir DB'de bu sorun **yok**: sira
 dogru islediginden `flask db upgrade` her seyi kendisi yapar. Tuzak yalnizca
 merge'den once eski zincirin ucuna kadar upgrade edilmis veritabanlarinda.
+
+### 4.10 Sürümsüz formatlayıcı = zamanlanmış CI arızası
+
+CI 9 Eylül'den 10 Eylül'e kadar kırmızıydı — dört ardışık koşu, her biri ~45
+saniyede. Hiçbiri test ettiği kodla ilgili değildi.
+
+`black` `requirements.txt`'te sürümsüzdü, CI de her koşuda en yenisini çekiyordu.
+Bir sürüm `scrape/ratelimit.py`'deki çok satırlı bir string'i yeniden akıttı ve
+`black --check app/` o günden sonra her koşuda düştü. **Repo hiç değişmeden
+pipeline kırmızıya döndü**, üstelik hata katkıcının suçu gibi göründü.
+
+Arkasında ikinci bir arıza bekliyordu ve görünmüyordu, çünkü black'ten sonraki
+her adım atlanıyordu: servis container'ı `postgres:17-alpine`'dı ve §4.9'un
+anlattığı `CREATE EXTENSION vector` orada çalışmaz. Migration adımı bunu
+söyleyecek kadar uzun yaşamadı.
+
+İkisi de düzeltildi (PR #52): `ruff`, `black`, `mypy` sabit sürümde; servis imajı
+`pgvector/pgvector:pg17`.
+
+**Kural:** formatlayıcı ve linter sürümsüz bırakılmaz. Onlar kodu değil, kodun
+nasıl yazılması gerektiğine dair fikri taşır ve o fikir kendi takvimlerinde
+değişir.
+
+**İkinci kural:** CI'ın kırmızı olduğunu fark eden bir şey yok. Dört koşu
+boyunca kimse bakmadı. Bir dal açmadan önce `gh run list --branch main --limit 1`.
+
 ---
 
 ## 5. Sıradaki İş
@@ -545,6 +586,45 @@ Timeout'suz/retry'siz bir `_call_llm` üzerine map/reduce kurmak, ilk 429'da
   (`PHASE5.md §2`).
 - Raporlar için zamanlanmış üretim yok (bilinçli: on-demand).
 
+### 5.6 ✅ Tasarım sistemi + denetimler (10 Eylül 2026, PR #54 · #56 · #57 · #59)
+
+Arayüzün hiç logosu, favicon'u ve renk sistemi yoktu; `theme.css`'te 51 hex ve 20
+font boyutu birikmişti. İnen şey: nar işareti (elle yazılan tek kopya `logo.svg`,
+gerisini `scripts/render_favicon.py` türetir), ondan türeyen garnet palet, IBM Plex
++ dokuz adımlı ölçek, ve CVD-güvenli kategorik palet. Tamamı [DESIGN.md](DESIGN.md).
+
+**Arayüze dokunacaksan bilmen gereken tek kural:** marka kırmızı, tehlike de kırmızı.
+Aralarında 17° var ve o dilimin tamamı tarandı — AA'yı geçip amber uyarıya da
+çarpmayan bir tehlike rengi yok. Yani ayrım **renkle değil formla**: yıkıcı eylem
+outline olur, dolu primary'nin yanında dolu danger durmaz, ikincil buton nötrdür.
+
+#### Denetimler nerede
+- `tests/core/test_design_system.py` — 7 test, tarayıcısız, normal suite'te.
+- `tests/core/test_menu_invariants.py` — bir endpoint, bir menü öğesi.
+- `tests/core/test_module_scaffold.py` — üretilen modül gerçekten parse ediyor mu.
+- CI `ui-audit` işi — axe-core (WCAG 2.2 A/AA) + 280/320/414px reflow, 7 sayfa.
+
+Hepsi mutasyonla doğrulandı: kural bozuldu, denetimin düştüğü görüldü, geri alındı.
+
+#### Bu turda ortaya çıkan, planda olmayan altı şey
+- **Dil seçimi hiç çalışmıyordu.** `init_babel` Flask-Babel **2.x** API'siyle bağlanmış,
+  proje 4.0.0'da — `?lang=en` hiçbir şey yapmıyordu, dil çerezi okunmuyordu,
+  `current_user.locale` yok sayılıyordu. Varsayılan zaten `tr` olduğu için kimse fark
+  etmemiş. Erişilebilirlik denetimi bulmuştu: dil butonu `g.locale`'i basıyor, o da
+  seçici çalışınca set ediliyor, dolayısıyla buton boş ve isimsiz render oluyordu.
+- **CI 9 Eylül'den beri kırmızıydı** — sebep pgvector değil, sürümsüz `black`'ti (§4.10).
+- **Her sayfa 320px'te yana kayıyordu** — flex çocuğunun `min-width: auto`'su.
+- **60 etiketin `for`'u yoktu** — gözle etiketli, ekran okuyucuya anonim.
+- **`create_module.py` parse edilemeyen şablon üretiyordu** (`{{% extends %}}`), yani
+  CLAUDE.md'nin "ilk modülünü şununla oluştur" akışı bozuktu.
+- **Isı haritası klavyeyle erişilemiyordu** — tıklanabilir `<div>`'lerdi, artık buton.
+
+#### Bilinerek kabul edilen tek ihlal
+Isı haritası hücreleri 10px, WCAG 2.2'nin istediği 24px hedefin altında; bir yıl
+görünümü 24px'te çizilemez. Standart eşdeğer kontrole izin veriyor, yanına tarih
+girdisi kondu. `scripts/audit_ui.mjs` bu muafiyeti **dar kapsamlı** tanımlıyor —
+başka bir sayfada `target-size` çıkarsa gerçektir ve denetimi kırar.
+
 ## 6. Doküman Haritası
 
 | Dosya | İçerik |
@@ -555,6 +635,7 @@ Timeout'suz/retry'siz bir `_call_llm` üzerine map/reduce kurmak, ilk 429'da
 | [docs/SCRAPING.md](SCRAPING.md) | Veri toplama mimarisi — **yeni kaynak eklemeden önce oku** |
 | [docs/PHASE5.md](PHASE5.md) | Faz 5 planı — patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus |
 | [docs/API_V1.md](API_V1.md) | JSON API referansı |
+| [docs/DESIGN.md](DESIGN.md) | Tasarım sistemi — **arayüze dokunmadan önce oku** |
 | [docs/UI_REVIEW.md](UI_REVIEW.md) | UI inceleme notları |
 | [docs/adr/](adr/) | Mimari karar kayıtları — neden **yapmadığımız** şeyler |
 | [IMPROVEMENTS.md](../IMPROVEMENTS.md) | UI/UX punch list — ⚠️ dosya tablonun ortasında kesik, tamamlanmalı |
