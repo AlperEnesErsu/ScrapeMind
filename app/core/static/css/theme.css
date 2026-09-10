@@ -65,6 +65,20 @@ code {
   --danger-soft:  #E3A294;  /* disabled state only, never for text */
   --info:    #1F5A80;  /* 7.1:1 */
 
+  /* Bootstrap's `-subtle` backgrounds pair with our `.text-*` colours, not
+     with its own, so leaving them at stock values left the pairing to luck.
+     Five of six happened to clear AA; danger did not, at 4.19:1, and CI found
+     it because its database has no Redis to connect to and the health panel
+     therefore rendered the red pills a healthy dev machine never shows.
+     Derived from the semantic colours instead, and measured against the text
+     colour that actually sits on them. */
+  --primary-subtle:   #F7E3E6;  /* 8.3:1 with --bs-primary */
+  --secondary-subtle: #F1EAEB;  /* 5.1:1 with --neutral-600 */
+  --success-subtle:   #E3F7EE;  /* 5.5:1 */
+  --warning-subtle:   #F7F0E3;  /* 5.2:1 */
+  --danger-subtle:    #F7E6E3;  /* 4.6:1 */
+  --info-subtle:      #E3EFF7;  /* 6.3:1 */
+
   /* Type scale. There were twenty different font sizes in this file and
      thirty-five more inline in the templates, several below 11px -- a value
      nobody chose, it just accumulated. These nine steps replace all of them.
@@ -229,6 +243,30 @@ code {
 
 .border-primary { border-color: var(--brand-700) !important; }
 .border-danger  { border-color: var(--danger) !important; }
+
+/* The subtle family. Templates pair these as `bg-X-subtle text-X`, so both
+   halves have to come from the same palette or the contrast is accidental. */
+.bg-primary-subtle,
+.text-bg-primary-subtle   { background-color: var(--primary-subtle) !important; }
+.bg-secondary-subtle,
+.text-bg-secondary-subtle { background-color: var(--secondary-subtle) !important; }
+.bg-success-subtle,
+.text-bg-success-subtle   { background-color: var(--success-subtle) !important; }
+.bg-warning-subtle,
+.text-bg-warning-subtle   { background-color: var(--warning-subtle) !important; }
+.bg-danger-subtle,
+.text-bg-danger-subtle    { background-color: var(--danger-subtle) !important; }
+.bg-info-subtle,
+.text-bg-info-subtle      { background-color: var(--info-subtle) !important; }
+
+/* `text-bg-*-subtle` sets a background only; without this the badge keeps
+   Bootstrap's own emphasis colour, which no longer matches these tints. */
+.text-bg-primary-subtle   { color: var(--brand-700) !important; }
+.text-bg-secondary-subtle { color: var(--neutral-600) !important; }
+.text-bg-success-subtle   { color: var(--success) !important; }
+.text-bg-warning-subtle   { color: var(--warning) !important; }
+.text-bg-danger-subtle    { color: var(--danger) !important; }
+.text-bg-info-subtle      { color: var(--info) !important; }
 
 /* The audit measured these still carrying Bootstrap's own colours: outline
    secondary at #6c757d (4.47:1) and the warning variants at #ffc107 (1.55:1).

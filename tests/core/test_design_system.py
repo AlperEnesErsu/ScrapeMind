@@ -17,8 +17,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[2]
 THEME = ROOT / "app" / "core" / "static" / "css" / "theme.css"
 APP = ROOT / "app"
@@ -149,18 +147,26 @@ def _all_tokens() -> dict[str, str]:
 def _pairs() -> list[tuple[str, str]]:
     """Every foreground/background token pair the stylesheet declares.
 
-    Named by convention: `X-tint` with `X-ink`, and `Y` with `Y-bg`. The
-    convention is the point -- a pair that does not follow it is invisible to
-    this gate, which is how `--paper-note` sat at 3.71:1 until someone
-    measured it by hand.
+    Named by convention: `X-tint` with `X-ink`, `Y` with `Y-bg`, and `Z` with
+    `Z-subtle`. The convention is the point -- a pair that does not follow it
+    is invisible to this gate, which is how `--paper-note` sat at 3.71:1 and
+    the danger pill at 4.19:1 until each was measured by hand.
     """
     tokens = _all_tokens()
+    # `--bs-primary` is Bootstrap's variable, set to the same value as
+    # `--brand-700`; the primary pair is checked through that instead.
+    aliases = {"primary": "--bs-primary", "secondary": "--neutral-600"}
     found = []
     for name in tokens:
         if name.endswith("-tint") and name.replace("-tint", "-ink") in tokens:
             found.append((name.replace("-tint", "-ink"), name))
         elif name.endswith("-bg") and name[: -len("-bg")] in tokens:
             found.append((name[: -len("-bg")], name))
+        elif name.endswith("-subtle"):
+            role = name[len("--") : -len("-subtle")]
+            fg = aliases.get(role, f"--{role}")
+            if fg in tokens:
+                found.append((fg, name))
     return sorted(set(found))
 
 
