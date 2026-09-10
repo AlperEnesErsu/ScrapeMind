@@ -129,32 +129,65 @@ def test_product_ui_carries_no_emoji():
     assert offenders == {}, f"use a Bootstrap icon or words instead: {offenders}"
 
 
-@pytest.mark.parametrize("family", ["cat", "q"])
-def test_tint_and_ink_pairs_clear_aa(family):
-    """Badge text must clear AA on the tint it sits on.
+def _resolve(tokens: dict[str, str], value: str) -> str | None:
+    """Follow one level of `var(--other-token)` back to a literal."""
+    value = value.strip()
+    if value.startswith("#"):
+        return value
+    match = re.fullmatch(r"var\((--[a-z0-9-]+)\)", value)
+    if match:
+        return tokens.get(match.group(1))
+    return None
 
-    Categorical and quartile colours are the ones picked by eye historically,
-    and the pair is what matters -- either half can be changed alone and break
-    the other.
+
+def _all_tokens() -> dict[str, str]:
+    """Every token, including the ones defined as `var(--another)`."""
+    raw = dict(re.findall(r"(--[a-z0-9-]+):\s*([^;]+);", _css()))
+    return {k: v.strip() for k, v in raw.items()}
+
+
+def _pairs() -> list[tuple[str, str]]:
+    """Every foreground/background token pair the stylesheet declares.
+
+    Named by convention: `X-tint` with `X-ink`, and `Y` with `Y-bg`. The
+    convention is the point -- a pair that does not follow it is invisible to
+    this gate, which is how `--paper-note` sat at 3.71:1 until someone
+    measured it by hand.
     """
-    tokens = _tokens()
-    if family == "cat":
-        pairs = [
-            (n, n.replace("-tint", "-ink"))
-            for n in tokens
-            if n.startswith("--cat-") and n.endswith("-tint")
-        ]
-    else:
-        pairs = [
-            (n, n.replace("-tint", "-ink")) for n in tokens if re.fullmatch(r"--q[1-4]-tint", n)
-        ]
+    tokens = _all_tokens()
+    found = []
+    for name in tokens:
+        if name.endswith("-tint") and name.replace("-tint", "-ink") in tokens:
+            found.append((name.replace("-tint", "-ink"), name))
+        elif name.endswith("-bg") and name[: -len("-bg")] in tokens:
+            found.append((name[: -len("-bg")], name))
+    return sorted(set(found))
 
-    assert pairs, f"no {family} tint/ink pairs found -- did the token names change?"
+
+def test_every_declared_colour_pair_clears_aa():
+    """Foreground on its own background, for every pair in the file.
+
+    This started as two families, `--cat-*` and `--q*`. It missed
+    `--paper-note`, which composited to 3.71:1 on its own tint and was only
+    caught by hand -- the page audits could not see it either, because the
+    note action button appears only once a paper has a note. Checking every
+    declared pair rather than the two families anyone remembered is the fix.
+    """
+    tokens = _all_tokens()
+    pairs = _pairs()
+    assert len(pairs) >= 8, f"expected the palette's pairs, found only {pairs}"
+
     failures = []
-    for tint_name, ink_name in sorted(pairs):
-        ratio = contrast(tokens[ink_name], tokens[tint_name])
+    for fg_name, bg_name in pairs:
+        fg = _resolve(tokens, tokens[fg_name])
+        bg = _resolve(tokens, tokens[bg_name])
+        if not fg or not bg:
+            # rgba() and gradients cannot be compared this way; a pair that
+            # needs one should be stated as a solid token so it can be.
+            continue
+        ratio = contrast(fg, bg)
         if ratio < 4.5:
-            failures.append(f"{ink_name} on {tint_name} = {ratio:.2f}:1")
+            failures.append(f"{fg_name} on {bg_name} = {ratio:.2f}:1")
     assert failures == [], f"below WCAG AA: {failures}"
 
 

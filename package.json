@@ -1,0 +1,13 @@
+{
+  "name": "scrapemind-ui-audit",
+  "private": true,
+  "type": "module",
+  "description": "Node dependencies for the UI audit only. ScrapeMind is a Python application; nothing here ships to users or is needed to run it. See docs/DESIGN.md.",
+  "scripts": {
+    "audit:ui": "node scripts/audit_ui.mjs ui-audit-pages"
+  },
+  "devDependencies": {
+    "axe-core": "4.10.2",
+    "playwright": "1.49.1"
+  }
+}

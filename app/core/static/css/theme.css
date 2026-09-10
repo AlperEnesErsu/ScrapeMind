@@ -513,6 +513,15 @@ table code {
   min-width: 0;
 }
 
+/* Same reason as .discover-filter: `w-auto` sizes a date input to its own
+   intrinsic width, which is 4px more than a 280px screen has room for once
+   its label sits beside it. */
+.heatmap-date-jump {
+  width: 100%;
+  max-width: 150px;
+  min-width: 0;
+}
+
 /* Mobile sidebar — off-canvas below 768px */
 @media (max-width: 767.98px) {
   #sidebar {
@@ -545,8 +554,12 @@ table code {
      place a brand-coloured accent is right: it marks the user's own choice. */
   --paper-favorite: var(--brand-600);
   --paper-favorite-bg: var(--brand-50);
-  --paper-note: #0d8a6a;
-  --paper-note-bg: rgba(13, 138, 106, 0.12);
+  /* Was #0d8a6a on a 12% tint of itself, which composites to 3.71:1 -- below
+     AA, and missed by the page audits because the note action button only
+     appears once a paper actually has a note. Same green as the note tag now,
+     so the two agree and the pair is measured. */
+  --paper-note: var(--cat-green-ink);
+  --paper-note-bg: var(--cat-green-tint);
 }
 
 /* Source badges — one per scraper. Stays consistent in both themes. */
