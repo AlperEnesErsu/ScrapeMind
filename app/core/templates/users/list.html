@@ -65,8 +65,9 @@
           </td>
           <td class="small text-muted">{{ u.last_login_at.strftime('%d.%m.%Y %H:%M') if u.last_login_at else '—' }}</td>
           <td class="text-end">
-            <a href="{{ url_for('users.user_edit', user_id=u.id) }}" class="btn btn-sm btn-outline-secondary">
-              <i class="bi bi-pencil"></i>
+            <a href="{{ url_for('users.user_edit', user_id=u.id) }}" class="btn btn-sm btn-outline-secondary"
+               aria-label="{{ _('Edit') }} — {{ u.username }}">
+              <i class="bi bi-pencil" aria-hidden="true"></i>
             </a>
             {% if u.effective_is_locked %}
               <form method="post" action="{{ url_for('users.user_unlock', user_id=u.id) }}" class="d-inline">
@@ -83,7 +84,8 @@
               <form method="post" action="{{ url_for('users.user_delete', user_id=u.id) }}" class="d-inline"
                     onsubmit="return confirm('{{ _('Delete this user?') }}');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        aria-label="{{ _('Delete') }} — {{ u.username }}"><i class="bi bi-trash" aria-hidden="true"></i></button>
               </form>
             {% endif %}
           </td>

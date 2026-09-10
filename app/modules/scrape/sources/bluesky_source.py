@@ -208,7 +208,7 @@ def fetch_author_posts(
             ext_title = ext.get("title")
             ext_desc = ext.get("description")
             if ext_title or ext_desc:
-                note = f"🔗 {ext_title or ''}: {ext_desc or ''}".strip(" :")
+                note = f"{ext_title or ''}: {ext_desc or ''}".strip(" :")
                 abstract_parts.append(note)
 
         abstract = "\n\n".join(abstract_parts) if abstract_parts else None

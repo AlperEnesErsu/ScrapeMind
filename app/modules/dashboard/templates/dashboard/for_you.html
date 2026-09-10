@@ -222,7 +222,7 @@
     {% else %}
       {% if has_interests %}
       <div class="empty-state py-5 text-center shadow-sm bg-body card border-0">
-        <i class="bi bi-newspaper" style="font-size: 36px; color: var(--bs-secondary-color);"></i>
+        <i class="bi bi-newspaper" style="font-size: var(--icon-xl); color: var(--bs-secondary-color);"></i>
         <div class="mt-2 fw-medium">{{ _('No personalised papers yet.') }}</div>
         <p class="small text-muted mt-2 mb-3">
           {{ _('Run a scrape to fill your feed — or check the Discover page.') }}
@@ -306,7 +306,7 @@
                     <form method="post" action="{{ url_for('dashboard.add_interest') }}" class="m-0">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <input type="hidden" name="value" value="{{ kw }}">
-                      <button type="submit" class="btn btn-xs btn-outline-primary py-1 px-2 rounded-pill font-monospace" style="font-size: 0.75rem;">
+                      <button type="submit" class="btn btn-xs btn-outline-primary py-1 px-2 rounded-pill font-monospace" style="font-size: var(--text-xs);">
                         <i class="bi bi-plus-lg me-1"></i>{{ _('Follow') }}
                       </button>
                     </form>
@@ -358,7 +358,7 @@
             <tbody>
               {% for log in recent_logs %}
               <tr>
-                <td class="text-muted text-nowrap px-3 py-2" style="font-size: 0.8rem;">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
+                <td class="text-muted text-nowrap px-3 py-2" style="font-size: var(--text-sm);">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
                 <td class="fw-semibold px-2 py-2">{{ log.user_id or '—' }}</td>
                 <td class="text-muted px-3 py-2">{{ humanize_action(log.action) }}</td>
               </tr>

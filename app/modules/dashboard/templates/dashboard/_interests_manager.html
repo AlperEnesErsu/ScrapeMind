@@ -34,7 +34,7 @@
                 <i class="bi bi-arrow-right-short"></i>{{ kw.value_en }}
               </span>
             {% endif %}
-            <button class="btn-close" style="font-size: 0.65rem;"
+            <button class="btn-close" style="font-size: var(--text-2xs);"
                     hx-post="{{ url_for('dashboard.delete_interest', keyword_id=kw.id) }}"
                     hx-target="#interests-manager" hx-swap="outerHTML"
                     hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'

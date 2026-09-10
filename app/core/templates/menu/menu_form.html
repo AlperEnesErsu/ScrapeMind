@@ -12,7 +12,7 @@
   <div class="row g-3">
 
     <div class="col-md-4">
-      <label class="form-label">{{ form.code.label.text }}</label>
+      {{ form.code.label(class="form-label") }}
       {% if item %}
         {{ form.code(class="form-control", readonly=True) }}
         <div class="form-text">{{ _('Code is immutable after creation.') }}</div>
@@ -23,46 +23,46 @@
     </div>
 
     <div class="col-md-4">
-      <label class="form-label">{{ form.label_key.label.text }}</label>
+      {{ form.label_key.label(class="form-label") }}
       {{ form.label_key(class="form-control", required=True, placeholder="menu.example") }}
       {% for err in form.label_key.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>
 
     <div class="col-md-4">
-      <label class="form-label">{{ form.icon.label.text }}</label>
+      {{ form.icon.label(class="form-label") }}
       {{ form.icon(class="form-control", placeholder="bi-bug") }}
     </div>
 
     <div class="col-md-4">
-      <label class="form-label">{{ form.parent_id.label.text }}</label>
+      {{ form.parent_id.label(class="form-label") }}
       {{ form.parent_id(class="form-select") }}
       {% for err in form.parent_id.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>
 
     <div class="col-md-4">
-      <label class="form-label">{{ form.endpoint.label.text }}</label>
+      {{ form.endpoint.label(class="form-label") }}
       {{ form.endpoint(class="form-control", placeholder="dashboard.index") }}
       {% for err in form.endpoint.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     </div>
 
     <div class="col-md-4">
-      <label class="form-label">{{ form.url.label.text }}</label>
+      {{ form.url.label(class="form-label") }}
       {{ form.url(class="form-control", placeholder="https://...") }}
       <div class="form-text">{{ _('Use either Endpoint or URL.') }}</div>
     </div>
 
     <div class="col-md-4">
-      <label class="form-label">{{ form.module_code.label.text }}</label>
+      {{ form.module_code.label(class="form-label") }}
       {{ form.module_code(class="form-select") }}
     </div>
 
     <div class="col-md-4">
-      <label class="form-label">{{ form.required_permission.label.text }}</label>
+      {{ form.required_permission.label(class="form-label") }}
       {{ form.required_permission(class="form-select") }}
     </div>
 
     <div class="col-md-2">
-      <label class="form-label">{{ form.order_index.label.text }}</label>
+      {{ form.order_index.label(class="form-label") }}
       {{ form.order_index(class="form-control") }}
     </div>
 

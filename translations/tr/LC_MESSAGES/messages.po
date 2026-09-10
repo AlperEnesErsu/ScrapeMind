@@ -3551,6 +3551,9 @@ msgstr "Raporlar"
 msgid "Language changes apply on next page load."
 msgstr "Dil değişiklikleri bir sonraki sayfa yüklemesinde geçerli olur."
 
+msgid "Jump to date"
+msgstr "Tarihe git"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

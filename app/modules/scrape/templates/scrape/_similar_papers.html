@@ -17,13 +17,13 @@
              class="text-decoration-none text-body fw-medium small d-block mb-1 text-truncate"
              title="{{ sim.paper.title }}">{{ sim.paper.title }}</a>
           <div class="d-flex align-items-center gap-2 mt-auto">
-            <span class="badge source-badge source-{{ sim.paper.source }} py-1" style="font-size: 0.65rem;">{{ sim.paper.source }}</span>
+            <span class="badge source-badge source-{{ sim.paper.source }} py-1" style="font-size: var(--text-2xs);">{{ sim.paper.source }}</span>
             {% if sim.similarity_score %}
-              <span class="badge bg-success-subtle text-success border border-success-subtle py-1" style="font-size: 0.65rem;" title="{{ _('Semantic vector match via pgvector') }}">
+              <span class="badge bg-success-subtle text-success border border-success-subtle py-1" style="font-size: var(--text-2xs);" title="{{ _('Semantic vector match via pgvector') }}">
                 <i class="bi bi-stars me-1"></i>%{{ (sim.similarity_score * 100) | round | int }} {{ _('match') }}
               </span>
             {% elif sim.matched_keyword %}
-              <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-tag-fill me-1"></i>{{ sim.matched_keyword }}</span>
+              <span class="text-muted" style="font-size: var(--text-2xs);"><i class="bi bi-tag-fill me-1"></i>{{ sim.matched_keyword }}</span>
             {% endif %}
           </div>
         </div>
@@ -44,14 +44,14 @@
             <a href="{{ rec.url }}" target="_blank" rel="noopener"
                class="text-decoration-none text-body fw-medium small d-block mb-1 text-truncate"
                title="{{ rec.title }}">{{ rec.title }}
-               <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.65rem;"></i></a>
+               <i class="bi bi-box-arrow-up-right ms-1" style="font-size: var(--text-2xs);"></i></a>
           {% else %}
             <span class="fw-medium small d-block mb-1 text-truncate" title="{{ rec.title }}">{{ rec.title }}</span>
           {% endif %}
           <div class="d-flex align-items-center gap-2 mt-auto">
-            <span class="badge source-badge source-semantic_scholar py-1" style="font-size: 0.65rem;">semantic scholar</span>
+            <span class="badge source-badge source-semantic_scholar py-1" style="font-size: var(--text-2xs);">semantic scholar</span>
             {% if rec.authors %}
-              <span class="text-muted text-truncate" style="font-size: 0.7rem; max-width: 60%;">{{ rec.authors[:2] | join(', ') }}</span>
+              <span class="text-muted text-truncate" style="font-size: var(--text-2xs); max-width: 60%;">{{ rec.authors[:2] | join(', ') }}</span>
             {% endif %}
           </div>
         </div>

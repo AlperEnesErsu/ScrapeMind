@@ -22,7 +22,7 @@
 
 <form method="post" novalidate class="card card-body mb-3">
   {{ form.csrf_token }}
-  <label class="form-label">{{ form.idea.label.text }}</label>
+  {{ form.idea.label(class="form-label") }}
   {{ form.idea(class="form-control", rows="4",
                placeholder=_('e.g. A vibration sensor that detects bearing wear in CNC spindles and warns before failure.')) }}
   {% if form.idea.errors %}

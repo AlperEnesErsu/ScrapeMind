@@ -14,7 +14,7 @@
           <div class="fs-2 fw-bold text-white">{{ metrics.users_total }}</div>
           <div class="small text-white-75">{{ _('Total Users') }}</div>
           {% if user_trend != 0 %}
-            <div class="small mt-1" style="font-size: 0.75rem;">
+            <div class="small mt-1" style="font-size: var(--text-xs);">
               {% if user_trend > 0 %}
                 <span class="badge bg-success-subtle text-success"><i class="bi bi-arrow-up-short"></i>+{{ user_trend }}</span>
               {% else %}
@@ -46,7 +46,7 @@
           <div class="fs-2 fw-bold text-white">{{ logs_last_7 }}</div>
           <div class="small text-white-75">{{ _('Operations (7d)') }}</div>
           {% if logs_trend != 0 %}
-            <div class="small mt-1" style="font-size: 0.75rem;">
+            <div class="small mt-1" style="font-size: var(--text-xs);">
               {% if logs_trend > 0 %}
                 <span class="badge bg-success-subtle text-success"><i class="bi bi-arrow-up-short"></i>+{{ logs_trend }}</span>
               {% else %}
@@ -93,7 +93,7 @@
               <td class="small text-muted text-nowrap">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
               <td class="small fw-semibold">{{ log.user_id or '—' }}</td>
               <td class="small">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2" style="font-size: 0.75rem;">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2" style="font-size: var(--text-xs);">
                   {{ humanize_action(log.action) }}
                 </span>
               </td>
@@ -170,7 +170,7 @@
               <div class="progress-bar {{ 'bg-danger' if pct >= 90 else ('bg-warning' if pct >= 70 else 'bg-primary') }}"
                    style="width: {{ [pct, 100] | min | round(1) }}%"></div>
             </div>
-            <div class="text-muted mt-1" style="font-size: .75rem;">
+            <div class="text-muted mt-1" style="font-size: var(--text-xs);">
               {{ _('Resets %(when)s', when=q.resets_at.strftime('%d.%m.%Y')) }}
             </div>
           </div>

@@ -73,7 +73,7 @@
       {% elif r.seen_at %}
         <span class="text-muted d-inline-flex align-items-center gap-1"><i class="bi bi-eye"></i>{{ _('Seen') }}</span>
       {% else %}
-        <span class="text-warning d-inline-flex align-items-center gap-1"><i class="bi bi-circle-fill" style="font-size:7px;"></i>{{ _('New') }}</span>
+        <span class="text-warning d-inline-flex align-items-center gap-1"><i class="bi bi-circle-fill" style="font-size: var(--icon-dot);"></i>{{ _('New') }}</span>
       {% endif %}
     </span>
   </div>
@@ -99,7 +99,7 @@
   <p class="paper-card__abstract small text-muted mb-1 text-truncate-3" id="abstract-{{ r.id }}">{{ r.paper.video_summary.tldr }}</p>
   {% if (r.paper.video_summary.tldr | length) > 200 %}
     <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-primary small mb-2"
-            style="font-size: 0.75rem;"
+            style="font-size: var(--text-xs);"
             onclick="toggleAbstract('abstract-{{ r.id }}', this)">
       {{ _('Show more') }}
     </button>
@@ -108,7 +108,7 @@
   <p class="paper-card__abstract small text-muted mb-1 text-truncate-3" id="abstract-{{ r.id }}">{{ r.paper.abstract }}</p>
   {% if (r.paper.abstract | length) > 200 %}
     <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-primary small mb-2"
-            style="font-size: 0.75rem;"
+            style="font-size: var(--text-xs);"
             onclick="toggleAbstract('abstract-{{ r.id }}', this)">
       {{ _('Show more') }}
     </button>

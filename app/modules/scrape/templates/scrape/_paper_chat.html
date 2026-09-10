@@ -36,21 +36,21 @@
       
       <!-- Preset Prompt Chips -->
       <div class="chat-preset-chips d-flex flex-wrap gap-1 mb-2">
-        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: 0.75rem;"
+        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: var(--text-xs);"
                 onclick="setChatQuestion('Özeti 3 ana maddede özetler misin?')">
-          💡 {{ _('Summarize') }}
+          <i class="bi bi-list-ul me-1"></i>{{ _('Summarize') }}
         </button>
-        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: 0.75rem;"
+        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: var(--text-xs);"
                 onclick="setChatQuestion('Bu çalışmada kullanılan temel metodoloji ve yaklaşım nedir?')">
-          🔬 {{ _('Methodology') }}
+          <i class="bi bi-diagram-3 me-1"></i>{{ _('Methodology') }}
         </button>
-        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: 0.75rem;"
+        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: var(--text-xs);"
                 onclick="setChatQuestion('Makalenin elde ettiği temel bulgular ve sonuçlar nelerdir?')">
-          📊 {{ _('Main findings') }}
+          <i class="bi bi-graph-up me-1"></i>{{ _('Main findings') }}
         </button>
-        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: 0.75rem;"
+        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: var(--text-xs);"
                 onclick="setChatQuestion('Bu araştırmanın sınırlılıkları ve eksik yönleri nelerdir?')">
-          ⚠️ {{ _('Limitations') }}
+          <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Limitations') }}
         </button>
       </div>
 

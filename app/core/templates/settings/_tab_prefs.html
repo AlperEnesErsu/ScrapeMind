@@ -4,15 +4,15 @@
   {{ form.csrf_token }}
   <div class="row g-3">
     <div class="col-md-6">
-      <label class="form-label">{{ form.locale.label.text }}</label>
+      {{ form.locale.label(class="form-label") }}
       {{ form.locale(class="form-select") }}
     </div>
     <div class="col-md-6">
-      <label class="form-label">{{ form.timezone.label.text }}</label>
+      {{ form.timezone.label(class="form-label") }}
       {{ form.timezone(class="form-select") }}
     </div>
     <div class="col-md-6">
-      <label class="form-label">{{ form.digest.label.text }}</label>
+      {{ form.digest.label(class="form-label") }}
       {{ form.digest(class="form-select") }}
       <p class="form-text">{{ _('Get an email summary of new papers matching your interests.') }}</p>
     </div>
