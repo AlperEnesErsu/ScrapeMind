@@ -21,6 +21,7 @@ vaat ediyordu, doğru değil.)
 - `docs/HANDOVER.md` — durum, commit'lenmemiş iş, tuzaklar, sıradaki görevler
 - `docs/PHASE5.md` — Faz 5 planı (patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus)
 - `docs/DESIGN.md` — tasarım sistemi, **arayüze dokunmadan önce zorunlu**
+- `docs/PHASE7.md` — Faz 7 planı (kayıtlı arama + uyarı, Zotero, #58)
 
 ## Veritabanı (yerel geliştirme)
 - **Postgres artık ScrapeMind'in kendisinin, Redis hâlâ paylaşımlı.** Postgres: `scrapemind-db-1`, **5433**, `pgvector/pgvector:pg17`, kullanıcı/şifre `scrapemind`, volume `scrapemind_pg_data`. Ayağa kaldır:
@@ -60,7 +61,8 @@ app/tasks/         → core_tasks, scrape_tasks, feed_tasks, digest_tasks, chann
 translations/      → TR + EN .po/.mo dosyaları
 scripts/           → seed.py, create_module.py, export_core_template.py,
                      render_favicon.py (işareti logo.svg'den türetir)
-docs/              → SCRAPING.md, HANDOVER.md, API_V1.md, UI_REVIEW.md, DESIGN.md
+docs/              → SCRAPING.md, HANDOVER.md, API_V1.md, UI_REVIEW.md, DESIGN.md,
+                     PHASE5.md, PHASE7.md
 docs/adr/          → mimari karar kayıtları — neden **yapmadığımız** şeyler
 ```
 
@@ -163,10 +165,15 @@ değil — script'leri komşu `UI-UX/` klasöründe, elle koşulur.
    (ORCID kimlikleri, ilgi alanları, LLM anahtarları, takip edilen yazarlar). Bir
    kullanıcının LLM sağlayıcısı profil ayarı değil. Sol menü **zaten sakin** — sorun
    sidebar'da değil, profil sayfasının içinde; çözüm sidebar'ı şişirmemeli.
-2. **OA tam metin** — OpenAlex `best_oa_location`. Etik sınır net: yalnızca açık erişim.
-3. **Kayıtlı arama + uyarı** — bildirim altyapısı (`add_notification`) hazır.
-4. **Zotero/Mendeley dışa aktarım** — BibTeX var, API entegrasyonu doğal devam.
-5. Küçük borç: `mypy-baseline.txt` 95'te; en yoğun yer `app/modules/scrape`.
+2. **Kayıtlı arama + uyarı** (Faz 7.1) — plan `docs/PHASE7.md`. Zaman damgası
+   kullanma, bildirilmiş-kümesi tablosu kullan; gerekçe planda.
+3. **Zotero'ya aktarım** (Faz 7.2) — projenin dışarıya **ilk yazma** işlemi,
+   idempotentlik doğruluk şartı. Mendeley kapsam dışı (ADR-0002 duruşu).
+4. Küçük borç: `mypy-baseline.txt` 95'te; en yoğun yer `app/modules/scrape`.
+
+> ✅ OA tam metin (Faz 7.0) PR #62 ile indi — lisans kapılı saklama, bkz.
+> `docs/SCRAPING.md §11`. Tam metin araması külliyatın tamamını **kapsamıyor**,
+> yalnızca lisansın saklamaya izin verdiği alt kümeyi; bu bir eksik değil.
 
 Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
 > Bu liste 10 Eylül 2026'da gerçeğe karşı denetlendi. İki madde bitmiş olduğu

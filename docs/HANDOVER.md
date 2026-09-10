@@ -523,9 +523,11 @@ seçiciyle override eder.
    - Redis 24 saat önbellekleme (`get_json`/`set_json`).
    - Kullanıcının kütüphane durumuyla dinamik zenginleştirme (`decorate_with_user_library`).
    - Makale detay sayfasına 5. mod olarak interaktif `vis-network` canvas'ı, lejant, filtreler (Referanslar / Atıflar) ve tek tıkla kütüphaneye ekleme (`/papers/<id>/citation-graph/add`).
-4. **Açık erişim tam metin** — OpenAlex `best_oa_location`. Etik sınır net: sadece OA.
-5. **Kayıtlı arama + uyarı** — bildirim altyapısı (`add_notification`) hazır.
-6. **Zotero/Mendeley dışa aktarım** — BibTeX var, API entegrasyonu doğal devam.
+4. ✅ **Açık erişim tam metin — bitti (PR #62).** Lisans kapılı saklama:
+   yeniden dağıtıma izin veren lisanslarda metin saklanır ve aranır, diğerlerinde
+   `VideoSummary` deseni sürer. [SCRAPING.md §11](SCRAPING.md).
+5. **Kayıtlı arama + uyarı** → Faz 7.1, [PHASE7.md](PHASE7.md).
+6. **Zotero'ya aktarım** → Faz 7.2, [PHASE7.md](PHASE7.md). Mendeley kapsam dışı.
 
 ---
 
@@ -672,6 +674,7 @@ başka bir sayfada `target-size` çıkarsa gerçektir ve denetimi kırar.
 | [PROJECT.md](../PROJECT.md) | Detaylı tasarım dokümanı, faz planı |
 | [docs/SCRAPING.md](SCRAPING.md) | Veri toplama mimarisi — **yeni kaynak eklemeden önce oku** |
 | [docs/PHASE5.md](PHASE5.md) | Faz 5 planı — patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus |
+| [docs/PHASE7.md](PHASE7.md) | Faz 7 planı — kayıtlı arama + uyarı, Zotero, #58 |
 | [docs/API_V1.md](API_V1.md) | JSON API referansı |
 | [docs/DESIGN.md](DESIGN.md) | Tasarım sistemi — **arayüze dokunmadan önce oku** |
 | [docs/UI_REVIEW.md](UI_REVIEW.md) | UI inceleme notları |
