@@ -14,6 +14,12 @@ import shutil
 import sys
 from pathlib import Path
 
+# Same reason as scripts/create_module.py: cp1254 has no tick mark, and
+# printing one raised UnicodeEncodeError partway through a run that had
+# already copied files.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 # Kaldırılacak ScrapeMind-özgü yollar (hedef dizine göre relatif)
 SCRAPEMIND_PATHS = [
     "app/modules/scrape",
@@ -72,10 +78,13 @@ def main():
             'app.register_blueprint(scrape_bp, url_prefix="/papers")',
             'app.register_blueprint(academic_bp, url_prefix="/academic")',
         ]
-        new_lines = [l for l in content.splitlines()
-                     if not any(rm.strip() in l for rm in lines_to_remove)]
+        new_lines = [
+            line
+            for line in content.splitlines()
+            if not any(rm.strip() in line for rm in lines_to_remove)
+        ]
         init_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-        print(f"\n  [GÜNCELLENDI] app/__init__.py — scrape/academic blueprint'leri kaldırıldı")
+        print("\n  [GÜNCELLENDI] app/__init__.py — scrape/academic blueprint'leri kaldırıldı")
 
     # 3. seed.py'deki academic import'u kaldır
     seed_file = target / "scripts/seed.py"
@@ -87,15 +96,15 @@ def main():
             "identifier_types",
         ]
         # Basit yaklaşım: kullanıcıya bildir
-        print(f"\n  [MANUEL]  scripts/seed.py — academic seed bloğunu elle kaldır")
+        print("\n  [MANUEL]  scripts/seed.py — academic seed bloğunu elle kaldır")
 
     print("\n✓ Tamamlandı." if not args.dry_run else "\n(Dry-run — hiçbir şey silinmedi)")
-    print(f"\nSonraki adımlar:")
-    print(f"  1. app/__init__.py'yi gözden geçir")
-    print(f"  2. scripts/seed.py'deki academic bloğunu kaldır")
-    print(f"  3. app/modules/_template/'ı kullanarak ilk modülünü oluştur")
-    print(f"  4. flask db migrate -m 'initial' && flask db upgrade")
-    print(f"  5. python scripts/seed.py")
+    print("\nSonraki adımlar:")
+    print("  1. app/__init__.py'yi gözden geçir")
+    print("  2. scripts/seed.py'deki academic bloğunu kaldır")
+    print("  3. app/modules/_template/'ı kullanarak ilk modülünü oluştur")
+    print("  4. flask db migrate -m 'initial' && flask db upgrade")
+    print("  5. python scripts/seed.py")
 
 
 if __name__ == "__main__":
