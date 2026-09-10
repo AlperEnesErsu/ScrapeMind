@@ -8,6 +8,15 @@ import shutil
 import sys
 from pathlib import Path
 
+# A Turkish Windows console runs cp1254, which has no tick mark and no
+# arrow. Printing one raised UnicodeEncodeError *after* the module had
+# already been written, so a successful run looked like a crash and the
+# generated files looked like debris. Turkish letters encode fine in
+# cp1254; it is only the symbols that do not, so the fix is the stream,
+# not the strings.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 MODULES_DIR = Path(__file__).parent.parent / "app" / "modules"
 TEMPLATE_DIR = MODULES_DIR / "_template"
 
@@ -26,33 +35,38 @@ def create_module(code: str) -> None:
 
     # __init__.py oluştur
     (target / "__init__.py").write_text(
-        f'from flask import Blueprint\n\n'
+        f"from flask import Blueprint\n\n"
         f'{code}_bp = Blueprint("{code}", __name__, template_folder="templates")\n\n'
-        f'from app.modules.{code} import routes  # noqa: E402, F401\n'
+        f"from app.modules.{code} import routes  # noqa: E402, F401\n"
     )
 
     # routes.py oluştur
     (target / "routes.py").write_text(
-        f'from flask import render_template\n'
-        f'from flask_login import login_required\n\n'
-        f'from app.modules.{code} import {code}_bp\n\n\n'
+        f"from flask import render_template\n"
+        f"from flask_login import login_required\n\n"
+        f"from app.modules.{code} import {code}_bp\n\n\n"
         f'@{code}_bp.route("/")\n'
-        f'@login_required\n'
-        f'def index():\n'
+        f"@login_required\n"
+        f"def index():\n"
         f'    return render_template("{code}/index.html")\n'
     )
 
     # templates klasörü
     (target / "templates" / code).mkdir(parents=True)
+    # The doubled braces here were correct while this whole block was a
+    # single f-string. Once it became one literal per line, the parts
+    # without an `f` prefix stopped escaping anything and wrote a literal
+    # `{{% extends %}}` into the file -- a template Jinja refuses to parse.
+    # Every module scaffolded since then shipped a broken index.html.
     (target / "templates" / code / "index.html").write_text(
-        '{{% extends \'base.html\' %}}\n'
-        '{{% block content %}}\n'
-        f'<h4>{code}</h4>\n'
-        '{{% endblock %}}\n'
+        "{% extends 'base.html' %}\n"
+        "{% block content %}\n"
+        f"<h4>{code}</h4>\n"
+        "{% endblock %}\n"
     )
 
     print(f"✓ Modül oluşturuldu: app/modules/{code}/")
-    print(f"  → app/__init__.py içinde blueprint'i kaydet:")
+    print("  → app/__init__.py içinde blueprint'i kaydet:")
     print(f"     from app.modules.{code} import {code}_bp")
     print(f"     app.register_blueprint({code}_bp, url_prefix='/{code}')")
 
