@@ -75,8 +75,12 @@ pytest-timeout==2.3.1
 factory-boy==3.3.1
 pytest-cov==5.0.0
 
-# Lint (dev only — sürüm sabit değil, pip en yenisini alır)
-ruff
-black
-mypy
+# Lint (dev only)
+# Pinned deliberately. These are formatters and linters: an unpinned one turns
+# CI red on its own release schedule, with no change to the code. That is what
+# happened here -- a black release reflowed one multi-line string in
+# scrape/ratelimit.py and main stayed red for a day.
+ruff==0.15.13
+black==26.3.1
+mypy==2.1.0
 pre-commit
