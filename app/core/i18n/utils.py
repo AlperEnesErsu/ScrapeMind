@@ -27,4 +27,13 @@ def select_locale() -> str:
 
 
 def init_babel(app, babel: Babel) -> None:
-    babel.locale_selector_func = select_locale
+    """Wire the selector, and mind which API is being wired.
+
+    ``babel.locale_selector_func = ...`` is the Flask-Babel 2.x form. Under 3.x
+    and later it assigns an attribute nothing reads, so the selector never ran:
+    every request fell back to BABEL_DEFAULT_LOCALE, ``?lang=en`` did nothing,
+    the cookie ``/settings/set-locale`` sets was never read back, and ``g.locale``
+    -- which the topbar prints as the language button's only label -- stayed
+    unset, leaving that button empty and nameless to a screen reader.
+    """
+    babel.init_app(app, locale_selector=select_locale)
