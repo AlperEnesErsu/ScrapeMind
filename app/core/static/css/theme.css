@@ -91,6 +91,31 @@ code {
   /* Icon sizes. Separate from the type scale on purpose: an empty-state
      illustration and a status dot are glyphs, not text, and sizing them off
      the reading scale is what produced the 7px and 36px literals below. */
+
+  /* Categorical palette. Six hues plus a neutral, chosen by maximising the
+     smallest pairwise distance under normal vision AND simulated deuteranopia
+     and protanopia -- the worst pair measures 41 across all three, where the
+     ad-hoc set it replaces collapsed to 15 (amber against orange, magenta
+     against slate). Six is the cap: at nine, no arrangement stayed separable.
+     Every hue is kept 30 degrees clear of the brand so a source badge never
+     reads as brand chrome. Every tint/ink pair clears AA on its own tint. */
+  --cat-blue-tint:    #E4EBF6;  --cat-blue-ink:    #143D7B;  /*  8.8:1 */
+  --cat-teal-tint:    #E4F6F4;  --cat-teal-ink:    #147B6D;  /*  4.6:1 */
+  --cat-green-tint:   #E4F6EA;  --cat-green-ink:   #147B36;  /*  4.8:1 */
+  --cat-orange-tint:  #F6EBE4;  --cat-orange-ink:  #7B3D14;  /*  7.1:1 */
+  --cat-indigo-tint:  #E8E4F6;  --cat-indigo-ink:  #29147B;  /* 11.4:1 */
+  --cat-magenta-tint: #F6E4F0;  --cat-magenta-ink: #7B1459;  /*  8.3:1 */
+  --cat-slate-tint:   #EAE8E9;  --cat-slate-ink:   #4A4245;  /*  8.0:1 */
+
+  /* Quartiles are ordinal, not categorical, so they take a sequential ramp in
+     one hue: saturation falls and lightness rises from Q1 to Q4. The tint
+     luminance increases monotonically, which is what makes the order survive
+     greyscale and colour-blind vision. */
+  --q1-tint: #C9E3E9;  --q1-ink: #185662;  /* 6.2:1 */
+  --q2-tint: #DBE8EB;  --q2-ink: #1D5B67;  /* 6.1:1 */
+  --q3-tint: #E9EEEF;  --q3-ink: #2A5F6A;  /* 6.1:1 */
+  --q4-tint: #F1F3F3;  --q4-ink: #36646D;  /* 5.9:1 */
+
   --icon-dot: 8px;    /* the circle-fill status indicators */
   --icon-xl:  36px;   /* empty-state illustrations */
 
@@ -516,8 +541,10 @@ table code {
   --paper-card-muted: rgba(0, 0, 0, 0.55);
   --paper-action-bg: transparent;
   --paper-action-hover: rgba(0, 0, 0, 0.06);
-  --paper-favorite: #e84a5f;
-  --paper-favorite-bg: rgba(232, 74, 95, 0.12);
+  /* Was #e84a5f, a pink from before the palette existed. Favourite is the one
+     place a brand-coloured accent is right: it marks the user's own choice. */
+  --paper-favorite: var(--brand-600);
+  --paper-favorite-bg: var(--brand-50);
   --paper-note: #0d8a6a;
   --paper-note-bg: rgba(13, 138, 106, 0.12);
 }
@@ -530,34 +557,59 @@ table code {
   padding: 3px 8px;
 }
 
-.source-arxiv      { background: #e6f1fb; color: #0c447c; }
-.source-semantic_scholar { background: #faece7; color: #993c1d; }
-.source-pubmed     { background: #eaf3de; color: #27500a; }
-.source-youtube_reach { background: #fdeaea; color: #8c1c1c; }
-.source-github_reach  { background: #ecedef; color: #2b3137; }
-.source-web_reach     { background: #e7f4f2; color: #12554c; }
-.source-manual        { background: #eceaf9; color: #3c2f8f; }
+/* The class comes straight off Paper.source, so a source with no rule here
+   renders unstyled -- which is what openalex, crossref, scopus, bluesky,
+   youtube_channel and user_page were doing: six of the fourteen registered
+   sources, including two of the five academic ones. All fourteen are listed
+   now, grouped by family, because colour cannot carry fourteen distinctions
+   and the badge prints the source name beside it anyway. Sharing a hue inside
+   a family is the point: amber comes to mean patent. */
+.source-arxiv            { background: var(--cat-blue-tint);    color: var(--cat-blue-ink); }
 
-/* RSS/industry-announcement feeds (Paper.kind == "news") share one accent —
-   distinct from the academic sources above — regardless of which feed. */
-.source-badge--news { background: #f3e8ff; color: #6b21a8; }
+.source-openalex,
+.source-crossref         { background: var(--cat-teal-tint);    color: var(--cat-teal-ink); }
+
+.source-pubmed           { background: var(--cat-green-tint);   color: var(--cat-green-ink); }
+
+.source-semantic_scholar,
+.source-scopus           { background: var(--cat-indigo-tint);  color: var(--cat-indigo-ink); }
 
 /* Patent sources (Faz 5.2) */
-.source-epo_ops      { background: #fdf1dd; color: #7a4a05; }
-.source-patentsview  { background: #fdf1dd; color: #7a4a05; }
+.source-epo_ops,
+.source-patentsview      { background: var(--cat-orange-tint);  color: var(--cat-orange-ink); }
+
+/* Video and social */
+.source-youtube_reach,
+.source-youtube_channel,
+.source-bluesky          { background: var(--cat-magenta-tint); color: var(--cat-magenta-ink); }
+
+/* The open web, and anything added by hand */
+.source-github_reach,
+.source-web_reach,
+.source-user_page,
+.source-manual           { background: var(--cat-slate-tint);   color: var(--cat-slate-ink); }
+
+/* RSS/industry-announcement feeds (Paper.kind == "news") replace the source
+   badge entirely, so this is a kind rather than a seventh source family. */
+.source-badge--news { background: var(--cat-magenta-tint); color: var(--cat-magenta-ink); }
 
 /* SJR quartile (Faz 5.3). Q1 is the signal researchers scan for, so it gets
    the only saturated colour; Q2-Q4 stay progressively quieter rather than
-   turning the card into a traffic light. A low quartile is not a warning. */
+   turning the card into a traffic light. A low quartile is not a warning.
+   That was always the intent; the implementation contradicted it by giving Q2
+   a different hue -- blue against Q1 green, which reads as a category rather
+   than a step down -- and Q3 and Q4 two greys nobody could tell apart. One
+   hue, falling saturation, rising lightness: an ordinal encoding for ordinal
+   data, and one that survives greyscale. */
 .quartile-badge {
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: 3px 7px;
 }
-.quartile-q1 { background: #d9f2e3; color: #10633a; }
-.quartile-q2 { background: #e4f0f8; color: #1c5378; }
-.quartile-q3 { background: #eef0f2; color: #4a5259; }
-.quartile-q4 { background: #f2f2f3; color: #63696e; }
+.quartile-q1 { background: var(--q1-tint); color: var(--q1-ink); }
+.quartile-q2 { background: var(--q2-tint); color: var(--q2-ink); }
+.quartile-q3 { background: var(--q3-tint); color: var(--q3-ink); }
+.quartile-q4 { background: var(--q4-tint); color: var(--q4-ink); }
 
 /* Discover view tabs (Discover / Favorites / Hidden) */
 .view-tabs {
@@ -732,11 +784,13 @@ table code {
   line-height: 1.3;
 }
 
-.kw-pill--0 { background: #eeedfe; color: #3c3489; }
-.kw-pill--1 { background: #fbeaf0; color: #72243e; }
-.kw-pill--2 { background: #e1f5ee; color: #085041; }
-.kw-pill--3 { background: #faeeda; color: #633806; }
-.kw-pill--4 { background: #e6f1fb; color: #0c447c; }
+/* Five of the six categorical hues, indexed off the keyword so a given term
+   keeps the same colour between visits. */
+.kw-pill--0 { background: var(--cat-indigo-tint);  color: var(--cat-indigo-ink); }
+.kw-pill--1 { background: var(--cat-magenta-tint); color: var(--cat-magenta-ink); }
+.kw-pill--2 { background: var(--cat-teal-tint);    color: var(--cat-teal-ink); }
+.kw-pill--3 { background: var(--cat-orange-tint);  color: var(--cat-orange-ink); }
+.kw-pill--4 { background: var(--cat-blue-tint);    color: var(--cat-blue-ink); }
 .kw-pill--cat { background: var(--bs-tertiary-bg); color: var(--bs-secondary-color); }
 
 /* Paper detail layout — abstract + side notes panel */
@@ -803,10 +857,13 @@ table code {
   border-left: 2px solid var(--bs-border-color);
 }
 
-.note-card--deney { border-left-color: #534ab7; }
-.note-card--soru { border-left-color: #0f6e56; }
-.note-card--sonuç { border-left-color: #ba7517; }
-.note-card--okuma { border-left-color: #0c447c; }
+/* These four carried different values from the tags they belong to -- #534ab7
+   against the tag #3c3489, and so on: two sets of colours for one meaning.
+   Same token now, so a note stripe and its tag cannot drift apart again. */
+.note-card--deney { border-left-color: var(--cat-indigo-ink); }
+.note-card--soru { border-left-color: var(--cat-green-ink); }
+.note-card--sonuç { border-left-color: var(--cat-orange-ink); }
+.note-card--okuma { border-left-color: var(--cat-blue-ink); }
 
 .note-card__body {
   line-height: 1.5;
@@ -823,10 +880,10 @@ table code {
   text-transform: lowercase;
 }
 
-.note-tag--deney { background: #eeedfe; color: #3c3489; }
-.note-tag--soru { background: #e1f5ee; color: #085041; }
-.note-tag--sonuç { background: #faeeda; color: #633806; }
-.note-tag--okuma { background: #e6f1fb; color: #0c447c; }
+.note-tag--deney { background: var(--cat-indigo-tint); color: var(--cat-indigo-ink); }
+.note-tag--soru { background: var(--cat-green-tint); color: var(--cat-green-ink); }
+.note-tag--sonuç { background: var(--cat-orange-tint); color: var(--cat-orange-ink); }
+.note-tag--okuma { background: var(--cat-blue-tint); color: var(--cat-blue-ink); }
 
 .note-add {
   background: var(--paper-card-bg);
@@ -856,9 +913,13 @@ table code {
   border-radius: 12px;
 }
 
-.btn-check:checked + .note-tag-btn--deney { background: #eeedfe; color: #3c3489; border-color: #eeedfe; }
-.btn-check:checked + .note-tag-btn--soru { background: #e1f5ee; color: #085041; border-color: #e1f5ee; }
-.btn-check:checked + .note-tag-btn--sonuc { background: #faeeda; color: #633806; border-color: #faeeda; }
+/* The third place these four colours were written out. The stripe on the note
+   card, the tag on it and this filter button all mean the same thing, and all
+   three carried their own hex values. */
+.btn-check:checked + .note-tag-btn--deney { background: var(--cat-indigo-tint); color: var(--cat-indigo-ink); border-color: var(--cat-indigo-tint); }
+.btn-check:checked + .note-tag-btn--soru { background: var(--cat-green-tint); color: var(--cat-green-ink); border-color: var(--cat-green-tint); }
+.btn-check:checked + .note-tag-btn--sonuc { background: var(--cat-orange-tint); color: var(--cat-orange-ink); border-color: var(--cat-orange-tint); }
+.btn-check:checked + .note-tag-btn--okuma { background: var(--cat-blue-tint); color: var(--cat-blue-ink); border-color: var(--cat-blue-tint); }
 .btn-check:checked + .note-tag-btn { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
 
 .text-muted-2 {
@@ -919,9 +980,9 @@ table code {
 }
 
 .timeline-event--note_added .timeline-event__dot {
-  background: rgba(186, 117, 23, 0.12);
-  border-color: rgba(186, 117, 23, 0.45);
-  color: #ba7517;
+  background: var(--cat-orange-tint);
+  border-color: var(--cat-orange-ink);
+  color: var(--cat-orange-ink);
 }
 
 .timeline-event--dismissed .timeline-event__dot {
@@ -930,9 +991,9 @@ table code {
 }
 
 .timeline-event--keyword_added .timeline-event__dot {
-  background: #eeedfe;
-  border-color: #534ab7;
-  color: #3c3489;
+  background: var(--cat-indigo-tint);
+  border-color: var(--cat-indigo-ink);
+  color: var(--cat-indigo-ink);
 }
 
 .timeline-event__when {
