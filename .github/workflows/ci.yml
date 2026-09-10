@@ -7,6 +7,68 @@ on:
     branches: [main, dev]
 
 jobs:
+  ui-audit:
+    # Separate from lint-and-test: this one downloads a browser, and the unit
+    # tests should not wait behind that. Accessibility and reflow regressions
+    # are invisible to pytest -- every page in this app scrolled sideways at
+    # 320px for months, and six carried controls a screen reader announced
+    # with no name.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: scrapemind
+          POSTGRES_PASSWORD: scrapemind
+          POSTGRES_DB: scrapemind_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      FLASK_APP: wsgi.py
+      FLASK_ENV: testing
+      SECRET_KEY: ci-secret
+      DATABASE_URL: postgresql://scrapemind:scrapemind@localhost:5432/scrapemind_test
+      TEST_DATABASE_URL: postgresql://scrapemind:scrapemind@localhost:5432/scrapemind_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          npm ci
+
+      - name: Install Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Build the schema
+        run: flask db upgrade
+
+      - name: Render signed-in pages
+        # Renders through Flask's test client rather than driving a login, so
+        # the audit does not depend on the login form working.
+        run: python scripts/render_pages.py ui-audit-pages
+
+      - name: Audit — WCAG 2.2 A/AA and reflow
+        run: node scripts/audit_ui.mjs ui-audit-pages
+
   lint-and-test:
     runs-on: ubuntu-latest
     # Hard cap. The last two runs hung in fixture teardown for hours before
@@ -57,9 +119,12 @@ jobs:
         # black locally over the whole tree and produces an unrelated diff.
         run: black --check app/ tests/
 
-      - name: Type check — mypy (advisory)
-        run: mypy app/ --ignore-missing-imports
-        continue-on-error: true
+      - name: Type check — mypy (ratchet)
+        # Was advisory with continue-on-error, which meant 95 errors reported
+        # into a log nobody opens and blocking nothing. A hard gate is not
+        # reachable from here, so the count may fall but not rise.
+        # See scripts/mypy_ratchet.py and mypy-baseline.txt.
+        run: python scripts/mypy_ratchet.py
 
       - name: Migration check (empty DB → upgrade)
         run: flask db upgrade

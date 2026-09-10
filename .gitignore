@@ -35,3 +35,8 @@ celerybeat-schedule*
 
 # User-uploaded avatars (served from static, not version-controlled)
 app/core/static/uploads/
+
+# UI audit (scripts/audit_ui.mjs). package.json and its lock are committed so
+# the audit is reproducible; the installed tree and the rendered pages are not.
+node_modules/
+ui-audit-pages/

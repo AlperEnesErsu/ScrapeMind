@@ -1,0 +1,7 @@
+# Maximum mypy errors tolerated in app/. See scripts/mypy_ratchet.py.
+#
+# The count may fall freely and this number should follow it down. It may not
+# rise without a deliberate commit saying why. Roughly 54 of these sit in
+# app/modules/scrape, and a large share across the tree are SQLAlchemy
+# relationship attributes mypy cannot resolve on untyped models.
+95

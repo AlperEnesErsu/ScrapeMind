@@ -92,25 +92,32 @@ körlüğünde hayatta kalmasını sağlayan şey.
 
 ### Otomatik (her koşuda)
 
-`tests/core/test_design_system.py` — 8 test, tarayıcı gerektirmez, CI'da
-kendiliğinden çalışır. Her biri bu repoda **en az bir kez gerçekleşmiş** bir
+`tests/core/test_design_system.py` — 7 test, tarayıcı gerektirmez, CI'da
+kendiliğinden çalışır. Renk çifti kontrolü artık **dosyada tanımlı her**
+`-tint`/`-ink` ve `X`/`X-bg` çiftini denetliyor, akılda kalan iki aileyi değil:
+`--paper-note` tam olarak o yüzden 3.71:1'de gözden kaçmıştı. Her biri bu repoda **en az bir kez gerçekleşmiş** bir
 bozulmayı yakalar. Hepsi mutasyonla doğrulandı: kuralı bozunca gerçekten
 düşüyorlar.
 
-### Elle (tarayıcı gerektirir)
+### Tarayıcı denetimi (CI'da, ayrı iş olarak)
 
-Şunlar Playwright ve ayakta bir uygulama istiyor, script'leri de bu repoda
-değil komşu `UI-UX/` klasöründe — o yüzden CI'a bağlı değiller:
+`ui-audit` işi yedi sayfayı basıp axe-core (WCAG 2.2 A/AA) ve 280/320/414px
+reflow kontrolünden geçirir. Yerelde de aynısını koşabilirsin:
 
 ```bash
-# Sayfaları statik dosyaya bas (giriş yapmış hâlleriyle), sonra:
-cd ../UI-UX
-node scripts/verify_responsive.mjs <klasör>   # 280/320/414px yatay taşma
-node scripts/verify_states.mjs <dosya>        # default/hover/focus kontrastı
-node scripts/axe_audit.mjs <dosya>            # WCAG 2.2 A/AA
+npm ci && npx playwright install chromium
+venv/Scripts/python.exe scripts/render_pages.py ui-audit-pages
+node scripts/audit_ui.mjs ui-audit-pages
 ```
 
-Büyük bir arayüz değişikliğinden sonra bunları koştur.
+Sayfalar Flask'ın test client'ıyla basılıyor, giriş formu sürülerek değil —
+böylece denetim, giriş formunun çalışmasına bağlı olmuyor. Statik `/static/`
+bağlantıları göreli yola çevriliyor, yani gerçek stylesheet yüklü hâlde
+denetleniyor.
+
+`pytest` bu sınıfı göremez: bu uygulamanın **her sayfası** aylarca 320px'te
+yana kaydı ve altı sayfada ekran okuyucunun isimsiz okuduğu kontroller vardı,
+suite bunların hiçbirinde kırmızıya dönmedi.
 
 ### Bilinen muafiyet
 
@@ -120,5 +127,8 @@ istediği 24px dokunma hedefinin altında — ve bir yıl görünümü 24px'te
 haritasının yanındaki tarih girdisi aynı filtreyi sürüyor ve klavyeyle
 erişilebilir.
 
-axe bunu görmez ve `target-size` ihlali raporlamaya devam eder. **Bu bilinen ve
-kabul edilmiş tek ihlal.** Başka bir `target-size` bulgusu çıkarsa o gerçektir.
+Bu muafiyet `scripts/audit_ui.mjs` içinde **dar kapsamlı** olarak tanımlı: bu
+kural, bu öğeler, bu sayfa. Başka bir sayfada ya da başka öğelerde çıkan bir
+`target-size` bulgusu gerçektir ve denetimi kırar.
+
+**Bu, bilerek kabul edilmiş tek ihlal.**
