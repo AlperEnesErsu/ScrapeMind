@@ -53,6 +53,41 @@ class Paper(BaseModel):
     # 1536 dimensions matches text-embedding-3-small and standard modern models.
     embedding = db.Column(Vector(1536), nullable=True)
 
+    # --- Open access (Faz 7) ---
+    # `pdf_url` above is whatever link a source happened to carry and says
+    # nothing about access: OpenAlex was filling it from `primary_location`
+    # when `best_oa_location` was absent, and a primary location is the
+    # publisher's, which is routinely paywalled. These three describe access
+    # specifically, so nothing has to infer it from a URL.
+    #
+    # OpenAlex's `open_access.oa_status`: "gold" | "green" | "hybrid" |
+    # "bronze" | "closed" | "diamond". Kept as the source's own vocabulary
+    # rather than a boolean, because "bronze" is exactly the case that is
+    # free to read and *not* free to redistribute.
+    oa_status = db.Column(db.String(16), nullable=True, index=True)
+    # The licence OpenAlex reports for the OA location, e.g. "cc-by",
+    # "cc-by-nc-nd", "publisher-specific-oa". NULL means the location is
+    # readable but carries no stated licence -- which is a "no", not a "maybe".
+    oa_license = db.Column(db.String(64), nullable=True)
+    # The OA location itself, distinct from `pdf_url`. Only ever set from
+    # `best_oa_location`, so anything reading this knows it is fetchable.
+    oa_url = db.Column(db.Text, nullable=True)
+
+    # --- Full text (Faz 7) ---
+    # How much text the fetch produced. Stored even when the text itself is
+    # not, exactly like `VideoSummary.transcript_chars`: it makes "we looked
+    # and found 41k characters" distinguishable from "we never looked", which
+    # a NULL body alone cannot express.
+    fulltext_chars = db.Column(db.Integer, nullable=True)
+    fulltext_fetched_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    # Populated ONLY when `oa_license` is one the project may redistribute --
+    # see `REDISTRIBUTABLE_LICENSES` in fulltext.py. For every other paper the
+    # text is used to derive an analysis and an embedding and then dropped,
+    # which is the rule SCRAPING.md §11 already applies to video transcripts.
+    # Do not relax this to "it was open access" -- open access is about
+    # reading, not about republishing.
+    fulltext = db.Column(db.Text, nullable=True)
+
     __table_args__ = (
         db.UniqueConstraint("source", "external_id", name="uq_paper_source_external"),
         db.Index(

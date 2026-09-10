@@ -76,6 +76,12 @@ TASK_ROUTES = {
     # `llm` pool's capacity rather than flooding `io` with billable work.
     "embeddings.embed_paper": {"queue": "llm"},
     "embeddings.embed_pending_papers": {"queue": "llm"},
+    # Full text is a network fetch plus a PDF parse -- I/O bound and not
+    # billable, so it belongs with the other fetchers rather than in `llm`.
+    # What it feeds (analysis, embeddings) is billable and is queued
+    # separately by those tasks.
+    "fulltext.fetch_for_paper": {"queue": "io"},
+    "fulltext.fetch_pending": {"queue": "io"},
 }
 
 # Tasks deliberately left off TASK_ROUTES, so they land on the default
@@ -205,6 +211,7 @@ from app.tasks import (  # noqa: E402, F401
     digest_tasks,
     embedding_tasks,
     feed_tasks,
+    fulltext_tasks,
     patent_tasks,
     report_tasks,
     scrape_tasks,
