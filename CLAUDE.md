@@ -20,6 +20,7 @@ vaat ediyordu, doğru değil.)
 - `docs/SCRAPING.md` — veri toplama mimarisi, **yeni kaynak eklemeden önce zorunlu**
 - `docs/HANDOVER.md` — durum, commit'lenmemiş iş, tuzaklar, sıradaki görevler
 - `docs/PHASE5.md` — Faz 5 planı (patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus)
+- `docs/DESIGN.md` — tasarım sistemi, **arayüze dokunmadan önce zorunlu**
 
 ## Veritabanı (yerel geliştirme)
 - **Postgres artık ScrapeMind'in kendisinin, Redis hâlâ paylaşımlı.** Postgres: `scrapemind-db-1`, **5433**, `pgvector/pgvector:pg17`, kullanıcı/şifre `scrapemind`, volume `scrapemind_pg_data`. Ayağa kaldır:
@@ -57,8 +58,9 @@ app/modules/
 app/tasks/         → core_tasks, scrape_tasks, feed_tasks, digest_tasks, channel_tasks,
                      schedule (BEAT_SCHEDULE), schedule_info (crontab→zaman), fanout
 translations/      → TR + EN .po/.mo dosyaları
-scripts/           → seed.py, create_module.py, export_core_template.py
-docs/              → SCRAPING.md, HANDOVER.md, API_V1.md, UI_REVIEW.md
+scripts/           → seed.py, create_module.py, export_core_template.py,
+                     render_favicon.py (işareti logo.svg'den türetir)
+docs/              → SCRAPING.md, HANDOVER.md, API_V1.md, UI_REVIEW.md, DESIGN.md
 docs/adr/          → mimari karar kayıtları — neden **yapmadığımız** şeyler
 ```
 
@@ -82,11 +84,10 @@ pybabel compile -d translations
 - TR ve EN kataloglarının **msgid key set'leri eşit olmalı** — CI bunu kontrol ediyor
 - EN kataloğunda çeviri = msgid'nin kendisi (identity translation)
 
-## Tamamlanan Faz Durumu (Temmuz 2026)
-- **Faz 0** ✅ tam
-- **Faz 1** ✅ tam (email servisi, password policy, session yönetimi `ed5d4ac` ile geldi)
-- **Faz 2** ✅ tam — Semantic Scholar + PubMed `#27` ile kapandı
-- **Faz 3** 🔶 devam ediyor — 17 commit `feat/homepage-source-selection`'da, aşağıya bak
+## Tamamlanan Faz Durumu (Eylül 2026)
+- **Faz 0-6** ✅ hepsi main'de. Açık dal yok.
+- Faz detayları aşağıda; en yenisi **Faz 6** (raporlar) ve onun ardından gelen
+  **tasarım sistemi** (`docs/DESIGN.md`).
 
 ### Faz 2 — merge'lenenler
 | PR    | Konu |
@@ -111,7 +112,7 @@ RSS beslemeler · SSRF guard · Redis rate limit · TR→EN anahtar kelime çevi
 konu sınıflandırma + ilgi-farkında kaynak seçici · ScanRun + durum paneli · digest ·
 çok sağlayıcılı LLM · worker ayrımı + deterministik fan-out · health paneli.
 
-### Faz 4 — branch `feat/openalex-crossref-youtube-channels` (main'in 9 commit önünde)
+### Faz 4 ✅ — `feat/openalex-crossref-youtube-channels` main'e merge edildi
 Her commit tek başına test-yeşil, `git bisect` güvenilir. Commit listesi
 `docs/HANDOVER.md §3`'te. Kapsam:
 - **DOI normalizasyonu + `upsert_paper` zenginleştirmesi** — boş alanı doldur, doluyu
@@ -135,10 +136,31 @@ admin panelinden açılan, varsayılan kapalı, **discovery-only** Scopus.
 > saklanmasını** ve rekabet eden türev servisi yasaklıyor; Scopus anahtarı kurum IP'sine
 > bağlı. Tam tablo ve karar `docs/PHASE5.md §2`.
 
+### Faz 6 ✅ tam — PR #53 ile main'de
+Rapor hattı: tek `report` tablosu, iki tür (konu raporu + yazar grubu raporu).
+**Önce sayılar, sonra anlatı** — metin hesaplanmış veriden üretilir, tersi değil.
+Uzun külliyat için map/reduce özetleme (reduce adımı yapılandırılmış bir dosya
+görür, parça metinlerinin birleşimini değil) · yazar grupları ve gruplanınca
+hayatta kalan duraklatma · OpenAlex'e aralık hasadı, agregatlar, yazar arama ·
+rapor üretimi istek dışında, llm kuyruğunda.
+
+### Tasarım sistemi ✅ — PR #54 ile main'de
+Nar işareti + ondan türetilen garnet palet · IBM Plex Sans/Mono ve dokuz adımlı
+tip ölçeği · CVD-güvenli kategorik palet · dark mode kaldırıldı.
+**Değiştirmeden önce `docs/DESIGN.md` oku** — özellikle kırmızı marka ile kırmızı
+tehlike renginin neden formla ayrıldığını, çünkü bu kural renkle kendini
+koruyamıyor.
+`tests/core/test_design_system.py` 8 denetimle bu kararları tutuyor: ölçek dışı
+`font-size`, üründe emoji, AA altına düşen renk çifti, kategorikleşen quartile
+rampası, gerçeği söylemeyen kontrast yorumu, kalkan outline varyantları.
+Tarayıcı gerektiren denetimler (axe, durum bazlı kontrast, 280px reflow) CI'da
+değil — script'leri komşu `UI-UX/` klasöründe, elle koşulur.
+
 ### Sıradaki iş (öncelik sırasıyla)
 1. RSS'siz site scrape'i + alan seçici (önce `docs/adr/0001-headless-browser-yok.md` oku)
-2. Bluesky adaptörü
-3. Uzun vade: pgvector + gerçek RAG · atıf grafiği · OA tam metin · kayıtlı arama + uyarı
+2. OA tam metin · kayıtlı arama + uyarı
+3. Sol menüde aynı anda iki öğe aktif görünüyor — `_sidebar.html`'deki aktiflik
+   kontrolü muhtemelen tam endpoint yerine URL ön eki eşliyor
 Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
 
 ## Bilinen Kısıtlar / Tuzaklar
