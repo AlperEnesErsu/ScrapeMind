@@ -43,6 +43,8 @@ body {
   --success: #1F6F4A;  /* 5.8:1 */
   --warning: #8A5A06;  /* 5.7:1 */
   --danger:  #C0341C;  /* 5.3:1 -- see the form rule above */
+  --danger-hover: #9E2B17;
+  --danger-soft:  #E3A294;  /* disabled state only, never for text */
   --info:    #1F5A80;  /* 7.1:1 */
 
   --sidebar-bg: var(--neutral-100);
@@ -82,6 +84,8 @@ body {
   --bs-btn-hover-border-color: var(--brand-700);
   --bs-btn-active-bg: var(--brand-800);
   --bs-btn-active-border-color: var(--brand-800);
+  --bs-btn-disabled-color: var(--brand-400);
+  --bs-btn-disabled-border-color: var(--brand-200);
   --bs-btn-focus-shadow-rgb: 122, 31, 43;
 }
 
@@ -90,8 +94,10 @@ body {
 .btn-danger {
   --bs-btn-bg: var(--danger);
   --bs-btn-border-color: var(--danger);
-  --bs-btn-hover-bg: #9E2B17;
-  --bs-btn-hover-border-color: #9E2B17;
+  --bs-btn-hover-bg: var(--danger-hover);
+  --bs-btn-hover-border-color: var(--danger-hover);
+  --bs-btn-disabled-bg: var(--danger-soft);
+  --bs-btn-disabled-border-color: var(--danger-soft);
 }
 
 .btn-outline-danger {
@@ -99,6 +105,8 @@ body {
   --bs-btn-border-color: var(--danger);
   --bs-btn-hover-bg: var(--danger);
   --bs-btn-hover-border-color: var(--danger);
+  --bs-btn-disabled-color: var(--danger-soft);
+  --bs-btn-disabled-border-color: var(--danger-soft);
 }
 
 /* Sidebar */
