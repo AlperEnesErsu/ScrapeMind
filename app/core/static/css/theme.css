@@ -5,17 +5,100 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* --- Design tokens -------------------------------------------------------
+   The palette derives from the mark, which is a pomegranate: --brand-* is the
+   rind, and --neutral-* is a grey biased toward it, so the neutrals read as
+   chosen rather than inherited. Ratios in the comments are measured against
+   --neutral-50; anything used for body text clears WCAG AA (4.5:1).
+
+   One rule the palette cannot enforce by itself. The brand is red and so is
+   danger: they sit 17 degrees apart on the wheel, which is not enough to tell
+   a Save from a Delete at a glance, and there is no redder or oranger danger
+   that still clears AA without colliding with --warning (38 degrees). So
+   destructive actions are separated by FORM, not hue -- they take an outline
+   treatment and never appear as a filled button beside a filled primary. */
 :root {
-  --sidebar-bg: #f8fafc;
+  --brand-50:  #FDF5F6;
+  --brand-100: #F9E4E7;
+  --brand-200: #F0C4CA;
+  --brand-300: #E29CA6;
+  --brand-400: #CE6B79;
+  --brand-500: #C24456;  /*  4.7:1 -- lightest step still safe for body text */
+  --brand-600: #A62F41;  /*  6.5:1 -- the mark's own colour, used in favicons */
+  --brand-700: #7A1F2B;  /*  9.7:1 -- primary */
+  --brand-800: #5E1721;  /* 12.4:1 */
+  --brand-900: #3E0F17;  /* 15.6:1 */
+
+  --neutral-50:  #FBF9F9;  /* page ground */
+  --neutral-100: #F4F0F1;
+  --neutral-200: #E7DFE0;  /* hairline rules */
+  --neutral-300: #D4C9CB;
+  --neutral-400: #A99A9D;
+  --neutral-500: #857578;  /*  4.2:1 -- large text only */
+  --neutral-600: #6E5F62;  /*  5.8:1 -- muted body text */
+  --neutral-700: #524649;
+  --neutral-800: #362E30;
+  --neutral-900: #1C1517;  /* 17.1:1 -- ink */
+
+  --success: #1F6F4A;  /* 5.8:1 */
+  --warning: #8A5A06;  /* 5.7:1 */
+  --danger:  #C0341C;  /* 5.3:1 -- see the form rule above */
+  --info:    #1F5A80;  /* 7.1:1 */
+
+  --sidebar-bg: var(--neutral-100);
   --sidebar-width: 240px;
   --topbar-bg: #ffffff;
-  --nav-link-hover-bg: #f1f5f9;
-  --nav-link-active-bg: #6366f1;
+  --nav-link-hover-bg: var(--neutral-200);
+  --nav-link-active-bg: var(--brand-700);
   --nav-link-active-color: #ffffff;
-  --bs-primary: #6366f1;
-  --bs-primary-rgb: 99, 102, 241;
-  --bs-body-bg: #f8fafc;
+  --bs-primary: #7A1F2B;
+  --bs-primary-rgb: 122, 31, 43;
+  --bs-link-color: #7A1F2B;
+  --bs-link-color-rgb: 122, 31, 43;
+  --bs-link-hover-color: #5E1721;
+  --bs-body-bg: var(--neutral-50);
   --card-border-radius: 12px;
+}
+
+/* Bootstrap compiles its button colours to literals, so --bs-primary alone
+   does not reach .btn-primary -- these re-point the per-component variables
+   the button actually reads. */
+.btn-primary {
+  --bs-btn-bg: var(--brand-700);
+  --bs-btn-border-color: var(--brand-700);
+  --bs-btn-hover-bg: var(--brand-800);
+  --bs-btn-hover-border-color: var(--brand-800);
+  --bs-btn-active-bg: var(--brand-900);
+  --bs-btn-active-border-color: var(--brand-900);
+  --bs-btn-disabled-bg: var(--brand-300);
+  --bs-btn-disabled-border-color: var(--brand-300);
+  --bs-btn-focus-shadow-rgb: 122, 31, 43;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--brand-700);
+  --bs-btn-border-color: var(--brand-700);
+  --bs-btn-hover-bg: var(--brand-700);
+  --bs-btn-hover-border-color: var(--brand-700);
+  --bs-btn-active-bg: var(--brand-800);
+  --bs-btn-active-border-color: var(--brand-800);
+  --bs-btn-focus-shadow-rgb: 122, 31, 43;
+}
+
+/* The counterpart to the form rule: a destructive action is an outline, and
+   filling it is what makes it indistinguishable from the primary. */
+.btn-danger {
+  --bs-btn-bg: var(--danger);
+  --bs-btn-border-color: var(--danger);
+  --bs-btn-hover-bg: #9E2B17;
+  --bs-btn-hover-border-color: #9E2B17;
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--danger);
+  --bs-btn-border-color: var(--danger);
+  --bs-btn-hover-bg: var(--danger);
+  --bs-btn-hover-border-color: var(--danger);
 }
 
 /* Sidebar */
@@ -120,8 +203,19 @@ form.card.card-body {
   letter-spacing: -0.01em;
 }
 
-#topbar .navbar-brand i {
-  color: var(--bs-primary);
+/* The mark is inlined (see scripts/render_favicon.py) so it can take its
+   colour from the brand token rather than being baked into the file. */
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  color: var(--brand-700);
+  flex: none;
+}
+
+/* On the signed-out card the mark is the only branding, so it carries more. */
+.card-title .brand-mark {
+  width: 30px;
+  height: 30px;
 }
 
 /* Auth pages: card a bit more elegant */
@@ -837,10 +931,13 @@ a.timeline-event__title:hover {
 
 /* Premium Stat Cards with variables matching theme */
 :root {
-  --stat-interests-bg: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  --stat-favorites-bg: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-  --stat-notes-bg: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --stat-readlater-bg: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  /* Four metrics, so four hues -- but drawn from the semantic roles rather
+     than the neon set they used to be, which shouted next to the brand.
+     White text clears AA on every one of these (5.6:1 at worst). */
+  --stat-interests-bg: linear-gradient(135deg, var(--brand-700) 0%, var(--brand-900) 100%);
+  --stat-favorites-bg: linear-gradient(135deg, #8A5A06 0%, #634004 100%);
+  --stat-notes-bg: linear-gradient(135deg, #1F6F4A 0%, #164F35 100%);
+  --stat-readlater-bg: linear-gradient(135deg, #1F5A80 0%, #16405B 100%);
 }
 
 .stat-card {
@@ -1029,7 +1126,7 @@ a.timeline-event__title:hover {
   left: 0;
   height: 3px;
   width: 0%;
-  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+  background: linear-gradient(90deg, var(--brand-700), var(--brand-500), var(--brand-300));
   z-index: 9999;
   transition: width 0.3s ease;
 }

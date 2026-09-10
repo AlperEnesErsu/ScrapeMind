@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ScrapeMind{% endblock %}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon-32.png') }}" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon-180.png') }}">
   {# Saves ~80-150ms on first paint — TLS handshake to the CDN happens in
      parallel with HTML parsing instead of blocking on the first <link>. #}
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
