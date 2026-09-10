@@ -16,7 +16,10 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17-alpine
+        # pgvector, not plain postgres: Faz 5.4 made Paper.embedding a
+        # VECTOR(1536) and the first migration runs CREATE EXTENSION vector,
+        # which postgres:17-alpine cannot satisfy. Same image as local dev.
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: scrapemind
           POSTGRES_PASSWORD: scrapemind
@@ -46,10 +49,13 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Lint — ruff
-        run: ruff check app/
+        run: ruff check app/ tests/
 
       - name: Lint — black
-        run: black --check app/
+        # tests/ is linted too: the design-system gates live there, and a
+        # formatter that only sees app/ lets tests/ drift until someone runs
+        # black locally over the whole tree and produces an unrelated diff.
+        run: black --check app/ tests/
 
       - name: Type check — mypy (advisory)
         run: mypy app/ --ignore-missing-imports
