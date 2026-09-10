@@ -157,11 +157,23 @@ Tarayıcı gerektiren denetimler (axe, durum bazlı kontrast, 280px reflow) CI'd
 değil — script'leri komşu `UI-UX/` klasöründe, elle koşulur.
 
 ### Sıradaki iş (öncelik sırasıyla)
-1. RSS'siz site scrape'i + alan seçici (önce `docs/adr/0001-headless-browser-yok.md` oku)
-2. OA tam metin · kayıtlı arama + uyarı
-3. Sol menüde aynı anda iki öğe aktif görünüyor — `_sidebar.html`'deki aktiflik
-   kontrolü muhtemelen tam endpoint yerine URL ön eki eşliyor
+1. **[#58](https://github.com/AlperEnesErsu/ScrapeMind/issues/58) — hesap ayarları ile
+   ürün yapılandırmasını ayır.** `Profilim` altında 12 sekme var ve ikisi farklı şey:
+   sekiz tanesi hesap (kim olduğun, nasıl giriş yaptığın), dördü ürün yapılandırması
+   (ORCID kimlikleri, ilgi alanları, LLM anahtarları, takip edilen yazarlar). Bir
+   kullanıcının LLM sağlayıcısı profil ayarı değil. Sol menü **zaten sakin** — sorun
+   sidebar'da değil, profil sayfasının içinde; çözüm sidebar'ı şişirmemeli.
+2. **OA tam metin** — OpenAlex `best_oa_location`. Etik sınır net: yalnızca açık erişim.
+3. **Kayıtlı arama + uyarı** — bildirim altyapısı (`add_notification`) hazır.
+4. **Zotero/Mendeley dışa aktarım** — BibTeX var, API entegrasyonu doğal devam.
+5. Küçük borç: `mypy-baseline.txt` 95'te; en yoğun yer `app/modules/scrape`.
+
 Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
+> Bu liste 10 Eylül 2026'da gerçeğe karşı denetlendi. İki madde bitmiş olduğu
+> hâlde duruyordu: RSS'siz site scrape'i + alan seçici (PR #47/#48 ile inmişti) ve
+> sol menüdeki çift aktiflik hatası (PR #56). İkincisinin buradaki teşhisi de
+> yanlıştı — `is_active` ön ek değil tam endpoint eşliyordu, hata veriydi: iki menü
+> kaydı aynı endpoint'i gösteriyordu.
 
 ## Bilinen Kısıtlar / Tuzaklar
 - Email gönderimi `MAIL_SUPPRESS_SEND=true` ise dev modu — link `flash` ile gösteriliyor

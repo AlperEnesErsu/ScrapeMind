@@ -529,6 +529,44 @@ seçiciyle override eder.
 
 ---
 
+### 5.7 [#58](https://github.com/AlperEnesErsu/ScrapeMind/issues/58) Hesap ayarları ile ürün yapılandırmasının ayrılması
+
+birmstf'nin açtığı issue. Şikâyet yerinde ve ölçülebilir: `/settings/profile`
+altında **12 sekme** var ve ikisi kavramsal olarak ayrı şey.
+
+| Hesap — "kim olduğum, nasıl giriş yaptığım" | Ürün yapılandırması — "ürün benim için ne yapsın" |
+|---|---|
+| personal · email · password · security (2FA) | identifiers (ORCID/Scopus/WoS) |
+| prefs · oauth · sessions · account | interests (ilgi alanları) |
+| | ai (LLM sağlayıcı + şifreli anahtar) |
+| | authors (takip edilen yazarlar) |
+
+Sağdaki dördü `register_profile_tab()` ile modüllerden geliyor
+([tab_registry.py](../app/core/settings/tab_registry.py)); soldaki sekizi
+`CORE_TABS`. Yani ayrım kodda **zaten var**, sadece arayüzde tek bir sayfada
+birleşiyorlar.
+
+> ⚠️ Issue'nun gövdesi cümle ortasında bitiyor ("...mantıksal olarak ayırmak:") —
+> önerilen çözüm yazılmamış. Aşağıdaki, mevcut yapıya bakarak çıkarılan bir okuma,
+> issue'nun kendi kararı değil. Uygulamadan önce birmstf'ye sor.
+
+**Dikkat edilecek nokta:** issue sidebar'ın sadeliğinden bahsediyor, ama sidebar
+şu an sakin — 6 üst öğe artı bir admin grubu. Karmaşa profil *sayfasının içinde*.
+Yani çözüm sidebar'a dört yeni öğe eklemek olamaz.
+
+En küçük müdahale: modül sekmelerini kendi sayfasına taşıyıp sidebar'a **tek** bir
+öğe eklemek (ör. "Araştırma Ayarlarım"), profili sekiz gerçek hesap sekmesine
+indirmek. `_source_manager.html` da doğal olarak oraya ait. Bu, `tab_registry`'ye
+sekmenin hangi gruba ait olduğunu söyleyen bir alan eklemeyi gerektirir —
+`app/core/` hiçbir modülü import etmediği için kayıt yönü doğru zaten (CLAUDE.md
+kural 1).
+
+Karşı görüş: dört sekme için ayrı bir sayfa da bir tıklama daha demek. Alternatif,
+profil sayfasında sekmeleri iki başlık altında gruplamak — sidebar hiç değişmez,
+ama issue'nun "menü hiyerarşisi" şikâyetini tam karşılamaz.
+
+---
+
 ### 5.5 ✅ Faz 6 — Retrospektif raporlar + yazar grupları (5 Eylül 2026)
 
 İki branch, sırayla: `fix/llm-resilience` (dayanıklılık sertleştirmesi) →
