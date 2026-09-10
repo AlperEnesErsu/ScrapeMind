@@ -560,6 +560,12 @@ table code {
   min-width: 0;
 }
 
+.saved-search-name {
+  width: 100%;
+  max-width: 240px;
+  min-width: 0;
+}
+
 /* Mobile sidebar — off-canvas below 768px */
 @media (max-width: 767.98px) {
   #sidebar {

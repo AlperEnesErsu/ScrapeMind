@@ -82,6 +82,10 @@ TASK_ROUTES = {
     # separately by those tasks.
     "fulltext.fetch_for_paper": {"queue": "io"},
     "fulltext.fetch_pending": {"queue": "io"},
+    # Saved-search alerts are a database query and a notification -- no LLM
+    # call anywhere in the path, so they do not belong in `llm`.
+    "alerts.run_for_user": {"queue": "io"},
+    "alerts.run_for_all_users": {"queue": "io"},
 }
 
 # Tasks deliberately left off TASK_ROUTES, so they land on the default
@@ -205,6 +209,7 @@ def init_celery(flask_app) -> Celery:
 # Side-effect: importing this module registers tasks via decorators.
 # Keep at the bottom to avoid circular imports.
 from app.tasks import (  # noqa: E402, F401
+    alert_tasks,
     author_tasks,
     channel_tasks,
     core_tasks,

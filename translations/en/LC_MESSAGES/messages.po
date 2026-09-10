@@ -3526,6 +3526,104 @@ msgstr "Language changes apply on next page load."
 msgid "Jump to date"
 msgstr "Jump to date"
 
+msgid "Saved searches"
+msgstr "Saved searches"
+
+msgid "Saved Searches"
+msgstr "Saved Searches"
+
+msgid "No saved searches yet."
+msgstr "No saved searches yet."
+
+msgid ""
+"Run a search in your library, then save it — you will be told when new "
+"papers match."
+msgstr ""
+"Run a search in your library, then save it — you will be told when new "
+"papers match."
+
+msgid "Go to library search"
+msgstr "Go to library search"
+
+msgid "Waiting"
+msgstr "Waiting"
+
+msgid "Frequency"
+msgstr "Frequency"
+
+msgid "(no text)"
+msgstr "(no text)"
+
+msgid "semantic"
+msgstr "semantic"
+
+#, python-format
+msgid "%(n)d+ (too broad)"
+msgstr "%(n)d+ (too broad)"
+
+msgid "Delete this saved search?"
+msgstr "Delete this saved search?"
+
+#, python-format
+msgid "%(used)d of %(max)d saved searches used."
+msgstr "%(used)d of %(max)d saved searches used."
+
+msgid "Turning one off pauses it without losing what has already been announced."
+msgstr "Turning one off pauses it without losing what has already been announced."
+
+msgid "Save this search"
+msgstr "Save this search"
+
+msgid "e.g. thermal management"
+msgstr "e.g. thermal management"
+
+msgid "Tell me"
+msgstr "Tell me"
+
+msgid "Save search"
+msgstr "Save search"
+
+msgid "Give the saved search a name."
+msgstr "Give the saved search a name."
+
+#, python-format
+msgid "You already have %(count)d saved searches, which is the maximum."
+msgstr "You already have %(count)d saved searches, which is the maximum."
+
+#, python-format
+msgid "You already have a saved search called “%(name)s”."
+msgstr "You already have a saved search called “%(name)s”."
+
+msgid "Saved. You will be told when new papers match it."
+msgstr "Saved. You will be told when new papers match it."
+
+msgid "Updated."
+msgstr "Updated."
+
+#, python-format
+msgid "Deleted “%(name)s”."
+msgstr "Deleted “%(name)s”."
+
+#, python-format
+msgid "New results for “%(name)s”"
+msgstr "New results for “%(name)s”"
+
+#, python-format
+msgid "%(count)d new paper(s) match this saved search."
+msgstr "%(count)d new paper(s) match this saved search."
+
+#, python-format
+msgid "…and %(more)d more."
+msgstr "…and %(more)d more."
+
+#, python-format
+msgid ""
+"This search matched more than %(cap)d papers, so only the first %(cap)d "
+"are listed. Narrowing it will make these alerts more useful."
+msgstr ""
+"This search matched more than %(cap)d papers, so only the first %(cap)d "
+"are listed. Narrowing it will make these alerts more useful."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

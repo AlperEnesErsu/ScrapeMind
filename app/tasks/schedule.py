@@ -84,6 +84,22 @@ BEAT_SCHEDULE = {
         "task": "embeddings.embed_pending_papers",
         "schedule": crontab(hour=3, minute=55),
     },
+    # Saved-search alerts (Faz 7.1). Deliberately last of the nightly chain:
+    # a paper that arrived in tonight's scan, gained an abstract from a DOI
+    # match and had its OA full text fetched at 03:50 should be announced
+    # tonight, not tomorrow -- and a saved search can match on any of those.
+    "alerts-daily": {
+        "task": "alerts.run_for_all_users",
+        "schedule": crontab(hour=4, minute=10),
+        "kwargs": {"cadence": "daily"},
+    },
+    "alerts-weekly": {
+        "task": "alerts.run_for_all_users",
+        # Monday, so a weekly alert lands at the start of a working week
+        # rather than into a weekend.
+        "schedule": crontab(hour=4, minute=20, day_of_week=1),
+        "kwargs": {"cadence": "weekly"},
+    },
     # Audit retention sweep — after the nightly scrape so the two never
     # contend. AUDIT_RETENTION_DAYS=0 turns the sweep into a no-op.
     "audit-purge-nightly": {

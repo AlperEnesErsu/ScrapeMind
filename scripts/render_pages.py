@@ -33,6 +33,11 @@ PAGES = {
     "users": "/admin/users/",
     "settings": "/settings/profile",
     "audit": "/admin/audit/",
+    # Added after the fact: the library search page carried two unlabelled
+    # selects, two unlabelled date inputs and 81px of overflow at 280px,
+    # entirely because it had never been in this list.
+    "librarysearch": "/library/search?q=a",
+    "profile-alerts": "/settings/profile?tab=alerts",
 }
 
 ROOT = Path(__file__).resolve().parent.parent

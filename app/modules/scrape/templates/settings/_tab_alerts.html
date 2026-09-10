@@ -1,0 +1,97 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Saved searches') }}</h6>
+
+{% if not saved_searches %}
+  <div class="empty-state">
+    <i class="bi bi-bell" aria-hidden="true"></i>
+    <p>{{ _('No saved searches yet.') }}</p>
+    <p class="text-muted">
+      {{ _('Run a search in your library, then save it — you will be told when new papers match.') }}
+    </p>
+    <a href="{{ url_for('library.search') }}" class="btn btn-sm btn-primary">
+      {{ _('Go to library search') }}
+    </a>
+  </div>
+{% else %}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>{{ _('Name') }}</th>
+          <th>{{ _('Search') }}</th>
+          <th>{{ _('Waiting') }}</th>
+          <th>{{ _('Frequency') }}</th>
+          <th class="text-end">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in saved_searches %}
+          <tr>
+            <td class="fw-semibold">{{ s.name }}</td>
+            <td class="text-muted">
+              {% if s.q %}<code>{{ s.q }}</code>{% else %}<span class="text-muted">{{ _('(no text)') }}</span>{% endif %}
+              {% if s.semantic %}
+                <span class="badge text-bg-secondary-subtle">{{ _('semantic') }}</span>
+              {% endif %}
+              {% for key, value in (s.filters or {}).items() %}
+                <span class="kw-pill kw-pill--cat">{{ key }}: {{ value }}</span>
+              {% endfor %}
+            </td>
+            <td>
+              {# What an alert would say right now. A user cannot otherwise tell
+                 a query is too wide until the first notification arrives. #}
+              {% set p = pending.get(s.id) %}
+              {% if p is none %}
+                <span class="text-muted">—</span>
+              {% elif p.capped %}
+                <span class="text-warning">{{ _('%(n)d+ (too broad)', n=p.count) }}</span>
+              {% elif p.count %}
+                {{ p.count }}
+              {% else %}
+                <span class="text-muted">0</span>
+              {% endif %}
+            </td>
+            <td>
+              <form method="post"
+                    action="{{ url_for('alerts.set_cadence', search_id=s.id) }}"
+                    class="d-inline-flex align-items-center gap-1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="visually-hidden" for="cadence-{{ s.id }}">
+                  {{ _('Frequency') }} — {{ s.name }}
+                </label>
+                <select name="cadence" id="cadence-{{ s.id }}"
+                        class="form-select form-select-sm w-auto"
+                        onchange="this.form.submit()">
+                  {% for c in cadences %}
+                    <option value="{{ c }}" {% if s.cadence == c %}selected{% endif %}>
+                      {{ {'daily': _('Daily'), 'weekly': _('Weekly'), 'off': _('Off')}[c] }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td class="text-end">
+              {# Outline, not filled: destructive actions are separated from the
+                 primary by form rather than by hue — see docs/DESIGN.md. #}
+              <form method="post"
+                    action="{{ url_for('alerts.delete', search_id=s.id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm('{{ _('Delete this saved search?') }}');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        aria-label="{{ _('Delete') }} — {{ s.name }}">
+                  <i class="bi bi-trash" aria-hidden="true"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="form-text">
+    {{ _('%(used)d of %(max)d saved searches used.', used=saved_searches|length, max=max_saved_searches) }}
+    {{ _('Turning one off pauses it without losing what has already been announced.') }}
+  </p>
+{% endif %}
