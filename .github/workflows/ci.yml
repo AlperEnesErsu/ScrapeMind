@@ -70,11 +70,14 @@ jobs:
         # and fixture teardown — the signal-based default missed both in the
         # last run and let it idle until GitHub's 6h cap.
         # -v --tb=short -s makes Actions output readable and live (no capture).
-        # Baseline dropped to 55% temporarily — this PR added a lot of new
-        # admin routes (users/system/audit-filters/dashboard/search) that are
-        # service-tested but lack HTTP-level fixtures yet. Phase 2 should
-        # bring an authenticated client fixture and push this back up to 70%.
-        run: pytest -v -s --tb=short --timeout=60 --timeout-method=thread --cov=app --cov-fail-under=55
+        # The floor was 55%, described in a Faz 2 comment as a temporary drop
+        # to be pushed back to 70% once HTTP-level fixtures existed. They do,
+        # and coverage measured 82% — so the gate sat 27 points below reality
+        # and would have waved through the removal of a quarter of the suite.
+        # 80% keeps a small margin for normal movement while still failing on
+        # a real regression. Raise it when the number rises; a floor that
+        # trails far behind the measurement is not a floor.
+        run: pytest -v -s --tb=short --timeout=60 --timeout-method=thread --cov=app --cov-fail-under=80
 
       - name: Translation consistency (TR == EN key sets)
         run: |
