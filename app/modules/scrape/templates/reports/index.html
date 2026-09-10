@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Reports') }} — ScrapeMind{% endblock %}
+{% block content %}
+
+<h4 class="mb-1"><i class="bi bi-file-earmark-bar-graph me-2"></i>{{ _('Reports') }}</h4>
+<p class="text-muted small">
+  {{ _('Generate a retrospective briefing on a topic — a year-by-year narrative plus the numbers behind it.') }}
+</p>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card card-body">
+      <h6 class="mb-3">{{ _('New report') }}</h6>
+      <form method="post" action="{{ url_for('scrape.report_create') }}" novalidate>
+        {{ form.csrf_token }}
+        <div class="mb-2">
+          {{ form.keywords.label(class="form-label") }}
+          {{ form.keywords(class="form-control", placeholder=_('e.g. machine learning, retrieval augmented generation')) }}
+          {% if form.keywords.errors %}
+            <div class="small text-danger mt-1">{{ form.keywords.errors[0] }}</div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          {{ form.years.label(class="form-label") }}
+          {{ form.years(class="form-select") }}
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-stars me-1"></i>{{ form.submit.label.text }}
+        </button>
+        <div class="form-text mt-2">
+          {{ _('Up to %(n)s reports per day.', n=max_reports_per_day) }}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    {% if reports_list %}
+      <div class="list-group">
+        {% for r in reports_list %}
+          <div class="list-group-item" id="report-row-{{ r.id }}">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              {% if r.status == 'pending' %}
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis" data-testid="report-status-pending">{{ _('Queued…') }}</span>
+              {% elif r.status == 'running' %}
+                <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis" data-testid="report-status-running">{{ _('Generating…') }}</span>
+              {% elif r.status == 'ok' %}
+                <span class="badge rounded-pill bg-success-subtle text-success-emphasis" data-testid="report-status-ok">{{ _('Ready') }}</span>
+              {% elif r.status == 'partial' %}
+                <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis" data-testid="report-status-partial">{{ _('Partially ready') }}</span>
+              {% elif r.status == 'error' %}
+                <span class="badge rounded-pill bg-danger-subtle text-danger-emphasis" data-testid="report-status-error">{{ _('Failed') }}</span>
+              {% endif %}
+              <span class="badge bg-light text-body-secondary border">
+                {% if r.kind == 'author_group' %}{{ _('Author group') }}{% else %}{{ _('Topic') }}{% endif %}
+              </span>
+              <span class="small text-muted">{{ r.created_at | datetimeformat('dd.MM.yyyy HH:mm') }}</span>
+              {% if r.item_count %}
+                <span class="small text-muted">· {{ _('%(n)s items', n=r.item_count) }}</span>
+              {% endif %}
+            </div>
+            <div class="d-flex align-items-center justify-content-between gap-2">
+              <a href="{{ url_for('scrape.report_detail', report_id=r.id) }}" class="fw-semibold text-decoration-none">
+                {{ r.title }}
+              </a>
+              <form method="post" action="{{ url_for('scrape.report_delete', report_id=r.id) }}"
+                    hx-post="{{ url_for('scrape.report_delete', report_id=r.id) }}"
+                    hx-confirm="{{ _('Delete this report?') }}" class="m-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="{{ _('Delete') }}" aria-label="{{ _('Delete') }}">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state py-5 text-center">
+        <i class="bi bi-file-earmark-bar-graph" style="font-size: 36px; color: var(--bs-secondary-color);"></i>
+        <div class="mt-2 fw-medium">{{ _('No reports yet.') }}</div>
+        <p class="small text-muted mt-2 mb-0">
+          {{ _('Enter a few keywords and a time range to generate your first one.') }}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

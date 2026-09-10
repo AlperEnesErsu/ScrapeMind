@@ -169,11 +169,14 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
                 title = "Web Result"
                 for line in content.splitlines()[:10]:
                     line_s = line.strip()
+                    # A reader that emits "Title:" (or "# ") with nothing after
+                    # it must not win over the "Web Result" fallback — an empty
+                    # title is invalid on the shared PaperPayload.
                     if line_s.startswith("Title:"):
-                        title = line_s.replace("Title:", "").strip()
+                        title = line_s.replace("Title:", "").strip() or title
                         break
                     elif line_s.startswith("# "):
-                        title = line_s.replace("# ", "").strip()
+                        title = line_s.replace("# ", "").strip() or title
                         break
 
                 return [
@@ -207,7 +210,9 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
                 return []
             content = resp.text
             match = re.search(r"<title>(.*?)</title>", content, re.IGNORECASE)
-            title = match.group(1).strip() if match else "Web Result"
+            # An empty <title></title> tag must not win over the fallback —
+            # PaperPayload rejects an empty title.
+            title = (match.group(1).strip() if match else "") or "Web Result"
             clean_abstract = _strip_html(content) or ""
             return [
                 PaperPayload(
@@ -460,6 +465,12 @@ def search_github(query: str, *, max_results: int = 5) -> list[PaperPayload]:
                         published_at = datetime.datetime.fromisoformat(
                             str(updated_at_raw).replace("Z", "+00:00")
                         )
+                        # `gh`'s JSON is documented as UTC with a "Z" suffix,
+                        # but that isn't a type guarantee — a naive result is
+                        # rejected by PaperPayload, so assume UTC rather than
+                        # letting a schema surprise raise here.
+                        if published_at.tzinfo is None:
+                            published_at = published_at.replace(tzinfo=UTC)
                     except ValueError:
                         published_at = None
 

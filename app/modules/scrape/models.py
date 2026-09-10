@@ -368,6 +368,15 @@ class UserAuthor(BaseModel):
     this author. Nightly runs ask OpenAlex only for works published after it,
     which is what keeps a prolific author from re-importing a career's output
     every night.
+
+    `institution`, `works_count` and `cited_by_count` are an OpenAlex snapshot
+    (Faz 6), refreshed whenever the follow is resolved — not a running total we
+    maintain ourselves. Two read paths need them without an extra live API
+    call: the follow-candidate picker (disambiguating two "J. Smith"s) and an
+    `AuthorGroup` report's header. Like `Paper.cited_by_count`, they are
+    refreshed rather than fill-only-on-empty: an author's counts are only ever
+    "as of the last resolution", never a historical value worth preserving
+    once a fresher one is known.
     """
 
     __tablename__ = "user_authors"
@@ -383,6 +392,11 @@ class UserAuthor(BaseModel):
     # Pause switch, mirroring UserFeed/UserChannel: a paused follow keeps its
     # row (and its high-water mark) instead of losing both to a delete.
     active = db.Column(db.Boolean, nullable=False, default=True, server_default="true")
+    # OpenAlex snapshot, see class docstring — nullable because an
+    # unresolved follow (no openalex_id) has none of these either.
+    institution = db.Column(db.String(160), nullable=True)
+    works_count = db.Column(db.Integer, nullable=True)
+    cited_by_count = db.Column(db.Integer, nullable=True)
 
     user = db.relationship("User", backref=db.backref("followed_authors", lazy="dynamic"))
 
@@ -623,3 +637,111 @@ class SourceQuotaUsage(BaseModel):
     __table_args__ = (
         db.UniqueConstraint("source_name", "window_start", name="uq_source_quota_window"),
     )
+
+
+class Report(BaseModel):
+    """A generated topic or author-group briefing (Faz 6).
+
+    One table for both `kind`s rather than `TopicReport`/`AuthorGroupReport`:
+    both go through the same generate → `status` → `sections` pipeline, and
+    `/papers/reports` lists them side by side. `params` is the input the
+    generator re-runs on — `{"keywords": [...], "years": 5}` for "topic",
+    `{"group_id": 3}` for "author_group".
+
+    No DB-level enum/check on `kind` or `status`, same call as `ScanRun.kind`
+    (see that docstring): a new kind or status should cost a code change, not
+    a migration — but the reports list view and whichever task generates the
+    report do need updating for it.
+
+    `stats` is the numeric backbone computed with no LLM call — counts, date
+    range, top venues/authors — cheap and always available, and what still
+    renders if the LLM step is skipped or fails. `sections` is the
+    LLM-authored narrative built on top of it. A report that got as far as
+    `stats` but never got `sections` is `status="partial"`, the same "some
+    part came back missing/negative" idea `ScanRun.status` uses.
+
+    `error` stores `type(exc).__name__`, not the exception message — enough to
+    tell a timeout from a bad-request in the UI without risking a user's own
+    keywords or a provider's error text (which can echo request contents)
+    landing in a stored column.
+    """
+
+    __tablename__ = "reports"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    # "topic" | "author_group" — see class docstring for why this isn't an enum.
+    kind = db.Column(db.String(16), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    params = db.Column(db.JSON, nullable=True)  # {"keywords": [...], "years": 5, "group_id": 3}
+    # "pending" | "running" | "ok" | "partial" | "error"
+    status = db.Column(db.String(16), nullable=False, default="pending")
+    sections = db.Column(db.JSON, nullable=True)  # LLM-authored narrative
+    stats = db.Column(db.JSON, nullable=True)  # LLM-free numeric backbone
+    item_count = db.Column(db.Integer, nullable=False, default=0)
+    model_version = db.Column(db.String(64), nullable=True)
+    raw_response = db.Column(db.JSON, nullable=True)
+    started_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    finished_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    error = db.Column(db.String(64), nullable=True)  # type(exc).__name__
+
+    user = db.relationship("User", backref=db.backref("reports", lazy="dynamic"))
+
+    __table_args__ = (db.Index("ix_reports_user_created", "user_id", "created_at"),)
+
+
+class AuthorGroup(BaseModel):
+    """A user-named set of followed authors, gathered for a single
+    "author_group" `Report` rather than for the nightly feed.
+
+    Membership here is a deliberately different promise than
+    `UserAuthor.active`: putting an author in a group is "include them in a
+    report I ask for", not "push their new papers into my feed every night".
+    The service layer that adds a `UserAuthor` to a group is what flips that
+    row's `active` to `False` when it does so — see `AuthorGroupMember` — this
+    table itself only records membership, it does not enforce the flip.
+
+    `members` is `lazy="dynamic"`, matching every other per-owner collection
+    in this module (`User.followed_authors`, `User.custom_feeds`,
+    `User.youtube_channels`): a report generator wants to filter/count the
+    group's members via a query, not have the full list materialized on every
+    load of the group row.
+    """
+
+    __tablename__ = "author_groups"
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    members = db.relationship(
+        "AuthorGroupMember",
+        backref="group",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    __table_args__ = (db.UniqueConstraint("user_id", "name", name="uq_author_group_name"),)
+
+
+class AuthorGroupMember(BaseModel):
+    """One `UserAuthor`'s membership in an `AuthorGroup` — for reports, not
+    the nightly feed.
+
+    See `AuthorGroup`'s docstring for the `active` distinction: whichever
+    service-layer call adds a `UserAuthor` here is responsible for setting
+    that row's `active=False`, because being grouped means "gather this
+    author's work into a report on demand", not "keep surfacing their new
+    publications in my feed". That flip is a service-layer side effect, not
+    something this model enforces.
+    """
+
+    __tablename__ = "author_group_members"
+
+    group_id = db.Column(
+        db.BigInteger, db.ForeignKey("author_groups.id"), nullable=False, index=True
+    )
+    user_author_id = db.Column(db.BigInteger, db.ForeignKey("user_authors.id"), nullable=False)
+
+    user_author = db.relationship("UserAuthor")
+
+    __table_args__ = (db.UniqueConstraint("group_id", "user_author_id", name="uq_group_member"),)

@@ -154,9 +154,20 @@ def auth_client(app, db):
         ),
         {"uid": uid},
     )
+    # author_group_members has no user_id of its own — go through its parent
+    # group, same shape as the paper_chat_messages/paper_notes deletes above.
+    db.session.execute(
+        text(
+            "DELETE FROM author_group_members WHERE group_id IN "
+            "(SELECT id FROM author_groups WHERE user_id = :uid)"
+        ),
+        {"uid": uid},
+    )
     for tbl in (
         "audit_logs",
         "user_digests",
+        "reports",
+        "author_groups",
         "user_papers",
         "user_sources",
         "user_feeds",

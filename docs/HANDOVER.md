@@ -76,7 +76,7 @@ Manuel:
 python -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
-docker compose -f docker/docker-compose.yml up -d db redis
+SCRAPEMIND_DB_PORT=5433 docker compose -f docker/docker-compose.yml -p scrapemind up -d db redis
 pybabel compile -d translations
 set FLASK_APP=wsgi.py
 flask db upgrade
@@ -85,6 +85,12 @@ flask run --debug
 ```
 
 Varsayılan admin: `admin` / `admin1234`.
+
+> **Veritabanı 5433'te.** Faz 5.4'ten beri pgvector gerekiyor; paylaşımlı
+> `myo_postgres17` (myoChtBt'nin, `postgres:17-alpine`) onu sağlayamıyor, o
+> yüzden ScrapeMind kendi `pgvector/pgvector:pg17` container'ında. `.env`'de
+> `DATABASE_URL` **ve** `TEST_DATABASE_URL` `localhost:5433`'e bakmalı.
+> Gerekçe, geçmiş ve eski bir veritabanının nasıl onarılacağı: §4.9.
 
 **Arka plan işleri** (opsiyonel, `tasks` profili):
 ```bash
@@ -205,6 +211,82 @@ Repo halka açık. Commit/PR/dokümana gizli bilgi (şifre, API anahtarı, gerç
 yazma. `.env` asla commit'lenmez; yeni config eklerken `.env.example`'ı placeholder
 ile güncelle. Örneklerde `example.com` / `example.test` kullan.
 
+
+### 4.9 pgvector ve ScrapeMind'in kendi veritabani (bu makinede 5433)
+Faz 5.4 `Paper.embedding`'i `VECTOR(1536)` yapti. Paylasimli `myo_postgres17`
+(myoChtBt'nin compose'u, `postgres:17-alpine`) pgvector icermiyor ve alpine'in
+hazir `postgresql-pgvector` paketi `postgresql18`'e bagli — PG 17.9 icin ise
+yaramaz. Iki belirti ayni koke cikiyor:
+
+- testlerde `conftest`'in `CREATE EXTENSION` denemesi `try/except` icinde
+  yutuluyor, sonra `create_all()` `type "vector" does not exist` ile oluyor;
+- uygulamada `Paper`'a dokunan her sorgu `papers_1.embedding does not exist`
+  diyor (`papers_1` tablo degil, SQLAlchemy'nin join alias'i).
+
+**Cozuldu:** ScrapeMind artik kendi Postgres'inde. `myo_postgres17` hic
+degismedi, verisi yerinde; `scrapemind` DB'si oradan `pg_dump` ile kopyalandi.
+
+```bash
+SCRAPEMIND_DB_PORT=5433 docker compose -f docker/docker-compose.yml   -p scrapemind up -d db          # pgvector/pgvector:pg17, volume scrapemind_pg_data
+```
+`.env`: `DATABASE_URL` ve `TEST_DATABASE_URL` → `localhost:5433`
+(kullanici/sifre `scrapemind`, compose'un tanimladigi gibi). Eski paylasimli
+Postgres'teki `scrapemind` veritabani duruyor ama artik kullanilmiyor.
+
+#### `development.bat` bu container'i baslatmaz
+`development.bat`, `.env.local` varsa `:skip_docker`'a atliyor ve hicbir
+container ayaga kaldirmiyor. Postgres myoChtBt'nin container'iyken bu dogruydu
+— baskasi baslatiyordu. Artik Postgres ScrapeMind'in kendisinin, yani script
+onu baslatmadigi halde ona baglanmaya calisiyor; container kapaliysa
+`connection refused` alirsin ve script bunun sebebini soylemez.
+
+Mevcut container'a `--restart unless-stopped` verildi, yani Docker Desktop
+acildiginda kendisi geliyor:
+```bash
+docker update --restart unless-stopped scrapemind-db-1
+```
+Container yeniden yaratilirsa (`docker compose down` vb.) bu politika gider —
+o zaman ya komutu tekrarla ya da `docker/docker-compose.yml`'deki `db`
+servisine `restart: unless-stopped` ekle. Compose'a eklenmedi cunku o dosya
+ayni zamanda deploy'da kullaniliyor ve orada politikayi kimin belirleyecegi
+ayri bir karar.
+
+#### Bunun altindaki asil tuzak: re-parent edilmis migration + damgali DB
+Faz 6 zinciri (`4360c046a92e` → `7b3ce9d10a45`) ile main'in zinciri
+(`08f12848f0d1` → `eb3c1118d2f5` → `f135d2517c0e`) ayni parent'tan,
+`f4c1e8b52a76`'dan sarkiyordu. Merge sirasinda Faz 6'nin parent'i main'in
+head'ine baglandi — repo icin dogru, **ama zaten eski zincirin ucunda damgali
+bir veritabani icin degil**. O DB `alembic_version = 7b3ce9d10a45` diyor, kod
+da ayni revizyonu head sayiyor, dolayisiyla:
+
+```
+flask db current   →  7b3ce9d10a45 (head)     # "yapacak is yok"
+flask db upgrade   →  no-op
+gercek             →  user_pages, user_bluesky, papers.embedding yok
+```
+
+Alembic uc migration'i **sessizce** atlanmis sayiyor. Hata vermiyor, bu yuzden
+fark edilmesi zor. Kontrol: sema ile damgayi karsilastir, damgaya guvenme.
+
+```bash
+docker exec scrapemind-db-1 psql -U scrapemind -d scrapemind -tAc   "SELECT count(*) FROM information_schema.columns
+   WHERE table_name='papers' AND column_name='embedding';"   # 0 ise damga yalan soyluyor
+```
+
+Onarim (bu makinede uygulanan yol — veri kaybi yok, `reports` tablosu
+downgrade edilmeden kaliyor): eksik araligin SQL'ini offline uret ve uygula.
+
+```bash
+flask db upgrade f4c1e8b52a76:f135d2517c0e --sql > missing.sql
+docker exec -i scrapemind-db-1 psql -U scrapemind -d scrapemind < missing.sql
+```
+Uretilen dosyadaki `UPDATE alembic_version ... WHERE version_num = '<eski>'`
+satirlari eslesmez (`UPDATE 0`) — damga zaten dogru degerde oldugu icin
+istenen davranis budur, duzeltmeye calisma.
+
+Temiz bir checkout'ta ya da main tabanli bir DB'de bu sorun **yok**: sira
+dogru islediginden `flask db upgrade` her seyi kendisi yapar. Tuzak yalnizca
+merge'den once eski zincirin ucuna kadar upgrade edilmis veritabanlarinda.
 ---
 
 ## 5. Sıradaki İş
@@ -405,6 +487,63 @@ seçiciyle override eder.
 6. **Zotero/Mendeley dışa aktarım** — BibTeX var, API entegrasyonu doğal devam.
 
 ---
+
+### 5.5 ✅ Faz 6 — Retrospektif raporlar + yazar grupları (5 Eylül 2026)
+
+İki branch, sırayla: `fix/llm-resilience` (dayanıklılık sertleştirmesi) →
+`feat/phase6-reports` (özellik). İkincisi birincinin ucundan dallandı.
+
+**Neden bu sırayla:** rapor hattı LLM-ağır ve çok sayfalı toplama yapıyor.
+Timeout'suz/retry'siz bir `_call_llm` üzerine map/reduce kurmak, ilk 429'da
+400 kayıtlık toplamayı çöpe atardı.
+
+#### Sertleştirmede çıkan üç şey (hiçbiri planda yoktu)
+
+1. **`celery_app.Task` süreç-global ve her `create_app()` onu yeniden bağlıyor.**
+   `init_celery` içindeki `ContextTask`, `flask_app`'i closure'a alıp
+   `celery_app.Task`'a atıyor → birden fazla app kuran bir süreçte **son
+   `create_app()` tüm task'ların context'ini sahipleniyor**. Testlerde bu,
+   config'e bağlı her task testini **sessizce toplama sırasına bağımlı**
+   kılıyordu: bir test `app.config`'i değiştirip task çağırdığında, o config'in
+   task'a ulaşıp ulaşmayacağı hangi dosyanın önce koştuğuna bakıyordu.
+   Düzeltme: ortamda zaten pushlanmış app context'i kazanır (her iki context
+   sınıfında). Worker'da ambient context olmadığı için üretim değişmedi.
+2. **Her iki LLM SDK'sının kendi retry'ı var** (`max_retries=2`, backoff +
+   Retry-After). Bizim retry'ımızla **toplanmaz, çarpılırdı**. İkisi de
+   `max_retries=0` yapıldı; bütçe tek yerde.
+3. **`response_format` fallback'i her istisnada tetikleniyordu** — 429 alınca
+   rate-limit'li uç noktaya istek ikiye katlanıyor, eklenen geri çekilmeyi
+   iptal ediyordu. Artık yalnız kalıcı hatalarda.
+
+#### Faz 6'nın kendi tuzakları
+
+- **Nav migration'ı ayrı** (`7b3ce9d10a45`), şemadan (`4360c046a92e`) bağımsız.
+  `_sidebar.html` nav linklerini korumasız `url_for(item.endpoint)` ile kuruyor;
+  route'suz bir menü satırı **her sayfayı BuildError'a çevirir**. Bu, geliştirme
+  sırasında bir kez canlı olarak yaşandı — şema uygulandı, route henüz yoktu.
+  Ayrı migration sayesinde tek adımda geri alındı, veri kaybı olmadı.
+- **Gruba eklenen yazar `active=False`**, ve duraklatılmış bir yazar gruba
+  eklenince **duraklatılmış kalır**. İlk uygulamada `follow_author`'ın mevcut-satır
+  dalı koşulsuz `active=True` yapıyordu: kullanıcının bilinçli duraklatması
+  gruba ekleme sırasında sessizce bozuluyordu. `activate` parametresi bu iki
+  yolu ayırıyor; iki regresyon testi ikisini de kilitliyor.
+- **Testlerde `flask db upgrade` çalışmaz** (`conftest` `create_all()` kullanır),
+  bu yüzden elle yazılan migration'lar test paketinde hiç sınanmaz. Geçici bir
+  veritabanında upgrade + downgrade koşularak ayrıca doğrulandı.
+- **Ajanlar pytest koşamıyor** (paylaşımlı test DB + session teardown'da
+  `drop_all()`), dolayısıyla test izolasyonu/sıralama hatalarını yapısal olarak
+  göremiyorlar. Bu sınıfı orkestratörün yakalaması gerekiyor — yukarıdaki
+  1. madde tam olarak böyle bulundu.
+
+#### Kapsam dışı bırakılanlar
+
+- Avesis profil URL'inden ORCID çıkarma (opsiyoneldi, kesildi) — public API'si
+  yok, her üniversitenin şablonu farklı, robots.txt fail-closed. Kullanıcı
+  ORCID'i elle yapıştırır ya da isimle arar.
+- OpenAlex dışı kaynaklardan retrospektif toplama — atıf, konu taksonomisi ve
+  yazar ayrıştırması tek yerde ve lisansı temiz olan tek kaynak o
+  (`PHASE5.md §2`).
+- Raporlar için zamanlanmış üretim yok (bilinçli: on-demand).
 
 ## 6. Doküman Haritası
 

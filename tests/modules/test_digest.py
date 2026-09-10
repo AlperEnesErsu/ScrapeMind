@@ -39,6 +39,9 @@ def clean_user(db):
     for tbl in (
         "notifications",
         "user_digests",
+        "reports",
+        "author_group_members",
+        "author_groups",
         "paper_notes",
         "user_papers",
         "papers",
@@ -61,6 +64,9 @@ def clean_user(db):
     for tbl in (
         "notifications",
         "user_digests",
+        "reports",
+        "author_group_members",
+        "author_groups",
         "paper_notes",
         "user_papers",
         "papers",
@@ -423,6 +429,84 @@ def test_digest_task_builds_digest_and_notification(app, db, clean_user, monkeyp
         assert "digest_id" in result
         assert UserDigest.query.filter_by(user_id=clean_user.id).count() == 1
         assert Notification.query.filter_by(user_id=clean_user.id).count() == 1
+
+
+def test_digest_email_link_uses_app_base_url_not_localhost(app, db, clean_user, monkeypatch):
+    """Regression guard: the digest email used to hardcode
+    "http://localhost:5000/dashboard" — every prod email carried a dead link.
+    The link must come from config APP_BASE_URL, with its trailing slash
+    stripped so we don't end up with a doubled "//dashboard"."""
+    import app.core.email.service as email_service
+    from app.tasks.digest_tasks import run_for_user
+
+    monkeypatch.setitem(app.config, "APP_BASE_URL", "https://example.test/")
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (_FAKE_DIGEST, "{}"))
+
+    sent = {}
+
+    def _fake_send_email(recipient, subject, body, html_body=None):
+        sent["recipient"] = recipient
+        sent["subject"] = subject
+        sent["body"] = body
+        return True
+
+    monkeypatch.setattr(email_service, "send_email", _fake_send_email)
+
+    with app.app_context():
+        paper = upsert_paper(_payload("2401.t0002", title="Bir Makale"))
+        link, _ = link_user_paper(clean_user, paper, matched_keyword="rl")
+        link.created_at = datetime.now(UTC) - timedelta(hours=1)
+        db.session.commit()
+
+        run_for_user.delay(clean_user.id, "daily").get()
+
+        assert sent, "send_email was never called"
+        assert "https://example.test/dashboard" in sent["body"]
+        assert "//dashboard" not in sent["body"].replace("https://", "")
+        assert "localhost" not in sent["body"]
+
+
+def test_digest_notification_and_email_use_recipient_locale(app, db, clean_user, monkeypatch):
+    """The notification title (and email subject/body wrapper text) used to
+    be hardcoded Turkish regardless of who received it. It must now be built
+    from `_()` inside `force_locale(<recipient's locale>)`, so a) the old
+    hardcoded string is gone and b) the recipient's own `user.locale` is what
+    gets forced, not the server default."""
+    import app.core.email.service as email_service
+    from app.core.models.notification import Notification
+    from app.tasks import digest_tasks
+    from app.tasks.digest_tasks import run_for_user
+
+    clean_user.locale = "en"
+    db.session.commit()
+
+    monkeypatch.setattr(ai_service, "is_ai_enabled", lambda user=None: True)
+    monkeypatch.setattr(ai_service, "_call_llm", lambda **kw: (_FAKE_DIGEST, "{}"))
+    monkeypatch.setattr(email_service, "send_email", lambda *a, **kw: True)
+
+    forced_locales = []
+    _orig_force_locale = digest_tasks.force_locale
+
+    def _spy_force_locale(locale):
+        forced_locales.append(locale)
+        return _orig_force_locale(locale)
+
+    monkeypatch.setattr(digest_tasks, "force_locale", _spy_force_locale)
+
+    with app.app_context():
+        paper = upsert_paper(_payload("2401.t0003", title="Bir Makale"))
+        link, _ = link_user_paper(clean_user, paper, matched_keyword="rl")
+        link.created_at = datetime.now(UTC) - timedelta(hours=1)
+        db.session.commit()
+
+        run_for_user.delay(clean_user.id, "daily").get()
+
+        assert forced_locales == ["en"]
+        noti = Notification.query.filter_by(user_id=clean_user.id).first()
+        assert noti is not None
+        assert noti.title != "Günlük Brifing Hazır"
+        assert noti.title == "Daily Briefing Ready"
 
 
 def test_digest_task_skips_when_no_new_items(app, db, clean_user):

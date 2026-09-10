@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
@@ -18,6 +19,7 @@ from app.modules.scrape.sources import openalex_source as oa
 from app.modules.scrape.sources import pubmed_source as pm
 from app.modules.scrape.sources import semantic_scholar_source as ss
 from app.modules.scrape.sources import youtube_channel_source as yc
+from app.modules.scrape.sources.payload import PaperPayload, PaperPayloadError
 
 _FEED_KEYS = {f["key"] for f in rss_source.FEEDS}
 _REACH_KEYS = {"youtube_reach", "github_reach", "web_reach"}
@@ -39,6 +41,117 @@ def patent_credentials(monkeypatch):
     monkeypatch.setenv("EPO_OPS_SECRET", "s")
     monkeypatch.setenv("PATENTSVIEW_API_KEY", "k")
     monkeypatch.setenv("SCOPUS_API_KEY", "k")
+
+
+# ----------------------------------------------------------------------------
+# PaperPayload — boundary validation on the frozen dataclass every adapter
+# returns. No Pydantic (project convention): a plain `__post_init__` that
+# validates and rejects, never normalises — `frozen=True` means it could not
+# repair a field in place even if that were desirable. See payload.py.
+# ----------------------------------------------------------------------------
+
+
+def _valid_payload_kwargs(**overrides) -> dict:
+    kwargs = dict(
+        source="arxiv",
+        external_id="1",
+        title="A Title",
+        abstract=None,
+        authors=[],
+        url=None,
+        pdf_url=None,
+        published_at=None,
+        categories=[],
+    )
+    kwargs.update(overrides)
+    return kwargs
+
+
+def test_payload_accepts_a_well_formed_row():
+    p = PaperPayload(**_valid_payload_kwargs(authors=["Ada Lovelace"], categories=["cs.LG"]))
+    # as_dict()'s shape is what `Paper(**data)` is built from — pinning the
+    # key set here catches an accidental rename before it reaches the DB layer.
+    assert set(p.as_dict()) == {
+        "source",
+        "external_id",
+        "title",
+        "abstract",
+        "authors",
+        "url",
+        "pdf_url",
+        "published_at",
+        "categories",
+        "kind",
+        "doi",
+        "issn_l",
+        "cited_by_count",
+    }
+
+
+def test_payload_rejects_empty_source():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(source=""))
+
+
+def test_payload_rejects_empty_external_id():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(external_id=""))
+
+
+def test_payload_rejects_empty_title():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(title=""))
+
+
+def test_payload_rejects_whitespace_only_title():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(title="   "))
+
+
+def test_payload_rejects_authors_as_a_bare_string():
+    """A plain string is iterable-of-characters, not a list — the exact shape
+    a careless `authors=name` (instead of `authors=[name]`) would produce."""
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(authors="Ada Lovelace"))
+
+
+def test_payload_rejects_a_non_string_element_in_authors():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(authors=[123]))
+
+
+def test_payload_rejects_categories_as_a_bare_string():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(categories="cs.LG"))
+
+
+def test_payload_rejects_naive_datetime():
+    """The column is `DateTime(timezone=True)` — a naive value shifts silently
+    on write rather than raising there, which is exactly why this is caught
+    at construction time instead."""
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(published_at=datetime(2024, 1, 1)))
+
+
+def test_payload_rejects_published_at_as_a_non_datetime_value():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(published_at="2024-01-01"))
+
+
+def test_payload_accepts_none_or_tz_aware_published_at():
+    assert PaperPayload(**_valid_payload_kwargs(published_at=None)).published_at is None
+    p = PaperPayload(**_valid_payload_kwargs(published_at=datetime(2024, 1, 1, tzinfo=UTC)))
+    assert p.published_at.tzinfo is not None
+
+
+def test_payload_rejects_non_int_cited_by_count():
+    with pytest.raises(PaperPayloadError):
+        PaperPayload(**_valid_payload_kwargs(cited_by_count="42"))
+
+
+def test_payload_accepts_none_or_int_cited_by_count():
+    assert PaperPayload(**_valid_payload_kwargs(cited_by_count=None)).cited_by_count is None
+    assert PaperPayload(**_valid_payload_kwargs(cited_by_count=0)).cited_by_count == 0
 
 
 # ----------------------------------------------------------------------------
@@ -437,7 +550,7 @@ _OA_ITEM = {
 
 def test_openalex_parses_payload(monkeypatch):
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
     )
     out = oa.search("transformers", max_results=5)
     assert len(out) == 1
@@ -461,14 +574,14 @@ def test_openalex_parses_payload(monkeypatch):
 def test_openalex_url_falls_back_to_landing_page_then_id(monkeypatch):
     item = {**_OA_ITEM, "doi": None}
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
     )
     p = oa.search("x", max_results=1)[0]
     assert p.url == "https://example.com/landing"
 
     item2 = {**item, "primary_location": {}}
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item2]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item2]})
     )
     p2 = oa.search("x", max_results=1)[0]
     assert p2.url == "https://openalex.org/W2741809807"
@@ -477,7 +590,7 @@ def test_openalex_url_falls_back_to_landing_page_then_id(monkeypatch):
 def test_openalex_date_falls_back_to_year(monkeypatch):
     item = {**_OA_ITEM, "publication_date": None}
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
     )
     p = oa.search("x", max_results=1)[0]
     assert (p.published_at.year, p.published_at.month, p.published_at.day) == (2017, 1, 1)
@@ -493,7 +606,7 @@ def test_openalex_skips_records_without_id_or_title():
 
 def test_openalex_reports_issn_and_citations(monkeypatch):
     monkeypatch.setattr(
-        oa.requests, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [_OA_ITEM]})
     )
     p = oa.search("x", max_results=1)[0]
     assert p.issn_l == "1234-567X"
@@ -531,10 +644,131 @@ def test_openalex_garbage_citation_count_is_dropped():
 
 def test_openalex_search_empty_query_makes_no_http_call(monkeypatch):
     calls = []
-    monkeypatch.setattr(oa.requests, "get", lambda *a, **k: calls.append(1))
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
     assert oa.search("") == []
     assert oa.search("   ") == []
     assert calls == []
+
+
+# --- Connection reuse (a nightly run calls this module hundreds of times) ---
+
+
+def test_openalex_search_goes_through_the_shared_session(monkeypatch):
+    """This module is the one deliberate exception to "adapters call
+    `requests.get` directly at module level" (CLAUDE.md rule 7): every
+    request goes through a module-level `requests.Session` so a nightly
+    run's many calls to the same host reuse one connection pool instead of
+    opening a new TCP+TLS connection per request. Pinning `requests.get`
+    itself to raise makes sure that exception is real, not just the polite
+    default path."""
+    monkeypatch.setenv("OPENALEX_MAILTO", "ops@example.test")
+    calls = []
+
+    def fake_session_get(url, **kwargs):
+        calls.append((url, kwargs))
+        return _fake_response(json_data={"results": []})
+
+    def bare_requests_get_must_not_be_called(*a, **k):
+        raise AssertionError("openalex_source must call _session.get, not requests.get")
+
+    monkeypatch.setattr(oa._session, "get", fake_session_get)
+    monkeypatch.setattr(oa.requests, "get", bare_requests_get_must_not_be_called)
+
+    oa.search("transformers", max_results=5)
+
+    assert len(calls) == 1
+    url, kwargs = calls[0]
+    assert url == oa._API_URL
+    # Polite-pool behaviour is unchanged: mailto in the query, matching
+    # User-Agent, and the same read timeout as before the session switch.
+    assert kwargs["params"]["mailto"] == "ops@example.test"
+    assert kwargs["headers"]["User-Agent"] == "ScrapeMind (mailto:ops@example.test)"
+    assert kwargs["timeout"] == oa._TIMEOUT
+
+
+def test_openalex_fetch_by_doi_goes_through_the_shared_session(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: (calls.append(1), _fake_response(json_data=_OA_ITEM))[1]
+    )
+    monkeypatch.setattr(
+        oa.requests,
+        "get",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("must use _session")),
+    )
+    oa.fetch_by_doi("10.5555/attn2")
+    assert calls == [1]
+
+
+def test_openalex_fetch_author_goes_through_the_shared_session(monkeypatch):
+    calls = []
+
+    def fake_session_get(url, **kwargs):
+        calls.append(url)
+        return _fake_response(json_data={"id": "https://openalex.org/A123", "display_name": "X"})
+
+    monkeypatch.setattr(oa._session, "get", fake_session_get)
+    monkeypatch.setattr(
+        oa.requests,
+        "get",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("must use _session")),
+    )
+    oa.fetch_author("A123")
+    assert len(calls) == 1
+
+
+def test_fetch_author_includes_institution_and_cited_by_count(monkeypatch):
+    """`fetch_author` reuses `_author_candidate`'s field shape (Faz 6) so a
+    follow-candidate picker and a group report header don't need a second
+    live call just to disambiguate or label an author."""
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {
+        **_OA_AUTHOR_ITEM,
+        "last_known_institutions": [{"display_name": "Example University"}],
+    }
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _fake_response(json_data=item))
+    got = oa.fetch_author("A5023888391")
+    assert got["institution"] == "Example University"
+    assert got["cited_by_count"] == 5000
+    assert got["works_count"] == 120
+
+
+def test_fetch_author_tolerates_singular_institution_variant(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {
+        **_OA_AUTHOR_ITEM,
+        "last_known_institution": {"display_name": "Singular University"},
+    }
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: _fake_response(json_data=item))
+    got = oa.fetch_author("A5023888391")
+    assert got["institution"] == "Singular University"
+
+
+def test_fetch_author_no_institution_field_is_none(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data=_OA_AUTHOR_ITEM)
+    )
+    got = oa.fetch_author("A5023888391")
+    assert got["institution"] is None
+    assert got["cited_by_count"] == 5000
+
+
+def test_openalex_works_by_author_goes_through_the_shared_session(monkeypatch):
+    calls = []
+
+    def fake_session_get(url, **kwargs):
+        calls.append(url)
+        return _fake_response(json_data={"results": []})
+
+    monkeypatch.setattr(oa._session, "get", fake_session_get)
+    monkeypatch.setattr(
+        oa.requests,
+        "get",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("must use _session")),
+    )
+    oa.works_by_author("A123")
+    assert len(calls) == 1
 
 
 def test_openalex_keywords_build_or_query(monkeypatch):
@@ -574,6 +808,268 @@ class TestDecodeAbstract:
     def test_non_list_value_does_not_raise(self):
         inverted = {"good": [0], "bad": "not-a-list"}
         assert oa._decode_abstract(inverted) == "good"
+
+
+# ----------------------------------------------------------------------------
+# OpenAlex reports (Faz 6) — works_in_range, aggregate_works, search_authors
+# ----------------------------------------------------------------------------
+
+
+def _oa_work(work_id: str) -> dict:
+    return {**_OA_ITEM, "id": f"https://openalex.org/{work_id}"}
+
+
+def test_works_in_range_pages_with_cursor(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    pages = iter(
+        [
+            _fake_response(
+                json_data={
+                    "results": [_oa_work("W1")],
+                    "meta": {"next_cursor": "cursor2"},
+                }
+            ),
+            _fake_response(
+                json_data={
+                    "results": [_oa_work("W2")],
+                    "meta": {"next_cursor": None},
+                }
+            ),
+        ]
+    )
+    seen_cursors = []
+
+    def fake_get(url, **kwargs):
+        seen_cursors.append(kwargs["params"]["cursor"])
+        return next(pages)
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=50)
+    assert [p.external_id for p in out] == ["W1", "W2"]
+    assert seen_cursors[0] == "*"
+    assert seen_cursors[1] == "cursor2"
+
+
+def test_works_in_range_never_exceeds_report_max_works(monkeypatch):
+    """`max_results` is a request, `REPORT_MAX_WORKS` is the law — even a
+    caller that asks for more than the ceiling gets the ceiling."""
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(oa, "REPORT_MAX_WORKS", 3)
+
+    def fake_get(url, **kwargs):
+        cursor = kwargs["params"]["cursor"]
+        # Always claims more is available — the cap, not the server, must stop this.
+        return _fake_response(
+            json_data={
+                "results": [_oa_work(f"W-{cursor}-{i}") for i in range(2)],
+                "meta": {"next_cursor": f"next-{cursor}"},
+            }
+        )
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=1000)
+    assert len(out) == 3
+
+
+def test_works_in_range_stops_when_next_cursor_missing(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(1)
+        return _fake_response(json_data={"results": [_oa_work("W1")], "meta": {}})
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=50)
+    assert len(out) == 1
+    assert len(calls) == 1  # no second page requested
+
+
+def test_works_in_range_stops_on_empty_results(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(1)
+        return _fake_response(json_data={"results": [], "meta": {"next_cursor": "c2"}})
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=50)
+    assert out == []
+    assert len(calls) == 1
+
+
+def test_works_in_range_stops_when_cursor_repeats(monkeypatch):
+    """A misbehaving server that echoes the same cursor forever must not spin
+    this loop forever — the page-count cap is the backstop, but a repeated
+    cursor is caught even sooner."""
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append(1)
+        return _fake_response(json_data={"results": [_oa_work("W1")], "meta": {"next_cursor": "*"}})
+
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    oa.works_in_range("x", since_year=2020, until_year=2021, max_results=50)
+    assert len(calls) == 1
+
+
+def test_works_in_range_empty_query_makes_no_call(monkeypatch):
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    assert oa.works_in_range("", since_year=2020, until_year=2021) == []
+    assert oa.works_in_range("   ", since_year=2020, until_year=2021) == []
+    assert calls == []
+
+
+def test_works_in_range_raises_when_slot_denied(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: False)
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    with pytest.raises(SourceThrottledError):
+        oa.works_in_range("x", since_year=2020, until_year=2021)
+    assert calls == []
+
+
+def test_aggregate_works_normalizes_shape(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session,
+        "get",
+        lambda *a, **k: _fake_response(
+            json_data={
+                "group_by": [
+                    {"key": "2021", "key_display_name": "2021", "count": 10},
+                    {"key": "2020", "key_display_name": "2020", "count": 5},
+                ]
+            }
+        ),
+    )
+    out = oa.aggregate_works("x", since_year=2020, until_year=2021, group_by="publication_year")
+    assert out == [
+        {"key": "2021", "name": "2021", "count": 10},
+        {"key": "2020", "name": "2020", "count": 5},
+    ]
+
+
+def test_aggregate_works_falls_back_to_key_when_no_display_name(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session,
+        "get",
+        lambda *a, **k: _fake_response(json_data={"group_by": [{"key": "true", "count": 3}]}),
+    )
+    out = oa.aggregate_works("x", since_year=2020, until_year=2021, group_by="open_access.is_oa")
+    assert out == [{"key": "true", "name": "true", "count": 3}]
+
+
+def test_aggregate_works_rejects_unknown_group_by(monkeypatch):
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    with pytest.raises(oa.UnsupportedGroupByError):
+        oa.aggregate_works("x", since_year=2020, until_year=2021, group_by="not_a_real_dimension")
+    assert calls == []
+
+
+def test_aggregate_works_raises_when_slot_denied(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: False)
+    with pytest.raises(SourceThrottledError):
+        oa.aggregate_works("x", since_year=2020, until_year=2021, group_by="publication_year")
+
+
+_OA_AUTHOR_ITEM = {
+    "id": "https://openalex.org/A5023888391",
+    "display_name": "Jane Smith",
+    "orcid": "https://orcid.org/0000-0002-1825-0097",
+    "works_count": 120,
+    "cited_by_count": 5000,
+    "topics": [
+        {"display_name": "Immunology"},
+        {"display_name": "Genetics"},
+        {"display_name": "Cell Biology"},
+        {"display_name": "Should Be Truncated"},
+    ],
+}
+
+
+def test_search_authors_normalizes_candidate_with_institutions_list(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {
+        **_OA_AUTHOR_ITEM,
+        "last_known_institutions": [{"display_name": "Example University"}],
+    }
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+    )
+    out = oa.search_authors("Jane Smith", limit=10)
+    assert len(out) == 1
+    c = out[0]
+    assert c["id"] == "A5023888391"
+    assert c["name"] == "Jane Smith"
+    assert c["orcid"] == "0000-0002-1825-0097"
+    assert c["institution"] == "Example University"
+    assert c["works_count"] == 120
+    assert c["cited_by_count"] == 5000
+    # Fixture has 4 topics; capped to the top 3 (_MAX_AUTHOR_TOPICS)
+    assert c["topics"] == ["Immunology", "Genetics", "Cell Biology"]
+
+
+def test_search_authors_tolerates_singular_institution_variant(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {
+        **_OA_AUTHOR_ITEM,
+        "last_known_institution": {"display_name": "Singular University"},
+    }
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+    )
+    out = oa.search_authors("Jane Smith")
+    assert out[0]["institution"] == "Singular University"
+
+
+def test_search_authors_no_institution_field_is_none(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    item = {k: v for k, v in _OA_AUTHOR_ITEM.items()}
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": [item]})
+    )
+    out = oa.search_authors("Jane Smith")
+    assert out[0]["institution"] is None
+
+
+def test_search_authors_blank_or_short_name_makes_no_call(monkeypatch):
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    assert oa.search_authors("") == []
+    assert oa.search_authors("  ") == []
+    assert oa.search_authors("a") == []  # single char, below the minimum
+    assert calls == []
+
+
+def test_search_authors_404_returns_empty_list(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(status=404, json_data={})
+    )
+    assert oa.search_authors("Jane Smith") == []
+
+
+def test_search_authors_empty_results_returns_empty_list(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(
+        oa._session, "get", lambda *a, **k: _fake_response(json_data={"results": []})
+    )
+    assert oa.search_authors("Jane Smith") == []
+
+
+def test_search_authors_raises_when_slot_denied(monkeypatch):
+    monkeypatch.setattr(oa, "openalex_slot", lambda: False)
+    calls = []
+    monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
+    with pytest.raises(SourceThrottledError):
+        oa.search_authors("Jane Smith")
+    assert calls == []
 
 
 # ----------------------------------------------------------------------------

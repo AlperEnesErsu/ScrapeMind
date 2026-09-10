@@ -528,3 +528,90 @@ Tümü `.env.example`'da açıklamalı. Özet:
 > Anahtar gerektiren kaynakların açık/kapalı durumu env'de değil, admin panelindeki
 > `patents_enabled` / `scopus_enabled` sistem ayarlarındadır (§5). Env yalnızca
 > **anahtarı** taşır; anahtar yoksa kaynak zaten listelenmez.
+
+## 13. Retrospektif Raporlar (Faz 6)
+
+Digest ile karıştırılmamalı. Digest **kayan bir pencerede**, kullanıcının
+feed'ine **zaten düşmüş** `UserPaper` satırlarını özetler. Rapor ise geçmişe
+dönük olarak **kaynaktan yeni veri toplar** ve tek seferlik, kullanıcı isteğiyle
+üretilir. Zamanlanmış üretimi yoktur, `BEAT_SCHEDULE`'da girdisi yoktur.
+
+Tek tablo (`reports`), iki `kind` — `ScanRun.kind` kalıbının aynısı, DB-level
+enum yok:
+
+| `kind` | Girdi (`params`) | Soru |
+|---|---|---|
+| `topic` | `{"keywords": [...], "years": N}` | "Bu alanda son N yılda ne oldu?" |
+| `author_group` | `{"group_id": N, "years": N}` | "Bu yazarlar ne üzerine çalışıyor?" |
+
+### Boru hattı
+
+```
+topla → deterministik istatistik → map/reduce LLM → kalıcı rapor → bildirim
+```
+
+1. **Toplama** — yalnızca OpenAlex. `works_in_range` (konu) veya
+   `works_by_author` (grup). `works_in_range` bu repodaki **ilk çok sayfalı
+   adaptör**: cursor sayfalama, `REPORT_MAX_WORKS = 400` sert tavanı, sayfa
+   sayısı tavanı, ve boş/tekrarlanan cursor'da durma — dört bağımsız durma
+   koşulu, çünkü tek bir sorgu 90.000+ kayıt döndürebiliyor.
+2. **İstatistik omurgası — LLM yok.** `aggregate_works` beş boyutu tek istekle
+   sayıyor (`publication_year`, yazar, mekân, konu, OA). Yanıt
+   `key_display_name` taşıdığı için isimler ek sorgu gerektirmiyor. Bu katman
+   **LLM olmadan da tam çalışır** ve raporun her zaman gösterilebilir yarısıdır.
+3. **Map/reduce** — `ai_service.summarize_report_chunk` parça parça özetler;
+   sonra `synthesize_report` (konu) veya `synthesize_author_group_report`
+   (grup) birleştirir. İkincisi ayrı bir fonksiyondur çünkü şemaları farklı
+   sorulara cevap verir: konu raporu **zamana** göre (`timeline`/`emerging`/
+   `fading`), grup dosyası **kişiye** göre (`members[].focus`) örgütlüdür.
+4. **Kalıcılık** — `stats` (sayısal omurga) ve `sections` (LLM anlatısı) ayrı
+   JSON kolonlarında. LLM adımı başarısız olursa `sections` boş kalır,
+   `status="partial"` olur ve rapor **yine gösterilir**.
+
+### Üç kural
+
+1. **`upsert_paper` evet, `link_user_paper` HAYIR.** Rapor 400'e kadar eski
+   makaleyi `papers` tablosuna yazar ama **hiçbirini kullanıcının Discover
+   feed'ine bağlamaz** — aksi hâlde tek bir rapor feed'i yıllar öncesinin
+   makaleleriyle doldururdu. Raporda her çalışma DOI/dış URL ile linklenir;
+   kullanıcı isterse tek tek kütüphanesine ekler. Bu bir regresyon kapısıyla
+   testte kilitlidir.
+2. **`stats` LLM'siz üretilir ve yalnız başına yeterlidir.** AI anahtarı hiç
+   yokken bile rapor sayısal omurgayla açılır, 500 vermez.
+3. **`error` alanına yalnız `type(exc).__name__` yazılır**, istisna mesajı
+   değil — mesaj kullanıcının kendi anahtar kelimelerini veya sağlayıcının
+   hata metnini taşıyabilir.
+
+### Maliyet sınırları
+
+`MAX_REPORTS_PER_DAY = 3` (kullanıcı başına), `REPORT_MAX_WORKS = 400`,
+`REPORT_CHUNK_ITEMS = 25`. Task `llm` kuyruğunda, kullanıcı başına
+`acquire_user_lock(user_id, "report")` ile tek eşzamanlı koşu.
+OpenAlex haftalık kotaya tabi değildir; tek koruma `openalex_slot()` (8/sn).
+
+### Yazar grupları
+
+`AuthorGroup` + `AuthorGroupMember`, mevcut `UserAuthor` üzerine ince bir
+katman — yeni bir yazar tablosu açılmadı.
+
+⚠️ **Gruba eklenen yazar `active=False` açılır.** `active` "yeni yayınlarını
+gecelik feed'ime it" demektir; grup üyeliği **rapor içindir**. Duraklatılmış
+bir yazarı gruba eklemek onu **yeniden aktifleştirmez** (`follow_author`'ın
+`activate` parametresi bunu ayırır) — kullanıcının bilinçli duraklatması
+sessizce bozulmamalı.
+
+⚠️ `MAX_USER_AUTHORS = 50` sayımı `active` filtresi kullanmaz, yani **pasif
+grup üyeleri de bu tavanı yer**.
+
+İsimle yazar araması `search_authors` ile gelir ve **yalnız aday listesi**
+döndürür — seçimi daima kullanıcı yapar. Gerekçe ve kararın yeniden açılma
+koşulu: `docs/adr/0003-yazar-isim-aramasi.md`.
+
+### Nav girdisi ayrı migration'da — bilerek
+
+`7b3ce9d10a45` yalnızca menü satırını ekler, `4360c046a92e` şemayı kurar.
+Sebebi: `app/core/templates/core/_sidebar.html` nav linklerini korumasız
+`url_for(item.endpoint)` ile kurar, dolayısıyla **endpoint'i olmayan bir menü
+satırı her sayfayı BuildError'a çevirir**. İkisi ayrı olduğu için şema, route
+inmeden de uygulanabilir. Route'suz bir dağıtımda nav migration'ı
+uygulanmamalıdır.

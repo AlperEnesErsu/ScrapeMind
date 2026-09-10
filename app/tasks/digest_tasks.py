@@ -9,7 +9,11 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import structlog
+from flask import current_app
+from flask_babel import force_locale
+from flask_babel import gettext as _
 
+from app.core.i18n.utils import SUPPORTED_LOCALES
 from app.core.models.user import User
 from app.tasks import celery_app
 from app.tasks.fanout import fan_out
@@ -84,30 +88,47 @@ def run_for_user(self, user_id: int, period: str = "daily") -> dict:
 
         from app.core.models.notification import add_notification
 
-        title = "Günlük Brifing Hazır" if period == "daily" else "Haftalık Brifing Hazır"
-        preview = (digest.summary or "")[:140]
-        add_notification(
-            user.id,
-            title=title,
-            message=f"{preview} /dashboard",
+        # Notification + email must speak the recipient's language, not the
+        # server's — this is a per-recipient send, not a rendered page, so
+        # there is no request-scoped locale to inherit from. Fall back to the
+        # app default when the user's stored locale isn't one we ship.
+        locale = (
+            user.locale
+            if user.locale in SUPPORTED_LOCALES
+            else current_app.config.get("BABEL_DEFAULT_LOCALE", "tr")
         )
 
-        # Dispatch email digest if recipient email is available
-        from app.core.email.service import send_email
-
-        if user.email:
-            subject = f"ScrapeMind — {title}"
-            body = (
-                f"Merhaba {user.full_name or user.username},\n\n"
-                f"{digest.summary}\n\n"
-                f"Detaylı özetinizi ve yeni makalelerinizi incelemek için ScrapeMind'a giriş yapın:\n"
-                f"http://localhost:5000/dashboard\n\n"
-                f"İyi çalışmalar,\nScrapeMind Ekibi"
+        with force_locale(locale):
+            title = _("Daily Briefing Ready") if period == "daily" else _("Weekly Briefing Ready")
+            preview = (digest.summary or "")[:140]
+            add_notification(
+                user.id,
+                title=title,
+                message=f"{preview} /dashboard",
             )
-            try:
-                send_email(user.email, subject, body)
-            except Exception:  # noqa: BLE001
-                logger.exception("digest_email_send_failed", user_id=user.id)
+
+            # Dispatch email digest if recipient email is available
+            from app.core.email.service import send_email
+
+            if user.email:
+                subject = f"ScrapeMind — {title}"
+                base_url = current_app.config["APP_BASE_URL"].rstrip("/")
+                greeting = _("Hello %(name)s,") % {"name": user.full_name or user.username}
+                call_to_action = _(
+                    "Sign in to ScrapeMind to view your detailed summary and new papers:"
+                )
+                signoff = _("Best regards,\nThe ScrapeMind Team")
+                body = (
+                    f"{greeting}\n\n"
+                    f"{digest.summary}\n\n"
+                    f"{call_to_action}\n"
+                    f"{base_url}/dashboard\n\n"
+                    f"{signoff}"
+                )
+                try:
+                    send_email(user.email, subject, body)
+                except Exception:  # noqa: BLE001
+                    logger.exception("digest_email_send_failed", user_id=user.id)
 
         logger.info("digest_done", user_id=user_id, period=period, item_count=digest.item_count)
         return {"digest_id": digest.id, "item_count": digest.item_count}

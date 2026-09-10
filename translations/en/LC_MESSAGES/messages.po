@@ -3180,6 +3180,346 @@ msgstr "citations"
 msgid "Add to library"
 msgstr "Add to library"
 
+msgid "Daily Briefing Ready"
+msgstr "Daily Briefing Ready"
+
+msgid "Weekly Briefing Ready"
+msgstr "Weekly Briefing Ready"
+
+#, python-format
+msgid "Hello %(name)s,"
+msgstr "Hello %(name)s,"
+
+msgid "Sign in to ScrapeMind to view your detailed summary and new papers:"
+msgstr "Sign in to ScrapeMind to view your detailed summary and new papers:"
+
+msgid ""
+"Best regards,\n"
+"The ScrapeMind Team"
+msgstr ""
+"Best regards,\n"
+"The ScrapeMind Team"
+
+#, python-format
+msgid "%(n)s items"
+msgstr "%(n)s items"
+
+#, python-format
+msgid "%(n)s works matched your followed keywords: %(kws)s"
+msgstr "%(n)s works matched your followed keywords: %(kws)s"
+
+#, python-format
+msgid "%(n)s years"
+msgstr "%(n)s years"
+
+#, python-format
+msgid "%(name)s added to the group."
+msgstr "%(name)s added to the group."
+
+#, python-format
+msgid "%(used)s / %(cap)s groups"
+msgstr "%(used)s / %(cap)s groups"
+
+#, python-format
+msgid "%(used)s / %(cap)s members"
+msgstr "%(used)s / %(cap)s members"
+
+#, python-format
+msgid "%(works)s works, %(cites)s citations"
+msgstr "%(works)s works, %(cites)s citations"
+
+msgid "Add from followed authors"
+msgstr "Add from followed authors"
+
+msgid "Add to group"
+msgstr "Add to group"
+
+msgid "Author added to the group."
+msgstr "Author added to the group."
+
+msgid "Author group"
+msgstr "Author group"
+
+msgid "Author groups"
+msgstr "Author groups"
+
+msgid "Author name"
+msgstr "Author name"
+
+msgid "Author not found."
+msgstr "Author not found."
+
+msgid "Author removed from the group."
+msgstr "Author removed from the group."
+
+msgid "Back to reports"
+msgstr "Back to reports"
+
+msgid "Co-authorship"
+msgstr "Co-authorship"
+
+#, python-format
+msgid "Could not resolve an OpenAlex identity for: %(names)s"
+msgstr "Could not resolve an OpenAlex identity for: %(names)s"
+
+msgid "Create group"
+msgstr "Create group"
+
+msgid "Created"
+msgstr "Created"
+
+msgid "Daily report limit reached. Please try again tomorrow."
+msgstr "Daily report limit reached. Please try again tomorrow."
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Delete group"
+msgstr "Delete group"
+
+msgid "Delete this group? Followed authors are kept."
+msgstr "Delete this group? Followed authors are kept."
+
+msgid "Delete this report?"
+msgstr "Delete this report?"
+
+msgid "Description (optional)"
+msgstr "Description (optional)"
+
+msgid "Emerging"
+msgstr "Emerging"
+
+msgid "Enter a few keywords and a time range to generate your first one."
+msgstr "Enter a few keywords and a time range to generate your first one."
+
+msgid "Fading"
+msgstr "Fading"
+
+msgid "Failed"
+msgstr "Failed"
+
+msgid "Fastest-growing topics"
+msgstr "Fastest-growing topics"
+
+msgid "Find an author by name"
+msgstr "Find an author by name"
+
+msgid ""
+"Gather a few authors under a name and generate a retrospective report for"
+" the group. Members are added paused — being in a group never feeds your "
+"nightly briefing."
+msgstr ""
+"Gather a few authors under a name and generate a retrospective report for"
+" the group. Members are added paused — being in a group never feeds your "
+"nightly briefing."
+
+msgid ""
+"Generate a retrospective briefing on a topic — a year-by-year narrative "
+"plus the numbers behind it."
+msgstr ""
+"Generate a retrospective briefing on a topic — a year-by-year narrative "
+"plus the numbers behind it."
+
+msgid "Generate file for this group"
+msgstr "Generate file for this group"
+
+msgid "Generate report"
+msgstr "Generate report"
+
+msgid "Generating…"
+msgstr "Generating…"
+
+msgid "Group created."
+msgstr "Group created."
+
+msgid "Group deleted."
+msgstr "Group deleted."
+
+msgid "Group is full. Remove a member before adding another."
+msgstr "Group is full. Remove a member before adding another."
+
+msgid "Group limit reached. Remove one before adding another."
+msgstr "Group limit reached. Remove one before adding another."
+
+msgid "Group name"
+msgstr "Group name"
+
+msgid "Group not found."
+msgstr "Group not found."
+
+msgid "Group renamed."
+msgstr "Group renamed."
+
+msgid "Journal quality (SJR quartile)"
+msgstr "Journal quality (SJR quartile)"
+
+msgid "Key authors"
+msgstr "Key authors"
+
+msgid "Key venues"
+msgstr "Key venues"
+
+msgid "Key works"
+msgstr "Key works"
+
+msgid "Keywords (comma-separated)"
+msgstr "Keywords (comma-separated)"
+
+msgid "Members"
+msgstr "Members"
+
+msgid "Members resolved"
+msgstr "Members resolved"
+
+msgid "New report"
+msgstr "New report"
+
+msgid "No authors found for that name."
+msgstr "No authors found for that name."
+
+msgid "No groups yet — create one above to start gathering authors for a report."
+msgstr "No groups yet — create one above to start gathering authors for a report."
+
+msgid "No members yet."
+msgstr "No members yet."
+
+msgid "No reports yet."
+msgstr "No reports yet."
+
+msgid "Open access"
+msgstr "Open access"
+
+msgid "OpenAlex"
+msgstr "OpenAlex"
+
+msgid "OpenAlex is busy right now — please try the search again in a moment."
+msgstr "OpenAlex is busy right now — please try the search again in a moment."
+
+msgid "Overlap with your interests"
+msgstr "Overlap with your interests"
+
+msgid "Papers saved with this report"
+msgstr "Papers saved with this report"
+
+msgid "Partially ready"
+msgstr "Partially ready"
+
+msgid "Please choose a group and a candidate."
+msgstr "Please choose a group and a candidate."
+
+msgid "Please choose an author."
+msgstr "Please choose an author."
+
+msgid "Please enter a group name."
+msgstr "Please enter a group name."
+
+msgid "Please provide at least one keyword for a topic report."
+msgstr "Please provide at least one keyword for a topic report."
+
+msgid "Publications per year"
+msgstr "Publications per year"
+
+msgid "Queued…"
+msgstr "Queued…"
+
+msgid "Range"
+msgstr "Range"
+
+msgid "Ready"
+msgstr "Ready"
+
+msgid "Relevance to your keywords"
+msgstr "Relevance to your keywords"
+
+msgid "Remove from group"
+msgstr "Remove from group"
+
+msgid "Rename"
+msgstr "Rename"
+
+msgid "Report deleted."
+msgstr "Report deleted."
+
+msgid "Report generation failed."
+msgstr "Report generation failed."
+
+msgid "Report queued — it will appear here once generated."
+msgstr "Report queued — it will appear here once generated."
+
+msgid "Report ready"
+msgstr "Report ready"
+
+msgid "Reports"
+msgstr "Reports"
+
+msgid ""
+"Search OpenAlex by name and pick the right person from the candidates "
+"below — institution, publication and citation counts are shown because "
+"that\\"
+msgstr ""
+"Search OpenAlex by name and pick the right person from the candidates "
+"below — institution, publication and citation counts are shown because "
+"that\\"
+
+msgid "Shared topics"
+msgstr "Shared topics"
+
+msgid "Summary"
+msgstr "Summary"
+
+msgid ""
+"The AI summary could not be fully generated — the numeric summary below "
+"is still accurate."
+msgstr ""
+"The AI summary could not be fully generated — the numeric summary below "
+"is still accurate."
+
+msgid ""
+"This group has no members yet. Add at least one author before generating "
+"a report."
+msgstr ""
+"This group has no members yet. Add at least one author before generating "
+"a report."
+
+msgid "Time range (years)"
+msgstr "Time range (years)"
+
+msgid "Topic"
+msgstr "Topic"
+
+msgid "Unsupported report type."
+msgstr "Unsupported report type."
+
+#, python-format
+msgid "Up to %(n)s reports per day."
+msgstr "Up to %(n)s reports per day."
+
+msgid "Venues"
+msgstr "Venues"
+
+msgid "Works in range"
+msgstr "Works in range"
+
+#, python-format
+msgid "Year range must be between %(min)s and %(max)s years."
+msgstr "Year range must be between %(min)s and %(max)s years."
+
+msgid "You already have a group with that name."
+msgstr "You already have a group with that name."
+
+#, python-format
+msgid "Your report \"%(title)s\" has finished generating."
+msgstr "Your report \"%(title)s\" has finished generating."
+
+msgid "e.g. Jane Smith"
+msgstr "e.g. Jane Smith"
+
+msgid "e.g. machine learning, retrieval augmented generation"
+msgstr "e.g. machine learning, retrieval augmented generation"
+
+msgid "menu.reports"
+msgstr "menu.reports"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

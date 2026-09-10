@@ -40,6 +40,9 @@ def clean_user(db):
     for tbl in (
         "notifications",
         "user_digests",
+        "reports",
+        "author_group_members",
+        "author_groups",
         "paper_notes",
         "user_papers",
         "papers",
@@ -62,6 +65,9 @@ def clean_user(db):
     db.session.add(u)
     db.session.commit()
     yield u
+    db.session.execute(text("DELETE FROM reports"))
+    db.session.execute(text("DELETE FROM author_group_members"))
+    db.session.execute(text("DELETE FROM author_groups"))
     db.session.execute(text("DELETE FROM user_papers"))
     db.session.execute(text("DELETE FROM papers"))
     db.session.execute(text("DELETE FROM user_keywords"))

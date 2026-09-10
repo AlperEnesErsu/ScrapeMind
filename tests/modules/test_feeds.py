@@ -51,6 +51,9 @@ def clean_user(db):
     for tbl in (
         "notifications",
         "user_digests",
+        "reports",
+        "author_group_members",
+        "author_groups",
         "paper_notes",
         "user_papers",
         "papers",
@@ -75,6 +78,9 @@ def clean_user(db):
     for tbl in (
         "notifications",
         "user_digests",
+        "reports",
+        "author_group_members",
+        "author_groups",
         "paper_notes",
         "user_papers",
         "papers",

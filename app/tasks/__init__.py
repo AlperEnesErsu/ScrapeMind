@@ -21,19 +21,37 @@ celery_app = Celery("scrapemind")
 _flask_app = None
 
 # Queue routing. Three pools with genuinely different shapes:
-#   "io"     — feed/HTTP fetching. Network-bound, safe to run wide (threads).
+#   "io"     — feed/HTTP fetching (and other network-light housekeeping).
+#              Network-bound or cheap, safe to run wide (threads).
 #   "scrape" — academic adapters. Network-bound too, but throttled against
 #              shared external quotas, so widening it buys nothing.
 #   "llm"    — one paid model call per user per run; deliberately narrow.
-# Anything unrouted lands on the default "celery" queue — a worker started with
-# an explicit -Q list must therefore always include it, or `core.heartbeat` and
-# every future task silently stops running.
+# Anything left off this table lands on the default "celery" queue — a worker
+# started with an explicit -Q list must therefore always include it, or every
+# task missing from here silently stops running. Queue/worker -Q mismatches
+# are a bug class that has already bitten this deployment once in prod (see
+# `docs/HANDOVER.md` §3 commit `a108514`: the worker ran with no -Q at all, so
+# it only drained the default queue and every *routed* task silently never
+# ran until that was fixed — the mirror image of the risk this table guards
+# against now). `INTENTIONALLY_UNROUTED_TASKS` below is the only accepted
+# exception to "every task needs a route" — every other task, and especially
+# anything Beat fans out, must be listed here (see the regression check in
+# tests/modules/test_celery_smoke.py).
 TASK_ROUTES = {
     "feeds.ingest_all": {"queue": "io"},
     "scrape.run_for_user": {"queue": "scrape"},
     "scrape.run_for_all_users": {"queue": "scrape"},
     "feeds.link_for_user": {"queue": "llm"},
+    # Fan-out parent for `feeds.link_for_user`. It doesn't call the LLM
+    # itself, but every fan-out parent in this table shares its child's
+    # queue (see `scrape.run_for_all_users`, `channels.ingest_for_all_users`,
+    # `authors.ingest_for_all_users` below) so one pool's worker count models
+    # "capacity for this kind of work" as a unit. This was one of the two
+    # fan-out parents found unrouted (silently landing on the default
+    # "celery" queue) — see `digest.run_for_all_users` below for the other.
+    "feeds.link_for_all_users": {"queue": "llm"},
     "digest.run_for_user": {"queue": "llm"},
+    "digest.run_for_all_users": {"queue": "llm"},
     "channels.ingest_for_user": {"queue": "io"},
     "channels.summarize_video": {"queue": "llm"},
     "channels.ingest_for_all_users": {"queue": "io"},
@@ -43,9 +61,34 @@ TASK_ROUTES = {
     # scan, so they belong in the same pool rather than racing it for tokens.
     "authors.ingest_for_user": {"queue": "scrape"},
     "authors.ingest_for_all_users": {"queue": "scrape"},
+    # Nightly retention sweeps: local DB deletes only — no external network
+    # call, no shared quota, no paid model call — so neither `scrape` nor
+    # `llm`'s throttling rationale applies. `io` is the general-purpose wide
+    # pool, and that's exactly the shape this work has.
+    "core.purge_audit_logs": {"queue": "io"},
+    "core.purge_revoked_tokens": {"queue": "io"},
+    "scrape.purge_scan_runs": {"queue": "io"},
+    # On-demand only (no fan-out parent, no BEAT_SCHEDULE entry): one paid
+    # LLM map/reduce batch per run, same pool as the digest/link-for-user
+    # LLM work for the same "capacity for this kind of work" reason.
+    "reports.generate": {"queue": "llm"},
+    # Embedding generation is a paid provider call per paper, so it shares the
+    # `llm` pool's capacity rather than flooding `io` with billable work.
     "embeddings.embed_paper": {"queue": "llm"},
     "embeddings.embed_pending_papers": {"queue": "llm"},
 }
+
+# Tasks deliberately left off TASK_ROUTES, so they land on the default
+# "celery" queue on purpose rather than by oversight. Each entry here must be
+# safe to silently stop running if a deployment's workers are started with a
+# -Q list that omits "celery":
+#   - core.heartbeat: a liveness probe, not a job with a required outcome.
+#     Beat fires it every minute; if nothing consumes the default queue the
+#     only symptom is a stale worker-health stamp (app/core/health.py) on the
+#     admin panel — never lost or delayed user-facing work. Routing it into
+#     "io"/"scrape"/"llm" would also defeat its purpose: it exists to prove
+#     *some* worker in the deployment is alive, not one specialized pool.
+INTENTIONALLY_UNROUTED_TASKS = frozenset({"core.heartbeat"})
 
 
 def _common_conf(soft_limit: int, hard_limit: int) -> dict:
@@ -66,10 +109,26 @@ def _common_conf(soft_limit: int, hard_limit: int) -> dict:
 
 
 class LazyContextTask(celery_app.Task):
-    """Run task inside Flask app context, initializing the app on demand."""
+    """Run task inside Flask app context, initializing the app on demand.
+
+    An app context that is *already* pushed wins over the lazily built one.
+    In a worker there is never one, so this changes nothing there — it is
+    about eager execution (`CELERY_TASK_ALWAYS_EAGER`), where the caller
+    already has an app: a web request in dev, or a test's `app` fixture.
+    Building a second `create_app()` underneath those would run the task
+    against a different Flask app than the caller configured, so config set
+    by the caller — `monkeypatch.setitem(app.config, ...)` in a test, most
+    visibly — would silently not apply. That mismatch was real and
+    order-dependent: whether a given eager task saw the caller's config or a
+    private second app depended on which test had run first.
+    """
 
     def __call__(self, *args, **kwargs):  # type: ignore[override]
         global _flask_app
+        from flask import has_app_context
+
+        if has_app_context():
+            return self.run(*args, **kwargs)
         if _flask_app is None:
             from app import create_app
 
@@ -110,9 +169,26 @@ def init_celery(flask_app) -> Celery:
     celery_app.conf.beat_schedule = BEAT_SCHEDULE
 
     class ContextTask(celery_app.Task):
-        """Run every task inside the Flask app context."""
+        """Run every task inside the Flask app context.
+
+        Note this rebinds the process-global `celery_app.Task` to a class
+        closed over *this* `flask_app`, so in a process that builds more than
+        one app the last `create_app()` owns every task's context. Production
+        has exactly one app and never notices; a test session has several
+        (the session fixture, plus any test that builds its own), which made
+        "which app does an eager task see?" depend on collection order.
+
+        Hence the same rule as `LazyContextTask`: an app context that is
+        already pushed wins. A worker never has one, so its behaviour is
+        unchanged — but an eager caller now always gets its own app, and its
+        own config, instead of whichever app happened to be created last.
+        """
 
         def __call__(self, *args, **kwargs):  # type: ignore[override]
+            from flask import has_app_context
+
+            if has_app_context():
+                return self.run(*args, **kwargs)
             with flask_app.app_context():
                 return self.run(*args, **kwargs)
 
@@ -130,6 +206,7 @@ from app.tasks import (  # noqa: E402, F401
     embedding_tasks,
     feed_tasks,
     patent_tasks,
+    report_tasks,
     scrape_tasks,
 )
 

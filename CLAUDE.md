@@ -22,8 +22,10 @@ vaat ediyordu, doğru değil.)
 - `docs/PHASE5.md` — Faz 5 planı (patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus)
 
 ## Veritabanı (yerel geliştirme)
-- **Bu makine paylaşımlı altyapı kullanıyor** (`docker/docker-compose.local.yml`'nin anlattığı kurulum): `myo_postgres17` container'ı **5432**'de, `shared_redis` **6379**'da. Bunlar myoChtBt projesinin compose'u tarafından ayağa kaldırılıyor; ScrapeMind sadece üzerlerinde `scrapemind` ve `scrapemind_test` veritabanlarını kullanıyor.
-  > ⚠️ Eski not "ScrapeMind 5433'te, `docker/.env` içinde `SCRAPEMIND_DB_PORT=5433`" diyordu — **artık doğru değil**, `docker/.env` diye bir dosya da yok. `docker/docker-compose.yml`'deki kendi `db` servisi (5432/`scrapemind` kullanıcısı) bu makinede kullanılmıyor.
+- **Postgres artık ScrapeMind'in kendisinin, Redis hâlâ paylaşımlı.** Postgres: `scrapemind-db-1`, **5433**, `pgvector/pgvector:pg17`, kullanıcı/şifre `scrapemind`, volume `scrapemind_pg_data`. Ayağa kaldır:
+  `SCRAPEMIND_DB_PORT=5433 docker compose -f docker/docker-compose.yml -p scrapemind up -d db`
+  Redis: myoChtBt'nin `shared_redis`'i, **6379**.
+  > Bu bir geri dönüş: uzun süre paylaşımlı `myo_postgres17` (5432) kullanıldı ve bu dosya "5433 artık doğru değil" diyordu. Faz 5.4 `Paper.embedding`'i `VECTOR(1536)` yapınca o kurulum çalışamaz oldu — `myo_postgres17` `postgres:17-alpine` ve pgvector içermiyor; alpine'ın hazır paketi de `postgresql18`'e bağlı. `myo_postgres17` başka bir projenin (myoChtBt) container'ı olduğu için imajı değiştirilmedi; `scrapemind` veritabanı oradan `pg_dump` ile kopyalandı ve orijinali olduğu gibi duruyor. Tam gerekçe + eski bir DB'nin nasıl onarılacağı: `docs/HANDOVER.md §4.9`.
 - **`TEST_DATABASE_URL` kökteki `.env`'de bulunmak zorunda** — yoksa `create_app()` conftest override'ından önce TestingConfig default'uyla bağlanmaya kalkar ve testlerin tamamı `psycopg2.OperationalError` verir. Bu, "kod bozuk" gibi okunur; ilk bakılacak yer burasıdır.
 - Docker kapalıysa `docker ps` boş döner ve yine aynı tabloya çıkarsın — önce Docker Desktop'ı aç.
 - **`venv`'i `requirements.txt` ile senkron tut.** `sentry-sdk` ve `prometheus-flask-exporter` eksikken `tests/core/test_observability.py` 4 test patlatır; kodla ilgisi yoktur.

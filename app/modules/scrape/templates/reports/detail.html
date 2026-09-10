@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}{{ report.title }} — ScrapeMind{% endblock %}
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+  <div>
+    <h4 class="mb-1">{{ report.title }}</h4>
+    <div class="small text-muted">
+      {{ _('Created') }}: {{ report.created_at | datetimeformat('dd.MM.yyyy HH:mm') }}
+      · {% if report.kind == 'author_group' %}{{ _('Author group') }}{% else %}{{ _('Topic') }}{% endif %}
+      {% if report.item_count %}
+        · {{ _('%(n)s items', n=report.item_count) }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <a href="{{ url_for('scrape.reports') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back to reports') }}
+    </a>
+    <form method="post" action="{{ url_for('scrape.report_delete', report_id=report.id) }}"
+          hx-post="{{ url_for('scrape.report_delete', report_id=report.id) }}"
+          hx-confirm="{{ _('Delete this report?') }}" class="m-0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Delete') }}" aria-label="{{ _('Delete') }}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+{% include 'reports/_report_status.html' %}
+
+{% if report.status == 'error' %}
+  <div class="alert alert-danger">
+    <i class="bi bi-x-circle me-1"></i>
+    {{ _('Report generation failed.') }}
+    {% if report.error %}
+      <div class="small mt-1"><code>{{ report.error }}</code></div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if report.status in ('ok', 'partial') %}
+  {# LLM/API output is untrusted content — autoescape stays on everywhere
+     below (no |safe), and every href is checked for an http(s) scheme
+     before it is drawn. #}
+  {% if report.status == 'partial' or not report.sections %}
+    <div class="alert alert-warning" data-testid="report-partial-notice">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ _('The AI summary could not be fully generated — the numeric summary below is still accurate.') }}
+    </div>
+  {% endif %}
+
+  {% if report.kind == 'author_group' %}
+    {% include 'reports/_group_report.html' %}
+  {% else %}
+    {% include 'reports/_topic_report.html' %}
+  {% endif %}
+{% endif %}
+
+{% endblock %}

@@ -14,9 +14,11 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
 
+import requests
 import structlog
 from flask import current_app
 from flask_babel import gettext as _
+from flask_babel import lazy_gettext as _l
 from sqlalchemy import desc
 
 from app.core.models.user import User
@@ -24,6 +26,8 @@ from app.extensions import db
 from app.modules.academic.service import list_user_keywords
 from app.modules.scrape.doi import normalize_doi
 from app.modules.scrape.models import (
+    AuthorGroup,
+    AuthorGroupMember,
     Journal,
     Paper,
     PaperNote,
@@ -51,9 +55,9 @@ logger = structlog.get_logger()
 #: module constant so the route, the template and the tests agree on it. No
 #: placeholder: the route passes it straight to `_()`, and the panel header
 #: already shows the "42 / 50" count.
-FEED_CAP_MESSAGE = "Feed limit reached. Remove one before adding another."
-PAGE_CAP_MESSAGE = "Page limit reached. Remove one before adding another."
-BLUESKY_CAP_MESSAGE = "Bluesky account limit reached. Remove one before adding another."
+FEED_CAP_MESSAGE = _l("Feed limit reached. Remove one before adding another.")
+PAGE_CAP_MESSAGE = _l("Page limit reached. Remove one before adding another.")
+BLUESKY_CAP_MESSAGE = _l("Bluesky account limit reached. Remove one before adding another.")
 
 
 # ----------------------------------------------------------------------------
@@ -680,6 +684,18 @@ def upsert_paper(payload: PaperPayload | dict) -> Paper:
     DOI match wins and is the one enriched — the other row is left
     untouched. Merging the two rows (e.g. moving UserPaper links across) is
     out of scope here; it would need a real migration, not an upsert.
+
+    Race safety: the SELECT above and the INSERT below are not atomic, so two
+    workers can both miss the SELECT for the same brand-new (source,
+    external_id) — e.g. the same arXiv paper matching two different users'
+    keywords in concurrent nightly scans — and both fall through to insert.
+    Without `ON CONFLICT`, the loser's plain INSERT would raise
+    `IntegrityError` against `uq_paper_source_external` and force Celery's
+    retry machinery to clean up noise that was never a real failure. Instead
+    the loser's insert becomes a no-op and it re-selects the winner's row
+    (then enriches it with anything its own payload had that the winner's
+    didn't) — same fill-only semantics as the plain-existing-row path above,
+    just reached one step later.
     """
     data = payload.as_dict() if isinstance(payload, PaperPayload) else dict(payload)
     if "doi" in data:
@@ -699,9 +715,21 @@ def upsert_paper(payload: PaperPayload | dict) -> Paper:
             db.session.commit()
         return existing
 
-    paper = Paper(**data)
-    db.session.add(paper)
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    stmt = (
+        pg_insert(Paper.__table__)
+        .values(**data)
+        .on_conflict_do_nothing(index_elements=["source", "external_id"])
+    )
+    db.session.execute(stmt)
     db.session.commit()
+
+    paper = Paper.query.filter_by(source=data["source"], external_id=data["external_id"]).first()
+    if paper is None:  # pragma: no cover — the unique index guarantees a row either way
+        raise RuntimeError("upsert_paper: insert conflicted but no row was found")
+    if _enrich(paper, data):
+        db.session.commit()
     return paper
 
 
@@ -897,6 +925,43 @@ def _hydrate_scopus_payloads(payloads: list) -> list:
     return out
 
 
+#: Wait before the single retry in `_search_with_transient_retry`. A module
+#: constant (not a literal in the loop) so a test can monkeypatch it to 0
+#: instead of a real scan actually pausing 5 seconds.
+TRANSIENT_RETRY_DELAY_SECONDS = 5.0
+
+
+def _search_with_transient_retry(
+    source, terms: list[str], *, max_results: int, source_name: str, user_id: int
+):
+    """Call `source.search_for_keywords`, retrying exactly once on a
+    transient network failure.
+
+    `scrape_for_user` isolates each source behind a broad try/except (see its
+    docstring) so a source's exception never reaches the Celery task — which
+    also means the task's own retry (60/240s backoff) never gets a chance to
+    run for it. Without this, a `ConnectionError` from a one-second network
+    blip costs that source the rest of the night, not just one attempt.
+
+    Deliberately narrow:
+      * `requests.exceptions.ConnectionError` / `Timeout` only — the two
+        shapes an actual network hiccup takes.
+      * No retry for `requests.exceptions.HTTPError` (a 4xx is a permanent
+        rejection; retrying wastes a request against a source with a rate
+        limit) or `SourceThrottledError` (already means "back off" — an
+        immediate retry would defeat the point). Both fall straight through
+        to the caller's except-and-sentinel handling, unchanged.
+      * One retry, not a loop — a source that's still down 5 seconds later is
+        down for the night, and the caller already isolates that outcome.
+    """
+    try:
+        return source.search_for_keywords(terms, max_results=max_results)
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        logger.warning("scrape_source_transient_retry", source=source_name, user_id=user_id)
+        time.sleep(TRANSIENT_RETRY_DELAY_SECONDS)
+        return source.search_for_keywords(terms, max_results=max_results)
+
+
 def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
     """Run every enabled source with this user's keywords; persist + link the
     results back to them.
@@ -907,8 +972,11 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
     The expansion is per-source: see `_PER_KEYWORD_REQUEST_SOURCES`.
 
     Sources are isolated: one source raising (rate limit, network, API change)
-    is logged and skipped so the remaining sources still land. Returns a
-    summary dict with per-source hit counts for the calling task.
+    is logged and skipped so the remaining sources still land. A transient
+    connection failure gets one retry first (see
+    `_search_with_transient_retry`) so a momentary network blip doesn't cost
+    the source the rest of the night. Returns a summary dict with per-source
+    hit counts for the calling task.
     """
     keyword_rows = list_user_keywords(user)
     if not keyword_rows:
@@ -930,7 +998,9 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
         if not terms:
             continue
         try:
-            payloads = source.search_for_keywords(terms, max_results=max_results)
+            payloads = _search_with_transient_retry(
+                source, terms, max_results=max_results, source_name=name, user_id=user.id
+            )
         except Exception:  # noqa: BLE001 — a flaky source must not kill the run
             logger.exception("scrape_source_failed", source=name, user_id=user.id)
             per_source[name] = -1  # sentinel: this source errored
@@ -958,12 +1028,21 @@ scrape_arxiv_for_user = scrape_for_user
 # Author following (Faz 5.4)
 # ----------------------------------------------------------------------------
 
-#: Per-user cap on followed authors. Each active follow is one OpenAlex
-#: request per night, so this is a politeness budget against a free API, not a
-#: product limit — hence a module constant rather than an admin setting.
+#: Per-user cap on followed authors. Originally sized as a politeness budget
+#: against a free API — one OpenAlex request per *active* follow per night —
+#: hence a module constant rather than an admin setting. That reasoning no
+#: longer covers the whole count: `count_user_authors` does not filter on
+#: `active`, so a `UserAuthor` row created only to sit in an `AuthorGroup`
+#: (see Faz 6's group membership, which deliberately opens new rows
+#: `active=False` so grouping does not feed the nightly ingest) still spends
+#: a slot even though it costs zero nightly requests. The cap stays a single
+#: number anyway: splitting it into separate active/passive budgets would
+#: let a user accumulate an unbounded number of `UserAuthor` rows overall,
+#: which is its own (row-count, UI-list-length) cost independent of the
+#: OpenAlex request budget.
 MAX_USER_AUTHORS = 50
 
-AUTHOR_CAP_MESSAGE = "Author limit reached. Unfollow one before adding another."
+AUTHOR_CAP_MESSAGE = _l("Author limit reached. Unfollow one before adding another.")
 
 
 def list_user_authors(user: User) -> list[UserAuthor]:
@@ -974,7 +1053,9 @@ def count_user_authors(user: User) -> int:
     return UserAuthor.query.filter_by(user_id=user.id).count()
 
 
-def follow_author(user: User, raw: str) -> tuple[UserAuthor | None, str | None]:
+def follow_author(
+    user: User, raw: str, *, activate: bool = True
+) -> tuple[UserAuthor | None, str | None]:
     """Follow an author by ORCID or OpenAlex id. Returns `(row, None)` or
     `(None, error_message)` — never raises for bad user input.
 
@@ -986,27 +1067,54 @@ def follow_author(user: User, raw: str) -> tuple[UserAuthor | None, str | None]:
     Re-following an author already on the list reactivates a paused row rather
     than creating a duplicate, and consumes no cap slot — same shape as
     `add_user_channel`.
+
+    `institution`/`works_count`/`cited_by_count` are refreshed on every call,
+    including the re-follow-of-an-existing-row path — the same
+    always-refresh treatment `Paper.cited_by_count` gets, and for the same
+    reason (see `UserAuthor`'s docstring): these are an OpenAlex snapshot
+    "as of the last resolution", never a historical value worth protecting
+    from being overwritten by a fresher one.
+
+    `activate` controls only the initial `active` value of a *brand-new* row.
+    It exists for the author-group flow (Faz 6): adding someone to an
+    `AuthorGroup` who is not followed at all yet means the route resolves
+    them here first, with `activate=False`, then calls `add_group_member` —
+    grouping is "gather this author's work into a report on demand", not
+    "push their new papers into my nightly feed" (see `AuthorGroup`'s
+    docstring), so a row that exists only because of that ask must not start
+    feeding the nightly ingest. An *existing* row is unaffected by
+    `activate=False` either way — it still reactivates if paused, same as
+    before: this parameter is not a way to pause an author who is already
+    being followed.
     """
     from app.modules.scrape.sources.openalex_source import fetch_author
 
     raw = (raw or "").strip()
     if not raw:
-        return None, "Please enter an ORCID or OpenAlex author id."
+        return None, _l("Please enter an ORCID or OpenAlex author id.")
 
     try:
         resolved = fetch_author(raw)
     except Exception:  # noqa: BLE001 — a lookup failure is user-facing, not a 500
         logger.exception("author_resolve_failed", user_id=user.id)
-        return None, "Could not reach OpenAlex right now. Please try again."
+        return None, _l("Could not reach OpenAlex right now. Please try again.")
 
     if resolved is None:
-        return None, "No author found for that ORCID or OpenAlex id."
+        return None, _l("No author found for that ORCID or OpenAlex id.")
 
     existing = UserAuthor.query.filter_by(user_id=user.id, openalex_id=resolved["id"]).first()
     if existing is not None:
-        if not existing.active:
+        # Re-following someone you had paused means "put them back in my
+        # feed" — but only on the follow path. `activate=False` is the group
+        # path, where the author is being named for a report; that must not
+        # silently undo a deliberate pause and start pushing their papers
+        # into the nightly feed again.
+        if activate and not existing.active:
             existing.active = True
-            db.session.commit()
+        existing.institution = resolved.get("institution")
+        existing.works_count = resolved.get("works_count")
+        existing.cited_by_count = resolved.get("cited_by_count")
+        db.session.commit()
         return existing, None
 
     if count_user_authors(user) >= MAX_USER_AUTHORS:
@@ -1025,7 +1133,10 @@ def follow_author(user: User, raw: str) -> tuple[UserAuthor | None, str | None]:
         author_name=name[:128],
         openalex_id=resolved["id"],
         orcid=resolved["orcid"],
-        active=True,
+        active=activate,
+        institution=resolved.get("institution"),
+        works_count=resolved.get("works_count"),
+        cited_by_count=resolved.get("cited_by_count"),
     )
     db.session.add(row)
     db.session.commit()
@@ -1103,6 +1214,195 @@ def ingest_user_authors(user: User, *, max_results: int = 25) -> dict:
     db.session.commit()
     logger.info("author_ingest_done", user_id=user.id, hits=hits, linked=linked)
     return {"hits": hits, "linked": linked, "sources": summary}
+
+
+# ----------------------------------------------------------------------------
+# Author groups (Faz 6) — named sets of followed authors for on-demand reports
+# ----------------------------------------------------------------------------
+
+#: Per-user cap on author groups. A small, human-curated number — nobody
+#: sanely maintains more than a handful of report groupings — kept as a
+#: module constant like `MAX_USER_AUTHORS`/`MAX_USER_FEEDS` rather than an
+#: admin setting.
+MAX_AUTHOR_GROUPS = 10
+
+#: Per-group cap on members. Bounds how much a single "author_group" `Report`
+#: run has to fetch and render — not a politeness budget against an API the
+#: way `MAX_USER_AUTHORS` is, since group membership itself makes no request.
+MAX_GROUP_MEMBERS = 20
+
+GROUP_CAP_MESSAGE = _l("Group limit reached. Remove one before adding another.")
+MEMBER_CAP_MESSAGE = _l("Group is full. Remove a member before adding another.")
+GROUP_NAME_TAKEN_MESSAGE = _l("You already have a group with that name.")
+GROUP_NAME_REQUIRED_MESSAGE = _l("Please enter a group name.")
+GROUP_NOT_FOUND_MESSAGE = _l("Group not found.")
+GROUP_AUTHOR_NOT_FOUND_MESSAGE = _l("Author not found.")
+
+
+def list_author_groups(user: User) -> list[AuthorGroup]:
+    return AuthorGroup.query.filter_by(user_id=user.id).order_by(AuthorGroup.name.asc()).all()
+
+
+def count_author_groups(user: User) -> int:
+    return AuthorGroup.query.filter_by(user_id=user.id).count()
+
+
+def _owned_author_group(user: User, group_id: int) -> AuthorGroup | None:
+    """Fetch a group only if it belongs to `user` — the ownership boundary
+    every group-mutating function below goes through, same pattern as
+    `unfollow_author`/`toggle_user_author` scoping their lookup to
+    `user_id=user.id` instead of trusting a bare `group_id`."""
+    return AuthorGroup.query.filter_by(id=group_id, user_id=user.id).first()
+
+
+def create_author_group(
+    user: User, name: str, description: str | None = None
+) -> tuple[AuthorGroup | None, str | None]:
+    """Create a named group. Returns `(row, None)` or `(None, error_message)`
+    — never raises for bad user input, same contract as `follow_author`."""
+    name = (name or "").strip()
+    if not name:
+        return None, GROUP_NAME_REQUIRED_MESSAGE
+
+    if count_author_groups(user) >= MAX_AUTHOR_GROUPS:
+        logger.info("author_group_cap_reached", user_id=user.id, cap=MAX_AUTHOR_GROUPS)
+        return None, GROUP_CAP_MESSAGE
+
+    if AuthorGroup.query.filter_by(user_id=user.id, name=name[:120]).first() is not None:
+        return None, GROUP_NAME_TAKEN_MESSAGE
+
+    description = (description or "").strip() or None
+    row = AuthorGroup(user_id=user.id, name=name[:120], description=description)
+    db.session.add(row)
+    db.session.commit()
+    logger.info("author_group_created", user_id=user.id, group_id=row.id)
+    return row, None
+
+
+def rename_author_group(
+    user: User, group_id: int, name: str
+) -> tuple[AuthorGroup | None, str | None]:
+    """Rename a group the user owns. Renaming to the group's own current name
+    is a no-op success, not a false "name taken"."""
+    group = _owned_author_group(user, group_id)
+    if group is None:
+        return None, GROUP_NOT_FOUND_MESSAGE
+
+    name = (name or "").strip()
+    if not name:
+        return None, GROUP_NAME_REQUIRED_MESSAGE
+    name = name[:120]
+
+    clash = AuthorGroup.query.filter_by(user_id=user.id, name=name).first()
+    if clash is not None and clash.id != group.id:
+        return None, GROUP_NAME_TAKEN_MESSAGE
+
+    group.name = name
+    db.session.commit()
+    return group, None
+
+
+def delete_author_group(user: User, group_id: int) -> bool:
+    """Delete a group the user owns. Its `AuthorGroupMember` rows cascade
+    (`AuthorGroup.members` is `cascade="all, delete-orphan"`); the
+    `UserAuthor` rows themselves are untouched — author-following is a
+    separate concept from any one group's membership, see `AuthorGroup`'s
+    docstring."""
+    group = _owned_author_group(user, group_id)
+    if group is None:
+        return False
+    db.session.delete(group)
+    db.session.commit()
+    return True
+
+
+def list_group_members(group: AuthorGroup) -> list[UserAuthor]:
+    """The `UserAuthor` rows in `group`. Takes the group row itself rather
+    than `(user, group_id)` — the caller already owns-checked it via
+    `list_author_groups`/`_owned_author_group` to get it, so this is a plain
+    read, not another ownership boundary."""
+    return (
+        UserAuthor.query.join(AuthorGroupMember, AuthorGroupMember.user_author_id == UserAuthor.id)
+        .filter(AuthorGroupMember.group_id == group.id)
+        .order_by(UserAuthor.author_name.asc())
+        .all()
+    )
+
+
+def count_group_members(group: AuthorGroup) -> int:
+    return group.members.count()
+
+
+def add_group_member(
+    user: User, group_id: int, user_author_id: int
+) -> tuple[AuthorGroupMember | None, str | None]:
+    """Add an already-followed author to a group the user owns. Returns
+    `(row, None)` or `(None, error_message)` — never raises.
+
+    Both `group_id` and `user_author_id` are ownership-checked against
+    `user`, independently — a group id and an author id from two different
+    users must not be combinable into a membership row.
+
+    Deliberately does **not** create the `UserAuthor` row itself and does
+    **not** touch its `active` flag: this function only ever receives the id
+    of a row that already exists. The "new author, added only for a group"
+    case (see `AuthorGroup`'s docstring: grouping is not "push into my nightly
+    feed") is handled one layer up, by the caller resolving the author first
+    through `follow_author(user, raw, activate=False)` — which is what
+    starts that row `active=False` — and *then* calling this function with
+    the id it returns. An author who was already being followed (`active`
+    True or False) keeps whatever `active` value it already had; being added
+    to a group is not a reason to change it either way.
+
+    Adding the same author twice is idempotent: the existing membership row
+    is returned rather than raising a unique-constraint error or silently
+    duplicating.
+    """
+    group = _owned_author_group(user, group_id)
+    if group is None:
+        return None, GROUP_NOT_FOUND_MESSAGE
+
+    author = UserAuthor.query.filter_by(id=user_author_id, user_id=user.id).first()
+    if author is None:
+        return None, GROUP_AUTHOR_NOT_FOUND_MESSAGE
+
+    existing = AuthorGroupMember.query.filter_by(
+        group_id=group.id, user_author_id=author.id
+    ).first()
+    if existing is not None:
+        return existing, None
+
+    if count_group_members(group) >= MAX_GROUP_MEMBERS:
+        logger.info(
+            "author_group_member_cap_reached",
+            user_id=user.id,
+            group_id=group.id,
+            cap=MAX_GROUP_MEMBERS,
+        )
+        return None, MEMBER_CAP_MESSAGE
+
+    member = AuthorGroupMember(group_id=group.id, user_author_id=author.id)
+    db.session.add(member)
+    db.session.commit()
+    logger.info(
+        "author_group_member_added", user_id=user.id, group_id=group.id, user_author_id=author.id
+    )
+    return member, None
+
+
+def remove_group_member(user: User, group_id: int, member_id: int) -> bool:
+    """Remove one membership row. `member_id` is the `AuthorGroupMember.id`,
+    not the `UserAuthor.id` — the group scoping in the query is the
+    ownership check, since a group not owned by `user` never matches."""
+    group = _owned_author_group(user, group_id)
+    if group is None:
+        return False
+    member = AuthorGroupMember.query.filter_by(id=member_id, group_id=group.id).first()
+    if member is None:
+        return False
+    db.session.delete(member)
+    db.session.commit()
+    return True
 
 
 def patent_sources(user: User | None = None) -> dict:
@@ -1331,12 +1631,31 @@ def list_user_papers(
     return query.limit(limit).all()
 
 
-def list_user_papers_in_window(user: User, start: datetime, end: datetime) -> list[UserPaper]:
+def list_user_papers_in_window(
+    user: User, start: datetime, end: datetime, *, limit: int | None = None
+) -> list[UserPaper]:
     """Papers newly surfaced for `user` inside [start, end) — the digest's
     cost/scope guard: only summarise what's actually new in the window,
     never the whole feed. Mirrors the "discover" view (dismissed excluded),
-    ordered by publish date like `list_user_papers`."""
+    ordered by publish date like `list_user_papers`.
+
+    `limit` bounds the query itself rather than leaving it to the caller to
+    slice an unbounded result — a busy user with dozens of active sources can
+    otherwise land hundreds of rows (each pulling its notes via
+    `selectinload`) just to have `ai_service.generate_digest` throw all but
+    `DIGEST_MAX_ITEMS` away. Defaults to twice that constant rather than the
+    exact figure: the caller still does its own scoring/truncation, so the
+    query leaves it a little room to pick the best items rather than
+    whatever the DB happened to return first. Resolved from `ai_service`
+    lazily (not at module import) to avoid a circular import between the two
+    service modules.
+    """
     from sqlalchemy.orm import selectinload
+
+    if limit is None:
+        from app.modules.scrape.ai_service import DIGEST_MAX_ITEMS
+
+        limit = DIGEST_MAX_ITEMS * 2
 
     query = (
         _user_papers_query(user, "discover")
@@ -1344,7 +1663,7 @@ def list_user_papers_in_window(user: User, start: datetime, end: datetime) -> li
         .options(selectinload(UserPaper.notes))
         .filter(UserPaper.created_at >= start, UserPaper.created_at < end)
     )
-    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).all()
+    return query.order_by(desc(Paper.published_at), desc(UserPaper.created_at)).limit(limit).all()
 
 
 # ----------------------------------------------------------------------------
@@ -1497,7 +1816,7 @@ def add_user_feed(
     """
     normalized = _normalize_feed_url(url)
     if normalized is None:
-        return None, "Please enter a valid feed URL (starting with http:// or https://)."
+        return None, _l("Please enter a valid feed URL (starting with http:// or https://).")
 
     existing = UserFeed.query.filter_by(user_id=user.id, url=normalized).first()
     if existing is not None:
@@ -1529,7 +1848,7 @@ def add_user_feed(
             url=normalized,
             status=parsed_feed.status,
         )
-        return None, "Could not read that feed — check the URL and try again."
+        return None, _l("Could not read that feed — check the URL and try again.")
 
     clean_label = (label or "").strip()[:128] or None
     if not clean_label:
@@ -1677,7 +1996,7 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
 
 #: Shown when a user tries to add channel number max_user_channels() + 1. Kept
 #: as a module constant so the route, the template and the tests agree on it.
-CHANNEL_CAP_MESSAGE = "Channel limit reached. Remove one before adding another."
+CHANNEL_CAP_MESSAGE = _l("Channel limit reached. Remove one before adding another.")
 
 
 def max_user_channels() -> int:
@@ -1740,7 +2059,7 @@ def add_user_channel(
 
     raw = (raw or "").strip()
     if not raw:
-        return None, "Please enter a YouTube channel URL or @handle."
+        return None, _l("Please enter a YouTube channel URL or @handle.")
 
     resolved, error = resolve_channel(raw)
     if resolved is None:
