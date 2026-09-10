@@ -186,7 +186,22 @@ def _to_payload(item: dict) -> PaperPayload | None:
     # itself — the one URL guaranteed to exist for every item.
     url = item.get("doi") or primary_location.get("landing_page_url") or raw_id or None
 
-    pdf_url = best_oa_location.get("pdf_url") or primary_location.get("pdf_url")
+    # `best_oa_location` is the open one; `primary_location` is the
+    # publisher's and is routinely paywalled. Falling back to it filled
+    # `pdf_url` with links a reader cannot open and, worse, left nothing able
+    # to tell which rows were actually fetchable. `oa_*` below carries access
+    # explicitly, and `pdf_url` keeps the fallback only as a display link.
+    oa_pdf_url = best_oa_location.get("pdf_url")
+    pdf_url = oa_pdf_url or primary_location.get("pdf_url")
+
+    open_access = item.get("open_access") or {}
+    oa_status = (open_access.get("oa_status") or "").strip().lower() or None
+    # A location with no stated licence is a "no", not a "maybe" -- readable
+    # does not imply redistributable.
+    oa_license = (best_oa_location.get("license") or "").strip().lower() or None
+    # Prefer the PDF, but a landing page is still a fetchable OA location and
+    # trafilatura handles those; only `best_oa_location` is ever used here.
+    oa_url = oa_pdf_url or best_oa_location.get("landing_page_url") or None
 
     authors = []
     for authorship in item.get("authorships") or []:
@@ -216,6 +231,9 @@ def _to_payload(item: dict) -> PaperPayload | None:
         doi=doi,
         issn_l=_issn_l(primary_location),
         cited_by_count=_cited_by_count(item),
+        oa_status=oa_status,
+        oa_license=oa_license,
+        oa_url=oa_url,
     )
 
 

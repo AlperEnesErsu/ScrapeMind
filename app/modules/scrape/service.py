@@ -586,6 +586,14 @@ _ENRICHABLE_FIELDS = (
     # A paper's journal does not change; only OpenAlex/Crossref report it, so
     # every other source picks it up for free through a DOI match.
     "issn_l",
+    # Open access (Faz 7). Only OpenAlex reports these, so a paper first seen
+    # via arXiv or PubMed gains them when a DOI match brings OpenAlex's record
+    # in -- the same way issn_l arrives. Fill-only, like everything here: a
+    # licence that has already been recorded is not re-decided by a later
+    # source that happens to describe the same work.
+    "oa_status",
+    "oa_license",
+    "oa_url",
 )
 
 
@@ -1605,6 +1613,7 @@ def list_user_papers(
                     db.func.lower(Paper.title).like(f"%{q.lower()}%"),
                     db.func.lower(Paper.abstract).like(f"%{q.lower()}%"),
                     db.func.lower(UserPaper.matched_keyword).like(f"%{q.lower()}%"),
+                    db.func.lower(Paper.fulltext).like(f"%{q.lower()}%"),
                 )
             ).order_by(
                 db.case(
@@ -1622,6 +1631,11 @@ def list_user_papers(
                 db.func.lower(Paper.abstract).like(like),
                 db.func.lower(UserPaper.matched_keyword).like(like),
                 db.func.lower(db.cast(Paper.authors, db.String)).like(like),
+                # Full text, for the papers whose licence let us keep it.
+                # NULL for every other row, and `like` on NULL is NULL rather
+                # than an error, so this simply never matches there -- no
+                # extra guard needed, and no claim that the corpus is complete.
+                db.func.lower(Paper.fulltext).like(like),
             )
         )
 
@@ -2549,6 +2563,13 @@ def search_user_papers_query(
     `quartile` ("Q1".."Q4") restricts to papers whose journal carries that SJR
     quartile; papers with no seeded journal are excluded, because "Q1 only" is
     a claim about the journal that an unknown one does not satisfy.
+
+    Keyword search reads `Paper.fulltext` as well as the title and abstract,
+    but that column is only populated for papers whose licence permitted
+    keeping the text -- see `fulltext.REDISTRIBUTABLE_LICENSES`. So full-text
+    matching covers a subset of the library and always will. That is a licence
+    boundary, not a backlog: a paper that is free to read is not therefore free
+    to store.
     """
     from sqlalchemy.orm import joinedload, selectinload
 

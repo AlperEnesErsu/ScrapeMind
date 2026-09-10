@@ -45,6 +45,12 @@ class PaperPayload:
     # working.
     issn_l: str | None = None
     cited_by_count: int | None = None
+    # Open access (Faz 7). Defaulted for the same reason `issn_l` is: an
+    # existing adapter must not have to change to keep working, and a source
+    # that cannot tell OA from closed should say nothing rather than guess.
+    oa_status: str | None = None
+    oa_license: str | None = None
+    oa_url: str | None = None
 
     def __post_init__(self) -> None:
         """Light, structural validation only — no normalising, no coercing.

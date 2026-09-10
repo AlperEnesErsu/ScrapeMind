@@ -815,6 +815,40 @@ def get_analysis(paper: Paper, *, target_lang: str = "tr") -> PaperAnalysis | No
     return PaperAnalysis.query.filter_by(paper_id=paper.id, target_lang=target_lang).first()
 
 
+#: How much stored full text reaches the analysis prompt.
+#:
+#: Sized against the smallest context this app supports rather than the
+#: largest -- OpenRouter's free tier is the default provider, and a prompt
+#: built for a 200k-token model would simply fail there. The opening of a
+#: paper carries the abstract, introduction and method, which is what the
+#: analysis actually asks about; discussion and references are the parts a
+#: truncation loses, and they are the parts it can afford to lose.
+FULLTEXT_ANALYSIS_CHARS = 12_000
+
+
+def _analysis_user_msg(title: str, abstract: str, paper) -> str:
+    """Build the analysis prompt, preferring the paper over its abstract.
+
+    Before full text existed this was title + abstract, and the model was being
+    asked for method, findings and limitations from a description written to
+    advertise the work. Limitations in particular are rarely in an abstract at
+    all -- authors put them in the discussion.
+
+    Only text the licence let us keep is available here; for everything else
+    the abstract is still all there is, which is why the abstract stays in the
+    prompt rather than being replaced.
+    """
+    body = (getattr(paper, "fulltext", None) or "").strip()
+    parts = [f"Makale başlığı:\n{title}", f"\n\nÖzet:\n{abstract or '(özet yok)'}"]
+    if body:
+        excerpt = body[:FULLTEXT_ANALYSIS_CHARS]
+        truncated = len(body) > FULLTEXT_ANALYSIS_CHARS
+        parts.append(
+            "\n\nTam metin" + (" (baştan bir bölüm)" if truncated else "") + f":\n{excerpt}"
+        )
+    return "".join(parts)
+
+
 def generate_analysis(paper: Paper, *, target_lang: str = "tr", user=None) -> PaperAnalysis | None:
     """Force an LLM call (routed via `_call_llm` for `user`'s resolved
     provider) and upsert the cache row. Returns None on failure."""
@@ -827,7 +861,7 @@ def generate_analysis(paper: Paper, *, target_lang: str = "tr", user=None) -> Pa
 
     title = (paper.title or "").strip()
     abstract = (paper.abstract or "").strip()
-    user_msg = f"Makale başlığı:\n{title}\n\nÖzet:\n{abstract or '(özet yok)'}"
+    user_msg = _analysis_user_msg(title, abstract, paper)
 
     parsed, raw = _call_llm(
         system=_ANALYSIS_SYSTEM_TR, user_msg=user_msg, max_tokens=MAX_TOKENS_ANALYSIS, user=user

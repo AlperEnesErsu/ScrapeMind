@@ -99,8 +99,28 @@ def is_embedding_enabled(user=None) -> bool:
     return _resolve_embedding_config(user) is not None
 
 
+#: How much stored full text goes into one embedding.
+#:
+#: Embedding providers cap input at roughly 8k tokens and a paper runs well
+#: past that. Rather than chunk-and-average -- which blurs a paper into its
+#: mean and makes "the one that used method X" harder to find, not easier --
+#: this takes the opening, where the abstract, introduction and method
+#: summary live. Chunked per-section embeddings are a separate table and a
+#: separate decision.
+FULLTEXT_EMBEDDING_CHARS = 20_000
+
+
 def paper_text_for_embedding(paper: Paper) -> str:
-    """Construct the canonical text representation of a paper for embedding."""
+    """Construct the canonical text representation of a paper for embedding.
+
+    Full text is used when the licence allowed keeping it, because an
+    abstract describes a paper and the paper *is* the paper: semantic search
+    over abstracts can only match what the authors chose to advertise.
+
+    Title and abstract stay in front of it either way -- they are the densest
+    description available, and burying them inside 20k characters of body
+    text would make the vector worse rather than better.
+    """
     parts: list[str] = []
     title = (paper.title or "").strip()
     if title:
@@ -108,6 +128,9 @@ def paper_text_for_embedding(paper: Paper) -> str:
     abstract = (paper.abstract or "").strip()
     if abstract:
         parts.append(abstract)
+    body = (getattr(paper, "fulltext", None) or "").strip()
+    if body:
+        parts.append(body[:FULLTEXT_EMBEDDING_CHARS])
     return "\n\n".join(parts)
 
 

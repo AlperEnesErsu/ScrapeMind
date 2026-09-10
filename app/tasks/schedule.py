@@ -70,6 +70,14 @@ BEAT_SCHEDULE = {
         "task": "feeds.link_for_all_users",
         "schedule": crontab(hour=3, minute=45),
     },
+    # Open-access full text — fetches papers that have an OA location and no
+    # attempt recorded. Deliberately ahead of the embedding backfill: a paper
+    # whose text arrives tonight should be embedded from that text tonight,
+    # not from its abstract and then re-embedded a day later.
+    "fulltext-fetch-nightly": {
+        "task": "fulltext.fetch_pending",
+        "schedule": crontab(hour=3, minute=50),
+    },
     # Vector embeddings backfill — embeds newly surfaced papers where embedding
     # is NULL so semantic search & RAG have full coverage.
     "embeddings-backfill-nightly": {

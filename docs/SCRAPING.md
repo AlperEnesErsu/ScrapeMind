@@ -458,6 +458,39 @@ README'deki taahhüt bu katmanın davranış sözleşmesidir:
   ile yüklenir. Gecelik bir task bunları çekmez: yıllık anlık görüntüler ve ikisinin de
   bir scraper'a gömülmeye değer sabit sürümlü URL'i yok.
 
+### Açık erişim tam metni (Faz 7)
+
+**Okumak ile saklamak ayrı iki sorudur ve bunları karıştırmak bu modülün
+engellemek için var olduğu hata.**
+
+- **Getirilebilir mi?** OpenAlex bir `best_oa_location` bildiriyorsa evet.
+  O konum tanımı gereği açık, ve getirmek okumaktır. `Paper.oa_url` **yalnızca**
+  oradan yazılır — `primary_location` yayıncının konumudur ve rutin olarak
+  ödeme duvarının arkasındadır.
+- **Saklanabilir mi?** Yalnızca lisans öyle diyorsa. Açık erişim *okumayı*
+  düzenler; yeniden dağıtım ayrı bir izindir. **"Bronze" OA** en net örnek:
+  yayıncı sayfasında ücretsiz okunur, lisansı yoktur, yeniden yayımlama hakkı
+  vermez. CC BY tam tersi.
+
+İzin veren lisansların listesi tek yerde: `fulltext.REDISTRIBUTABLE_LICENSES`.
+Listede olmayan her şey — `publisher-specific-oa` ve NULL dahil — "türet ve at"
+demektir. Kapı **kapalı fail eder**: tanımadığı bir lisans izin kanıtı değildir.
+
+Saklanmayan durumda `VideoSummary` deseni sürer: metin analiz ve gömme üretmek
+için kullanılır, `fulltext_chars` sayacı yazılır, ham metin yazılmaz. Sayacın
+ayrı tutulmasının sebebi "41 bin karakter okuduk" ile "hiç bakmadık" arasındaki
+farkın boş bir gövdeyle ifade edilememesi.
+
+> ⚠️ **Tam metin araması OA'nın tamamını kapsamaz, kapsayamaz.** Yalnızca
+> lisansın saklamaya izin verdiği alt kümede çalışır. Bu bir eksik değil, lisans
+> sınırıdır — "zaten açık erişim, indeksleyelim" diye genişletme.
+
+Getirme yolu diğer kullanıcı-URL'li yollarla aynı kapılardan geçer:
+`robots.is_allowed` (§11 bunu nezaket değil sözleşme yapıyor),
+`robots.host_slot` (bir depoda bin makalemiz varsa arka arkaya bin istek
+atılmaz) ve `get_with_redirects` (her hop yeniden doğrulanır). Tarayıcı
+otomasyonu yok: JavaScript isteyen bir PDF atlanan bir makaledir (ADR-0001).
+
 ### Scopus (Faz 5.4)
 
 - **Elsevier lisanslı içerik kalıcı olarak saklanmaz.** `scopus_source` payload'ı
