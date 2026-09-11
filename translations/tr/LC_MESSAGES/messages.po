@@ -1033,7 +1033,7 @@ msgstr "Son gorulme"
 
 #: app/core/templates/settings/_tab_sessions.html:24
 msgid "Started"
-msgstr "Baslangic"
+msgstr "Başlatıldı"
 
 #: app/core/templates/settings/_tab_sessions.html:30
 msgid "Sign out this device?"
@@ -1563,7 +1563,7 @@ msgstr "Tarama kuyruğa alındı — worker bitirdiğinde makaleler burada gör�
 
 #: app/modules/scrape/templates/library/_notes.html:23
 msgid "No notes yet."
-msgstr "Henüz rol yok."
+msgstr "Henüz not yok."
 
 #: app/modules/scrape/templates/library/_notes.html:25
 msgid ""
@@ -1575,11 +1575,11 @@ msgstr ""
 
 #: app/modules/scrape/templates/library/_timeline.html:31
 msgid "Scrape run"
-msgstr "Şimdi tara"
+msgstr "Tarama koşusu"
 
 #: app/modules/scrape/templates/library/_timeline.html:32
 msgid "Favorited"
-msgstr "Baslangic"
+msgstr "Favorilendi"
 
 #: app/modules/scrape/templates/library/_timeline.html:33
 msgid "Note added"
@@ -1632,12 +1632,12 @@ msgstr "Notlar"
 #: app/modules/scrape/templates/library/index.html:51
 #: app/modules/scrape/templates/scrape/feed.html:64
 msgid "No favorites yet."
-msgstr "Henüz rol yok."
+msgstr "Henüz favori yok."
 
 #: app/modules/scrape/templates/library/index.html:52
 #: app/modules/scrape/templates/scrape/feed.html:65
 msgid "Nothing hidden."
-msgstr "Aktif iş yok."
+msgstr "Gizlenmiş bir şey yok."
 
 #: app/modules/scrape/templates/library/index.html:56
 #: app/modules/scrape/templates/scrape/feed.html:70
@@ -1663,7 +1663,7 @@ msgstr "Bulgular"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:50
 msgid "Limitations"
-msgstr "İşlemler"
+msgstr "Sınırlılıklar"
 
 #: app/modules/scrape/templates/scrape/_ai_analysis.html:62
 msgid "Why this matters for you"
@@ -1747,16 +1747,16 @@ msgstr ""
 
 #: app/modules/scrape/templates/scrape/_ai_translation.html:53
 msgid "Translate now"
-msgstr "Şimdi tara"
+msgstr "Şimdi çevir"
 
 #: app/modules/scrape/templates/scrape/_dismissed_undo.html:11
 msgid "Undo"
-msgstr "Kilidi Aç"
+msgstr "Geri al"
 
 #: app/modules/scrape/templates/scrape/_favorite_button.html:8
 #: app/modules/scrape/templates/scrape/_paper_card.html:54
 msgid "Toggle favorite"
-msgstr "Tema Değiştir"
+msgstr "Favorilere ekle/çıkar"
 
 #: app/modules/scrape/templates/scrape/_mode_original.html:3
 msgid "Abstract"
@@ -1774,17 +1774,17 @@ msgstr "Etiket yok"
 #: app/modules/scrape/templates/scrape/_note_edit.html:21
 #: app/modules/scrape/templates/scrape/_notes_list.html:33
 msgid "experiment"
-msgstr "Üst Öğe"
+msgstr "deney"
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:22
 #: app/modules/scrape/templates/scrape/_notes_list.html:36
 msgid "question"
-msgstr "Açıklama"
+msgstr "soru"
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:23
 #: app/modules/scrape/templates/scrape/_notes_list.html:39
 msgid "finding"
-msgstr "sonuç"
+msgstr "bulgu"
 
 #: app/modules/scrape/templates/scrape/_note_edit.html:39
 msgid "Cancel edit"
@@ -1793,7 +1793,7 @@ msgstr "Düzenlemeyi iptal et"
 #: app/modules/scrape/templates/scrape/_note_edit.html:43
 #: app/modules/scrape/templates/scrape/_notes_list.html:42
 msgid "Save"
-msgstr "Aktif"
+msgstr "Kaydet"
 
 #: app/modules/scrape/templates/scrape/_note_view.html:14
 msgid "Edit note"
@@ -1801,7 +1801,7 @@ msgstr "Notu düzenle"
 
 #: app/modules/scrape/templates/scrape/_note_view.html:21
 msgid "Delete this note?"
-msgstr "Bu rolü silmek istiyor musunuz?"
+msgstr "Bu notu silmek istiyor musunuz?"
 
 #: app/modules/scrape/templates/scrape/_note_view.html:22
 msgid "Delete note"
@@ -1839,11 +1839,11 @@ msgstr "yeni"
 #: app/modules/scrape/templates/scrape/_paper_card.html:32
 #: app/modules/scrape/templates/scrape/detail.html:47
 msgid "more"
-msgstr "çekirdek"
+msgstr "daha fazla"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:59
 msgid "Open notes"
-msgstr "Menü Öğeleri"
+msgstr "Notları aç"
 
 #: app/modules/scrape/templates/scrape/_paper_card.html:65
 msgid "Open PDF"
@@ -1882,7 +1882,7 @@ msgstr "Kaynak"
 
 #: app/modules/scrape/templates/scrape/detail.html:66
 msgid "Original"
-msgstr "Giriş E-postası"
+msgstr "Özgün"
 
 #: app/modules/scrape/templates/scrape/detail.html:70
 msgid "Turkish"
@@ -2277,7 +2277,7 @@ msgid "%(n)s paused"
 msgstr "%(n)s duraklatıldı"
 
 msgid "Manage your feeds"
-msgstr "Kaynaklarını yönet"
+msgstr "Beslemelerini yönet"
 
 #, python-format
 msgid "%(used)s / %(cap)s feeds"
@@ -2489,7 +2489,7 @@ msgid "Only papers with notes"
 msgstr "Yalnızca notu olan makaleler"
 
 msgid "results"
-msgstr "sonuç"
+msgstr "sonuçlar"
 
 msgid "No matching papers."
 msgstr "Eşleşen makale yok."

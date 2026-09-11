@@ -7,7 +7,7 @@ catalog. Both stay equal, CI stays green, and a Turkish reader sees English.
 Sixty-six strings were in that state when this script was written, including
 the "Read Later" tab and half of the note editor.
 
-Two checks, both read-only:
+Three checks, all read-only:
 
 1. **Coverage.** Every translatable string extracted from `app/` must exist in
    both catalogs -- plus the labels that reach gettext through data rather
@@ -19,6 +19,13 @@ Two checks, both read-only:
    to ask whether to delete a *user*. Four entries were in this state; the
    check exists because that damage is silent -- the page renders, the words
    are Turkish, and only someone reading that exact screen notices.
+
+3. **Duplication.** One Turkish string attached to two msgids is the
+   signature of the same damage in its other, quieter form: `Toggle favorite`
+   read "Tema Değiştir", inherited from the dark-mode switch on its way out,
+   and `Save` read "Aktif". Twenty entries were in this state and check 2
+   could not see any of them, because the words are ordinary short labels --
+   for something else.
 
 This script **never writes to a catalog.** `pybabel update`'s fuzzy matching
 is what caused the damage in check 2 in the first place (CLAUDE.md, "Çeviri İş
@@ -124,6 +131,53 @@ def _dynamic_labels() -> dict[str, str]:
     return out
 
 
+#: Turkish strings that more than one msgid may legitimately share. Synonyms
+#: in English that are one word in Turkish (Abstract/Summary -> Özet), and the
+#: `menu.*` keys, which exist to label the same thing as their English sibling.
+#: Everything not listed here is treated as fuzzy-match damage, because when
+#: this check was written everything not listed here *was*.
+DUPLICATE_EXCEPTIONS: set[str] = {
+    "Özet",  # Abstract / Summary
+    "Atıf",  # Cite / Citation
+    "Denetim Günlüğü",  # Audit Log / Audit log
+    "Keşfet",  # Discover / Open discover / menu.discover
+    "Kütüphanem",  # My library / menu.library
+    "Notlarım",  # My notes / menu.library.notes
+    "Raporlar",  # Reports / menu.reports
+    "Sistem Ayarları",  # System Settings / menu.system
+    "Zaman",  # Time / Timeline -- the tab reads correctly as either
+    "İlgi alanı ekle",  # Add interests / New interest
+}
+
+
+def check_duplicates() -> list[str]:
+    """One Turkish string on two msgids is the signature of fuzzy matching.
+
+    `pybabel update` hands a removed string's translation to whichever
+    surviving msgid looks most similar to it. `Toggle Theme` went out with dark
+    mode and its translation landed on `Toggle favorite`, so the favourite
+    button's tooltip and screen-reader label read "Tema Değiştir". `Delete this
+    note?` inherited the role dialog's text and asked whether to delete a
+    *role*. `Save` read "Aktif".
+
+    Twenty entries were in this state, and none of them were visible to check
+    2: the translations are not sentences, they are perfectly ordinary short
+    labels -- for something else. Several sit in `title` and `aria-label`,
+    where nobody reads them until a screen reader does.
+    """
+    seen: dict[str, list[str]] = {}
+    for message in _catalog("tr"):
+        msgid, string = message.id, message.string
+        if isinstance(msgid, str) and isinstance(string, str) and string:
+            seen.setdefault(string, []).append(msgid)
+
+    problems = []
+    for string, msgids in sorted(seen.items()):
+        if len(msgids) > 1 and string not in DUPLICATE_EXCEPTIONS:
+            problems.append(f"tr: one translation on {len(msgids)} msgids: {string!r} <- {msgids}")
+    return problems
+
+
 def check_shape() -> list[str]:
     """A short label translated as a sentence is fuzzy-match damage."""
     problems = []
@@ -142,7 +196,7 @@ def check_shape() -> list[str]:
 
 def main() -> int:
     found = {**_extract(), **_dynamic_labels()}
-    problems = check_coverage(found) + check_shape()
+    problems = check_coverage(found) + check_shape() + check_duplicates()
 
     if problems:
         print(f"i18n audit: {len(problems)} problem(s)")
