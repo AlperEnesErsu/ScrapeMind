@@ -25,6 +25,23 @@ class BaseConfig:
 
     WTF_CSRF_ENABLED = True
 
+    # How many reverse proxies sit in front of this app. 0 disables the
+    # X-Forwarded-* handling entirely.
+    #
+    # This number is dangerous in one direction only, and it is worth being
+    # explicit about which. Too LOW and the app sees the proxy's own IP -- rate
+    # limits collapse into one shared bucket, which is the bug this setting was
+    # added to fix. Too HIGH and the app trusts a hop that does not exist, so a
+    # client can prepend any address it likes to X-Forwarded-For and *choose*
+    # its own rate-limit bucket. The second is worse than the first.
+    #
+    # So it defaults to 0 -- off, trusting nothing -- and is turned on
+    # deliberately. ProductionConfig sets 1 to match the single nginx in
+    # docs/DEPLOYMENT.md §3. A deployment that adds a load balancer in front of
+    # nginx has to raise this to 2, and nothing will remind it to; that is the
+    # cost of the safe default.
+    PROXY_FIX_HOPS = int(os.getenv("PROXY_FIX_HOPS", "0"))
+
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     # Named, not Flask's default "session". Cookies are scoped by host, NOT by
@@ -275,6 +292,8 @@ class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "")
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
+    # One nginx, as deployed in docs/DEPLOYMENT.md §3.
+    PROXY_FIX_HOPS = int(os.getenv("PROXY_FIX_HOPS", "1"))
 
 
 class TestingConfig(BaseConfig):
