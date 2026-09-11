@@ -97,6 +97,58 @@ def _validate_production_config(app: Flask) -> None:
         )
 
 
+#: OAuth providers, and the config each one needs before it can be offered.
+#: `register` is a staticmethod on the strategy class; nothing else calls it.
+_OAUTH_PROVIDERS = (
+    ("google", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"),
+    ("microsoft", "MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET"),
+)
+
+
+def _register_oauth_providers(app: Flask) -> list[str]:
+    """Register the OAuth clients that are configured. Returns their names.
+
+    Nothing called `register()` before this. The strategy classes defining it
+    were imported by nothing, so authlib held no clients, `getattr(oauth,
+    "google", None)` returned None, and every OAuth login ended at "Unknown
+    OAuth provider" -- while the login page offered both buttons. The feature
+    had never worked.
+
+    Registration is conditional on the credentials being present, which also
+    settles what to do about the buttons without anyone having to decide
+    whether this project wants OAuth: set the environment variables and the
+    provider appears, leave them empty and it does not. The template reads
+    `oauth_providers` from the context processor below rather than guessing.
+
+    `server_metadata_url` is fetched lazily by authlib on first use, so this
+    costs no network at start-up.
+    """
+    from app.core.auth.strategies.oauth_google import GoogleOAuthStrategy
+    from app.core.auth.strategies.oauth_microsoft import MicrosoftOAuthStrategy
+
+    strategies = {"google": GoogleOAuthStrategy, "microsoft": MicrosoftOAuthStrategy}
+    registered: list[str] = []
+
+    for name, id_key, secret_key in _OAUTH_PROVIDERS:
+        if not (app.config.get(id_key) and app.config.get(secret_key)):
+            continue
+        try:
+            strategies[name].register(app)
+        except Exception:  # noqa: BLE001 — one bad provider must not stop boot
+            logger = structlog.get_logger()
+            logger.warning("oauth_provider_registration_failed", provider=name)
+            continue
+        registered.append(name)
+
+    app.config["OAUTH_PROVIDERS"] = registered
+
+    @app.context_processor
+    def _expose_oauth_providers():
+        return {"oauth_providers": registered}
+
+    return registered
+
+
 def _register_security_headers(app: Flask) -> None:
     """Headers the app was serving none of.
 
@@ -179,6 +231,7 @@ def _init_extensions(app: Flask) -> None:
     migrate.init_app(app, db)
     login_manager.init_app(app)
     oauth.init_app(app)
+    _register_oauth_providers(app)
     csrf.init_app(app)
     limiter.init_app(app)
 

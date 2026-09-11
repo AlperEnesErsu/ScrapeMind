@@ -45,15 +45,26 @@
           <a href="{{ url_for('auth.register') }}">{{ _('Create Account') }}</a>
         </p>
 
+        {# Only providers whose credentials are configured. These buttons used
+           to show unconditionally while nothing had registered the clients, so
+           both of them led to "Unknown OAuth provider" and back to this page.
+           Offering a way in that cannot let anyone in is worse than offering
+           nothing. #}
+        {% if oauth_providers %}
         <hr>
         <div class="d-grid gap-2">
+          {% if 'google' in oauth_providers %}
           <a href="{{ url_for('auth.oauth_redirect', provider='google') }}" class="btn btn-outline-danger btn-sm">
             <i class="bi bi-google me-2"></i>{{ _('Continue with Google') }}
           </a>
+          {% endif %}
+          {% if 'microsoft' in oauth_providers %}
           <a href="{{ url_for('auth.oauth_redirect', provider='microsoft') }}" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-microsoft me-2"></i>{{ _('Continue with Microsoft') }}
           </a>
+          {% endif %}
         </div>
+        {% endif %}
       </div>
     </div>
   </div>
