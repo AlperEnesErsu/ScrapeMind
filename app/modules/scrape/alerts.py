@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import structlog
+from flask import current_app
+from flask_babel import force_locale
 from sqlalchemy.exc import IntegrityError
 
 from app.core.models.user import User
@@ -133,6 +135,17 @@ def announce(result: AlertResult) -> int:
     return written
 
 
+def _locale_for(user_id: int) -> str:
+    """The recipient's language, falling back to the configured default."""
+    from app.core.i18n.utils import SUPPORTED_LOCALES
+
+    user = db.session.get(User, user_id)
+    locale = getattr(user, "locale", None)
+    if locale in SUPPORTED_LOCALES:
+        return locale
+    return current_app.config.get("BABEL_DEFAULT_LOCALE", "tr")
+
+
 def notification_text(result: AlertResult) -> tuple[str, str]:
     """The title and body for one alert.
 
@@ -185,9 +198,36 @@ def run_saved_search(search: SavedSearch) -> AlertResult | None:
         db.session.commit()
         return None
 
-    announce(result)
-    title, message = notification_text(result)
+    # Order matters, and it is the opposite of the obvious one.
+    #
+    # Marking papers announced and then building the notification means any
+    # failure in between loses the alert *permanently and silently*: the rows
+    # are committed, so those papers never match again, and the user is never
+    # told. That is not hypothetical -- it is exactly what the locale bug below
+    # did on its first run here, burning 150 papers for one saved search.
+    #
+    # Delivering first and marking afterwards trades that for a repeated alert
+    # if the marking fails, which is visible, rare, and harmless. A duplicate
+    # notification is a nuisance; a lost one is a feature that quietly does
+    # nothing.
+    #
+    # `force_locale` is not decoration. Without it `_()` falls through to the
+    # app's locale selector, which reads `request.args` -- and there is no
+    # request here, this runs on the beat schedule. Every alert raised
+    # RuntimeError inside `alerts.run_for_user`, was swallowed by the
+    # per-search `except Exception` that exists so one bad search does not
+    # lose the others, and was logged as `alerts_search_failed`. The feature
+    # was dead end to end and looked, from the outside, like "no new matches".
+    #
+    # It also has to be the *recipient's* language: this text is read in the
+    # bell menu by whoever saved the search, not by whoever is running the
+    # worker. `digest_tasks` and `report_tasks` both do exactly this; the
+    # saved-search path was written without them in view.
+    locale = _locale_for(search.user_id)
+    with force_locale(locale):
+        title, message = notification_text(result)
     add_notification(search.user_id, title, message)
+    announce(result)
 
     logger.info(
         "saved_search_alert",

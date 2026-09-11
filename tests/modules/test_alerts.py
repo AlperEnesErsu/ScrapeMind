@@ -239,3 +239,55 @@ def test_searches_are_scoped_to_their_owner(db, library, saved_search, user):
     _db.session.commit()
 
     assert alerts.find_new_matches(theirs).count == 0
+
+
+# --------------------------------------------------------------------------
+# Background delivery -- where this feature actually runs
+# --------------------------------------------------------------------------
+
+
+def test_an_alert_is_delivered_without_a_request(app, db, library, saved_search, user):
+    """The regression that killed the feature.
+
+    Alerts run on the beat schedule, with no request anywhere. `_()` falls
+    through to the app's locale selector, which reads `request.args`, so every
+    alert raised RuntimeError inside the task, was swallowed by the per-search
+    `except Exception`, and looked from outside exactly like "no new matches".
+
+    `app.app_context()` and no request context is what the Celery task has.
+    """
+    library(title="Pomegranate thermal spreaders")
+    search = saved_search(q="pomegranate")
+
+    with app.app_context():
+        result = alerts.run_saved_search(search)
+
+    assert result is not None and result.count == 1
+    assert Notification.query.filter_by(user_id=user.id).count() == 1
+
+
+def test_a_paper_is_marked_announced_only_after_the_alert_exists(
+    app, db, library, saved_search, user, monkeypatch
+):
+    """Marking first and delivering second loses alerts permanently.
+
+    The rows are committed, so those papers never match again, and nobody is
+    ever told. A repeated alert -- what the other order risks -- is visible and
+    harmless; a lost one is a feature that quietly does nothing.
+    """
+    library(title="Pomegranate thermal spreaders")
+    search = saved_search(q="pomegranate")
+
+    def _explode(*a, **kw):
+        raise RuntimeError("notification backend is down")
+
+    monkeypatch.setattr("app.core.models.notification.add_notification", _explode)
+    monkeypatch.setattr("app.modules.scrape.alerts.add_notification", _explode, raising=False)
+
+    with app.app_context():
+        with pytest.raises(RuntimeError):
+            alerts.run_saved_search(search)
+
+    assert (
+        SavedSearchNotification.query.filter_by(saved_search_id=search.id).count() == 0
+    ), "a paper marked announced but never delivered can never be alerted on again"
