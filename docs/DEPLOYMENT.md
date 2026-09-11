@@ -177,6 +177,10 @@ what makes rotation the right response to a suspected leak.
 - [ ] `SECRET_KEY` and `JWT_SECRET_KEY` freshly generated, not dev values
 - [ ] `POSTGRES_PASSWORD` strong and unique
 - [ ] `FLASK_ENV=production` (fail-fast guard + JSON logs + secure cookies)
+- [ ] `RATELIMIT_STORAGE_URI=redis://redis:6379/1` — **not** `memory://`, which
+      counts per gunicorn worker. Production refuses to start on it, so this is
+      self-enforcing; it is on the list so the failure is expected rather than
+      alarming
 - [ ] Mail configured and a password-reset email actually received
 - [ ] TLS certificate issued and auto-renewal timer active (`systemctl list-timers | grep certbot`)
 - [ ] Backup cron installed and a restore **tested once**

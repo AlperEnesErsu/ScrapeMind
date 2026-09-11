@@ -40,8 +40,29 @@ class BaseConfig:
     # Same reasoning for the "remember me" cookie, which Flask-Login names
     # "remember_token" by default.
     REMEMBER_COOKIE_NAME = "scrapemind_remember"
+    # Flask-Login does not inherit the SESSION_COOKIE_* hardening above -- it
+    # has its own keys and its own defaults, and its default for SECURE is
+    # False. This cookie is a persistent authentication token that outlives the
+    # session cookie, so leaving it the weaker of the two undoes the point of
+    # hardening the session cookie at all. SECURE is set in ProductionConfig,
+    # next to SESSION_COOKIE_SECURE, so the two cannot drift apart.
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
 
-    RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")
+    # `RATELIMIT_STORAGE_URI`, not `..._URL`. Flask-Limiter renamed the key and
+    # reads only the URI spelling -- so the old one sat in this file being set,
+    # documented in .env.example, and read by nobody. A deployment could put a
+    # Redis URL in it and still get per-process in-memory counters, silently.
+    # Verified against 4.1.1: with `RATELIMIT_STORAGE_URL=redis://...` the
+    # limiter still reported `MemoryStorage`.
+    #
+    # The old env var name is still honoured so an existing .env keeps working,
+    # but the config key -- the thing the library actually looks at -- is now
+    # spelled the way the library spells it.
+    RATELIMIT_STORAGE_URI = os.getenv(
+        "RATELIMIT_STORAGE_URI",
+        os.getenv("RATELIMIT_STORAGE_URL", "memory://"),
+    )
 
     # Email (Flask-Mail)
     # MAIL_SERVER bos kalirsa: dev modu — gercek SMTP cagrisi yapilmaz, link `flash` ile gosterilir.
@@ -253,6 +274,7 @@ class ProductionConfig(BaseConfig):
     # SQLAlchemy will surface a clear connection error if it's empty.
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "")
     SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
 
 
 class TestingConfig(BaseConfig):
