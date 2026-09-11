@@ -124,23 +124,31 @@
       <div class="card-body py-3">
         <div class="d-flex flex-column gap-2 small">
           <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted"><i class="bi bi-database me-1"></i>Database:</span>
-            <span class="badge bg-success-subtle text-success rounded-pill px-2">connected</span>
+            <span class="text-muted"><i class="bi bi-database me-1"></i>{{ _('Database') }}</span>
+            <span class="badge bg-success-subtle text-success rounded-pill px-2">{{ _('connected') }}</span>
           </div>
           <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted"><i class="bi bi-hdd-network me-1"></i>Redis Connection:</span>
+            <span class="text-muted"><i class="bi bi-hdd-network me-1"></i>{{ _('Redis') }}</span>
             {% if health_status.redis == 'connected' %}
-              <span class="badge bg-success-subtle text-success rounded-pill px-2">connected</span>
+              <span class="badge bg-success-subtle text-success rounded-pill px-2">{{ _('connected') }}</span>
             {% else %}
-              <span class="badge bg-danger-subtle text-danger rounded-pill px-2">disconnected</span>
+              <span class="badge bg-danger-subtle text-danger rounded-pill px-2">{{ _('disconnected') }}</span>
             {% endif %}
           </div>
           <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted"><i class="bi bi-cpu me-1"></i>Celery Worker:</span>
-            {% if 'active' in health_status.celery %}
-              <span class="badge bg-success-subtle text-success rounded-pill px-2">{{ health_status.celery }}</span>
+            <span class="text-muted"><i class="bi bi-cpu me-1"></i>{{ _('Celery worker') }}</span>
+            {# Three states, not two: "the broker is up but nothing is consuming
+               the queue" is a different problem from "we cannot reach Celery at
+               all", and only the first is fixed by starting a worker. #}
+            {% if health_status.celery == 'active' %}
+              {# Count and label kept apart rather than pluralised: Turkish does
+                 not inflect a noun after a numeral, this catalog has no plural
+                 entries at all, and "2 aktif" reads correctly without one. #}
+              <span class="badge bg-success-subtle text-success rounded-pill px-2">{{ health_status.workers }} {{ _('active') }}</span>
+            {% elif health_status.celery == 'idle' %}
+              <span class="badge bg-warning-subtle text-warning rounded-pill px-2">{{ _('no workers') }}</span>
             {% else %}
-              <span class="badge bg-danger-subtle text-danger rounded-pill px-2">{{ health_status.celery }}</span>
+              <span class="badge bg-danger-subtle text-danger rounded-pill px-2">{{ _('offline') }}</span>
             {% endif %}
           </div>
         </div>

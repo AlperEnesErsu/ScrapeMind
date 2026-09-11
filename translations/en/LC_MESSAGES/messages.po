@@ -668,7 +668,7 @@ msgstr "Go to Dashboard"
 
 #: app/core/templates/errors/404.html:2
 msgid "Not Found"
-msgstr "Paper not found."
+msgstr "Not Found"
 
 #: app/core/templates/errors/404.html:6
 msgid "The page you're looking for doesn't exist."
@@ -1605,7 +1605,7 @@ msgstr "favorites"
 
 #: app/modules/scrape/templates/library/index.html:10
 msgid "notes"
-msgstr "No matches."
+msgstr "notes"
 
 #: app/modules/scrape/templates/library/index.html:17
 msgid "Timeline"
@@ -1618,7 +1618,7 @@ msgstr "Favorites"
 
 #: app/modules/scrape/templates/library/index.html:26
 msgid "Notes"
-msgstr "No matches."
+msgstr "Notes"
 
 #: app/modules/scrape/templates/library/index.html:51
 #: app/modules/scrape/templates/scrape/feed.html:64
@@ -1794,7 +1794,7 @@ msgstr "Delete this role?"
 
 #: app/modules/scrape/templates/scrape/_note_view.html:22
 msgid "Delete note"
-msgstr "Delete this user?"
+msgstr "Delete note"
 
 #: app/modules/scrape/templates/scrape/_notes_list.html:5
 msgid "My notes"
@@ -3696,6 +3696,240 @@ msgstr "Sent to Zotero: %(created)d new, %(updated)d updated."
 #, python-format
 msgid "Sent to Zotero: %(done)d of %(total)d. %(failed)d failed."
 msgstr "Sent to Zotero: %(done)d of %(total)d. %(failed)d failed."
+
+msgid "Added to Read Later."
+msgstr "Added to Read Later."
+
+msgid ""
+"Ask Claude about this paper's methodology, findings, or how it relates to"
+" your work. The conversation history is saved."
+msgstr ""
+"Ask Claude about this paper's methodology, findings, or how it relates to"
+" your work. The conversation history is saved."
+
+msgid "Ask Paper"
+msgstr "Ask Paper"
+
+msgid "BibTeX"
+msgstr "BibTeX"
+
+msgid "Bookmark papers to read them later — they will collect here."
+msgstr "Bookmark papers to read them later — they will collect here."
+
+msgid "CSS Selector"
+msgstr "CSS Selector"
+
+msgid "CSV"
+msgstr "CSV"
+
+msgid "Change language"
+msgstr "Change language"
+
+msgid "Citations"
+msgstr "Citations"
+
+msgid ""
+"Claude AI is not configured. Please set ANTHROPIC_API_KEY in your "
+"config/env to enable RAG chat."
+msgstr ""
+"Claude AI is not configured. Please set ANTHROPIC_API_KEY in your "
+"config/env to enable RAG chat."
+
+msgid ""
+"Claude did not return a response. Please check your credentials or try "
+"again later."
+msgstr ""
+"Claude did not return a response. Please check your credentials or try "
+"again later."
+
+msgid "Collection sharing updated."
+msgstr "Collection sharing updated."
+
+msgid "Copy Link"
+msgstr "Copy Link"
+
+msgid "Create"
+msgstr "Create"
+
+msgid "Experiment"
+msgstr "Experiment"
+
+msgid "Export Notes as Markdown"
+msgstr "Export Notes as Markdown"
+
+msgid "Finding"
+msgstr "Finding"
+
+msgid "GitHub"
+msgstr "GitHub"
+
+msgid "Invalid URL. Must start with http:// or https://"
+msgstr "Invalid URL. Must start with http:// or https://"
+
+msgid "Invalid paper selection."
+msgstr "Invalid paper selection."
+
+msgid "Keyboard Shortcuts"
+msgstr "Keyboard Shortcuts"
+
+msgid "Less"
+msgstr "Less"
+
+msgid "Link"
+msgstr "Link"
+
+msgid "More"
+msgstr "More"
+
+msgid "New papers this week"
+msgstr "New papers this week"
+
+msgid "No bookmarks yet."
+msgstr "No bookmarks yet."
+
+msgid "No matching papers found."
+msgstr "No matching papers found."
+
+msgid "No notifications yet."
+msgstr "No notifications yet."
+
+msgid "No papers selected or action specified."
+msgstr "No papers selected or action specified."
+
+msgid "No questions asked yet. Start the conversation below!"
+msgstr "No questions asked yet. Start the conversation below!"
+
+msgid "Notes taken this week"
+msgstr "Notes taken this week"
+
+msgid "Notifications"
+msgstr "Notifications"
+
+msgid "Operations (7d)"
+msgstr "Operations (7d)"
+
+msgid "Public Collection"
+msgstr "Public Collection"
+
+msgid "Public link copied to clipboard!"
+msgstr "Public link copied to clipboard!"
+
+msgid "Question"
+msgstr "Question"
+
+msgid "Read Later"
+msgstr "Read Later"
+
+msgid "Reading"
+msgstr "Reading"
+
+msgid "References"
+msgstr "References"
+
+msgid "Removed from Read Later."
+msgstr "Removed from Read Later."
+
+msgid "Saved."
+msgstr "Saved."
+
+msgid ""
+"Search OpenAlex by name and pick the right person from the candidates "
+"below — institution, publication and citation counts are shown because "
+"that's the only way to tell two same-named researchers apart."
+msgstr ""
+"Search OpenAlex by name and pick the right person from the candidates "
+"below — institution, publication and citation counts are shown because "
+"that's the only way to tell two same-named researchers apart."
+
+msgid "Select"
+msgstr "Select"
+
+msgid "Selected papers added to favorites."
+msgstr "Selected papers added to favorites."
+
+msgid "Selected papers hidden."
+msgstr "Selected papers hidden."
+
+msgid "Selected papers marked as Read Later."
+msgstr "Selected papers marked as Read Later."
+
+msgid "Share"
+msgstr "Share"
+
+msgid "Shared"
+msgstr "Shared"
+
+msgid "System Health"
+msgstr "System Health"
+
+msgid "Thinking..."
+msgstr "Thinking..."
+
+msgid "This public collection has no papers yet."
+msgstr "This public collection has no papers yet."
+
+msgid "Toggle Read Later"
+msgstr "Toggle Read Later"
+
+msgid "Toggle public link"
+msgstr "Toggle public link"
+
+msgid "Top interest"
+msgstr "Top interest"
+
+msgid "Unknown Authors"
+msgstr "Unknown Authors"
+
+msgid "Unknown action."
+msgstr "Unknown action."
+
+msgid "Video"
+msgstr "Video"
+
+msgid "View Source"
+msgstr "View Source"
+
+msgid "Weekly Insights"
+msgstr "Weekly Insights"
+
+msgid "Your login session expired. Please sign in again."
+msgstr "Your login session expired. Please sign in again."
+
+msgid "open details"
+msgstr "open details"
+
+msgid "papers selected"
+msgstr "papers selected"
+
+msgid "publications"
+msgstr "publications"
+
+msgid "select papers"
+msgstr "select papers"
+
+msgid "toggle favorite"
+msgstr "toggle favorite"
+
+msgid "vs last week"
+msgstr "vs last week"
+
+msgid "Celery worker"
+msgstr "Celery worker"
+
+msgid "connected"
+msgstr "connected"
+
+msgid "disconnected"
+msgstr "disconnected"
+
+msgid "no workers"
+msgstr "no workers"
+
+msgid "offline"
+msgstr "offline"
+
+msgid "active"
+msgstr "active"
 
 #~ msgid "Username or Email"
 #~ msgstr "Username"

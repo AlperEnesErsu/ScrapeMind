@@ -342,7 +342,7 @@ def _source_quota_rows() -> list[dict]:
         return []
 
 
-def _health_status() -> dict[str, str]:
+def _health_status() -> dict[str, object]:
     """Broker and worker health for the admin overview panel.
 
     Binds our own Celery app rather than reaching for `celery.current_app`.
@@ -361,6 +361,11 @@ def _health_status() -> dict[str, str]:
 
     A function rather than inline code so the thread behaviour can be tested
     without standing up a request in a second thread.
+
+    Returns codes, not prose. The template used to decide the badge colour with
+    `'active' in health_status.celery` -- a substring match against an English
+    word, which meant the panel could not be translated without silently
+    turning every badge red.
     """
     from app.tasks import celery_app
 
@@ -371,14 +376,21 @@ def _health_status() -> dict[str, str]:
     except Exception:  # noqa: BLE001 — a status panel must not break a render
         redis_status = "disconnected"
 
+    workers = 0
     try:
         inspect = celery_app.control.inspect(timeout=0.3)
         pings = inspect.ping() if inspect else None
-        celery_status = f"active ({len(pings)} worker)" if pings else "no workers active"
+        workers = len(pings or {})
+        celery_status = "active" if workers else "idle"
     except Exception:  # noqa: BLE001 — same
         celery_status = "offline"
 
-    return {"redis": redis_status, "celery": celery_status, "db": "connected"}
+    return {
+        "db": "connected",
+        "redis": redis_status,
+        "celery": celery_status,
+        "workers": workers,
+    }
 
 
 @dashboard_bp.route("/admin/overview")
