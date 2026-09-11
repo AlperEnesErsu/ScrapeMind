@@ -342,6 +342,45 @@ def _source_quota_rows() -> list[dict]:
         return []
 
 
+def _health_status() -> dict[str, str]:
+    """Broker and worker health for the admin overview panel.
+
+    Binds our own Celery app rather than reaching for `celery.current_app`.
+    `current_app` is thread-local with a fallback: in any thread other than the
+    one that constructed the app -- which is every request thread under a
+    threaded WSGI server -- it hands back a bare `Celery('default')` with no
+    broker configured. The connection attempt then goes to Celery's amqp
+    default, is refused, and this panel reports "disconnected" and "offline"
+    however healthy Redis and the workers actually are. It did exactly that,
+    unconditionally, for as long as the panel has existed; the bug hid because
+    a health panel saying something is down reads as news about the system
+    rather than news about the panel.
+
+    `_celery_task_finished` in scrape/routes.py walked into the same trap and
+    was fixed there. These two calls were missed.
+
+    A function rather than inline code so the thread behaviour can be tested
+    without standing up a request in a second thread.
+    """
+    from app.tasks import celery_app
+
+    try:
+        with celery_app.connection_for_write() as conn:
+            conn.connect()
+            redis_status = "connected"
+    except Exception:  # noqa: BLE001 — a status panel must not break a render
+        redis_status = "disconnected"
+
+    try:
+        inspect = celery_app.control.inspect(timeout=0.3)
+        pings = inspect.ping() if inspect else None
+        celery_status = f"active ({len(pings)} worker)" if pings else "no workers active"
+    except Exception:  # noqa: BLE001 — same
+        celery_status = "offline"
+
+    return {"redis": redis_status, "celery": celery_status, "db": "connected"}
+
+
 @dashboard_bp.route("/admin/overview")
 @login_required
 @permission_required("dashboard.admin")
@@ -409,31 +448,7 @@ def admin_overview():
     ).count()
     logs_trend = logs_last_7 - logs_prev_7
 
-    # Check Celery and Redis Health status (A5)
-    celery_status = "unconfigured"
-    redis_status = "disconnected"
-    try:
-        from celery import current_app
-
-        with current_app.connection_for_write() as conn:
-            conn.connect()
-            redis_status = "connected"
-    except Exception:
-        redis_status = "disconnected"
-
-    try:
-        from celery import current_app
-
-        inspect = current_app.control.inspect(timeout=0.3)
-        pings = inspect.ping() if inspect else None
-        if pings:
-            celery_status = f"active ({len(pings)} worker)"
-        else:
-            celery_status = "no workers active"
-    except Exception:
-        celery_status = "offline"
-
-    health_status = {"redis": redis_status, "celery": celery_status, "db": "connected"}
+    health_status = _health_status()
 
     return render_template(
         "dashboard/admin_overview.html",
