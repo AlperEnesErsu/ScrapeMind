@@ -3653,6 +3653,81 @@ msgstr ""
 "%(cap)d tanesi listelendi. Aramayı daraltmak bu bildirimleri daha "
 "kullanışlı yapar."
 
+msgid "Zotero"
+msgstr "Zotero"
+
+msgid ""
+"Connect Zotero to send papers from your library straight into it. "
+"Exporting is always something you start — nothing is written to your "
+"Zotero library in the background."
+msgstr ""
+"Kütüphanendeki makaleleri doğrudan Zotero'ya göndermek için bağla. "
+"Aktarımı her zaman sen başlatırsın — arka planda Zotero kütüphanene "
+"hiçbir şey yazılmaz."
+
+msgid "API key"
+msgstr "API anahtarı"
+
+msgid "Saved — type a new key to replace it"
+msgstr "Kayıtlı — değiştirmek için yeni anahtar yaz"
+
+msgid "Create one at"
+msgstr "Buradan oluştur:"
+
+msgid "it needs write access to your library."
+msgstr "kütüphanene yazma izni gerekiyor."
+
+msgid "Zotero user ID"
+msgstr "Zotero kullanıcı ID'si"
+
+msgid "The number shown on the same page, not your username."
+msgstr "Aynı sayfadaki numara, kullanıcı adın değil."
+
+msgid "Connected"
+msgstr "Bağlı"
+
+msgid "Disconnect Zotero?"
+msgstr "Zotero bağlantısı kesilsin mi?"
+
+msgid "Disconnect Zotero"
+msgstr "Zotero bağlantısını kes"
+
+msgid ""
+"Your key is removed from ScrapeMind. Papers already sent stay in your "
+"Zotero library."
+msgstr ""
+"Anahtarın ScrapeMind'dan silinir. Daha önce gönderilen makaleler Zotero "
+"kütüphanende kalır."
+
+msgid "Zotero (direct)"
+msgstr "Zotero (doğrudan)"
+
+msgid "Send current view to Zotero"
+msgstr "Bu görünümü Zotero'ya gönder"
+
+msgid "Connect Zotero…"
+msgstr "Zotero'yu bağla…"
+
+msgid "Zotero needs both the API key and your numeric user ID."
+msgstr "Zotero hem API anahtarını hem sayısal kullanıcı ID'ni istiyor."
+
+msgid "Zotero disconnected."
+msgstr "Zotero bağlantısı kesildi."
+
+#, python-format
+msgid "Zotero export failed: %(reason)s"
+msgstr "Zotero aktarımı başarısız: %(reason)s"
+
+#, python-format
+msgid "Sent to Zotero: %(created)d new, %(updated)d updated."
+msgstr "Zotero'ya gönderildi: %(created)d yeni, %(updated)d güncellendi."
+
+#, python-format
+msgid "Sent to Zotero: %(done)d of %(total)d. %(failed)d failed."
+msgstr ""
+"Zotero'ya gönderildi: %(total)d üzerinden %(done)d. %(failed)d tanesi "
+"başarısız."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

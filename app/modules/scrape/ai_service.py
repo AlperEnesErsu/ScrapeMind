@@ -703,42 +703,24 @@ def _call_llm(
 # ----------------------------------------------------------------------------
 
 
-def _fernet_key() -> bytes:
-    """32-byte urlsafe-base64 Fernet key. Uses LLM_ENC_KEY if configured,
-    otherwise derives a stable one from SECRET_KEY so dev/test never need a
-    separate secret."""
-    raw = (current_app.config.get("LLM_ENC_KEY") or "").strip()
-    if raw:
-        return raw.encode("utf-8")
-    import base64
-    import hashlib
-
-    secret = (current_app.config.get("SECRET_KEY") or "").encode("utf-8")
-    digest = hashlib.sha256(secret).digest()
-    return base64.urlsafe_b64encode(digest)
-
-
-def _fernet():
-    from cryptography.fernet import Fernet
-
-    return Fernet(_fernet_key())
-
-
+# Moved to `credentials.py` when Zotero became the second consumer. Kept as
+# names here because callers and tests import them from this module, and the
+# derivation is byte-identical -- keys encrypted before the move still decrypt.
 def encrypt_llm_key(plain: str) -> str:
     """Encrypt a plaintext API key for storage. Never call this on anything
     you intend to log."""
-    return _fernet().encrypt(plain.encode("utf-8")).decode("utf-8")
+    from app.modules.scrape.credentials import encrypt_secret
+
+    return encrypt_secret(plain)
 
 
 def decrypt_llm_key(token: str) -> str | None:
     """Decrypt a stored key. Returns None (and logs, without the plaintext)
     on any failure — a corrupt/rotated-key row degrades to "no key" instead
     of crashing the request."""
-    try:
-        return _fernet().decrypt(token.encode("utf-8")).decode("utf-8")
-    except Exception:
-        logger.warning("llm_key_decrypt_failed")
-        return None
+    from app.modules.scrape.credentials import decrypt_secret
+
+    return decrypt_secret(token)
 
 
 def set_user_llm_key(user, api_key: str | None, model: str | None = None) -> None:

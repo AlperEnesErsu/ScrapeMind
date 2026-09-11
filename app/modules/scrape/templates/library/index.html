@@ -36,6 +36,29 @@
         <i class="bi bi-filetype-csv me-2"></i>{{ _('Current view') }} (.csv)</a></li>
       <li><a class="dropdown-item" href="{{ url_for('library.export', fmt='csv', view='all') }}">
         <i class="bi bi-collection me-2"></i>{{ _('Entire library') }} (.csv)</a></li>
+      {% if zotero_connected %}
+        <li><hr class="dropdown-divider"></li>
+        <li><h6 class="dropdown-header">{{ _('Zotero (direct)') }}</h6></li>
+        <li>
+          {# A POST inside the dropdown rather than a link: this writes to the
+             user's Zotero library, and a write does not belong behind a GET
+             that a prefetch or a back button could replay. #}
+          <form method="post" action="{{ url_for('alerts.zotero_export') }}" class="px-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="view" value="{{ export_view }}">
+            <button type="submit" class="dropdown-item">
+              <i class="bi bi-box-arrow-up-right me-2" aria-hidden="true"></i>{{ _('Send current view to Zotero') }}
+            </button>
+          </form>
+        </li>
+      {% else %}
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('settings.profile', tab='zotero') }}">
+            <i class="bi bi-box-arrow-up-right me-2" aria-hidden="true"></i>{{ _('Connect Zotero…') }}
+          </a>
+        </li>
+      {% endif %}
     </ul>
   </div>
 </div>

@@ -1,0 +1,65 @@
+{% include 'settings/_flash_partial.html' %}
+<h6 class="text-muted mb-3">{{ _('Zotero') }}</h6>
+
+<p class="form-text">
+  {{ _('Connect Zotero to send papers from your library straight into it. Exporting is always something you start — nothing is written to your Zotero library in the background.') }}
+</p>
+
+<form method="post" action="{{ url_for('alerts.zotero_credentials') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label" for="zotero_api_key">{{ _('API key') }}</label>
+      <input type="password" name="zotero_api_key" id="zotero_api_key"
+             class="form-control" autocomplete="off"
+             placeholder="{% if zotero_connected %}{{ _('Saved — type a new key to replace it') }}{% endif %}">
+      <p class="form-text">
+        {# Linking rather than explaining: the page that mints the key is the
+           only place that can show the right scopes. #}
+        {{ _('Create one at') }}
+        <a href="https://www.zotero.org/settings/keys" target="_blank" rel="noopener noreferrer">
+          zotero.org/settings/keys <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+        </a>
+        — {{ _('it needs write access to your library.') }}
+      </p>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label" for="zotero_user_id">{{ _('Zotero user ID') }}</label>
+      <input type="text" name="zotero_user_id" id="zotero_user_id"
+             class="form-control" inputmode="numeric"
+             value="{{ zotero_user_id }}" placeholder="1234567">
+      <p class="form-text">
+        {{ _('The number shown on the same page, not your username.') }}
+      </p>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center gap-2 mt-3">
+    <button type="submit" class="btn btn-primary">{{ _('Save') }}</button>
+    {% if zotero_connected %}
+      <span class="badge text-bg-success-subtle">
+        <i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ _('Connected') }}
+      </span>
+    {% endif %}
+  </div>
+</form>
+
+{% if zotero_connected %}
+  <hr class="my-4">
+  {# Disconnecting is destructive, so it is an outline and never sits as a
+     filled button beside the filled primary above — see docs/DESIGN.md. #}
+  <form method="post" action="{{ url_for('alerts.zotero_credentials') }}"
+        onsubmit="return confirm('{{ _('Disconnect Zotero?') }}');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="zotero_api_key" value="">
+    <input type="hidden" name="zotero_user_id" value="">
+    <button type="submit" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ _('Disconnect Zotero') }}
+    </button>
+    <p class="form-text mt-2">
+      {{ _('Your key is removed from ScrapeMind. Papers already sent stay in your Zotero library.') }}
+    </p>
+  </form>
+{% endif %}

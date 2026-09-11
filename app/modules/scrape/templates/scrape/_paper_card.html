@@ -2,7 +2,12 @@
    Outer wrapper id="card-{{ r.id }}" so action endpoints can replace it. #}
 <div id="card-{{ r.id }}" class="paper-card mb-2{% if r.is_favorite %} is-favorite{% endif %}{% if r.seen_at %} is-seen{% endif %} d-flex gap-3 align-items-start">
   <div class="pt-1 ps-1">
-    <input type="checkbox" name="paper_ids" value="{{ r.id }}" class="form-check-input bulk-select-checkbox" onclick="toggleBulkPanel()">
+    {# Named after the paper it selects, not "select": a screen reader reading
+       a list of twenty identical "select" checkboxes cannot tell them apart. #}
+    <input type="checkbox" name="paper_ids" value="{{ r.id }}"
+           class="form-check-input bulk-select-checkbox"
+           aria-label="{{ _('Select') }} — {{ r.paper.title }}"
+           onclick="toggleBulkPanel()">
   </div>
   <div class="flex-grow-1">
     {% if flash_msg %}
