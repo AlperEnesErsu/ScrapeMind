@@ -27,7 +27,14 @@ class MicrosoftOAuthStrategy(AuthStrategy):
         return oauth.microsoft.authorize_redirect(redirect_uri)
 
     @staticmethod
-    def register(app):
+    def register_client(app):
+        """Register this provider's authlib client on the shared `oauth`.
+
+        Not `register`: `AuthStrategy` is an ABC, so on a class object that
+        name is already taken by `ABCMeta.register` -- the "declare a virtual
+        subclass" method. The two are indistinguishable at a glance and a type
+        checker resolves the call to the wrong one.
+        """
         tenant = app.config.get("MICROSOFT_TENANT_ID", "common")
         oauth.register(
             name="microsoft",

@@ -98,7 +98,8 @@ def _validate_production_config(app: Flask) -> None:
 
 
 #: OAuth providers, and the config each one needs before it can be offered.
-#: `register` is a staticmethod on the strategy class; nothing else calls it.
+#: `register_client` is a staticmethod on the strategy class; nothing else
+#: called it, which is exactly how this feature came to be non-functional.
 _OAUTH_PROVIDERS = (
     ("google", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"),
     ("microsoft", "MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET"),
@@ -133,7 +134,7 @@ def _register_oauth_providers(app: Flask) -> list[str]:
         if not (app.config.get(id_key) and app.config.get(secret_key)):
             continue
         try:
-            strategies[name].register(app)
+            strategies[name].register_client(app)
         except Exception:  # noqa: BLE001 — one bad provider must not stop boot
             logger = structlog.get_logger()
             logger.warning("oauth_provider_registration_failed", provider=name)
