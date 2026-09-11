@@ -736,6 +736,11 @@ table code {
 
 .paper-card__head {
   display: flex;
+  /* The row carries a source badge, a quartile badge, a citation count and a
+     status chip pushed right with `ms-auto`. At 280px that is more than fits,
+     and a non-wrapping flex row answers "more than fits" with overflow. The
+     status chip drops to its own line instead. */
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   font-size: var(--text-xs);
@@ -1688,4 +1693,26 @@ code {
    version of the same motion. */
 @media (prefers-reduced-motion: reduce) {
   .splash { display: none; }
+}
+
+/* A paper card is a flex row, and its text column is a flex item -- so it
+   inherits `min-width: auto` and refuses to shrink below its own content.
+   With a real academic title in it that is ~425px of min-content, which is
+   145px of horizontal overflow at 280px.
+
+   This survived the reflow work because the audit database had no papers in
+   it: the card renders, but only with the short synthetic title the fixture
+   supplies. `render_pages.py` now gives that fixture a full-length title for
+   the same reason it creates one at all.
+
+   `anywhere` rather than `break-word` for the metadata line: DOIs and URLs are
+   single tokens with no break opportunity, and `break-word` will not split
+   them. */
+.paper-card > .flex-grow-1 {
+  min-width: 0;
+}
+
+.paper-card__title,
+.paper-card__meta {
+  overflow-wrap: anywhere;
 }

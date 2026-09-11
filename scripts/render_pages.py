@@ -70,9 +70,19 @@ def _ensure_a_paper(app, user_id: int) -> None:
             paper = Paper(
                 source="manual",
                 external_id="ui-audit-fixture",
-                title="UI audit fixture — not a real paper",
+                # Long on purpose. A short title fits at 280px and proves
+                # nothing; the reflow bug this fixture exists to catch only
+                # appears once the card holds something the length of a real
+                # paper. The DOI is here for the same reason -- it is one
+                # unbreakable token, which is the other way this row overflows.
+                title=(
+                    "UI audit fixture — not a real paper, deliberately given a title "
+                    "as long as a real one so the card is measured at the width it "
+                    "actually has to survive"
+                ),
                 abstract="Present so the audited pages actually render a paper card.",
                 authors=["Audit Fixture"],
+                doi="10.0000/ui-audit-fixture-with-a-deliberately-long-identifier",
             )
             db.session.add(paper)
             db.session.flush()

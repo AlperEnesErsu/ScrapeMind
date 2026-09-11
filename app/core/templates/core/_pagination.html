@@ -2,8 +2,13 @@
 <nav aria-label="{{ _('Pagination') }}">
   <ul class="pagination pagination-sm mb-0">
     <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
-      <a class="page-link" href="{{ request.path }}?page={{ pagination.prev_num }}{% for k,v in request.args.items() %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
-        <i class="bi bi-chevron-left"></i>
+      {# Icon-only, so it needs a name: without one a screen reader announces
+         "link" and nothing else. This partial paginates every list in the app,
+         and the violation stayed invisible until the audit database finally
+         held enough rows to paginate at all. #}
+      <a class="page-link" aria-label="{{ _('Previous page') }}"
+         href="{{ request.path }}?page={{ pagination.prev_num }}{% for k,v in request.args.items() %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
+        <i class="bi bi-chevron-left" aria-hidden="true"></i>
       </a>
     </li>
 
@@ -18,8 +23,9 @@
     {% endfor %}
 
     <li class="page-item {{ 'disabled' if not pagination.has_next }}">
-      <a class="page-link" href="{{ request.path }}?page={{ pagination.next_num }}{% for k,v in request.args.items() %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
-        <i class="bi bi-chevron-right"></i>
+      <a class="page-link" aria-label="{{ _('Next page') }}"
+         href="{{ request.path }}?page={{ pagination.next_num }}{% for k,v in request.args.items() %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
       </a>
     </li>
   </ul>

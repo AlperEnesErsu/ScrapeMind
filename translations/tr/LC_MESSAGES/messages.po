@@ -4076,6 +4076,12 @@ msgstr "Abone olduğun kanallardan yeni yüklemeler, transkriptleriyle"
 msgid "Open catalog of scholarly works across every field"
 msgstr "Her alandan akademik çalışmaların açık kataloğu"
 
+msgid "Previous page"
+msgstr "Önceki sayfa"
+
+msgid "Next page"
+msgstr "Sonraki sayfa"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
