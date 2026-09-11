@@ -1,5 +1,5 @@
 # Web
-Flask==3.1.0
+flask==3.1.3
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.7
 Flask-Login==0.6.3
@@ -19,8 +19,8 @@ prometheus-flask-exporter==0.23.1
 # Auth
 passlib[argon2]==1.7.4
 argon2-cffi==23.1.0
-Authlib==1.3.2
-requests==2.32.3
+Authlib==1.8.0
+requests==2.32.4
 
 # DB
 psycopg2-binary==2.9.12
@@ -28,7 +28,7 @@ SQLAlchemy==2.0.36
 pgvector>=0.3.6
 
 # Config
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 
 # Tasks (Phase 2)
 celery==5.4.0
@@ -49,8 +49,8 @@ beautifulsoup4==4.12.3
 # Open-access full text (Faz 7). Pure Python, MIT, no native build step —
 # which matters because the worker image is slim and PyMuPDF would drag a
 # compiled dependency in for one extraction call.
-pypdf==5.1.0
-lxml==5.3.0
+pypdf==6.16.1
+lxml==6.1.3
 trafilatura==1.12.2
 
 # Email
@@ -67,13 +67,13 @@ anthropic==0.46.0
 openai==2.48.0
 
 # Per-user LLM API key encryption at rest (Fernet)
-cryptography==48.0.0
+cryptography==50.0.0
 
 # Logging
 structlog==24.4.0
 
 # Dev & Test
-pytest==8.3.3
+pytest==9.0.3
 pytest-flask==1.3.0
 pytest-timeout==2.3.1
 factory-boy==3.3.1
