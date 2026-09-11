@@ -2489,7 +2489,7 @@ msgid "Only papers with notes"
 msgstr "Yalnızca notu olan makaleler"
 
 msgid "results"
-msgstr "sonuçlar"
+msgstr "sonuç"
 
 msgid "No matching papers."
 msgstr "Eşleşen makale yok."
