@@ -25,6 +25,7 @@ def create_app() -> Flask:
     # see app/core/ui/splash.py for why the pop lives in the template.
     app.jinja_env.globals["pop_splash"] = pop_splash
 
+    _apply_proxy_fix(app)
     _init_extensions(app)
     _init_logging(app)
     _init_observability(app)
@@ -93,6 +94,37 @@ def _validate_production_config(app: Flask) -> None:
             "Point it at the Redis already in the stack, e.g. "
             "RATELIMIT_STORAGE_URI=redis://redis:6379/1"
         )
+
+
+def _apply_proxy_fix(app: Flask) -> None:
+    """Read X-Forwarded-* when a reverse proxy is declared in front.
+
+    nginx already sends these (docs/DEPLOYMENT.md §3) and Flask ignored all of
+    them, which broke two things quietly:
+
+    * `request.remote_addr` was the proxy on every request, so the
+      `10 per minute` limit on `/auth/login` was not per client -- it was one
+      bucket for the entire site. Brute-force protection stopped existing, and
+      a single attacker could lock everyone else out by exhausting it.
+    * `request.is_secure` was False, so `url_for(..., _external=True)` built
+      `http://` links. Password-reset emails carried them.
+
+    Applied before `_init_extensions` because Flask-Limiter resolves the client
+    address through the WSGI environment, and the middleware has to be wrapping
+    it by the time the limiter is bound.
+
+    Off unless `PROXY_FIX_HOPS` says otherwise -- see the config for why the
+    number errs low.
+    """
+    hops = int(app.config.get("PROXY_FIX_HOPS", 0) or 0)
+    if hops <= 0:
+        return
+
+    from werkzeug.middleware.proxy_fix import ProxyFix
+
+    app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
+        app.wsgi_app, x_for=hops, x_proto=hops, x_host=hops, x_port=0, x_prefix=0
+    )
 
 
 def _init_extensions(app: Flask) -> None:

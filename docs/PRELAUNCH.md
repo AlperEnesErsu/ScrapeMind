@@ -23,7 +23,7 @@ Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
 
 ## 🔴 Engeller
 
-### E1 — Uygulama `X-Forwarded-*` başlıklarını okumuyor
+### ~~E1 — Uygulama `X-Forwarded-*` başlıklarını okumuyor~~ ✅ KAPANDI (PR #80)
 
 `docs/DEPLOYMENT.md §3`'teki nginx yapılandırması `X-Real-IP`,
 `X-Forwarded-For` ve `X-Forwarded-Proto` gönderiyor. Uygulamada **ProxyFix
@@ -60,6 +60,23 @@ curl -H 'X-Forwarded-Proto: https' -H 'X-Forwarded-For: 203.0.113.9' \
 ```
 ve `/auth/login`'e farklı `X-Forwarded-For` değerleriyle 11 kez vurup
 yalnızca aynı IP'nin 429 aldığını görmek.
+
+**Yapıldı.** `PROXY_FIX_HOPS` eklendi; **varsayılanı 0**, yani kapalı.
+`ProductionConfig` bunu 1'e çekiyor (`DEPLOYMENT.md §3`'teki tek nginx).
+
+Bu sayının yalnızca **tek yönde** tehlikeli olduğunu yazmak gerekiyor: çok
+**düşük** olursa hız sınırları tek kovaya çöker — düzeltilmek istenen hata.
+Çok **yüksek** olursa uygulama var olmayan bir sıçramaya güvenir ve istemci
+`X-Forwarded-For`'un başına istediğini yazıp **kendi kovasını seçebilir**.
+İkincisi birincisinden kötü, o yüzden varsayılan güvenli tarafta.
+
+Ölçüldü (prod config + Redis deposu): aynı IP'den 13 istek → **4×429**; farklı
+IP'den 3 istek → **hepsi 200**. Yani sınır artık istemci başına sayıyor.
+
+> Yan gözlem: CSRF'i geçemeyen istekler limiter'a **hiç ulaşmıyor** (Flask-WTF
+> view'dan önce 400 döndürüyor), yani sayaca girmiyorlar. Gerçek bir saldırı
+> için bypass değil — geçerli token almak zaten kolay — ama sayacın neyi
+> saymadığı bilinmeli.
 
 ---
 
