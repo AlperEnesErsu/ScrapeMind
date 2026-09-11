@@ -77,6 +77,23 @@ def _validate_production_config(app: Flask) -> None:
             f"{', '.join(missing)}. Set them in the environment before launching."
         )
 
+    # In-memory rate limiting is per *process*, and production runs gunicorn
+    # with four workers plus separate worker and beat containers. Every limit
+    # silently becomes four times looser and resets on each restart -- and the
+    # endpoint that matters is the login form.
+    #
+    # This refuses to boot rather than warning, for the same reason the checks
+    # above do: a warning in a start-up log is a thing nobody reads until they
+    # are already looking for why the brute-force protection did not hold.
+    storage = str(app.config.get("RATELIMIT_STORAGE_URI") or "")
+    if app.config.get("RATELIMIT_ENABLED", True) and storage.startswith("memory:"):
+        raise RuntimeError(
+            "Production start-up aborted — RATELIMIT_STORAGE_URI is in-memory "
+            f"({storage!r}), which counts per process and resets on restart. "
+            "Point it at the Redis already in the stack, e.g. "
+            "RATELIMIT_STORAGE_URI=redis://redis:6379/1"
+        )
+
 
 def _init_extensions(app: Flask) -> None:
     db.init_app(app)

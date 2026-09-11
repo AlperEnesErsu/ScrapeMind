@@ -12,7 +12,7 @@
 
 | Seviye | Adet | Ne demek |
 |---|---|---|
-| 🔴 Engel | 5 | Bunlar kapanmadan canlıya çıkılmamalı |
+| 🔴 Engel | 5 (**2 kapandı**) | Bunlar kapanmadan canlıya çıkılmamalı |
 | 🟠 Yüksek | 5 | İlk hafta içinde kapanmalı |
 | 🟡 Orta | 8 | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
@@ -112,27 +112,33 @@ curl -sI https://<host>/auth/login | grep -iE 'content-security|strict-transport
 
 ---
 
-### E3 — Hız sınırı deposu `memory://`
+### ~~E3 — Hız sınırı deposu `memory://`~~ ✅ KAPANDI (PR #79)
 
-`.env.example:28` `RATELIMIT_STORAGE_URL=memory://` diyor ve
-`docs/DEPLOYMENT.md` bunu değiştirmekten bahsetmiyor. Prod'da gunicorn
-**4 worker** ile koşuyor.
+> Uygulamaya başlayınca bu maddenin bu belgede yazıldığından **daha kötü**
+> olduğu ortaya çıktı. Buradaki ilk tarif — "`.env.prod`'a
+> `RATELIMIT_STORAGE_URL=redis://...` yaz" — **işe yaramazdı**.
 
-Sonuç: her worker kendi sayacını tutar, yani `10 per minute` fiilen
-**40/dakika** olur ve her yeniden başlatmada sıfırlanır. Redis zaten stack'te
-ayakta — kullanılmıyor olması sadece bir satırlık eksik.
+Flask-Limiter 4.1.1 `RATELIMIT_STORAGE_URI` okuyor. `app/config.py` ise
+`RATELIMIT_STORAGE_URL` tanımlıyordu — yani ayar **ölüydü**: kütüphane onu hiç
+görmüyordu. Çalışan uygulamada ölçüldü; `redis://` verilmişken kullanılan depo
+`MemoryStorage` idi.
 
-**Düzeltme** — `.env.prod`:
+Yani sorun "prod'da yanlış değere ayarlanmış" değil, "**ayar hiç bağlı
+değil**"di. `.env.prod`'a Redis yazan bir ekip, bir şey düzelttiğine inanıp
+hiçbir şey düzeltmemiş olacaktı.
 
-```
-RATELIMIT_STORAGE_URL=redis://redis:6379/1
-```
+Yapılanlar:
+- Config anahtarı kütüphanenin okuduğu ada çevrildi; eski **env değişkeni**
+  adı yedek olarak okunmaya devam ediyor, böylece mevcut bir `.env` sessizce
+  ayarını kaybetmiyor.
+- Anahtarın adı, kütüphanenin kendi sabitine karşı **teste bağlandı** —
+  ileride bir yeniden adlandırma sessiz bir düşüş değil, düşen bir test olur.
+- Prod, `memory://` ile **açılmayı reddediyor**. Uyarı değil ret, çünkü
+  koruduğu uç giriş formu ve bir açılış uyarısı olaydan önce değil sonra
+  okunur.
 
-Redis `/0` broker'da; sayaçlar ayrı veritabanında dursun ki `FLUSHDB` biri
-diğerini götürmesin.
-
-> E1 kapanmadan bu tek başına yeterli değil: doğru depo, yanlış IP'yi doğru
-> saymaktan başka işe yaramaz. İkisi birlikte kapanmalı.
+> E1 kapanmadan bu tek başına yeterli değildi: doğru depo, yanlış IP'yi doğru
+> saymaktan başka işe yaramaz. E1 sıradaki.
 
 ---
 
@@ -173,7 +179,7 @@ venv/Scripts/python.exe -m pip_audit -r requirements.txt --progress-spinner off
 
 ---
 
-### E5 — `REMEMBER_COOKIE_SECURE` tanımsız
+### ~~E5 — `REMEMBER_COOKIE_SECURE` tanımsız~~ ✅ KAPANDI (PR #79)
 
 `app/config.py` oturum çerezini sıkılaştırıyor (`HTTPONLY`, `SAMESITE`,
 prod'da `SECURE`) ama **"beni hatırla" çerezine hiç dokunmuyor**.
@@ -198,6 +204,10 @@ REMEMBER_COOKIE_SECURE = True
 
 **Doğrulama** — giriş yaparken "Beni hatırla" işaretleyip `Set-Cookie:
 scrapemind_remember=...` satırında `Secure; HttpOnly; SameSite=Lax` görmek.
+
+`HTTPONLY` ve `SAMESITE` `BaseConfig`'e, `SECURE` ise `ProductionConfig`'e
+`SESSION_COOKIE_SECURE`'un **yanına** kondu — ikisi bir arada dursun ki
+birbirinden ayrı düşmesinler.
 
 ---
 
