@@ -738,11 +738,31 @@ hata, hangisinin yalnızca test kolaylığı olduğunu ayırmak gerekiyor.
 #### Lokal koşunun kendisi
 Gerçek tarama uçtan uca çalıştı: ilgi alanı → "Şimdi tara" → Celery → **151
 makale** (crossref, pubmed, openalex, web_reach). Kayıtlı arama kaydedildi ve
-uyarı istek bağlamı olmadan bildirim üretti. Sol alttaki SİSTEM paneli
-worker+beat ayaktayken doğru raporluyor — o panel kalp atışını **Beat'in**
-yazdığı bir Redis anahtarından okuyor, yani Beat durursa worker ayakta olsa
-bile "İşçi kapalı" der. Bu bilinçli (`app/core/health.py` docstring'i), ama
-hangi bileşenin düştüğü konusunda yanıltıcı.
+uyarı istek bağlamı olmadan bildirim üretti.
+
+#### Sağlık paneli işçi ile zamanlayıcıyı ayıramıyordu (PR #76)
+Bu bölüm önce "bilinçli ama yanıltıcı" diye yazılmıştı; sonra düzeltildi.
+
+Panel canlılığı **Beat'in** zamanladığı `core.heartbeat`'ten okuyordu. Taze damga
+ikisini birden kanıtlıyor, ama **bayat** damga hangisinin düştüğünü söylemiyor
+ve panel her iki durumda da worker'ı suçluyordu. Beat'i durdurmak, sapasağlam
+bir worker'ı olan makinede **"İşçi: kapalı"** yazdırıyordu — yani işe
+yaramayacak düzeltmeyi işaret ediyordu.
+
+Worker artık `worker_ready`'de başlattığı bir daemon thread'den **kendi**
+anahtarını damgalıyor (`app/tasks/worker_liveness.py`). Onu hiçbir şey
+zamanlamıyor, mesele de bu: **ayakta ama boşta** worker da "buradayım" diyor.
+`core.heartbeat` diğer anahtarı damgalamaya devam ediyor ve artık adının
+söylediğini ifade ediyor.
+
+> ⚠️ Periyodik görev değil **thread**, çünkü periyodik görev Beat'e ihtiyaç
+> duyar — kaldırılmak istenen bağımlılık tam olarak o.
+
+Ayırma sırasında admin genel bakışındaki `celery inspect ping` de kalktı. O
+RPC hiçbir şey cevap vermediğinde tüm zaman aşımı boyunca blokluyordu: sayfa,
+admin **ne bozuk diye bakmak için açtığında** 12 saniye sürüyordu. `health.py`
+bu tuzağı zaten yazmıştı; panel yine de içine düşmüştü. **Test süiti 121s →
+86s.** İki panel artık aynı kaynaktan okuduğu için birbiriyle de çelişmiyor.
 
 ## 6. Doküman Haritası
 
