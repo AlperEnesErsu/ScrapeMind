@@ -165,12 +165,22 @@ değil — script'leri komşu `UI-UX/` klasöründe, elle koşulur.
    (ORCID kimlikleri, ilgi alanları, LLM anahtarları, takip edilen yazarlar). Bir
    kullanıcının LLM sağlayıcısı profil ayarı değil. Sol menü **zaten sakin** — sorun
    sidebar'da değil, profil sayfasının içinde; çözüm sidebar'ı şişirmemeli.
-2. **Kayıtlı arama + uyarı** (Faz 7.1) — plan `docs/PHASE7.md`. Zaman damgası
-   kullanma, bildirilmiş-kümesi tablosu kullan; gerekçe planda.
-3. **Zotero'ya aktarım** (Faz 7.2) — projenin dışarıya **ilk yazma** işlemi,
-   idempotentlik doğruluk şartı. Mendeley kapsam dışı (ADR-0002 duruşu).
-4. Küçük borç: `mypy-baseline.txt` 95'te; en yoğun yer `app/modules/scrape`.
+2. **`pytest-flask`'i süitten çıkar.** Eklenti, `app` fixture'ını kullanan
+   **her** testin etrafına `GET /` için bir istek bağlamı itiyor. Yani süit
+   "burada istek bağlamı yok" hatasını **yapısal olarak yakalayamıyor** —
+   Faz 7.1 tam bu yüzden ölü çıktı (PR #71). Proje kendi `app` / `client` /
+   `auth_client` fixture'larını zaten tanımlıyor; eklenti kalıntı görünüyor.
+   `-p no:flask` ile **36 test düşüyor**; iş, o 36'sının hangisinin gerçek bir
+   hata hangisinin yalnızca test kolaylığı olduğunu ayırmak.
+3. Küçük borç: `mypy-baseline.txt` 95'te; en yoğun yer `app/modules/scrape`.
 
+> ✅ **Faz 7.1 (kayıtlı arama + uyarı)** PR #64, **Faz 7.2 (Zotero aktarımı)**
+> PR #65 ile main'de. 7.1 indiği hâlde **çalışmıyordu** — uyarılar beat'te koşuyor,
+> `notification_text` içindeki `_()` istek bağlamı istiyordu; hata arama başına
+> `except`'e takılıp "yeni eşleşme yok" gibi görünüyordu. PR #71 düzeltti ve
+> `announce()` sırasını da tersine çevirdi: **önce teslim et, sonra işaretle** —
+> eski sıra, aradaki her hatada makaleleri kalıcı olarak "bildirildi" yapıp uyarıyı
+> sessizce kaybediyordu.
 > ✅ OA tam metin (Faz 7.0) PR #62 ile indi — lisans kapılı saklama, bkz.
 > `docs/SCRAPING.md §11`. Tam metin araması külliyatın tamamını **kapsamıyor**,
 > yalnızca lisansın saklamaya izin verdiği alt kümeyi; bu bir eksik değil.
@@ -183,6 +193,15 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
 > kaydı aynı endpoint'i gösteriyordu.
 
 ## Bilinen Kısıtlar / Tuzaklar
+- **Arka planda `_()` çağıran her yol `force_locale` ile sarılmalı.** Locale seçicisi
+  `request.args`'ı okuyor; beat/worker'da istek yok ve `_()` `RuntimeError` atıyor.
+  Kalıp `digest_tasks` ve `report_tasks`'ta; dil **alıcının** dili olmalı, worker'ı
+  çalıştıranın değil. Testler bunu yakalayamaz — bkz. sıradaki iş #2.
+- **i18n denetimi: `venv/Scripts/python.exe scripts/i18n_audit.py`** (CI'da da koşuyor).
+  Üç kontrol: kaynakta `_()` ile sarılıp katalogda olmayan string; tek kelimelik
+  etiketin cümleye çevrilmesi; **bir Türkçe metnin iki msgid'de görünmesi** — sonuncusu
+  `pybabel update` fuzzy hasarının imzası ve 21 tane buldu (`Toggle favorite` →
+  "Tema Değiştir", `Save` → "Aktif"). Yeni string'i **elle Babel API'siyle** ekle.
 - Email gönderimi `MAIL_SUPPRESS_SEND=true` ise dev modu — link `flash` ile gösteriliyor
 - API v1: auth (token/refresh/logout) + okuma + yazma (favorite, read-later, dismiss, notlar) — bkz. `docs/API_V1.md`
 - **Tekilleştirme sırası: normalize DOI → `(source, external_id)`.** Eşleşen satır

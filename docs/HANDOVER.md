@@ -665,6 +665,85 @@ görünümü 24px'te çizilemez. Standart eşdeğer kontrole izin veriyor, yanı
 girdisi kondu. `scripts/audit_ui.mjs` bu muafiyeti **dar kapsamlı** tanımlıyor —
 başka bir sayfada `target-size` çıkarsa gerçektir ve denetimi kırar.
 
+### 5.8 ✅ Faz 7 + lokalde koşarken çıkanlar (11 Eylül 2026, PR #65 → #71)
+
+**Faz 7.2 — Zotero'ya aktarım (PR #65).** Projenin dışarıya ilk yazma işlemi.
+Her item ScrapeMind makale id'sini Zotero'nun `extra` alanında taşıyor; ikinci
+aktarım işareti geri okuyup mevcut item key'i üzerinden **günceller**. Zotero
+toplu yazmaya 200 + item bazlı döküm ile cevap verdiği için `ExportResult`
+created/updated/failed sayıyor ve flash "40 üzerinden 37" diyor. Kimlik
+bilgileri `UserSettings.settings["zotero"]` içinde Fernet ile şifreli; anahtar
+türetmesi LLM anahtarınınkiyle **bayt bayt aynı** (`credentials.py`).
+
+> ⚠️ **Gerçek bir Zotero hesabına karşı hiç koşulmadı.** Ağ yalnızca `requests`
+> sınırında taklit edildi. Canlı doğrulama kullanıcının kendi API anahtarını
+> ister.
+
+Sonrasında uygulama **lokalde ayağa kaldırılıp elle gezildi**. Aşağıdakilerin
+hepsi kodu okurken değil, **çalışan uygulamayı Türkçe okurken** bulundu.
+
+#### Sağlık paneli kendini raporluyordu (PR #66)
+Admin genel bakışı var olduğundan beri **her zaman** "Redis: disconnected,
+Celery: offline" diyordu. `celery.current_app` thread-local: uygulamayı
+oluşturan thread dışında broker'ı olmayan çıplak bir `Celery('default')`
+dönüyor, ve threaded bir WSGI sunucusunda **her istek** böyle bir thread'e
+düşüyor. `scrape/routes.py`'deki `_celery_task_finished` aynı tuzağa düşüp
+orada düzeltilmişti; panelin iki çağrısı atlanmıştı.
+
+> Neden bu kadar yaşadı: **bir şeyin çöktüğünü söyleyen sağlık paneli, panel
+> hakkında haber değil sistem hakkında haber gibi okunuyor.**
+
+Panel ayrıca rozet rengini `'active' in health_status.celery` ile seçiyordu —
+İngilizce bir kelimeyi arayarak. Artık kod + çalışan sayısı dönüyor.
+
+#### Çeviri katmanında üç ayrı kusur (PR #67 · #68 · #69 · #70)
+| kusur | sayı | neden CI görmüyordu |
+|---|---|---|
+| `_()` ile sarılıp **hiçbir** katalogda olmayan string | 66 | CI iki kataloğu **birbirine** karşılaştırıyor; ikisinde de yoksa eşit kalıyorlar |
+| aynısı, ama `_l` / `lazy_gettext` ile yazılmış | 34 | Babel'in varsayılan anahtar kelimelerinde `_l` yok — `_i18n_noop.py`'nin tamamı dahil |
+| `{{ _(opt.desc) }}` gibi **veri üzerinden** gettext | 4 | statik çıkarım değişkeni göremez |
+| başka bir string'e ait çeviri (fuzzy hasarı) | 21 | çeviri gayet normal bir etiket — başka şeyin etiketi |
+
+Fuzzy hasarından örnekler: `Toggle favorite` → **"Tema Değiştir"** (karanlık mod
+kaldırılırken çevirisi buraya düştü), `Save` → **"Aktif"**, `Delete this note?`
+→ **"Bu rolü silmek istiyor musunuz?"**, `No notes yet.` → **"Henüz rol yok."**
+Birkaçı `title`/`aria-label` içinde: **bir ekran okuyucu okuyana kadar kimse
+görmüyor.**
+
+`scripts/i18n_audit.py` üçünü de tutuyor ve CI'da koşuyor. **Kataloğa asla
+yazmıyor** — hasarı yapan şey zaten `pybabel update`'in fuzzy eşlemesiydi.
+Kaynak açıklamaları için elle liste tutmuyor, `SOURCE_META` ve `TOPICS`'i
+doğrudan okuyor: elle tutulan liste (`_i18n_noop.py`) **zaten kaymış olan
+şeydi**.
+
+#### Faz 7.1 indiği hâlde hiç çalışmamıştı (PR #71)
+Her kayıtlı arama uyarısı `RuntimeError` atıyordu: `notification_text`
+içindeki `_()` locale seçicisine düşüyor, seçici `request.args`'ı okuyor,
+uyarılar ise **beat'te** koşuyor. Hata arama başına `except Exception`'a
+takılıp `alerts_search_failed` olarak loglanıyor ve dışarıdan **"yeni eşleşme
+yok"** gibi görünüyordu.
+
+İkinci ve daha kötü kusur bunu yaşayarak bulundu: `announce()` bildirilmiş
+kümesini bildirimden **önce** commit ediyordu. Hata 150 makaleyi "bildirildi"
+yapıp öldü; o makaleler o aramayla bir daha asla eşleşmeyecek ve kimseye bir
+şey söylenmedi. Sıra artık **önce teslim et, sonra işaretle**.
+
+#### Ve bunun neden test edilemediği — açık borç
+`pytest-flask`, `app` fixture'ını kullanan **her** testin etrafına `GET /` için
+bir istek bağlamı itiyor. Süit, "istek bağlamı yok" hatasını **yeniden
+üretemiyor**; 7.1 tam bu yüzden ölü çıktı. `-p no:flask` ile **36 test
+düşüyor**. Bu, sıradaki iş listesinde 2. madde — o 36'sının hangisinin gerçek
+hata, hangisinin yalnızca test kolaylığı olduğunu ayırmak gerekiyor.
+
+#### Lokal koşunun kendisi
+Gerçek tarama uçtan uca çalıştı: ilgi alanı → "Şimdi tara" → Celery → **151
+makale** (crossref, pubmed, openalex, web_reach). Kayıtlı arama kaydedildi ve
+uyarı istek bağlamı olmadan bildirim üretti. Sol alttaki SİSTEM paneli
+worker+beat ayaktayken doğru raporluyor — o panel kalp atışını **Beat'in**
+yazdığı bir Redis anahtarından okuyor, yani Beat durursa worker ayakta olsa
+bile "İşçi kapalı" der. Bu bilinçli (`app/core/health.py` docstring'i), ama
+hangi bileşenin düştüğü konusunda yanıltıcı.
+
 ## 6. Doküman Haritası
 
 | Dosya | İçerik |
