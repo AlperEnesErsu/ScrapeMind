@@ -766,6 +766,10 @@ bu tuzağı zaten yazmıştı; panel yine de içine düşmüştü. **Test süiti
 
 ## 6. Doküman Haritası
 
+> 🚀 **Canlıya çıkmadan önce `docs/PRELAUNCH.md`.** 11 Eylül 2026'da
+> koşturularak yapılan tarama: 5 engel, 5 yüksek, 8 orta madde. `DEPLOYMENT.md
+> §8`'deki kontrol listesinin yerine geçmez, kapsamadıklarını ekler.
+
 | Dosya | İçerik |
 |---|---|
 | [README.md](../README.md) | Proje tanıtımı, kurulum, yol haritası |
