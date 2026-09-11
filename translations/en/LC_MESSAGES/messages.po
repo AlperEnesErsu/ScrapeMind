@@ -4045,6 +4045,12 @@ msgstr "New uploads from channels you subscribe to, with transcripts"
 msgid "Open catalog of scholarly works across every field"
 msgstr "Open catalog of scholarly works across every field"
 
+msgid "Previous page"
+msgstr "Previous page"
+
+msgid "Next page"
+msgstr "Next page"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
