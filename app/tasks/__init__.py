@@ -118,6 +118,22 @@ def _common_conf(soft_limit: int, hard_limit: int) -> dict:
     }
 
 
+def flask_app_for_worker():
+    """The one Flask app a worker process builds, built on first use.
+
+    `LazyContextTask` owns this global; this is the same app, exposed so the
+    liveness timer can push a context without creating a second application
+    with its own connection pools.
+    """
+    global _flask_app
+
+    if _flask_app is None:
+        from app import create_app
+
+        _flask_app = create_app()
+    return _flask_app
+
+
 class LazyContextTask(celery_app.Task):
     """Run task inside Flask app context, initializing the app on demand.
 
@@ -139,11 +155,7 @@ class LazyContextTask(celery_app.Task):
 
         if has_app_context():
             return self.run(*args, **kwargs)
-        if _flask_app is None:
-            from app import create_app
-
-            _flask_app = create_app()
-        with _flask_app.app_context():
+        with flask_app_for_worker().app_context():
             return self.run(*args, **kwargs)
 
 
@@ -220,6 +232,10 @@ from app.tasks import (  # noqa: E402, F401
     patent_tasks,
     report_tasks,
     scrape_tasks,
+    # Not a task module. Importing it connects the `worker_ready` signal that
+    # starts the worker's own liveness timer -- without this line the worker
+    # never stamps its key and the sidebar reports it down.
+    worker_liveness,
 )
 
 

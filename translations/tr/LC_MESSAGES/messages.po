@@ -4088,6 +4088,16 @@ msgstr ""
 "Brifing makalelerinden yazılır — önce bir tarama çalıştır, sonra "
 "oluşturulabilir."
 
+msgid "Scheduler"
+msgstr "Zamanlayıcı"
+
+msgid ""
+"The worker is running, but nothing is scheduling: nightly scans and "
+"alerts will not fire until the scheduler is back."
+msgstr ""
+"İşçi çalışıyor ama zamanlayan yok: zamanlayıcı geri gelene kadar gecelik "
+"taramalar ve uyarılar tetiklenmeyecek."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

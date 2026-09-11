@@ -4058,6 +4058,16 @@ msgstr ""
 "A briefing is written from your papers — run a scrape first and one can "
 "be made."
 
+msgid "Scheduler"
+msgstr "Scheduler"
+
+msgid ""
+"The worker is running, but nothing is scheduling: nightly scans and "
+"alerts will not fire until the scheduler is back."
+msgstr ""
+"The worker is running, but nothing is scheduling: nightly scans and "
+"alerts will not fire until the scheduler is back."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

@@ -1,120 +1,88 @@
 """The admin overview's health panel.
 
-One test here carries the weight: the panel must probe *our* Celery app, in
-whatever thread the request happens to land in. It did not, and so it reported
-Redis disconnected and Celery offline unconditionally -- under every threaded
-WSGI server, which is all of them.
+It used to run `celery inspect ping` on every render -- a broadcast RPC that
+blocks for its whole timeout when nothing answers, so this page took twelve
+seconds exactly when an admin had opened it to find out what was broken. It now
+reads the same two Redis keys the sidebar does, which also stops the two panels
+contradicting each other on one screen.
 
-The bug survived because a health panel saying something is down looks like
-news about the system rather than news about the panel.
+The thread-locality bug these tests were written for is gone with the ping: the
+probe no longer touches `celery.current_app` at all.
 """
 
 from __future__ import annotations
 
-import threading
+from datetime import UTC, datetime, timedelta
 
+from app.core.health import HEARTBEAT_KEY, WORKER_KEY
 from app.modules.dashboard import routes as dashboard_routes
 
 
-class _Conn:
-    def __enter__(self):
-        return self
+class _FakeRedis:
+    """Just the commands `app/core/health.py` uses."""
 
-    def __exit__(self, *exc):
-        return False
+    def __init__(self, store=None):
+        self.store = dict(store or {})
 
-    def connect(self):
-        return None
+    def get(self, key):
+        return self.store.get(key)
 
+    def set(self, key, value, ex=None):
+        self.store[key] = value
 
-def _probe_from_a_worker_thread() -> dict[str, object]:
-    """Run the health probe off the main thread, as a request thread does."""
-    out: dict[str, dict[str, object]] = {}
-    thread = threading.Thread(target=lambda: out.setdefault("r", dashboard_routes._health_status()))
-    thread.start()
-    thread.join()
-    return out["r"]
+    def llen(self, key):
+        return 0
 
 
-def test_the_panel_probes_our_broker_from_a_request_thread(app, monkeypatch):
-    """The regression.
+def _stamp(offset_seconds: int = 0, name: str = "celery@host") -> str:
+    when = datetime.now(UTC) - timedelta(seconds=offset_seconds)
+    return f"{when.isoformat()}|{name}"
 
-    `celery.current_app` is thread-local: off the creating thread it is a bare
-    `Celery('default')` with no broker. Patching *our* app's method and then
-    probing from another thread is what tells the two apart -- with the old
-    code the patch is never reached, the default app dials amqp, and the
-    answer is "disconnected" no matter what.
-    """
-    from app.tasks import celery_app
 
-    reached = []
-    monkeypatch.setattr(
-        celery_app, "connection_for_write", lambda *a, **kw: reached.append(1) or _Conn()
-    )
+def _use(monkeypatch, client):
+    monkeypatch.setattr("app.core.health._client", lambda: client)
 
+
+def test_a_live_worker_and_scheduler_both_read_up(app, monkeypatch):
+    _use(monkeypatch, _FakeRedis({WORKER_KEY: _stamp(5), HEARTBEAT_KEY: _stamp(5)}))
     with app.app_context():
-        status = _probe_from_a_worker_thread()
+        status = dashboard_routes._health_status()
 
-    assert reached, "the probe must go through our configured Celery app, not celery.current_app"
-    assert status["redis"] == "connected"
+    assert status == {"db": "ok", "redis": "ok", "worker": "ok", "beat": "ok"}
+
+
+def test_a_stopped_scheduler_does_not_read_as_a_dead_worker(app, monkeypatch):
+    """The same separation the sidebar makes -- and now from the same keys, so
+    the two panels cannot disagree."""
+    _use(monkeypatch, _FakeRedis({WORKER_KEY: _stamp(5), HEARTBEAT_KEY: _stamp(9999)}))
+    with app.app_context():
+        status = dashboard_routes._health_status()
+
+    assert status["worker"] == "ok"
+    assert status["beat"] == "down"
 
 
 def test_an_unreachable_broker_is_reported_not_raised(app, monkeypatch):
     """A status panel must not 500 the page it is a corner of."""
+    _use(monkeypatch, None)
+    with app.app_context():
+        status = dashboard_routes._health_status()
+
+    assert status["redis"] == "down"
+    assert status["worker"] == "unknown"
+
+
+def test_the_probe_does_not_broadcast(app, monkeypatch):
+    """The point of the rewrite. `inspect().ping()` is what made this page take
+    twelve seconds with the broker down; nothing here may call it."""
     from app.tasks import celery_app
 
-    def _boom(*a, **kw):
-        raise OSError("connection refused")
+    def _forbidden(*a, **kw):
+        raise AssertionError("the health panel must not broadcast an inspect ping")
 
-    monkeypatch.setattr(celery_app, "connection_for_write", _boom)
-
-    with app.app_context():
-        status = _probe_from_a_worker_thread()
-
-    assert status["redis"] == "disconnected"
-    assert status["db"] == "connected"
-
-
-def test_no_workers_is_told_apart_from_no_broker(app, monkeypatch):
-    """ "Redis is up but nothing is consuming the queue" is a different
-    problem from "Redis is down", and the panel has to say which."""
-    from app.tasks import celery_app
-
-    monkeypatch.setattr(celery_app, "connection_for_write", lambda *a, **kw: _Conn())
-
-    class _Inspect:
-        def ping(self):
-            return None
-
-    monkeypatch.setattr(celery_app.control, "inspect", lambda *a, **kw: _Inspect())
+    monkeypatch.setattr(celery_app.control, "inspect", _forbidden)
+    monkeypatch.setattr(celery_app, "connection_for_write", _forbidden)
+    _use(monkeypatch, _FakeRedis({WORKER_KEY: _stamp(5), HEARTBEAT_KEY: _stamp(5)}))
 
     with app.app_context():
-        status = _probe_from_a_worker_thread()
-
-    assert status["redis"] == "connected"
-    assert status["celery"] == "idle"
-    assert status["workers"] == 0
-
-
-def test_workers_are_counted_not_described(app, monkeypatch):
-    """The template used to pick the badge colour with `'active' in status`.
-
-    Matching an English word to decide a colour meant the panel could not be
-    translated without turning every badge red, so the count comes back as a
-    number and the state as a code.
-    """
-    from app.tasks import celery_app
-
-    monkeypatch.setattr(celery_app, "connection_for_write", lambda *a, **kw: _Conn())
-
-    class _Inspect:
-        def ping(self):
-            return {"w1": {"ok": "pong"}, "w2": {"ok": "pong"}}
-
-    monkeypatch.setattr(celery_app.control, "inspect", lambda *a, **kw: _Inspect())
-
-    with app.app_context():
-        status = _probe_from_a_worker_thread()
-
-    assert status["celery"] == "active"
-    assert status["workers"] == 2
+        assert dashboard_routes._health_status()["worker"] == "ok"
