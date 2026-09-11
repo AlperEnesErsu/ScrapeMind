@@ -18,8 +18,12 @@ def create_app() -> Flask:
     _validate_production_config(app)
 
     from app.core.audit.labels import humanize_action
+    from app.core.ui.splash import pop_splash
 
     app.jinja_env.globals["humanize_action"] = humanize_action
+    # Reads *and clears* a session flag, so it belongs to `base.html` alone --
+    # see app/core/ui/splash.py for why the pop lives in the template.
+    app.jinja_env.globals["pop_splash"] = pop_splash
 
     _init_extensions(app)
     _init_logging(app)

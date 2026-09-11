@@ -1516,3 +1516,176 @@ code {
 .empty-state p {
   max-width: var(--measure);
 }
+
+/* ==========================================================================
+   Login animation
+   --------------------------------------------------------------------------
+   The pomegranate falls to a line and bursts. Plays once, after a login; the
+   flag behind it is in app/core/ui/splash.py.
+
+   Two rules govern everything below.
+
+   **It must end on its own.** Every animation uses `forwards` fill and the
+   overlay's own last keyframe is `visibility: hidden`, so the app is reachable
+   even if JavaScript never runs. An intro that can wedge shut over the product
+   is a worse failure than having no intro.
+
+   **It must be skippable by the operating system.** `prefers-reduced-motion`
+   is honoured at the bottom by removing the overlay outright rather than by
+   shortening it -- vestibular triggers are not fixed by going faster. This is
+   the first deliberate motion in this codebase and the first such block; new
+   motion belongs under the same rule.
+
+   Only `transform` and `opacity` are animated, so none of it touches layout.
+
+   The sequence, end to end, is about 2.2s: the line draws (0-380ms), the
+   fruit falls (380-1000ms), lands and gives (1000-1280ms), splits and
+   scatters (1160-2010ms), and the overlay clears (1720-2180ms).
+   ========================================================================== */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  background: var(--neutral-50);
+  animation: splash-clear 460ms ease 1720ms forwards;
+}
+
+/* The stage is the fruit's *landing* position. Everything is measured from
+   here, so the line and the burst cannot drift apart from each other. */
+.splash__stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+/* The drop distance, asked for in centimetres and kept in them. `cm` is a
+   nominal unit on screens (96px to the inch), which is exactly the right
+   amount of honesty here: the point is a short, physical-feeling fall, not a
+   measurement. Clamped so a 320px phone does not get a fall taller than its
+   own viewport. */
+.splash__drop {
+  --drop: clamp(56px, 2.5cm, 120px);
+
+  position: relative;
+  z-index: 1;
+  transform: translateY(calc(var(--drop) * -1));
+  animation: splash-fall 620ms cubic-bezier(0.5, 0, 0.9, 0.35) 380ms both;
+}
+
+/* The fall and the squash are two elements on purpose. Run on one, they are
+   two animations driving `transform`, the later one wins, and its backwards
+   fill pins the fruit at its landing position for the whole fall -- so the
+   drop silently does not happen. Nesting makes the two transforms compose
+   instead of compete. */
+.splash__fruit {
+  display: block;
+  width: clamp(64px, 18vw, 96px);
+  height: auto;
+  color: var(--brand-700);
+  animation:
+    splash-squash 280ms cubic-bezier(0.2, 0, 0.3, 1) 1000ms forwards,
+    splash-vanish 1ms linear 1160ms forwards;
+}
+
+/* Drawn before the fall, so there is something to fall *to*. */
+.splash__line {
+  position: absolute;
+  top: calc(50% + clamp(34px, 9vw, 52px));
+  left: 50%;
+  width: clamp(180px, 46vw, 280px);
+  height: 2px;
+  background: var(--brand-700);
+  border-radius: 2px;
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: center;
+  animation:
+    splash-draw 380ms cubic-bezier(0.2, 0, 0.2, 1) both,
+    splash-flex 320ms cubic-bezier(0.3, 0, 0.2, 1) 1160ms forwards;
+}
+
+.splash__burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+/* Arils. Sized and coloured off the brand ramp so the burst stays the
+   pomegranate's own red rather than becoming confetti. */
+.splash__burst i {
+  position: absolute;
+  width: 11px;
+  height: 13px;
+  margin: -6px 0 0 -5px;
+  border-radius: 60% 60% 55% 55% / 65% 65% 50% 50%;
+  background: var(--brand-600);
+  opacity: 0;
+  animation: splash-scatter 800ms cubic-bezier(0.15, 0.6, 0.3, 1) calc(1160ms + var(--d)) both;
+}
+
+.splash__burst i:nth-child(3n)   { background: var(--brand-500); }
+.splash__burst i:nth-child(4n)   { background: var(--brand-800); }
+.splash__burst i:nth-child(5n)   { width: 8px; height: 10px; }
+
+@keyframes splash-draw {
+  from { transform: translateX(-50%) scaleX(0); }
+  to   { transform: translateX(-50%) scaleX(1); }
+}
+
+@keyframes splash-fall {
+  from { transform: translateY(calc(var(--drop) * -1)); }
+  to   { transform: translateY(0); }
+}
+
+/* The give on impact. Small -- a pomegranate is not a rubber ball. */
+@keyframes splash-squash {
+  0%   { transform: translateY(0) scale(1, 1); }
+  35%  { transform: translateY(4px) scale(1.14, 0.86); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* The fruit is gone the instant the seeds appear; the eye reads the swap as
+   the skin splitting. Kept as its own 1ms animation so the timing lives with
+   the rest of the sequence instead of in a JavaScript timeout. */
+@keyframes splash-vanish {
+  to { opacity: 0; }
+}
+
+@keyframes splash-flex {
+  0%   { transform: translateX(-50%) scaleX(1) scaleY(1); }
+  30%  { transform: translateX(-50%) scaleX(1.06) scaleY(2.2); }
+  100% { transform: translateX(-50%) scaleX(1) scaleY(1); }
+}
+
+/* Out, up a little, then down: the arc is what separates "scattered on the
+   ground" from "launched". The 55% stop is the apex. */
+@keyframes splash-scatter {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(0.4);
+  }
+  12% { opacity: 1; }
+  55% {
+    transform:
+      translate(calc(var(--dx) * 0.62), calc(var(--dy) * 1.15 - 18px))
+      rotate(calc(var(--r) * 0.6)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--dy) + 26px)) rotate(var(--r)) scale(0.9);
+  }
+}
+
+@keyframes splash-clear {
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* Not shortened -- removed. Motion sensitivity is not solved by a faster
+   version of the same motion. */
+@media (prefers-reduced-motion: reduce) {
+  .splash { display: none; }
+}

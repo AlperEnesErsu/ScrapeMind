@@ -18,6 +18,12 @@
 </head>
 <body>
 
+{# Plays once, on the first full page after a login. `pop_splash()` clears the
+   flag as it reads it, and only this template calls it -- HTMX fragments do
+   not extend base.html, so a background poll cannot spend the animation on a
+   render nobody is looking at. #}
+{% if pop_splash() %}{% include 'core/_splash.html' %}{% endif %}
+
 {% if current_user.is_authenticated %}
   {% include 'core/_topbar.html' %}
   <div class="d-flex" id="wrapper">
