@@ -12,9 +12,9 @@
 
 | Seviye | Adet | Ne demek |
 |---|---|---|
-| 🔴 Engel | 5 (**4 kapandı**, kalan: E4) | Bunlar kapanmadan canlıya çıkılmamalı |
+| 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
 | 🟠 Yüksek | 5 (**Y1 kapandı**) | İlk hafta içinde kapanmalı |
-| 🟡 Orta | 8 | Planlanmalı, çıkışı engellemez |
+| 🟡 Orta | 11 | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
 Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
@@ -172,7 +172,7 @@ Yapılanlar:
 
 ---
 
-### E4 — Bağımlılıklarda 115 bilinen açık
+### ~~E4 — Bağımlılıklarda 115 bilinen açık~~ ✅ KAPANDI (PR #85) — 115 → 1
 
 `pip-audit -r requirements.txt` ile ölçüldü. 8 pakette uyarı var; ağırlık
 merkezi:
@@ -206,6 +206,29 @@ venv/Scripts/python.exe -m pip freeze | grep -E '^(Authlib|cryptography|lxml|pyp
 ```bash
 venv/Scripts/python.exe -m pip_audit -r requirements.txt --progress-spinner off
 ```
+
+**Yapıldı.** Yükseltilenler: `authlib` 1.3.2→1.8.0, `cryptography` 48→50,
+`lxml` 5.3.0→6.1.3, `pypdf` 5.1.0→6.16.1, `flask` 3.1.0→3.1.3,
+`python-dotenv` 1.0.1→1.2.2, `pytest` 8.3.3→9.0.3, `requests` 2.32.3→2.32.4.
+
+**115 uyarı → 1.**
+
+Kalan tek uyarı (`requests` PYSEC-2026-2275) bilerek açık:
+
+- Yalnızca `requests.utils.extract_zipped_paths()`'i **doğrudan çağıran**
+  uygulamaları etkiliyor; danışmanlığın kendi ifadesiyle *"standart kullanım
+  etkilenmiyor"*. Kod tabanında bu fonksiyonun **sıfır** kullanımı var
+  (`grep` ile doğrulandı).
+- Kapatmak `requests` 2.33.0 gerektiriyor, onu da `arxiv` SDK'sı engelliyor:
+  `requests~=2.32.0` pinliyor. Aşmak için `arxiv` 2.1.3 → **4.0.1**, iki major
+  atlama — canlı arXiv doğrulaması gerektiren, kendi PR'ını hak eden ayrı bir iş.
+
+Alınan `requests` 2.32.4 ise **uygulanabilir olanı** kapatıyor:
+PYSEC-2026-1872, `.netrc` kimlik bilgilerinin kötü niyetli URL'lere sızması.
+
+Doğrulandı: OAuth yönlendirmesi Google'a gidiyor, Fernet ile şifrelenmiş
+sırlar çözülüyor, API token'ı üretilip korumalı uçta kabul ediliyor. 1303 test,
+UI denetimi temiz.
 
 ---
 
@@ -368,6 +391,10 @@ yükleme bozulur.
 | O6 | `journals` tablosu elle seed gerektiriyor | Scimago CSV yüklenmezse **hiçbir kartta quartile rozeti çıkmaz**. Bozukluk değil (`CLAUDE.md`), ama lansmanda "özellik eksik" gibi görünür — çıkış öncesi yüklenmeli |
 | O7 | Python sürüm farkı | Prod imajı `python:3.11-slim`, yerel geliştirme 3.14. CI hangisinde koşuyorsa prod onunla eşleşmeli |
 | O8 | Zotero hiç gerçek hesaba karşı koşulmadı | Faz 7.2 yalnızca `requests` sınırında taklit edilerek doğrulandı. Çıkıştan önce bir gerçek anahtarla bir kez denenmeli |
+
+| O9 | `arxiv` SDK'sı 2.1.3, güncel 4.0.1 | `requests~=2.32.0` pinliyor ve bu, `requests` 2.33.0'ı engelliyor (bkz. E4). İki major atlama; canlı arXiv doğrulaması gerektirir |
+| O10 | `authlib.jose` kullanımdan kaldırıldı | API v1 JWT'leri onu kullanıyor. authlib **2.0'da kaldırılacak**, yerine `joserfc`. Şimdi çalışıyor, ama bir sonraki major yükseltmede kırılacak — planlanmalı |
+| O11 | Yerel mypy ile CI mypy aynı sonucu vermiyor | Yerelde 98, CI'da 95 çıkabiliyor (Python sürüm farkı, bkz. O7). Geliştirici yerel ratchet'e **güvenemiyor**; bu, kırmızı bir PR'ın merge edilmesine yol açtı |
 
 Ayrıca duran teknik borç: `mypy-baseline.txt` 95'te, en yoğun yer
 `app/modules/scrape`.
