@@ -13,7 +13,7 @@
 | Seviye | Adet | Ne demek |
 |---|---|---|
 | 🔴 Engel | 5 (**4 kapandı**, kalan: E4) | Bunlar kapanmadan canlıya çıkılmamalı |
-| 🟠 Yüksek | 5 | İlk hafta içinde kapanmalı |
+| 🟠 Yüksek | 5 (**Y1 kapandı**) | İlk hafta içinde kapanmalı |
 | 🟡 Orta | 8 | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
@@ -241,9 +241,40 @@ birbirinden ayrı düşmesinler.
 
 ---
 
+### E6 — OAuth girişi hiç çalışmıyormuş ✅ KAPANDI (PR #83)
+
+> **Bu madde ilk taramada yoktu.** Y1'in testleri yazılırken çıktı, ve neden
+> kaçırıldığını yazmak listeyi kullanacak olan için önemli: tarama
+> *yapılandırmaya* ve *bağımlılıklara* baktı, **özelliğin çalışıp
+> çalışmadığına** bakmadı.
+
+`GoogleOAuthStrategy.register()` ve Microsoft ikizi, `oauth.register(...)`'ın
+tek çağıranlarıydı — ve onları **hiçbir yer çağırmıyordu**. Sınıflar ölü koddu.
+
+Sonuç: authlib'in kayıtlı istemcisi yok, `getattr(oauth, "google", None)`
+`None` dönüyor, rota "Bilinmeyen OAuth sağlayıcısı"na düşüyor. Giriş sayfası
+ise **iki düğmeyi de** gösteriyordu.
+
+Çalışan uygulamada doğrulandı: Google düğmesine basmak o hatayla giriş
+sayfasına geri atıyordu.
+
+**Kimseyi içeri alamayan bir giriş yolu sunmak, hiç sunmamaktan kötü.**
+
+Yapılanlar: sağlayıcılar **kimlik bilgileri varsa** kaydediliyor, ve düğme
+**yalnızca sağlayıcı kayıtlıysa** gösteriliyor. Bu ikisi aynı koşul olmak
+zorunda.
+
+Bu aynı zamanda "OAuth'u istiyor muyuz" kararını kimseye sordurmadan çözüyor:
+env değişkenlerini ver, sağlayıcı görünür; boş bırak, görünmez.
+
+Doğrulandı: kimlik bilgileri verilince düğme beliriyor ve tıklama Google'ın
+gerçek yetkilendirme adresine 302 veriyor.
+
+---
+
 ## 🟠 Yüksek
 
-### Y1 — Güvenlik açısından en kritik yüzey, en az test edilen yer
+### ~~Y1 — Güvenlik açısından en kritik yüzey, en az test edilen yer~~ ✅ KAPANDI (PR #82)
 
 `pytest --cov` ile ölçüldü:
 
