@@ -10,7 +10,8 @@ the "Read Later" tab and half of the note editor.
 Two checks, both read-only:
 
 1. **Coverage.** Every translatable string extracted from `app/` must exist in
-   both catalogs.
+   both catalogs -- plus the labels that reach gettext through data rather
+   than through a literal call, which extraction cannot see at all.
 
 2. **Shape.** A one- or two-word label whose translation is a full sentence is
    almost always fuzzy-match damage, not a translation. That is how `Notes`
@@ -36,6 +37,8 @@ from babel.messages.extract import DEFAULT_KEYWORDS, extract_from_dir
 from babel.messages.pofile import read_po
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))  # so `_dynamic_labels` can import the app's own data
+
 LOCALES = ("tr", "en")
 
 # Mirrors babel.cfg. Kept in step by hand: this is two lines, and importing a
@@ -94,6 +97,33 @@ def check_coverage(found: dict[str, str]) -> list[str]:
     return problems
 
 
+def _dynamic_labels() -> dict[str, str]:
+    """Strings that reach gettext through data, not through a literal call.
+
+    `{{ _(opt.desc) }}` renders a source description through a variable, so
+    static extraction cannot see it and the string is translated only if it
+    happens to be in the catalog already. Four were not: OpenAlex, Crossref,
+    YouTube channels and Scopus all showed English text in a Turkish sidebar,
+    next to five siblings that showed Turkish.
+
+    The usual answer is `app/core/_i18n_noop.py` -- a hand-kept list of such
+    msgids. That list is what drifted: each of the four came in with a later
+    phase and nobody copied it across. So this reads the data itself. A source
+    added tomorrow is checked tomorrow, with nothing to remember.
+    """
+    from app.modules.scrape.sources import SOURCE_META, TOPICS
+
+    out: dict[str, str] = {}
+    for name, meta in SOURCE_META.items():
+        desc = meta.get("desc")
+        if desc:
+            out.setdefault(desc, f"SOURCE_META[{name!r}]['desc']")
+    for key, label in TOPICS.items():
+        if label:
+            out.setdefault(label, f"TOPICS[{key!r}]")
+    return out
+
+
 def check_shape() -> list[str]:
     """A short label translated as a sentence is fuzzy-match damage."""
     problems = []
@@ -111,7 +141,7 @@ def check_shape() -> list[str]:
 
 
 def main() -> int:
-    found = _extract()
+    found = {**_extract(), **_dynamic_labels()}
     problems = check_coverage(found) + check_shape()
 
     if problems:

@@ -4064,6 +4064,18 @@ msgstr "Değer"
 msgid "Verify"
 msgstr "Doğrula"
 
+msgid "DOI registry with metadata across every publisher"
+msgstr "Her yayıncıyı kapsayan üstveriyle DOI kaydı"
+
+msgid "Finds work the open catalogues miss; metadata comes from OpenAlex"
+msgstr "Açık kataloğların kaçırdığı çalışmaları bulur; üstveri OpenAlex'ten gelir"
+
+msgid "New uploads from channels you subscribe to, with transcripts"
+msgstr "Abone olduğun kanallardan yeni yüklemeler, transkriptleriyle"
+
+msgid "Open catalog of scholarly works across every field"
+msgstr "Her alandan akademik çalışmaların açık kataloğu"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
