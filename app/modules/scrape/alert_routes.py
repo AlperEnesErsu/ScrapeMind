@@ -30,6 +30,16 @@ alerts_bp = Blueprint("alerts", __name__)
 #: tidiness one. Generous enough that nobody legitimate meets it.
 MAX_SAVED_SEARCHES = 20
 
+#: Views the Zotero export accepts. Imported from library_routes rather than
+#: restated, so the file export and the Zotero export can never offer
+#: different shelves under the same name.
+from app.modules.scrape.library_routes import _EXPORT_VIEWS  # noqa: E402
+
+#: Ceiling on one export. Zotero writes in batches of 50, and an unbounded
+#: export of a large library would be a long synchronous request against
+#: somebody else's API.
+_ZOTERO_EXPORT_LIMIT = 200
+
 
 def _filters_from_request() -> dict:
     """Pull the library search's filters out of the submitted form.
@@ -158,4 +168,103 @@ def alerts_tab_ctx() -> dict:
         "pending": pending,
         "cadences": VALID_CADENCES,
         "max_saved_searches": MAX_SAVED_SEARCHES,
+    }
+
+
+# --------------------------------------------------------------------------
+# Zotero (Faz 7.2)
+#
+# These live here rather than in a blueprint of their own because this one is
+# already mounted at /library and already carries the library's credentialed
+# actions. Two routes do not earn a third blueprint.
+# --------------------------------------------------------------------------
+
+
+@alerts_bp.route("/zotero/credentials", methods=["POST"])
+@login_required
+def zotero_credentials():
+    """Store or clear the user's Zotero API key."""
+    from app.modules.scrape.zotero import set_credentials
+
+    api_key = request.form.get("zotero_api_key") or ""
+    zotero_user_id = request.form.get("zotero_user_id") or ""
+
+    if api_key.strip() and not zotero_user_id.strip():
+        flash(_("Zotero needs both the API key and your numeric user ID."), "warning")
+        return redirect(url_for("settings.profile", tab="zotero"))
+
+    set_credentials(current_user, api_key, zotero_user_id)
+
+    # Deliberately not logging which key, only that one was set -- the audit
+    # trail should record the act, never the secret.
+    log_action(
+        "zotero.credentials_set" if api_key.strip() else "zotero.credentials_cleared",
+        entity_type="user",
+        entity_id=str(current_user.id),
+    )
+    flash(_("Saved.") if api_key.strip() else _("Zotero disconnected."), "success")
+    return redirect(url_for("settings.profile", tab="zotero"))
+
+
+@alerts_bp.route("/zotero/export", methods=["POST"])
+@login_required
+def zotero_export():
+    """Push the current library view to Zotero.
+
+    User-triggered by design: nothing in this application writes to somebody's
+    reference manager on a schedule.
+    """
+    from app.modules.scrape.service import list_user_papers
+    from app.modules.scrape.zotero import ZoteroError, export_papers
+
+    view = (request.form.get("view") or "all").strip()
+    service_view = _EXPORT_VIEWS.get(view)
+    if service_view is None:
+        abort(404)
+
+    rows = list_user_papers(current_user, limit=_ZOTERO_EXPORT_LIMIT, view=service_view)
+    papers = [r.paper for r in rows if r.paper is not None]
+
+    try:
+        result = export_papers(current_user, papers)
+    except ZoteroError as exc:
+        flash(_("Zotero export failed: %(reason)s", reason=str(exc)), "danger")
+        return redirect(request.referrer or url_for("library.index"))
+
+    log_action("zotero.export", entity_type="user", entity_id=str(current_user.id))
+
+    if result.ok:
+        flash(
+            _(
+                "Sent to Zotero: %(created)d new, %(updated)d updated.",
+                created=result.created,
+                updated=result.updated,
+            ),
+            "success",
+        )
+    else:
+        # Counts, not a bare failure: "37 of 40" is the difference between a
+        # usable feature and a mystery.
+        flash(
+            _(
+                "Sent to Zotero: %(done)d of %(total)d. %(failed)d failed.",
+                done=result.created + result.updated,
+                total=result.total,
+                failed=result.failed,
+            ),
+            "warning",
+        )
+    return redirect(request.referrer or url_for("library.index"))
+
+
+def zotero_tab_ctx() -> dict:
+    from app.modules.scrape.zotero import get_credentials
+
+    credentials = get_credentials(current_user)
+    return {
+        # Never the key itself -- the template shows whether one exists, and
+        # the numeric id, which is not a secret.
+        "zotero_connected": credentials is not None,
+        "zotero_user_id": credentials[1] if credentials else "",
+        "export_limit": _ZOTERO_EXPORT_LIMIT,
     }

@@ -150,6 +150,13 @@ def index():
     elif view == "hidden":
         ctx["rows"] = list_user_papers(current_user, limit=100, view="dismissed")
 
+    # Passed explicitly rather than left to Jinja's undefined: an undefined is
+    # falsy, so a connected user would silently be offered "Connect Zotero"
+    # instead of the export, with nothing anywhere saying why.
+    from app.modules.scrape.zotero import is_configured
+
+    ctx["zotero_connected"] = is_configured(current_user)
+
     return render_template("library/index.html", **ctx)
 
 

@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import create_app  # noqa: E402
 from app.core.models.user import User  # noqa: E402
+from app.extensions import db  # noqa: E402
 
 # Each page is here because it exercises something the others do not: a
 # dashboard of metric tiles, a feed of source badges, a data table with row
@@ -38,10 +39,45 @@ PAGES = {
     # entirely because it had never been in this list.
     "librarysearch": "/library/search?q=a",
     "profile-alerts": "/settings/profile?tab=alerts",
+    "profile-zotero": "/settings/profile?tab=zotero",
 }
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "app" / "core" / "static"
+
+
+def _ensure_a_paper(app, user_id: int) -> None:
+    """Put one paper in the library if it is empty.
+
+    Without this the audit is weaker in CI than it is locally, and silently:
+    a freshly seeded database has no papers, so no paper card renders, so the
+    card's markup is never audited. That is how an unlabelled bulk-select
+    checkbox survived -- it only appeared once a developer's own database
+    happened to have something in it.
+
+    Idempotent, and the row is obviously synthetic so nobody mistakes it for
+    scraped data.
+    """
+    from app.modules.scrape.models import Paper, UserPaper
+
+    with app.app_context():
+        existing = UserPaper.query.filter_by(user_id=user_id).first()
+        if existing is not None:
+            return
+
+        paper = Paper.query.filter_by(source="manual", external_id="ui-audit-fixture").first()
+        if paper is None:
+            paper = Paper(
+                source="manual",
+                external_id="ui-audit-fixture",
+                title="UI audit fixture — not a real paper",
+                abstract="Present so the audited pages actually render a paper card.",
+                authors=["Audit Fixture"],
+            )
+            db.session.add(paper)
+            db.session.flush()
+        db.session.add(UserPaper(user_id=user_id, paper_id=paper.id))
+        db.session.commit()
 
 
 def _admin_id(app) -> str:
@@ -72,6 +108,7 @@ def main() -> int:
     app = create_app()
     app.config["WTF_CSRF_ENABLED"] = False
     user_id = _admin_id(app)
+    _ensure_a_paper(app, int(user_id))
 
     written = 0
     with app.test_client() as client:
