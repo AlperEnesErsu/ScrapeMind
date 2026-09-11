@@ -34,6 +34,7 @@ def create_app() -> Flask:
     _register_session_guard(app)
     _register_context_processors(app)
     _register_error_handlers(app)
+    _register_security_headers(app)
 
     # Plugin discovery runs AFTER extensions so db is ready.
     # Migrations must have run before this point — see wsgi.py / entrypoint.sh.
@@ -94,6 +95,51 @@ def _validate_production_config(app: Flask) -> None:
             "Point it at the Redis already in the stack, e.g. "
             "RATELIMIT_STORAGE_URI=redis://redis:6379/1"
         )
+
+
+def _register_security_headers(app: Flask) -> None:
+    """Headers the app was serving none of.
+
+    In the app rather than in nginx on purpose. The nginx config lives in
+    docs/DEPLOYMENT.md, not in version control, so it is a thing each new
+    server gets by being retyped correctly -- and the one that is retyped
+    wrong is silent. These travel with the code.
+
+    `setdefault`, so a proxy that already sets one wins: a deployment that
+    does harden nginx should not end up with two conflicting policies.
+
+    **Referrer-Policy is the one that matters most here.** This app links out
+    to publishers from every paper card. Under the browser default the full
+    referring URL goes with the click, and this app's URLs carry the user's
+    own search: `/library/search?q=...`. `strict-origin-when-cross-origin`
+    sends the origin alone off-site and keeps the path internally.
+
+    **HSTS is conditional on `SESSION_COOKIE_SECURE`**, which is the same
+    thing as "we are behind TLS". Sending it over plain HTTP in development
+    would pin the browser to HTTPS for that host for a year, and `localhost`
+    is a host shared with every other project on the machine -- the kind of
+    breakage that outlives the session that caused it.
+
+    **No `Content-Security-Policy` here.** Eight templates still carry inline
+    `<script>`, so the only CSP that would not break the app today is one with
+    `'unsafe-inline'`, which is not a policy. That work is tracked separately
+    (PRELAUNCH Y4) and starts with moving those scripts out, not with a header.
+    """
+
+    @app.after_request
+    def _security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        # DENY rather than SAMEORIGIN: nothing in this app frames itself.
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()"
+        )
+        if app.config.get("SESSION_COOKIE_SECURE"):
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
+        return response
 
 
 def _apply_proxy_fix(app: Flask) -> None:
