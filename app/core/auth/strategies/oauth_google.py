@@ -27,7 +27,14 @@ class GoogleOAuthStrategy(AuthStrategy):
         return oauth.google.authorize_redirect(redirect_uri)
 
     @staticmethod
-    def register(app):
+    def register_client(app):
+        """Register this provider's authlib client on the shared `oauth`.
+
+        Not `register`: `AuthStrategy` is an ABC, so on a class object that
+        name is already taken by `ABCMeta.register` -- the "declare a virtual
+        subclass" method. The two are indistinguishable at a glance and a type
+        checker resolves the call to the wrong one.
+        """
         oauth.register(
             name="google",
             client_id=app.config["GOOGLE_CLIENT_ID"],

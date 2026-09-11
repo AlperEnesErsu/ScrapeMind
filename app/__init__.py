@@ -97,14 +97,6 @@ def _validate_production_config(app: Flask) -> None:
         )
 
 
-#: OAuth providers, and the config each one needs before it can be offered.
-#: `register` is a staticmethod on the strategy class; nothing else calls it.
-_OAUTH_PROVIDERS = (
-    ("google", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"),
-    ("microsoft", "MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET"),
-)
-
-
 def _register_oauth_providers(app: Flask) -> list[str]:
     """Register the OAuth clients that are configured. Returns their names.
 
@@ -126,14 +118,25 @@ def _register_oauth_providers(app: Flask) -> list[str]:
     from app.core.auth.strategies.oauth_google import GoogleOAuthStrategy
     from app.core.auth.strategies.oauth_microsoft import MicrosoftOAuthStrategy
 
-    strategies = {"google": GoogleOAuthStrategy, "microsoft": MicrosoftOAuthStrategy}
+    # Each provider carries its own registrar rather than being looked up in a
+    # dict of classes: a dict collapses both to `type[AuthStrategy]`, and
+    # `register_client` lives on the concrete classes, not on the ABC.
+    providers = (
+        ("google", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", GoogleOAuthStrategy.register_client),
+        (
+            "microsoft",
+            "MICROSOFT_CLIENT_ID",
+            "MICROSOFT_CLIENT_SECRET",
+            MicrosoftOAuthStrategy.register_client,
+        ),
+    )
     registered: list[str] = []
 
-    for name, id_key, secret_key in _OAUTH_PROVIDERS:
+    for name, id_key, secret_key, register_client in providers:
         if not (app.config.get(id_key) and app.config.get(secret_key)):
             continue
         try:
-            strategies[name].register(app)
+            register_client(app)
         except Exception:  # noqa: BLE001 — one bad provider must not stop boot
             logger = structlog.get_logger()
             logger.warning("oauth_provider_registration_failed", provider=name)
