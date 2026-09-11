@@ -3931,6 +3931,108 @@ msgstr "offline"
 msgid "active"
 msgstr "active"
 
+msgid "Application Name"
+msgstr "Application Name"
+
+msgid "Authenticator Code"
+msgstr "Authenticator Code"
+
+msgid "Auto-register OAuth users"
+msgstr "Auto-register OAuth users"
+
+msgid "Avatar URL"
+msgstr "Avatar URL"
+
+msgid "Change Password"
+msgstr "Change Password"
+
+msgid "Confirm New Password"
+msgstr "Confirm New Password"
+
+msgid "Confirm Password"
+msgstr "Confirm Password"
+
+msgid "Current Password"
+msgstr "Current Password"
+
+msgid "Default Language"
+msgstr "Default Language"
+
+msgid "Endpoint"
+msgstr "Endpoint"
+
+msgid "Icon (Bootstrap Icons class)"
+msgstr "Icon (Bootstrap Icons class)"
+
+msgid "Keyword(s)"
+msgstr "Keyword(s)"
+
+msgid "Language"
+msgstr "Language"
+
+msgid "Login Email"
+msgstr "Login Email"
+
+msgid "Lowercase letters, digits and underscores only."
+msgstr "Lowercase letters, digits and underscores only."
+
+msgid "Module"
+msgstr "Module"
+
+msgid "New Password"
+msgstr "New Password"
+
+msgid "Password must be at least 8 characters."
+msgstr "Password must be at least 8 characters."
+
+msgid "Password must contain at least one digit."
+msgstr "Password must contain at least one digit."
+
+msgid "Password must contain at least one lowercase letter."
+msgstr "Password must contain at least one lowercase letter."
+
+msgid "Password must contain at least one uppercase letter."
+msgstr "Password must contain at least one uppercase letter."
+
+msgid "Passwords do not match."
+msgstr "Passwords do not match."
+
+msgid "Public registration enabled"
+msgstr "Public registration enabled"
+
+msgid "Remember me"
+msgstr "Remember me"
+
+msgid "Role Name"
+msgstr "Role Name"
+
+msgid "Security (2FA)"
+msgstr "Security (2FA)"
+
+msgid "Send Reset Link"
+msgstr "Send Reset Link"
+
+msgid "Timezone"
+msgstr "Timezone"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "Use letters, digits, dot, dash, underscore only."
+msgstr "Use letters, digits, dot, dash, underscore only."
+
+msgid "Username or Email"
+msgstr "Username or Email"
+
+msgid "Value"
+msgstr "Value"
+
+msgid "Verify"
+msgstr "Verify"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

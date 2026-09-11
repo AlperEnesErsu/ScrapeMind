@@ -32,7 +32,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from babel.messages.extract import extract_from_dir
+from babel.messages.extract import DEFAULT_KEYWORDS, extract_from_dir
 from babel.messages.pofile import read_po
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -42,6 +42,14 @@ LOCALES = ("tr", "en")
 # config parser to read two lines would hide the coupling rather than remove it.
 METHODS = [("**.py", "python"), ("**/templates/**.html", "jinja2")]
 OPTIONS = {"**/templates/**.html": {"encoding": "utf-8"}}
+
+# Babel's defaults do not include the `_l` alias, and `app/core/_i18n_noop.py`
+# -- the file whose entire job is to hold msgids that only ever reach gettext
+# through database rows -- is written in `_l`. Without these two keywords this
+# audit is blind to exactly the strings that most need an anchor, and it was:
+# `Login Email` and `Security (2FA)` sat untranslated in the profile tab strip
+# while the audit reported full coverage.
+KEYWORDS = {**DEFAULT_KEYWORDS, "_l": None, "lazy_gettext": None}
 
 #: Labels whose translation legitimately reads as a sentence. Empty on purpose
 #: -- every entry check 2 found was a defect. Add one only with a note saying
@@ -55,7 +63,7 @@ def _extract() -> dict[str, str]:
     """msgid -> first source location, for everything under app/."""
     found: dict[str, str] = {}
     for filename, lineno, message, _comments, _context in extract_from_dir(
-        str(ROOT / "app"), method_map=METHODS, options_map=OPTIONS
+        str(ROOT / "app"), method_map=METHODS, options_map=OPTIONS, keywords=KEYWORDS
     ):
         msgid = message if isinstance(message, str) else (message or (None,))[0]
         if msgid:

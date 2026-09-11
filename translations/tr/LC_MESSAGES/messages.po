@@ -3962,6 +3962,108 @@ msgstr "erişilemiyor"
 msgid "active"
 msgstr "aktif"
 
+msgid "Application Name"
+msgstr "Uygulama Adı"
+
+msgid "Authenticator Code"
+msgstr "Doğrulayıcı Kodu"
+
+msgid "Auto-register OAuth users"
+msgstr "OAuth kullanıcılarını otomatik kaydet"
+
+msgid "Avatar URL"
+msgstr "Avatar URL'si"
+
+msgid "Change Password"
+msgstr "Şifre Değiştir"
+
+msgid "Confirm New Password"
+msgstr "Yeni Şifreyi Onayla"
+
+msgid "Confirm Password"
+msgstr "Şifreyi Onayla"
+
+msgid "Current Password"
+msgstr "Mevcut Şifre"
+
+msgid "Default Language"
+msgstr "Varsayılan Dil"
+
+msgid "Endpoint"
+msgstr "Endpoint"
+
+msgid "Icon (Bootstrap Icons class)"
+msgstr "İkon (Bootstrap Icons sınıfı)"
+
+msgid "Keyword(s)"
+msgstr "Anahtar kelime(ler)"
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Login Email"
+msgstr "Giriş E-postası"
+
+msgid "Lowercase letters, digits and underscores only."
+msgstr "Yalnızca küçük harf, rakam ve alt çizgi."
+
+msgid "Module"
+msgstr "Modül"
+
+msgid "New Password"
+msgstr "Yeni Şifre"
+
+msgid "Password must be at least 8 characters."
+msgstr "Şifre en az 8 karakter olmalı."
+
+msgid "Password must contain at least one digit."
+msgstr "Şifre en az bir rakam içermeli."
+
+msgid "Password must contain at least one lowercase letter."
+msgstr "Şifre en az bir küçük harf içermeli."
+
+msgid "Password must contain at least one uppercase letter."
+msgstr "Şifre en az bir büyük harf içermeli."
+
+msgid "Passwords do not match."
+msgstr "Şifreler eşleşmiyor."
+
+msgid "Public registration enabled"
+msgstr "Herkese açık kayıt etkin"
+
+msgid "Remember me"
+msgstr "Beni hatırla"
+
+msgid "Role Name"
+msgstr "Rol Adı"
+
+msgid "Security (2FA)"
+msgstr "Güvenlik (2FA)"
+
+msgid "Send Reset Link"
+msgstr "Sıfırlama Bağlantısı Gönder"
+
+msgid "Timezone"
+msgstr "Saat Dilimi"
+
+msgid "Type"
+msgstr "Tür"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "Use letters, digits, dot, dash, underscore only."
+msgstr "Yalnızca harf, rakam, nokta, tire ve alt çizgi kullan."
+
+msgid "Username or Email"
+msgstr "Kullanıcı Adı veya E-posta"
+
+msgid "Value"
+msgstr "Değer"
+
+msgid "Verify"
+msgstr "Doğrula"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
