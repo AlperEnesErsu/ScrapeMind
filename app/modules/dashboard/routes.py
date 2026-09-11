@@ -143,13 +143,23 @@ def index():
 
 
 def _render_interests_manager():
-    """Re-render just the interests manager card (HTMX partial swaps)."""
+    """Re-render the interests manager card, and the counters that follow it.
+
+    The card is not the only place the interest count appears -- the header
+    pill and the stat strip show it too. Swapping the card alone left those two
+    saying 0 while the card said 1, three counters disagreeing on one screen
+    until the user happened to reload. The out-of-band fragment rides along on
+    the same response.
+    """
     from app.modules.academic.service import list_user_keywords
 
     user_keywords = list_user_keywords(current_user)
     return render_template(
         "dashboard/_interests_manager.html",
         user_keywords=user_keywords,
+    ) + render_template(
+        "dashboard/_interest_counts.html",
+        interests_count=len(user_keywords),
     )
 
 

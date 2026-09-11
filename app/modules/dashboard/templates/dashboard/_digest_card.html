@@ -52,6 +52,14 @@
         <div class="mt-2 small text-muted">{{ _('No briefing yet — generate one from your latest papers, or wait for tonight\'s automatic run.') }}</div>
       </div>
     {% endif %}
+    {# Only offered when there is something to brief.
+
+       `digest.run_for_user` correctly declines an empty run -- "never call for
+       nothing" -- but the button promised one anyway and the flash said it was
+       on its way. A user with no papers yet pressed it and waited for
+       something that was never coming. The task was right; the button was
+       lying. #}
+    {% if step2_done %}
     <form method="post" action="{{ url_for('dashboard.run_digest_now') }}" class="m-0">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="period" value="daily">
@@ -59,5 +67,10 @@
         <i class="bi bi-magic me-1"></i>{{ _('Generate briefing now') }}
       </button>
     </form>
+    {% else %}
+    <p class="small text-muted text-center mb-0">
+      {{ _('A briefing is written from your papers — run a scrape first and one can be made.') }}
+    </p>
+    {% endif %}
   </div>
 </div>

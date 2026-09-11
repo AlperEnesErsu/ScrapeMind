@@ -4051,6 +4051,13 @@ msgstr "Previous page"
 msgid "Next page"
 msgstr "Next page"
 
+msgid ""
+"A briefing is written from your papers — run a scrape first and one can "
+"be made."
+msgstr ""
+"A briefing is written from your papers — run a scrape first and one can "
+"be made."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

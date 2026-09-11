@@ -191,9 +191,8 @@ msgid ""
 "ScrapeMind monitors academic papers matching your specific keywords. "
 "Follow these steps to set up your personalized research feed:"
 msgstr ""
-"ScrapeMind, belirlediğiniz anahtar kelimelerle eşleşen akademik yayınları"
-" takip eder. Kişisel yayın akışınızı oluşturmak için aşağıdaki adımları "
-"izleyin:"
+"ScrapeMind, belirlediğin anahtar kelimelerle eşleşen akademik yayınları "
+"takip eder. Kişisel akışını oluşturmak için aşağıdaki adımları izle:"
 
 #: app/core/i18n/menu_translations.py:36
 #: app/modules/dashboard/templates/dashboard/for_you.html:130
@@ -206,8 +205,8 @@ msgid ""
 "Enter keywords in the right sidebar, or click on trending topics to "
 "follow them."
 msgstr ""
-"Sağ kenar çubuğuna anahtar kelimeler girin veya takip etmek için popüler "
-"başlıklara tıklayın."
+"Sağ kenar çubuğuna anahtar kelime gir ya da takip etmek için popüler "
+"başlıklara tıkla."
 
 #: app/core/i18n/menu_translations.py:38
 #: app/modules/dashboard/templates/dashboard/for_you.html:141
@@ -234,8 +233,8 @@ msgid ""
 "Papers will populate your homepage. Use ScrapeMind's AI features to "
 "instantly translate abstracts or write notes."
 msgstr ""
-"Yayınlar ana sayfanıza yüklenecektir. Özetleri anında çevirmek veya not "
-"yazmak için ScrapeMind'ın yapay zeka özelliklerini kullanın."
+"Yayınlar ana sayfanda birikir. Özetleri anında çevirmek ya da not almak "
+"için ScrapeMind'in yapay zeka özelliklerini kullan."
 
 #: app/core/i18n/menu_translations.py:42
 #: app/modules/dashboard/templates/dashboard/for_you.html:165
@@ -1994,7 +1993,7 @@ msgid ""
 msgstr ""
 "ScrapeMind seçtiğin kaynakları (arXiv, Semantic Scholar, PubMed) her gece"
 " tarar ve eşleşen makaleleri buraya ekler. Acelen mi var? Hemen çekmek "
-"için \"Scrape now\"a bas."
+"için \"Şimdi tara\"ya bas."
 
 msgid "Physics, CS and mathematics preprints"
 msgstr "Fizik, bilgisayar bilimi ve matematik ön baskıları"
@@ -4081,6 +4080,13 @@ msgstr "Önceki sayfa"
 
 msgid "Next page"
 msgstr "Sonraki sayfa"
+
+msgid ""
+"A briefing is written from your papers — run a scrape first and one can "
+"be made."
+msgstr ""
+"Brifing makalelerinden yazılır — önce bir tarama çalıştır, sonra "
+"oluşturulabilir."
 
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"

@@ -1,0 +1,12 @@
+{# The same number, in the two other places the page shows it.
+
+   Swapping only the manager card left the header pill and the stat strip
+   saying 0 while the card beside them said 1 -- three counters disagreeing on
+   one screen until a full reload. Out-of-band swaps keep them in step.
+
+   `hx-swap-oob="true"` matches on id, so these ids have to stay in step with
+   for_you.html. They are only ever rendered into an HTMX response. #}
+<span id="interest-count-pill" hx-swap-oob="true">
+  <i class="bi bi-tags me-1"></i>{{ _('%(n)s interests', n=interests_count) }}
+</span>
+<span id="interest-count-value" class="stat-pill__value" hx-swap-oob="true">{{ interests_count }}</span>
