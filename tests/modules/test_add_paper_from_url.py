@@ -144,7 +144,11 @@ def test_add_link_route_htmx(client, a_user, db, monkeypatch):
         )
         assert resp.status_code == 200
         assert "HTMX Article Title" in resp.get_data(as_text=True)
-        assert "Link" in resp.get_data(as_text=True)
+        # The icon, not the word: the label is translated, and asserting on
+        # the English literal only passed while `_('Link')` was missing from
+        # the catalogs. A locale-agnostic marker also identifies the branch
+        # more precisely -- "Link" appears in plenty of other markup.
+        assert "bi-link-45deg" in resp.get_data(as_text=True)
 
 
 def test_add_paper_from_url_uses_llm_summary_when_available(db, a_user, monkeypatch):

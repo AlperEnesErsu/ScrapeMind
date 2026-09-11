@@ -158,3 +158,10 @@ jobs:
               print("Translation mismatch:", diff); sys.exit(1)
           print("Translations OK")
           EOF
+
+      # The step above compares the catalogs to each other, which is blind to a
+      # string that never reached either one -- both stay equal and CI stays
+      # green while a Turkish reader sees English. Sixty-six strings were in
+      # that state. This one compares them to the source.
+      - name: Translation coverage (source == catalogs)
+        run: python scripts/i18n_audit.py

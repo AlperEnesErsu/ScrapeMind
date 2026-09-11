@@ -674,7 +674,7 @@ msgstr "Kontrol Paneline Git"
 
 #: app/core/templates/errors/404.html:2
 msgid "Not Found"
-msgstr "Makale bulunamadı."
+msgstr "Bulunamadı"
 
 #: app/core/templates/errors/404.html:6
 msgid "The page you're looking for doesn't exist."
@@ -1614,7 +1614,7 @@ msgstr "favori"
 
 #: app/modules/scrape/templates/library/index.html:10
 msgid "notes"
-msgstr "Eşleşme yok."
+msgstr "notlar"
 
 #: app/modules/scrape/templates/library/index.html:17
 msgid "Timeline"
@@ -1627,7 +1627,7 @@ msgstr "Favoriler"
 
 #: app/modules/scrape/templates/library/index.html:26
 msgid "Notes"
-msgstr "Eşleşme yok."
+msgstr "Notlar"
 
 #: app/modules/scrape/templates/library/index.html:51
 #: app/modules/scrape/templates/scrape/feed.html:64
@@ -1805,7 +1805,7 @@ msgstr "Bu rolü silmek istiyor musunuz?"
 
 #: app/modules/scrape/templates/scrape/_note_view.html:22
 msgid "Delete note"
-msgstr "Bu kullanıcıyı silmek istiyor musunuz?"
+msgstr "Notu sil"
 
 #: app/modules/scrape/templates/scrape/_notes_list.html:5
 msgid "My notes"
@@ -3727,6 +3727,240 @@ msgid "Sent to Zotero: %(done)d of %(total)d. %(failed)d failed."
 msgstr ""
 "Zotero'ya gönderildi: %(total)d üzerinden %(done)d. %(failed)d tanesi "
 "başarısız."
+
+msgid "Added to Read Later."
+msgstr "Sonra okunacaklara eklendi."
+
+msgid ""
+"Ask Claude about this paper's methodology, findings, or how it relates to"
+" your work. The conversation history is saved."
+msgstr ""
+"Bu makalenin yöntemini, bulgularını ya da senin çalışmanla ilişkisini "
+"Claude'a sor. Konuşma geçmişi saklanır."
+
+msgid "Ask Paper"
+msgstr "Makaleye Sor"
+
+msgid "BibTeX"
+msgstr "BibTeX"
+
+msgid "Bookmark papers to read them later — they will collect here."
+msgstr "Sonra okumak için makaleleri işaretle — burada birikirler."
+
+msgid "CSS Selector"
+msgstr "CSS Seçici"
+
+msgid "CSV"
+msgstr "CSV"
+
+msgid "Change language"
+msgstr "Dili değiştir"
+
+msgid "Citations"
+msgstr "Atıflar"
+
+msgid ""
+"Claude AI is not configured. Please set ANTHROPIC_API_KEY in your "
+"config/env to enable RAG chat."
+msgstr ""
+"Claude AI yapılandırılmamış. Sohbeti açmak için config/env dosyanda "
+"ANTHROPIC_API_KEY tanımla."
+
+msgid ""
+"Claude did not return a response. Please check your credentials or try "
+"again later."
+msgstr ""
+"Claude bir yanıt döndürmedi. Kimlik bilgilerini kontrol et ya da sonra "
+"tekrar dene."
+
+msgid "Collection sharing updated."
+msgstr "Koleksiyon paylaşımı güncellendi."
+
+msgid "Copy Link"
+msgstr "Bağlantıyı Kopyala"
+
+msgid "Create"
+msgstr "Oluştur"
+
+msgid "Experiment"
+msgstr "Deney"
+
+msgid "Export Notes as Markdown"
+msgstr "Notları Markdown olarak dışa aktar"
+
+msgid "Finding"
+msgstr "Bulgu"
+
+msgid "GitHub"
+msgstr "GitHub"
+
+msgid "Invalid URL. Must start with http:// or https://"
+msgstr "Geçersiz URL. http:// ya da https:// ile başlamalı"
+
+msgid "Invalid paper selection."
+msgstr "Geçersiz makale seçimi."
+
+msgid "Keyboard Shortcuts"
+msgstr "Klavye Kısayolları"
+
+msgid "Less"
+msgstr "Az"
+
+msgid "Link"
+msgstr "Bağlantı"
+
+msgid "More"
+msgstr "Çok"
+
+msgid "New papers this week"
+msgstr "Bu haftaki yeni makaleler"
+
+msgid "No bookmarks yet."
+msgstr "Henüz işaretlenmiş makale yok."
+
+msgid "No matching papers found."
+msgstr "Eşleşen makale bulunamadı."
+
+msgid "No notifications yet."
+msgstr "Henüz bildirim yok."
+
+msgid "No papers selected or action specified."
+msgstr "Makale seçilmedi ya da işlem belirtilmedi."
+
+msgid "No questions asked yet. Start the conversation below!"
+msgstr "Henüz soru sorulmadı. Aşağıdan konuşmaya başla!"
+
+msgid "Notes taken this week"
+msgstr "Bu hafta alınan notlar"
+
+msgid "Notifications"
+msgstr "Bildirimler"
+
+msgid "Operations (7d)"
+msgstr "İşlemler (7g)"
+
+msgid "Public Collection"
+msgstr "Herkese Açık Koleksiyon"
+
+msgid "Public link copied to clipboard!"
+msgstr "Herkese açık bağlantı panoya kopyalandı!"
+
+msgid "Question"
+msgstr "Soru"
+
+msgid "Read Later"
+msgstr "Sonra Oku"
+
+msgid "Reading"
+msgstr "Okuma"
+
+msgid "References"
+msgstr "Kaynaklar"
+
+msgid "Removed from Read Later."
+msgstr "Sonra okunacaklardan çıkarıldı."
+
+msgid "Saved."
+msgstr "Kaydedildi."
+
+msgid ""
+"Search OpenAlex by name and pick the right person from the candidates "
+"below — institution, publication and citation counts are shown because "
+"that's the only way to tell two same-named researchers apart."
+msgstr ""
+"OpenAlex'te ada göre ara ve aşağıdaki adaylardan doğru kişiyi seç — "
+"kurum, yayın ve atıf sayıları gösteriliyor, çünkü aynı adı taşıyan iki "
+"araştırmacıyı ancak böyle ayırt edebilirsin."
+
+msgid "Select"
+msgstr "Seç"
+
+msgid "Selected papers added to favorites."
+msgstr "Seçilen makaleler favorilere eklendi."
+
+msgid "Selected papers hidden."
+msgstr "Seçilen makaleler gizlendi."
+
+msgid "Selected papers marked as Read Later."
+msgstr "Seçilen makaleler sonra okunacak olarak işaretlendi."
+
+msgid "Share"
+msgstr "Paylaş"
+
+msgid "Shared"
+msgstr "Paylaşıldı"
+
+msgid "System Health"
+msgstr "Sistem Sağlığı"
+
+msgid "Thinking..."
+msgstr "Düşünüyor..."
+
+msgid "This public collection has no papers yet."
+msgstr "Bu herkese açık koleksiyonda henüz makale yok."
+
+msgid "Toggle Read Later"
+msgstr "Sonra okunacaklara ekle/çıkar"
+
+msgid "Toggle public link"
+msgstr "Herkese açık bağlantıyı aç/kapat"
+
+msgid "Top interest"
+msgstr "En çok ilgilenilen konu"
+
+msgid "Unknown Authors"
+msgstr "Yazarlar bilinmiyor"
+
+msgid "Unknown action."
+msgstr "Bilinmeyen işlem."
+
+msgid "Video"
+msgstr "Video"
+
+msgid "View Source"
+msgstr "Kaynağa git"
+
+msgid "Weekly Insights"
+msgstr "Haftalık Görünüm"
+
+msgid "Your login session expired. Please sign in again."
+msgstr "Oturumun sona erdi. Lütfen tekrar giriş yap."
+
+msgid "open details"
+msgstr "ayrıntıları aç"
+
+msgid "papers selected"
+msgstr "makale seçildi"
+
+msgid "publications"
+msgstr "yayın"
+
+msgid "select papers"
+msgstr "makale seç"
+
+msgid "toggle favorite"
+msgstr "favoriye ekle/çıkar"
+
+msgid "vs last week"
+msgstr "geçen haftaya göre"
+
+msgid "Celery worker"
+msgstr "Celery çalışanı"
+
+msgid "connected"
+msgstr "bağlı"
+
+msgid "disconnected"
+msgstr "bağlı değil"
+
+msgid "no workers"
+msgstr "çalışan yok"
+
+msgid "offline"
+msgstr "erişilemiyor"
+
+msgid "active"
+msgstr "aktif"
 
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"

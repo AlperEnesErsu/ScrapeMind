@@ -27,9 +27,9 @@ class _Conn:
         return None
 
 
-def _probe_from_a_worker_thread() -> dict[str, str]:
+def _probe_from_a_worker_thread() -> dict[str, object]:
     """Run the health probe off the main thread, as a request thread does."""
-    out: dict[str, dict[str, str]] = {}
+    out: dict[str, dict[str, object]] = {}
     thread = threading.Thread(target=lambda: out.setdefault("r", dashboard_routes._health_status()))
     thread.start()
     thread.join()
@@ -92,4 +92,29 @@ def test_no_workers_is_told_apart_from_no_broker(app, monkeypatch):
         status = _probe_from_a_worker_thread()
 
     assert status["redis"] == "connected"
-    assert status["celery"] == "no workers active"
+    assert status["celery"] == "idle"
+    assert status["workers"] == 0
+
+
+def test_workers_are_counted_not_described(app, monkeypatch):
+    """The template used to pick the badge colour with `'active' in status`.
+
+    Matching an English word to decide a colour meant the panel could not be
+    translated without turning every badge red, so the count comes back as a
+    number and the state as a code.
+    """
+    from app.tasks import celery_app
+
+    monkeypatch.setattr(celery_app, "connection_for_write", lambda *a, **kw: _Conn())
+
+    class _Inspect:
+        def ping(self):
+            return {"w1": {"ok": "pong"}, "w2": {"ok": "pong"}}
+
+    monkeypatch.setattr(celery_app.control, "inspect", lambda *a, **kw: _Inspect())
+
+    with app.app_context():
+        status = _probe_from_a_worker_thread()
+
+    assert status["celery"] == "active"
+    assert status["workers"] == 2
