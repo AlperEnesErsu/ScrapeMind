@@ -12,7 +12,7 @@
 
 | Seviye | Adet | Ne demek |
 |---|---|---|
-| 🔴 Engel | 5 (**2 kapandı**) | Bunlar kapanmadan canlıya çıkılmamalı |
+| 🔴 Engel | 5 (**4 kapandı**, kalan: E4) | Bunlar kapanmadan canlıya çıkılmamalı |
 | 🟠 Yüksek | 5 | İlk hafta içinde kapanmalı |
 | 🟡 Orta | 8 | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
@@ -80,7 +80,7 @@ IP'den 3 istek → **hepsi 200**. Yani sınır artık istemci başına sayıyor.
 
 ---
 
-### E2 — Hiçbir güvenlik başlığı gönderilmiyor
+### ~~E2 — Hiçbir güvenlik başlığı gönderilmiyor~~ ✅ KAPANDI (PR #81, CSP hariç)
 
 Çalışan uygulamada ölçüldü: `Content-Security-Policy`,
 `Strict-Transport-Security`, `X-Frame-Options`, `X-Content-Type-Options`,
@@ -124,8 +124,21 @@ CSP ayrı bir iş kalemi (bkz. Y4).
 **Doğrulama**
 
 ```bash
-curl -sI https://<host>/auth/login | grep -iE 'content-security|strict-transport|x-frame|x-content|referrer|permissions'
+curl -sI https://<host>/auth/login | grep -iE 'strict-transport|x-frame|x-content|referrer|permissions'
 ```
+
+**Yapıldı** — CSP dışındakiler. Çalışan uygulamada doğrulandı: `nosniff`,
+`DENY`, `strict-origin-when-cross-origin`, `Permissions-Policy` geliyor; HSTS
+dev'de (HTTP) **gelmiyor**, `SESSION_COOKIE_SECURE` açıkken geliyor.
+
+nginx'te değil **uygulamada**, çünkü nginx yapılandırması versiyonlanmıyor:
+her yeni sunucuda doğru yeniden yazılmasına bağlı kalır ve yanlış yazılanı
+sessizdir. `setdefault` kullanıldı, yani nginx'i de sertleştiren bir dağıtım
+iki çelişen politikayla kalmaz.
+
+**CSP hâlâ açık (Y4)** ve bilerek burada değil: sekiz şablonda satır içi
+`<script>` duruyor, dolayısıyla bugün uygulamayı kırmayacak tek CSP
+`'unsafe-inline'`'lı olan — o da politika değil.
 
 ---
 
