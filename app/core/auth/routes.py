@@ -30,6 +30,7 @@ from app.core.sessions.service import (
     get_current_key,
     set_current_key,
 )
+from app.core.ui.splash import arm_splash
 from app.extensions import db, limiter
 
 PENDING_2FA_KEY = "pending_2fa_user_id"
@@ -56,6 +57,10 @@ def _login_and_redirect(user, *, remember: bool, second_factor: str | None = Non
     set_current_key(key)
     changes = {"second_factor": second_factor} if second_factor else None
     log_action("user.login", entity_type="user", entity_id=user.id, changes=changes)
+    # After session.clear(), or it would be cleared away -- the same trap the
+    # `post_flash` argument exists for. Every way into the app funnels through
+    # here, so this is the only place the animation needs arming.
+    arm_splash()
     if post_flash:
         flash(post_flash[0], post_flash[1])
     return redirect(safe_next_or(next_arg, url_for("dashboard.index")))

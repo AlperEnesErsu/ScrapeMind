@@ -1,0 +1,63 @@
+{# Login animation: the pomegranate falls to a line and bursts.
+
+   Decorative, so `aria-hidden` and `inert` -- there is nothing here to read
+   and nothing to focus. A screen reader lands on the page itself.
+
+   Pure CSS, and that is the important part: the overlay ends at
+   `opacity: 0; visibility: hidden` through `animation-fill-mode: forwards`,
+   so it clears itself even if no JavaScript ever runs. A welcome screen that
+   can wedge shut over the app is worse than no welcome screen. The script at
+   the bottom only removes the dead node afterwards.
+
+   The twelve scatter vectors are written out rather than generated. Two
+   reasons. A `random()` occasionally throws every aril the same way and the
+   one bad roll is the one a user sees. And the first hand-written set was
+   near mirror-symmetric, which read as a dome rather than a burst -- so these
+   are deliberately uneven, and weighted low and wide along the line, the way
+   a fruit opens on the ground rather than the way a firework goes up.
+#}
+<div class="splash" aria-hidden="true" inert>
+  <div class="splash__stage">
+    {# Two elements, not one: the wrapper falls and the fruit squashes. On a
+       single element they are two animations driving `transform`, and the
+       later one's backwards fill holds the fruit at its landing spot for the
+       entire fall -- the drop just never happens. #}
+    <div class="splash__drop">
+      <svg class="splash__fruit" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true">
+        <path d="M32 20 C45 20 53 28 53 39 C53 51 44 58 32 58 C20 58 11 51 11 39 C11 28 19 20 32 20 Z"/>
+        <path d="M24 24 L27 9 L30 15 L32 6 L34 15 L37 9 L40 24 Z"/>
+      </svg>
+    </div>
+
+    <div class="splash__burst">
+      <i style="--dx: -168px; --dy:   4px; --r: -190deg; --d: 0ms"></i>
+      <i style="--dx:  147px; --dy:  -8px; --r:  165deg; --d:12ms"></i>
+      <i style="--dx:  -96px; --dy: -38px; --r: -120deg; --d:26ms"></i>
+      <i style="--dx:  119px; --dy:  14px; --r:  205deg; --d: 4ms"></i>
+      <i style="--dx: -134px; --dy:  16px; --r: -145deg; --d:40ms"></i>
+      <i style="--dx:   62px; --dy: -52px; --r:   95deg; --d:18ms"></i>
+      <i style="--dx: -196px; --dy:  12px; --r: -215deg; --d: 8ms"></i>
+      <i style="--dx:   88px; --dy: -22px; --r:  130deg; --d:33ms"></i>
+      <i style="--dx:  -44px; --dy: -58px; --r:  -70deg; --d:48ms"></i>
+      <i style="--dx:  176px; --dy:   8px; --r:  185deg; --d:22ms"></i>
+      <i style="--dx: -118px; --dy: -14px; --r: -160deg; --d:15ms"></i>
+      <i style="--dx:   36px; --dy: -44px; --r:   60deg; --d:44ms"></i>
+    </div>
+
+    {# The ground. Drawn first, then landed on. #}
+    <div class="splash__line"></div>
+  </div>
+</div>
+<script>
+  // Cosmetic cleanup only -- the CSS above has already taken the overlay out
+  // of the way by the time this fires. Nothing here is load-bearing.
+  (function () {
+    var el = document.querySelector('.splash');
+    if (!el) return;
+    var drop = function () { el.remove(); };
+    el.addEventListener('animationend', function (e) {
+      if (e.target === el) drop();
+    });
+    setTimeout(drop, 4000);
+  })();
+</script>
