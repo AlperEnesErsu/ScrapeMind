@@ -23,7 +23,11 @@
       <div class="d-flex flex-wrap gap-2 mt-2">
         <a href="#interests-manager" class="text-decoration-none">
           <span class="badge rounded-pill bg-primary-subtle text-primary py-1 px-3">
-            <i class="bi bi-tags me-1"></i>{{ _('%(n)s interests', n=user_stats.interests_count) }}
+            {# id so adding an interest can refresh this out of band -- see
+               dashboard/_interest_counts.html #}
+            <span id="interest-count-pill">
+              <i class="bi bi-tags me-1"></i>{{ _('%(n)s interests', n=user_stats.interests_count) }}
+            </span>
           </span>
         </a>
         <a href="#sources-card" class="text-decoration-none">
@@ -115,7 +119,7 @@
     <a href="#interests-manager" class="stat-pill stat-pill--interests text-decoration-none"
        title="{{ _('Manage your interests') }}">
       <i class="bi bi-tags"></i>
-      <span class="stat-pill__value">{{ user_stats.interests_count }}</span>
+      <span id="interest-count-value" class="stat-pill__value">{{ user_stats.interests_count }}</span>
       <span class="stat-pill__label">{{ _('Followed Interests') }}</span>
     </a>
     <a href="{{ url_for('library.index', view='favorites') }}" class="stat-pill stat-pill--favorites text-decoration-none"
