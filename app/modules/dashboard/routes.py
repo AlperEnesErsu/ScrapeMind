@@ -352,54 +352,28 @@ def _source_quota_rows() -> list[dict]:
         return []
 
 
-def _health_status() -> dict[str, object]:
-    """Broker and worker health for the admin overview panel.
+def _health_status() -> dict[str, str]:
+    """Broker, worker and scheduler health for the admin overview panel.
 
-    Binds our own Celery app rather than reaching for `celery.current_app`.
-    `current_app` is thread-local with a fallback: in any thread other than the
-    one that constructed the app -- which is every request thread under a
-    threaded WSGI server -- it hands back a bare `Celery('default')` with no
-    broker configured. The connection attempt then goes to Celery's amqp
-    default, is refused, and this panel reports "disconnected" and "offline"
-    however healthy Redis and the workers actually are. It did exactly that,
-    unconditionally, for as long as the panel has existed; the bug hid because
-    a health panel saying something is down reads as news about the system
-    rather than news about the panel.
+    Delegates to `app.core.health.system_health`, which reads two Redis keys.
+    This used to run `celery inspect ping` instead -- a broadcast RPC that
+    blocks for its whole timeout when nothing answers, so the admin overview
+    took twelve seconds to render exactly when an admin had opened it to find
+    out what was broken. `app/core/health.py` had already written that hazard
+    down and avoided it; this panel walked into it anyway.
 
-    `_celery_task_finished` in scrape/routes.py walked into the same trap and
-    was fixed there. These two calls were missed.
-
-    A function rather than inline code so the thread behaviour can be tested
-    without standing up a request in a second thread.
-
-    Returns codes, not prose. The template used to decide the badge colour with
-    `'active' in health_status.celery` -- a substring match against an English
-    word, which meant the panel could not be translated without silently
-    turning every badge red.
+    Sharing the source also means the two panels agree. They did not: this one
+    said "Celery: active (1 worker)" off an inspect ping while the sidebar said
+    "Worker: down" off the heartbeat key, on the same screen.
     """
-    from app.tasks import celery_app
+    from app.core.health import system_health
 
-    try:
-        with celery_app.connection_for_write() as conn:
-            conn.connect()
-            redis_status = "connected"
-    except Exception:  # noqa: BLE001 — a status panel must not break a render
-        redis_status = "disconnected"
-
-    workers = 0
-    try:
-        inspect = celery_app.control.inspect(timeout=0.3)
-        pings = inspect.ping() if inspect else None
-        workers = len(pings or {})
-        celery_status = "active" if workers else "idle"
-    except Exception:  # noqa: BLE001 — same
-        celery_status = "offline"
-
+    health = system_health()
     return {
-        "db": "connected",
-        "redis": redis_status,
-        "celery": celery_status,
-        "workers": workers,
+        "db": health["database"],
+        "redis": health["redis"],
+        "worker": health["worker"],
+        "beat": health["beat"],
     }
 
 
