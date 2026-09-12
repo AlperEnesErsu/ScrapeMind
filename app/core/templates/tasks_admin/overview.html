@@ -28,21 +28,21 @@
   <div class="card-header py-2 small text-uppercase text-muted">{{ _('Manual triggers') }}</div>
   <div class="card-body d-flex flex-wrap gap-2">
     <form method="post" action="{{ url_for('tasks_admin.run_task', trigger='scrape_all') }}"
-          onsubmit="return confirm('{{ _('Queue a scrape for every active user?') }}');">
+          data-confirm="{{ _('Queue a scrape for every active user?') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-sm btn-primary" {% if not workers %}disabled title="{{ _('No workers online') }}"{% endif %}>
         <i class="bi bi-arrow-repeat me-1"></i>{{ _('Run all scrapes') }}
       </button>
     </form>
     <form method="post" action="{{ url_for('tasks_admin.run_task', trigger='channels_all') }}"
-          onsubmit="return confirm('{{ _('Check every user\'s YouTube channels for new videos now?') }}');">
+          data-confirm="{{ _('Check every user\'s YouTube channels for new videos now?') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-sm btn-outline-primary" {% if not workers %}disabled title="{{ _('No workers online') }}"{% endif %}>
         <i class="bi bi-youtube me-1"></i>{{ _('Ingest YouTube channels') }}
       </button>
     </form>
     <form method="post" action="{{ url_for('tasks_admin.run_task', trigger='purge_audit') }}"
-          onsubmit="return confirm('{{ _('Purge audit logs past the retention window now?') }}');">
+          data-confirm="{{ _('Purge audit logs past the retention window now?') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-sm btn-outline-danger" {% if not workers %}disabled title="{{ _('No workers online') }}"{% endif %}>
         <i class="bi bi-trash3 me-1"></i>{{ _('Run audit cleanup') }}

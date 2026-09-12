@@ -41,7 +41,7 @@
                 hx-get="{{ url_for('dashboard.list_notifications') }}"
                 hx-target="#notifications-list"
                 hx-trigger="click"
-                onclick="document.getElementById('notification-badge')?.remove();"
+                data-remove-on-click="#notification-badge"
                 title="{{ _('Notifications') }}" aria-label="{{ _('Notifications') }}">
           <i class="bi bi-bell" aria-hidden="true"></i>
           {% set unread_count = current_user.notifications.filter_by(is_read=False).count() if current_user.is_authenticated else 0 %}

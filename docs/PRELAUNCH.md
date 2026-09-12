@@ -462,6 +462,13 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
 
 #### Kalan iş (sırayla)
 1. 36 satır içi olay işleyicisini delegasyona çevir (18 şablon)
+   - ✅ **core — 7 → 0 (PR #92).** Altısı `onsubmit="return confirm(…)"`,
+     biri bildirim rozetini silen `onclick`. Karşılıkları `app.js`'te
+     delegasyonlu: `data-confirm` ve `data-remove-on-click`. HTMX ile sonradan
+     gelen işaretlemeye de yeniden bağlama gerekmeden uygulanıyor.
+     `tests/core/test_csp_readiness.py` mandallı bir kapı: temizlenen dizin
+     sıfırda kalmak zorunda, toplam azalabilir ama artamaz.
+   - ⬜ **scrape — 29.**
 2. 8 satır içi `<script>`'i `static/js/`'e taşı — dördü HTMX parçası olduğu
    için doğrudan bağlama değil delegasyon gerekiyor; `_password_rules`
    `document.currentScript` kullanıyor, yani yeniden yazılmalı

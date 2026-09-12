@@ -219,6 +219,43 @@ document.body.addEventListener('htmx:sendError', function() {
   showToast(msg('offline', 'Sunucuya ulaşılamadı. Bağlantınızı kontrol edin.'), 'error');
 });
 
+// ---------------------------------------------------------------------------
+// Declarative hooks that replace inline event handlers.
+//
+// Content-Security-Policy blocks `onclick=` / `onsubmit=` exactly as it blocks
+// inline <script>, so every handler written into a template stands between
+// this app and a real `script-src` (docs/PRELAUNCH.md Y4). These listeners are
+// delegated from `document`, which means markup swapped in by HTMX gets the
+// behaviour without anything re-binding it.
+// ---------------------------------------------------------------------------
+
+// <form data-confirm="{{ _('Delete this?') }}">
+//
+// Replaces `onsubmit="return confirm('{{ _('…') }}')"`. That form put a
+// translated string inside a JS string literal inside an HTML attribute, so a
+// translation containing an apostrophe would have ended the string early and
+// broken the page's script. None of the current ones do; a data attribute
+// cannot, because Jinja escapes it as an attribute and JS never parses it.
+document.addEventListener('submit', (e) => {
+  const form = e.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  const message = form.dataset.confirm;
+  if (message && !window.confirm(message)) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+}, true);
+
+// <button data-remove-on-click="#some-id">
+//
+// Removes the element the selector names. Used by the notification bell to
+// clear its unread badge as the dropdown opens.
+document.addEventListener('click', (e) => {
+  const trigger = e.target.closest('[data-remove-on-click]');
+  if (!trigger) return;
+  document.querySelector(trigger.dataset.removeOnClick)?.remove();
+});
+
 // Wire up HTMX response triggers for toast notifications
 document.body.addEventListener('htmx:afterRequest', function(evt) {
   if (evt.detail.successful) {

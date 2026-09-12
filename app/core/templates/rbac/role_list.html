@@ -33,7 +33,7 @@
             </a>
             {% if role.name != 'admin' %}
             <form method="post" action="{{ url_for('rbac.role_delete', role_id=role.id) }}"
-                  class="d-inline" onsubmit="return confirm('{{ _('Delete this role?') }}');">
+                  class="d-inline" data-confirm="{{ _('Delete this role?') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-sm btn-outline-danger">
                 <i class="bi bi-trash"></i>
