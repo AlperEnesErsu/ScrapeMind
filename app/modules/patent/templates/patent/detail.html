@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}{{ document.doc_number }}{% endblock %}
+
+{# Dependent claims nest arbitrarily deep, so the macro calls itself. Jinja
+   needs the name bound before the recursive call, which `macro` gives us. #}
+{% macro claim_branch(node) %}
+  <li class="mb-2">
+    <div class="small text-body-secondary">
+      {{ _('Claim %(number)s', number=node.claim.number) }}
+      {% if node.claim.depends_on %}
+        &middot; {{ _('depends on claim %(number)s', number=node.claim.depends_on) }}
+      {% endif %}
+    </div>
+    <div>{{ node.claim.text }}</div>
+    {% if node.children %}
+      <ul class="list-unstyled ms-3 mt-2 border-start ps-3">
+        {% for child in node.children %}{{ claim_branch(child) }}{% endfor %}
+      </ul>
+    {% endif %}
+  </li>
+{% endmacro %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-start gap-3 mb-1">
+  <h4 class="mb-0">{{ document.title }}</h4>
+  <a class="btn btn-sm btn-outline-secondary text-nowrap"
+     href="https://patents.google.com/patent/{{ document.doc_number }}"
+     target="_blank" rel="noopener noreferrer">
+    <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('Source') }}
+  </a>
+</div>
+
+<p class="small text-body-secondary">
+  <span class="font-monospace">{{ document.doc_number }}</span>
+  {% if document.grant_date %}
+    &middot; {{ _('Granted') }} {{ document.grant_date.strftime('%Y-%m-%d') }}
+  {% endif %}
+  {% if document.filing_date %}
+    &middot; {{ _('Filed') }} {{ document.filing_date.strftime('%Y-%m-%d') }}
+  {% endif %}
+</p>
+
+{% if document.assignees %}
+  <p class="small mb-1"><strong>{{ _('Assignee') }}:</strong> {{ document.assignees|join(', ') }}</p>
+{% endif %}
+{% if document.inventors %}
+  <p class="small mb-1"><strong>{{ _('Inventors') }}:</strong> {{ document.inventors|join(', ') }}</p>
+{% endif %}
+{% if document.cpc_codes %}
+  <p class="small">
+    {% for code in document.cpc_codes %}
+      <span class="badge text-bg-light font-monospace">{{ code }}</span>
+    {% endfor %}
+  </p>
+{% endif %}
+
+{% set scope_claim = claim_tree[0].claim if claim_tree else none %}
+{% if scope_claim %}
+  {# Claim 1 gets its own box because it is the patent's legal scope. Every
+     other claim narrows something; rendering them as one flat list — which is
+     what patent sites do — buries the only claim that defines the boundary. #}
+  <div class="card mb-3 border-primary-subtle">
+    <div class="card-header py-2 small">
+      <i class="bi bi-bullseye me-1"></i>{{ _('Claim %(number)s', number=scope_claim.number) }}
+      &middot; {{ _('defines the scope of this patent') }}
+    </div>
+    <div class="card-body">{{ scope_claim.text }}</div>
+  </div>
+{% endif %}
+
+{% if document.abstract %}
+  <h6 class="mt-3">{{ _('Abstract') }}</h6>
+  <p class="small">{{ document.abstract }}</p>
+{% endif %}
+
+{% if claim_tree %}
+  <h6 class="mt-3">{{ _('Claim tree') }}</h6>
+  <ul class="list-unstyled small">
+    {% for node in claim_tree %}{{ claim_branch(node) }}{% endfor %}
+  </ul>
+{% endif %}
+
+{% if document.description %}
+  <h6 class="mt-3">{{ _('Description') }}</h6>
+  <div class="small" style="white-space: pre-wrap;">{{ document.description }}</div>
+{% endif %}
+
+<p class="small text-body-secondary mt-4 border-top pt-2">
+  <i class="bi bi-info-circle me-1"></i>
+  {{ _('Patent text is reproduced from the official USPTO publication. Nothing here is legal advice — confirm any conclusion with a patent attorney.') }}
+</p>
+
+{% endblock %}

@@ -4068,6 +4068,84 @@ msgstr ""
 "The worker is running, but nothing is scheduling: nightly scans and "
 "alerts will not fire until the scheduler is back."
 
+msgid "Patent tracking"
+msgstr "Patent tracking"
+
+msgid ""
+"Recently granted US AI patents, kept for a rolling window and searchable "
+"down to the claims."
+msgstr ""
+"Recently granted US AI patents, kept for a rolling window and searchable "
+"down to the claims."
+
+msgid "No patents have been loaded yet."
+msgstr "No patents have been loaded yet."
+
+msgid ""
+"The weekly load has not run on this deployment. Once it does, newly "
+"granted patents appear here."
+msgstr ""
+"The weekly load has not run on this deployment. Once it does, newly "
+"granted patents appear here."
+
+msgid "Patents"
+msgstr "Patents"
+
+msgid "Claims"
+msgstr "Claims"
+
+msgid "Window"
+msgstr "Window"
+
+msgid "Granted"
+msgstr "Granted"
+
+#, python-format
+msgid "%(count)s claims"
+msgstr "%(count)s claims"
+
+msgid "Filed"
+msgstr "Filed"
+
+msgid "Assignee"
+msgstr "Assignee"
+
+msgid "Inventors"
+msgstr "Inventors"
+
+#, python-format
+msgid "Claim %(number)s"
+msgstr "Claim %(number)s"
+
+#, python-format
+msgid "depends on claim %(number)s"
+msgstr "depends on claim %(number)s"
+
+msgid "defines the scope of this patent"
+msgstr "defines the scope of this patent"
+
+msgid "Claim tree"
+msgstr "Claim tree"
+
+msgid ""
+"Patent text is reproduced from the official USPTO publication. Nothing "
+"here is legal advice — confirm any conclusion with a patent attorney."
+msgstr ""
+"Patent text is reproduced from the official USPTO publication. Nothing "
+"here is legal advice — confirm any conclusion with a patent attorney."
+
+msgid "menu.patents"
+msgstr "menu.patents"
+
+msgid "module.patent.name"
+msgstr "module.patent.name"
+
+msgid "perm.patents.view"
+msgstr "perm.patents.view"
+
+msgid "perm.patents.manage"
+msgstr "perm.patents.manage"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

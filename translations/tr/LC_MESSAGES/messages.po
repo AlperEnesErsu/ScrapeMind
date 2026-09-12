@@ -4098,6 +4098,85 @@ msgstr ""
 "İşçi çalışıyor ama zamanlayan yok: zamanlayıcı geri gelene kadar gecelik "
 "taramalar ve uyarılar tetiklenmeyecek."
 
+msgid "Patent tracking"
+msgstr "Patent Takibi"
+
+msgid ""
+"Recently granted US AI patents, kept for a rolling window and searchable "
+"down to the claims."
+msgstr ""
+"Yakın zamanda verilmiş ABD yapay zekâ patentleri; kayan bir pencerede "
+"tutulur ve istem düzeyinde aranabilir."
+
+msgid "No patents have been loaded yet."
+msgstr "Henüz patent yüklenmedi."
+
+msgid ""
+"The weekly load has not run on this deployment. Once it does, newly "
+"granted patents appear here."
+msgstr ""
+"Bu kurulumda haftalık yükleme henüz çalışmadı. Çalıştığında yeni verilen "
+"patentler burada görünür."
+
+msgid "Patents"
+msgstr "Patentler"
+
+msgid "Claims"
+msgstr "İstemler"
+
+msgid "Window"
+msgstr "Pencere (hafta)"
+
+msgid "Granted"
+msgstr "Veriliş"
+
+#, python-format
+msgid "%(count)s claims"
+msgstr "%(count)s istem"
+
+msgid "Filed"
+msgstr "Başvuru"
+
+msgid "Assignee"
+msgstr "Hak sahibi"
+
+msgid "Inventors"
+msgstr "Mucitler"
+
+#, python-format
+msgid "Claim %(number)s"
+msgstr "%(number)s. istem"
+
+#, python-format
+msgid "depends on claim %(number)s"
+msgstr "%(number)s. isteme bağlı"
+
+msgid "defines the scope of this patent"
+msgstr "bu patentin kapsamını tanımlar"
+
+msgid "Claim tree"
+msgstr "İstem ağacı"
+
+msgid ""
+"Patent text is reproduced from the official USPTO publication. Nothing "
+"here is legal advice — confirm any conclusion with a patent attorney."
+msgstr ""
+"Patent metni resmî USPTO yayınından alınmıştır. Buradaki hiçbir şey "
+"hukuki tavsiye değildir — vardığınız sonucu bir patent vekiline "
+"doğrulatın."
+
+msgid "menu.patents"
+msgstr "Patent Takibi"
+
+msgid "module.patent.name"
+msgstr "Patent Takibi"
+
+msgid "perm.patents.view"
+msgstr "Patentleri görüntüle"
+
+msgid "perm.patents.manage"
+msgstr "Patent yüklemesini yönet"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
