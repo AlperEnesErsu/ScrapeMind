@@ -29,7 +29,10 @@
       {% else %}
         <li class="nav-item">
           <a class="nav-link d-flex align-items-center gap-2 {{ 'active' if node.is_active else '' }}"
-             href="{{ url_for(node.item.endpoint) if node.item.endpoint else (node.item.url or '#') }}">
+             {# Resolved by the builder, which has already dropped anything it
+                could not resolve. Calling `url_for` here is what turned a stale
+                menu row into a 500 on every authenticated page. #}
+             href="{{ node.href }}">
             <i class="bi {{ node.item.icon or 'bi-circle' }}"></i>
             <span class="sidebar-label">{{ _(node.item.label_key) }}</span>
           </a>
