@@ -129,7 +129,7 @@
           <button type="submit" form="bulk-actions-form" name="action" value="dismiss" class="btn btn-sm btn-outline-secondary py-1 px-2">
             <i class="bi bi-eye-slash-fill me-1"></i>{{ _('Hide') }}
           </button>
-          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none py-1" onclick="clearAllSelections()">
+          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none py-1" data-bulk-clear>
             {{ _('Cancel') }}
           </button>
         </div>
@@ -181,24 +181,4 @@
   </div>
 </div>
 
-<script>
-  function toggleBulkPanel() {
-    const checkboxes = document.querySelectorAll('.bulk-select-checkbox:checked');
-    const panel = document.getElementById('bulk-action-panel');
-    const countBadge = document.getElementById('selected-count');
-
-    if (checkboxes.length > 0) {
-      panel.classList.remove('d-none');
-      countBadge.textContent = checkboxes.length;
-    } else {
-      panel.classList.add('d-none');
-    }
-  }
-
-  function clearAllSelections() {
-    const checkboxes = document.querySelectorAll('.bulk-select-checkbox');
-    checkboxes.forEach(cb => cb.checked = false);
-    toggleBulkPanel();
-  }
-</script>
 {% endblock %}

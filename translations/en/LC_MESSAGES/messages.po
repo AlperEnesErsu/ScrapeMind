@@ -4080,6 +4080,21 @@ msgstr "You are not allowed to do that."
 msgid "Could not reach the server. Check your connection."
 msgstr "Could not reach the server. Check your connection."
 
+msgid "Show less"
+msgstr "Show less"
+
+msgid "Summarise the abstract in three main points."
+msgstr "Summarise the abstract in three main points."
+
+msgid "What core methodology and approach does this study use?"
+msgstr "What core methodology and approach does this study use?"
+
+msgid "What are the main findings and conclusions of the paper?"
+msgstr "What are the main findings and conclusions of the paper?"
+
+msgid "What are the limitations and gaps in this research?"
+msgstr "What are the limitations and gaps in this research?"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

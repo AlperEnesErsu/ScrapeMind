@@ -10,8 +10,8 @@ must stay at zero, and the total may fall but not rise — so the work cannot be
 quietly undone by the next template someone writes the old way.
 
 The replacements live in app/core/static/js/app.js as delegated listeners:
-`data-confirm` for confirmation dialogs, `data-remove-on-click` for removing an
-element. Reach for those, or add another declarative hook beside them, rather
+`data-confirm`, `data-autosubmit`, `data-submit-on-enter`, `data-toggle-abstract`,
+`data-bulk-select` and the rest. Reach for those, or add another declarative hook beside them, rather
 than an inline handler.
 """
 
@@ -31,12 +31,13 @@ HANDLER = re.compile(
 #: Directories whose templates have been cleaned. Each must hold at zero.
 CLEAN = [
     "app/core/templates",
+    "app/modules",
 ]
 
 #: The most inline handlers allowed across the whole app. Lower it in the same
 #: commit that removes handlers; never raise it. When it reaches zero, the next
 #: step is adding `script-src` to the policy in app/__init__.py.
-CEILING = 16
+CEILING = 0
 
 
 def _handlers_under(relative: str) -> list[str]:

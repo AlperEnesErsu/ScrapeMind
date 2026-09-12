@@ -37,19 +37,19 @@
       <!-- Preset Prompt Chips -->
       <div class="chat-preset-chips d-flex flex-wrap gap-1 mb-2">
         <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: var(--text-xs);"
-                onclick="setChatQuestion('Özeti 3 ana maddede özetler misin?')">
+                data-chat-question="{{ _('Summarise the abstract in three main points.') }}">
           <i class="bi bi-list-ul me-1"></i>{{ _('Summarize') }}
         </button>
         <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: var(--text-xs);"
-                onclick="setChatQuestion('Bu çalışmada kullanılan temel metodoloji ve yaklaşım nedir?')">
+                data-chat-question="{{ _('What core methodology and approach does this study use?') }}">
           <i class="bi bi-diagram-3 me-1"></i>{{ _('Methodology') }}
         </button>
         <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: var(--text-xs);"
-                onclick="setChatQuestion('Makalenin elde ettiği temel bulgular ve sonuçlar nelerdir?')">
+                data-chat-question="{{ _('What are the main findings and conclusions of the paper?') }}">
           <i class="bi bi-graph-up me-1"></i>{{ _('Main findings') }}
         </button>
         <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2" style="font-size: var(--text-xs);"
-                onclick="setChatQuestion('Bu araştırmanın sınırlılıkları ve eksik yönleri nelerdir?')">
+                data-chat-question="{{ _('What are the limitations and gaps in this research?') }}">
           <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Limitations') }}
         </button>
       </div>
@@ -68,28 +68,5 @@
         </button>
       </form>
     </div>
-    <script>
-      function scrollChatToBottom() {
-        var box = document.getElementById('chat-messages-box');
-        if (box) {
-          box.scrollTop = box.scrollHeight;
-        }
-      }
-
-      function setChatQuestion(text) {
-        var textarea = document.querySelector('.chat-input-area textarea[name="message"]');
-        if (textarea) {
-          textarea.value = text;
-          textarea.focus();
-          var form = textarea.closest('form');
-          if (form) {
-            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-          }
-        }
-      }
-
-      // Automatically scroll to bottom of chat on load
-      scrollChatToBottom();
-    </script>
   {% endif %}
 </div>

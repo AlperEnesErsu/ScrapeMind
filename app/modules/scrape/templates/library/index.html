@@ -76,11 +76,11 @@
          reachable by keyboard and by thumb. #}
       <label for="heatmap-date-jump" class="form-label small text-muted m-0">{{ _('Jump to date') }}</label>
       <input type="date" id="heatmap-date-jump" class="form-control form-control-sm heatmap-date-jump"
-             onchange="filterByHeatmapDate(this.value)">
+             data-heatmap-date-input>
 
       <div id="heatmap-filter-indicator" class="alert alert-info py-0 px-2 m-0 d-none align-items-center gap-2 small" style="font-size: var(--text-xs);">
         <span><i class="bi bi-funnel me-1"></i><strong id="heatmap-filter-date"></strong></span>
-        <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-info fw-bold" onclick="clearHeatmapDateFilter()"><i class="bi bi-x-lg me-1"></i>{{ _('Clear') }}</button>
+        <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-info fw-bold" data-heatmap-clear><i class="bi bi-x-lg me-1"></i>{{ _('Clear') }}</button>
       </div>
     </div>
     <div class="heatmap-wrapper overflow-auto">
@@ -93,7 +93,6 @@
             <button type="button" class="heatmap-day"
                     data-level="{{ day.level }}"
                     data-date="{{ day.date }}"
-                    onclick="filterByHeatmapDate('{{ day.date }}')"
                     title="{{ day.date }}: {{ day.count }} {{ _('activities') }}"
                     aria-label="{{ day.date }}: {{ day.count }} {{ _('activities') }}"
                     data-bs-toggle="tooltip"></button>

@@ -321,20 +321,101 @@ document.body.addEventListener('htmx:afterRequest', function(evt) {
   }
 });
 
-// Toggle long paper abstracts
-function toggleAbstract(id, btn) {
-  const el = document.getElementById(id);
-  if (el) {
-    const isClamped = el.classList.contains('text-truncate-3');
-    if (isClamped) {
-      el.classList.remove('text-truncate-3');
-      btn.textContent = 'Daralt';
-    } else {
-      el.classList.add('text-truncate-3');
-      btn.textContent = 'Devamını Oku';
-    }
-  }
+// <button data-toggle-abstract="abstract-42"
+//         data-label-more="{{ _('Show more') }}" data-label-less="{{ _('Show less') }}">
+//
+// The labels travel with the button. The function this replaces overwrote the
+// button's translated "Show more" with hard-coded Turkish, so an English reader
+// saw one language before the first click and another after it.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-toggle-abstract]');
+  if (!btn) return;
+  const el = document.getElementById(btn.dataset.toggleAbstract);
+  if (!el) return;
+  const expanding = el.classList.contains('text-truncate-3');
+  el.classList.toggle('text-truncate-3', !expanding);
+  btn.textContent = expanding ? btn.dataset.labelLess : btn.dataset.labelMore;
+  btn.setAttribute('aria-expanded', expanding ? 'true' : 'false');
+});
+
+// <input type="checkbox" data-bulk-select>   <button data-bulk-clear>
+//
+// Shows the bulk-action panel while any paper is selected. The inline version
+// called `toggleBulkPanel()`, which was defined only in feed.html's inline
+// script — but the checkbox is part of the paper card, and the card renders on
+// every page that lists papers. On /library/search every click threw
+// `ReferenceError: toggleBulkPanel is not defined`. The panel only exists on
+// the Discover feed, so everywhere else this is now a quiet no-op.
+function refreshBulkPanel() {
+  const panel = document.getElementById('bulk-action-panel');
+  if (!panel) return;
+  const selected = document.querySelectorAll('[data-bulk-select]:checked').length;
+  panel.classList.toggle('d-none', selected === 0);
+  const count = document.getElementById('selected-count');
+  if (count) count.textContent = selected;
 }
+document.addEventListener('change', (e) => {
+  if (e.target.closest('[data-bulk-select]')) refreshBulkPanel();
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-bulk-clear]')) return;
+  document.querySelectorAll('[data-bulk-select]').forEach((cb) => { cb.checked = false; });
+  refreshBulkPanel();
+});
+// Swapped-in cards arrive unchecked, so the panel has to follow them.
+document.body.addEventListener('htmx:afterSwap', refreshBulkPanel);
+
+// <button data-notes-filter="soru">
+//
+// Filters the note cards by type. `aria-pressed` marks the active chip, which
+// the version this replaced did not expose at all.
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('[data-notes-filter]');
+  if (!chip) return;
+  const tag = chip.dataset.notesFilter;
+  document.querySelectorAll('.note-card').forEach((card) => {
+    card.style.display = (tag === 'all' || card.classList.contains('note-card--' + tag)) ? 'block' : 'none';
+  });
+  chip.parentElement?.querySelectorAll('[data-notes-filter]').forEach((c) => {
+    c.setAttribute('aria-pressed', c === chip ? 'true' : 'false');
+  });
+});
+
+// <button data-chat-question="{{ _('…') }}">
+//
+// Fills the paper chat with a suggested question and sends it. The questions
+// used to be hard-coded Turkish inside `onclick`, outside `_()` entirely.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-chat-question]');
+  if (!btn) return;
+  const textarea = document.querySelector('.chat-input-area textarea[name="message"]');
+  if (!textarea) return;
+  textarea.value = btn.dataset.chatQuestion;
+  textarea.focus();
+  textarea.form?.requestSubmit();
+});
+
+// Keep the paper chat pinned to its newest message, on first render and after
+// every HTMX swap that adds one.
+function scrollChatToBottom() {
+  const box = document.getElementById('chat-messages-box');
+  if (box) box.scrollTop = box.scrollHeight;
+}
+document.addEventListener('DOMContentLoaded', scrollChatToBottom);
+document.body.addEventListener('htmx:afterSwap', scrollChatToBottom);
+
+// Heatmap: <input type="date" data-heatmap-date-input>,
+//          <button class="heatmap-day" data-date="…">,
+//          <button data-heatmap-clear>
+document.addEventListener('change', (e) => {
+  const input = e.target.closest('[data-heatmap-date-input]');
+  if (input) filterByHeatmapDate(input.value);
+});
+document.addEventListener('click', (e) => {
+  const day = e.target.closest('.heatmap-day[data-date]');
+  if (day) { filterByHeatmapDate(day.dataset.date); return; }
+  if (e.target.closest('[data-heatmap-clear]')) clearHeatmapDateFilter();
+});
 
 // Heatmap Date Filtering Helper
 function filterByHeatmapDate(dateStr) {
