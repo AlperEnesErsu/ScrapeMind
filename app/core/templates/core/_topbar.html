@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg sticky-top border-bottom" id="topbar" style="background: var(--topbar-bg);">
+<nav class="navbar navbar-expand-lg sticky-top border-bottom" id="topbar">
   <div class="container-fluid">
     {# Mobile hamburger — only visible below md. Toggles #sidebar.mobile-open via app.js. #}
     <button type="button" class="btn btn-sm btn-outline-secondary d-md-none me-2" id="sidebar-toggle"
@@ -13,13 +13,12 @@
     <div class="d-flex align-items-center gap-3 ms-auto">
       {# Global search — HTMX live #}
       <div class="position-relative d-none d-md-block">
-        <input class="form-control form-control-sm" type="search" name="q" placeholder="{{ _('Search…') }}"
+        <input class="form-control form-control-sm topbar-search" type="search" name="q" placeholder="{{ _('Search…') }}"
                hx-get="{{ url_for('search.quick_search') }}"
                hx-trigger="keyup changed delay:300ms, search"
                hx-target="#search-results"
-               hx-swap="innerHTML"
-               style="width: 240px;">
-        <div id="search-results" class="position-absolute end-0" style="z-index: 1050; top: 100%;"></div>
+               hx-swap="innerHTML">
+        <div id="search-results" class="position-absolute end-0 search-results-anchor"></div>
       </div>
 
       {# Mobile search toggle #}
@@ -46,12 +45,12 @@
           <i class="bi bi-bell" aria-hidden="true"></i>
           {% set unread_count = current_user.notifications.filter_by(is_read=False).count() if current_user.is_authenticated else 0 %}
           {% if unread_count > 0 %}
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-badge" style="font-size: var(--text-2xs); padding: 0.25em 0.4em;">
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notif-badge" id="notification-badge">
               {{ unread_count }}
             </span>
           {% endif %}
         </button>
-        <ul class="dropdown-menu dropdown-menu-end p-0 shadow" aria-labelledby="notification-bell" style="max-height: 350px; overflow-y: auto;" id="notifications-list">
+        <ul class="dropdown-menu dropdown-menu-end p-0 shadow notif-menu" aria-labelledby="notification-bell" id="notifications-list">
           <div class="text-center py-3 px-4">
             <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
           </div>
@@ -97,7 +96,7 @@
              hx-trigger="keyup changed delay:300ms, search"
              hx-target="#mobile-search-results"
              hx-swap="innerHTML">
-      <div id="mobile-search-results" class="position-absolute start-0 w-100" style="z-index: 1050; top: 100%;"></div>
+      <div id="mobile-search-results" class="position-absolute start-0 w-100 search-results-anchor"></div>
     </div>
   </div>
 </nav>

@@ -98,3 +98,46 @@ def test_no_inline_script_blocks():
         if INLINE_SCRIPT.search(text):
             offenders.append(str(path.relative_to(ROOT)))
     assert not offenders, "inline <script> blocks:\n" + "\n".join(offenders)
+
+
+# --------------------------------------------------------------------------
+# style="" attributes -- the ratchet for `style-src` (Y4 step 4)
+# --------------------------------------------------------------------------
+
+STYLE_ATTR = re.compile(r"\sstyle\s*=", re.IGNORECASE)
+
+#: Directories whose templates hold no style attributes.
+STYLE_CLEAN = [
+    "app/core/templates",
+]
+
+#: Style attributes left across the app. Lower it with each cleanup; never
+#: raise it. At zero, `style-src` can join the policy without 'unsafe-inline'.
+STYLE_CEILING = 75
+
+
+def _style_attrs_under(relative: str) -> list[str]:
+    """Email templates are exempt: a mail client is not governed by this
+    app's CSP, and most of them ignore <style> blocks, so inline is the only
+    styling that survives there."""
+    found = []
+    for path in sorted((ROOT / relative).rglob("*.html")):
+        if "email" in path.relative_to(ROOT).parts:
+            continue
+        text = JINJA_COMMENT.sub("", path.read_text(encoding="utf-8"))
+        found += [f"{path.relative_to(ROOT)}: {m.group(0)!r}" for m in STYLE_ATTR.finditer(text)]
+    return found
+
+
+def test_style_clean_directories_stay_clean():
+    offenders = [hit for directory in STYLE_CLEAN for hit in _style_attrs_under(directory)]
+    assert not offenders, (
+        "style attributes in a directory cleaned for CSP -- add a class to "
+        "theme.css instead:\n" + "\n".join(offenders)
+    )
+
+
+def test_style_attrs_do_not_grow_and_the_ceiling_is_not_stale():
+    total = len(_style_attrs_under("app"))
+    assert total <= STYLE_CEILING, f"{total} style attributes, ceiling is {STYLE_CEILING}"
+    assert total == STYLE_CEILING, f"{total} remain; lower STYLE_CEILING to {total}"

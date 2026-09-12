@@ -29,7 +29,7 @@
         <span class="fw-semibold">{{ n.title }}</span>
         <span class="small text-muted font-monospace">{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
       </div>
-      <div class="small text-muted mt-1" style="word-break: break-word;">{{ n.message }}</div>
+      <div class="small text-muted mt-1 text-break">{{ n.message }}</div>
     </div>
   </div>
   {% endfor %}
@@ -40,7 +40,7 @@
 </div>
 {% else %}
 <div class="empty-state py-5 text-center">
-  <i class="bi bi-bell-slash" style="font-size: var(--icon-xl); color: var(--bs-secondary-color);"></i>
+  <i class="bi bi-bell-slash empty-state-icon"></i>
   <div class="mt-2 fw-medium">{{ _('No notifications yet.') }}</div>
   <p class="small text-muted mt-2">{{ _('Scrape results and system messages will appear here.') }}</p>
 </div>

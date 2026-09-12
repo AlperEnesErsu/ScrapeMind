@@ -58,7 +58,7 @@
       <ul class="list-group list-group-flush small">
         {% for w in workers %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <code class="text-truncate" style="max-width: 70%;" title="{{ w }}">{{ w }}</code>
+          <code class="text-truncate maxw-70p" title="{{ w }}">{{ w }}</code>
           {% if stats.get(w) %}
             <span class="badge rounded-pill text-bg-success-subtle text-success">{{ _('online') }}</span>
           {% endif %}
