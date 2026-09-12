@@ -13,8 +13,8 @@
 | Seviye | Adet | Ne demek |
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
-| 🟠 Yüksek | 5 (**Y1, Y2, Y5 kapandı** — Y3, Y4 kaldı) | İlk hafta içinde kapanmalı |
-| 🟡 Orta | 11 (**O3, O9 kapandı**) | Planlanmalı, çıkışı engellemez |
+| 🟠 Yüksek | 5 (**Y1, Y2, Y3, Y5 kapandı** — **Y4 kaldı**) | İlk hafta içinde kapanmalı |
+| 🟡 Orta | 13 (**O3, O9 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
 Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
@@ -365,7 +365,7 @@ geri kurulunca **üç testi düşüyor** — denendi.
 Ölçüldü: eklentiyi kaldırmanın süit süresine etkisi yok (aynı altküme 42.3s'ye
 karşı 43.7s).
 
-### Y3 — HTMX + CSRF süresi dolması sessizce başarısız
+### ~~Y3 — HTMX + CSRF süresi dolması sessizce başarısız~~ ✅ KAPANDI (PR #89)
 
 `WTF_CSRF_TIME_LIMIT = 3600`. Bir sekme bir saat açık kaldıktan sonra HTMX
 formu gönderildiğinde sunucu ham bir Flask `400 Bad Request` döndürüyor;
@@ -378,10 +378,34 @@ gövde: "The CSRF token has expired.").
 Araştırmacıların sekmeyi gün boyu açık bırakması bu uygulamanın normal
 kullanımı, yani bu **kesin** yaşanacak.
 
-Seçenekler bir mimari karar:
+Seçenekler bir mimari karardı:
 - global bir `htmx:responseError` yakalayıcı + görünür uyarı, ya da
 - `hx-headers` yerine her yanıtta tazelenen token, ya da
 - CSRF süresini kaldırıp yalnızca oturum ömrüne bağlamak.
+
+**Yapılan: birinci ve üçüncü, çünkü ayrı şeyleri çözüyorlar.** Üçüncüsü sebebi
+kaldırıyor, birincisi geriye kalan sessizliği.
+
+**`WTF_CSRF_TIME_LIMIT = None`.** 3600 bu projenin verdiği bir karar değil,
+Flask-WTF'nin varsayılanıydı. `None` "koruma yok" demek değil: token hâlâ
+`SECRET_KEY` ile imzalı ve oturumun kendi CSRF değerine bağlı, yani kullanmak
+için **kurbanın oturumu** gerekiyor. Süre sınırının koruduğu şey *sızmış* bir
+token'ın sonradan tekrar oynatılması — ve bu uygulama token'ı hiçbir zaman
+URL'ye koymuyor, yalnızca form gövdesine ve `X-CSRFToken` başlığına.
+
+**Sessizlik ise daha kötü yarısıydı ve sebebi düzeltilse de kalırdı.**
+`app.js`'teki tek HTMX dinleyicisi sadece `evt.detail.successful` dalına
+bakıyordu: 400, 403, 500 ve kopmuş bağlantı, "kutu tepki vermedi"den ayırt
+edilemiyordu. Dört dal da artık görünür bir toast veriyor, mesajlar
+`<body data-msg-*>` üzerinden `_()`'den geçiyor — satır içi `<script>` değil,
+çünkü onları kaldırmak Y4'ün işi.
+
+Yolda çıkan bir kusur: `showToast` uyarı tipinde **onay işareti** gösteriyordu,
+yani "bir şeyler ters gitti" metni "başarılı" ikonuyla çıkıyordu. Tek uyarı
+toast'ı "Makale gizlendi" iken kimse fark etmemiş.
+
+Doğrulama tarayıcıda: gerçek bir başarısız HTMX isteği 400 dalını tetikledi;
+403, 500 ve ağ hatası dalları da doğru mesajı verdi.
 
 ### Y4 — CSP yok, ve satır içi script'ler onu engelliyor
 
@@ -445,6 +469,9 @@ yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
 | ~~O9~~ ✅ | ~~`arxiv` SDK'sı 2.1.3, güncel 4.0.1~~ | **PR #87 ile kapandı.** İki major atlamaya rağmen kullanılan API yüzeyi birebir aynı çıktı: `Client(page_size, delay_seconds, num_retries)`, `Search(query, id_list, max_results, sort_by, sort_order)`, `Client.results` ve `Result`'ın sekiz alanı — hiçbiri değişmemiş, adaptör tek satır değişmeden çalıştı. **Canlı arXiv sorgusuyla doğrulandı**, üç gerçek sonuç tam alanlarla döndü. Pin kalkınca `requests` 2.33.0 alındı ve son uyarı da kapandı |
 | O10 | `authlib.jose` kullanımdan kaldırıldı | API v1 JWT'leri onu kullanıyor. authlib **2.0'da kaldırılacak**, yerine `joserfc`. Şimdi çalışıyor, ama bir sonraki major yükseltmede kırılacak — planlanmalı |
 | O11 | Yerel mypy ile CI mypy aynı sonucu vermiyor | Yerelde 98, CI'da 95 çıkabiliyor (Python sürüm farkı, bkz. O7). Geliştirici yerel ratchet'e **güvenemiyor**; bu, kırmızı bir PR'ın merge edilmesine yol açtı |
+
+| O12 | `g` testler arasında sızıyor | `tests/conftest.py`'deki `app` fixture'ı `scope="session"` ve **tek bir app context'i** bütün koşu boyunca açık tutuyor, yani `g` 1312 testin ortak malı. Kanıtlandı: bir testte `g`'ye yazıp diğerinde okunabiliyor. Y3'ün testleri buna çarptı (`generate_csrf` token'ı `g`'de önbelleğe alıyor). **Belirgin çözüm ucuz değil:** test başına iç içe app context açmak, Flask-SQLAlchemy oturumu app context'e bağladığı için testlere fixture'larından farklı bir DB oturumu verir |
+| O13 | Paylaşımlı geliştirme veritabanı dalları birbirine kilitliyor | Bir dalın migration'ı `menu_items`'a satır eklerse (patent işi ekledi), o modülü içermeyen **her dal** kimlik doğrulamalı her sayfada 500 veriyor: `url_for` bilinmeyen endpoint'te `BuildError` atıyor. Dosya çakışması değil **veri** çakışması; `git` görmüyor. Geçici çözüm: dala özel geçici veritabanı (`DATABASE_URL=... flask db upgrade`). Kalıcı çözüm tartışılmalı — sidebar bilinmeyen endpoint'i atlayabilir |
 
 Ayrıca duran teknik borç: `mypy-baseline.txt` 95'te, en yoğun yer
 `app/modules/scrape`.
