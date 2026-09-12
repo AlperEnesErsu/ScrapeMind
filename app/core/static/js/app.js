@@ -36,18 +36,30 @@ function getCsrfToken() {
   return meta ? meta.getAttribute('content') : '';
 }
 
-// Generic copy-to-clipboard for [data-copy-target] buttons. Delegated on
-// document so it also works on HTMX-swapped content (e.g. the 2FA recovery
-// codes partial, which is loaded into the profile tab after page load).
+// Generic copy-to-clipboard. Delegated on document so it also works on
+// HTMX-swapped content (e.g. the 2FA recovery codes partial, which is loaded
+// into the profile tab after page load).
+//
+//   data-copy-target="#el"   copies that element's text
+//   data-copy-text="…"       copies the literal value
+//
+// `data-copy-text` replaced the collection page's "Copy Link" button, which
+// wrote the share URL into a JS string literal in an `onclick` and then
+// announced success with a blocking `alert()`. The button's own "Copied" state
+// says the same thing without stopping the page.
 document.addEventListener('click', async (e) => {
-  const btn = e.target.closest('[data-copy-target]');
+  const btn = e.target.closest('[data-copy-target], [data-copy-text]');
   if (!btn) return;
-  const target = document.querySelector(btn.dataset.copyTarget);
-  if (!target) return;
+  let text = btn.dataset.copyText;
+  if (text === undefined) {
+    const target = document.querySelector(btn.dataset.copyTarget);
+    if (!target) return;
+    text = target.textContent.trim();
+  }
   const original = btn.innerHTML;
   const copiedLabel = btn.dataset.copiedLabel || 'Copied';
   try {
-    await navigator.clipboard.writeText(target.textContent.trim());
+    await navigator.clipboard.writeText(text);
     btn.innerHTML = '<i class="bi bi-check2 me-1"></i>' + copiedLabel;
     btn.classList.add('btn-success');
     btn.classList.remove('btn-outline-secondary');
@@ -254,6 +266,39 @@ document.addEventListener('click', (e) => {
   const trigger = e.target.closest('[data-remove-on-click]');
   if (!trigger) return;
   document.querySelector(trigger.dataset.removeOnClick)?.remove();
+});
+
+// <select data-autosubmit>   <input type="checkbox" data-autosubmit>
+//
+// Submits the control's form when its value changes. Replaces a mix of
+// `onchange="this.form.submit()"` and `onchange="this.form.requestSubmit()"`,
+// which are not the same thing: `submit()` skips the submit event, so it skips
+// HTMX, validation, and `data-confirm` alike. The four settings lists that are
+// HTMX forms were right to use `requestSubmit()`; the two plain forms that used
+// `submit()` behave identically under it (neither has a required field), so
+// one hook covers all of them without anyone having to pick correctly.
+document.addEventListener('change', (e) => {
+  const control = e.target.closest('[data-autosubmit]');
+  control?.form?.requestSubmit();
+});
+
+// <textarea data-submit-on-enter>     Enter sends, Shift+Enter is a newline
+// <textarea data-submit-on-mod-enter> Ctrl/Cmd+Enter sends
+//
+// `isComposing` is checked because Enter also confirms an IME composition, and
+// sending half-composed text is not what anyone pressing Enter meant. The
+// inline handlers these replace tested `keyCode == 13` and did not check it.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.isComposing) return;
+  const field = e.target;
+  if (!(field instanceof HTMLElement) || !field.form) return;
+
+  const plainEnter = field.hasAttribute('data-submit-on-enter') && !e.shiftKey;
+  const modEnter = field.hasAttribute('data-submit-on-mod-enter') && (e.ctrlKey || e.metaKey);
+  if (plainEnter || modEnter) {
+    e.preventDefault();
+    field.form.requestSubmit();
+  }
 });
 
 // Wire up HTMX response triggers for toast notifications

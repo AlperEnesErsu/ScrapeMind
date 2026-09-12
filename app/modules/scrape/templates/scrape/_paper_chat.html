@@ -62,7 +62,7 @@
             hx-on::after-request="this.reset(); scrollChatToBottom();">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <textarea name="message" placeholder="{{ _('Ask a question...') }}" required autofocus
-                  onkeydown="if(event.keyCode == 13 && !event.shiftKey) { event.preventDefault(); this.form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true})); }"></textarea>
+                  data-submit-on-enter></textarea>
         <button type="submit" class="btn btn-primary btn-sm px-3">
           <i class="bi bi-send-fill"></i>
         </button>

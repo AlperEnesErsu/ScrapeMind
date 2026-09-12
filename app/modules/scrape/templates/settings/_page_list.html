@@ -42,7 +42,7 @@
               hx-target="#page-list" hx-swap="outerHTML" class="form-check form-switch mb-0">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input class="form-check-input" type="checkbox" role="switch"
-                 onchange="this.form.requestSubmit()" {% if p.active %}checked{% endif %}>
+                 data-autosubmit {% if p.active %}checked{% endif %}>
         </form>
         <form hx-post="{{ url_for('scrape.submit_page_remove', page_pk=p.id) }}"
               hx-target="#page-list" hx-swap="outerHTML"
