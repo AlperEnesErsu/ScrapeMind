@@ -36,7 +36,7 @@
   <form class="note-add"
         hx-post="{{ url_for('scrape.add_note_route', user_paper_id=r.id) }}"
         hx-target="#notes-panel" hx-swap="outerHTML"
-        hx-on::after-request="if(event.detail.successful) this.reset()">
+        data-reset-on-success>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <textarea name="body" class="form-control form-control-sm note-add__body"
               rows="3" placeholder="{{ _('New note — Cmd+Enter to save') }}"

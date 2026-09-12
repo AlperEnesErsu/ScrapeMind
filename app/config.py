@@ -56,6 +56,11 @@ class BaseConfig:
     # cost of the safe default.
     PROXY_FIX_HOPS = int(os.getenv("PROXY_FIX_HOPS", "0"))
 
+    # `script-src` ships report-only first (PRELAUNCH Y4 step 3): violations are
+    # logged by /csp-report while nothing is blocked. Flip this once a release
+    # has run clean, and the same directive moves into the enforced header.
+    CSP_ENFORCE_SCRIPT_SRC = os.getenv("CSP_ENFORCE_SCRIPT_SRC", "false").lower() == "true"
+
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     # Named, not Flask's default "session". Cookies are scoped by host, NOT by

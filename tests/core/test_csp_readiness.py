@@ -22,9 +22,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+#: `hx-on` counts too: htmx runs it through `new Function`, which `script-src`
+#: blocks without 'unsafe-eval' -- and base.html turns htmx's eval off.
 HANDLER = re.compile(
     r"\son(?:click|dblclick|change|input|submit|reset|keydown|keyup|keypress|"
-    r"load|error|focus|blur|mouseover|mouseout|mouseenter|mouseleave)\s*=",
+    r"load|error|focus|blur|mouseover|mouseout|mouseenter|mouseleave)\s*=|\shx-on[:-]",
     re.IGNORECASE,
 )
 

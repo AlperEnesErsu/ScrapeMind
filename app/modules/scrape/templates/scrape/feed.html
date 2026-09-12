@@ -44,7 +44,7 @@
           hx-indicator="#add-link-spinner"
           hx-target-400="#add-link-feedback"
           hx-target-500="#add-link-feedback"
-          hx-on::after-request="if(event.detail.successful) { this.reset(); document.getElementById('add-link-feedback').innerHTML = ''; }"
+          data-reset-on-success data-clear-on-success="#add-link-feedback"
           class="row g-2 align-items-center">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="col">
