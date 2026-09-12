@@ -452,3 +452,34 @@ function clearHeatmapDateFilter() {
   document.querySelectorAll('.heatmap-day').forEach(el => el.style.outline = '');
   document.querySelectorAll('.paper-card, .timeline-event, .note-card').forEach(item => item.style.display = '');
 }
+
+// Login splash (core/_splash.html): remove the overlay node once it has played.
+// Cosmetic cleanup only -- the CSS has already faded it out and made it
+// non-interactive by then, so nothing depends on this running.
+(function () {
+  const el = document.querySelector('.splash');
+  if (!el) return;
+  const drop = () => el.remove();
+  el.addEventListener('animationend', (e) => { if (e.target === el) drop(); });
+  setTimeout(drop, 4000);
+})();
+
+// Profile tabs: htmx swaps the tab content but does not manage the sidebar's
+// active state, so mark the clicked tab here.
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('#profile-tabs a');
+  if (!link) return;
+  document.querySelectorAll('#profile-tabs a').forEach((a) => a.classList.remove('active'));
+  link.classList.add('active');
+});
+
+// Bootstrap tooltips for any [data-bs-toggle="tooltip"], on first render and in
+// swapped-in content. getOrCreateInstance keeps a second pass from stacking.
+function initTooltips(root) {
+  if (!window.bootstrap || !bootstrap.Tooltip) return;
+  (root || document).querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+    bootstrap.Tooltip.getOrCreateInstance(el);
+  });
+}
+document.addEventListener('DOMContentLoaded', () => initTooltips(document));
+document.body.addEventListener('htmx:afterSwap', (e) => initTooltips(e.target));

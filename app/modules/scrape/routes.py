@@ -51,7 +51,7 @@ from app.modules.scrape.service import (
 
 logger = structlog.get_logger()
 
-scrape_bp = Blueprint("scrape", __name__, template_folder="templates")
+scrape_bp = Blueprint("scrape", __name__, template_folder="templates", static_folder="static")
 
 
 @scrape_bp.app_context_processor

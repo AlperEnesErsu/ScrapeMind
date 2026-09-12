@@ -75,3 +75,24 @@ def test_the_ceiling_is_not_stale():
     """
     total = len(_handlers_under("app"))
     assert total == CEILING, f"{total} handlers remain; lower CEILING to {total}"
+
+
+#: An opening <script> tag without `src=` -- a block of inline code.
+INLINE_SCRIPT = re.compile(r"<script\b(?![^>]*\bsrc\s*=)[^>]*>", re.IGNORECASE)
+JINJA_COMMENT = re.compile(r"\{#.*?#\}", re.DOTALL)
+
+
+def test_no_inline_script_blocks():
+    """Inline <script> is blocked by `script-src` just like an `onclick=`.
+
+    Page code lives in app/core/static/js/app.js or a module's own static/js/
+    file, reading anything the template knows -- URLs, translated strings --
+    from data-* attributes. Jinja comments are skipped: base.html explains this
+    rule in one.
+    """
+    offenders = []
+    for path in sorted((ROOT / "app").rglob("*.html")):
+        text = JINJA_COMMENT.sub("", path.read_text(encoding="utf-8"))
+        if INLINE_SCRIPT.search(text):
+            offenders.append(str(path.relative_to(ROOT)))
+    assert not offenders, "inline <script> blocks:\n" + "\n".join(offenders)

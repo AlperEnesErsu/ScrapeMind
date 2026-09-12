@@ -6,8 +6,8 @@
    Pure CSS, and that is the important part: the overlay ends at
    `opacity: 0; visibility: hidden` through `animation-fill-mode: forwards`,
    so it clears itself even if no JavaScript ever runs. A welcome screen that
-   can wedge shut over the app is worse than no welcome screen. The script at
-   the bottom only removes the dead node afterwards.
+   can wedge shut over the app is worse than no welcome screen. app.js only
+   removes the dead node afterwards.
 
    The twelve scatter vectors are written out rather than generated. Two
    reasons. A `random()` occasionally throws every aril the same way and the
@@ -48,16 +48,3 @@
     <div class="splash__line"></div>
   </div>
 </div>
-<script>
-  // Cosmetic cleanup only -- the CSS above has already taken the overlay out
-  // of the way by the time this fires. Nothing here is load-bearing.
-  (function () {
-    var el = document.querySelector('.splash');
-    if (!el) return;
-    var drop = function () { el.remove(); };
-    el.addEventListener('animationend', function (e) {
-      if (e.target === el) drop();
-    });
-    setTimeout(drop, 4000);
-  })();
-</script>

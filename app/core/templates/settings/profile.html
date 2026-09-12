@@ -31,13 +31,4 @@
   </div>
 </div>
 
-<script>
-  // Highlight clicked tab; htmx swaps content but doesn't manage sidebar state.
-  document.querySelectorAll('#profile-tabs a').forEach(a => {
-    a.addEventListener('click', e => {
-      document.querySelectorAll('#profile-tabs a').forEach(x => x.classList.remove('active'));
-      a.classList.add('active');
-    });
-  });
-</script>
 {% endblock %}
