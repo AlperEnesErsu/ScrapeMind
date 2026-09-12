@@ -360,6 +360,7 @@ def _register_blueprints(app: Flask) -> None:
     from app.core.users.routes import users_bp
     from app.modules.academic import academic_bp
     from app.modules.dashboard import dashboard_bp
+    from app.modules.patent.routes import patent_bp
     from app.modules.scrape.alert_routes import alerts_bp
     from app.modules.scrape.library_routes import library_bp
     from app.modules.scrape.routes import scrape_bp
@@ -375,6 +376,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(library_bp, url_prefix="/library")
     app.register_blueprint(alerts_bp, url_prefix="/library")
     app.register_blueprint(academic_bp, url_prefix="/academic")
+    app.register_blueprint(patent_bp, url_prefix="/patents")
     app.register_blueprint(search_bp, url_prefix="/")
     app.register_blueprint(dashboard_bp, url_prefix="/")
 
