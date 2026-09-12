@@ -175,14 +175,33 @@ def _register_security_headers(app: Flask) -> None:
     is a host shared with every other project on the machine -- the kind of
     breakage that outlives the session that caused it.
 
-    **No `Content-Security-Policy` here.** Eight templates still carry inline
-    `<script>`, so the only CSP that would not break the app today is one with
-    `'unsafe-inline'`, which is not a policy. That work is tracked separately
-    (PRELAUNCH Y4) and starts with moving those scripts out, not with a header.
+    **The CSP here is deliberately partial**, and the missing half is named
+    rather than implied. `script-src` and `style-src` are absent because this
+    app cannot honour them yet: eight templates carry inline `<script>`,
+    thirty-six inline event handlers (`onclick=` and friends, which CSP blocks
+    exactly as it blocks script blocks) sit across eighteen more, and 127
+    inline `style=` attributes across thirty-nine. A CSP carrying
+    `'unsafe-inline'` for those would be a policy in name only.
+
+    What is here costs nothing and closes real holes, so it ships now rather
+    than waiting for that cleanup (PRELAUNCH Y4):
+
+    * `base-uri 'self'` — an injected `<base>` cannot re-point every relative
+      URL on the page.
+    * `object-src 'none'` — there are no `<object>`/`<embed>` elements, so
+      this is free.
+    * `frame-ancestors 'none'` — the modern X-Frame-Options, and the one
+      browsers still act on. Both are sent; they agree.
+    * `form-action 'self'` — every form in this app posts to its own origin,
+      so an injected form cannot exfiltrate a submission.
     """
 
     @app.after_request
     def _security_headers(response):
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
+        )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         # DENY rather than SAMEORIGIN: nothing in this app frames itself.
         response.headers.setdefault("X-Frame-Options", "DENY")

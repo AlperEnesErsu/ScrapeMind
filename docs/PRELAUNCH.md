@@ -407,7 +407,7 @@ toast'ı "Makale gizlendi" iken kimse fark etmemiş.
 Doğrulama tarayıcıda: gerçek bir başarısız HTMX isteği 400 dalını tetikledi;
 403, 500 ve ağ hatası dalları da doğru mesajı verdi.
 
-### Y4 — CSP yok, ve satır içi script'ler onu engelliyor
+### Y4 — CSP yok, ve satır içi script'ler onu engelliyor  ◐ **kısmen yapıldı (PR #91)**
 
 E2'nin ayrılan parçası, ve asıl iş burada: **sekiz şablonda** satır içi
 `<script>` var (`base.html`, `core/_password_rules.html`, `core/_splash.html`,
@@ -419,6 +419,54 @@ yazmamakla aynı kapıya çıkar.
 Sıra: satır içi script'leri `static/js/`'e taşı → nonce ya da hash'li CSP →
 `report-only` ile bir hafta izle → zorunlu kıl. İlk adım tek başına birkaç
 günlük iş; CSP'yi ondan önce planlamak yanlış sırayla ilerlemek olur.
+
+---
+
+#### ⚠️ Kapsam düzeltmesi — bu madde eksik sayılmıştı
+
+İşe başlayınca ölçüldü: sorun sekiz `<script>` bloğundan ibaret değil.
+
+| ne | adet | nerede |
+|---|---|---|
+| satır içi `<script>` bloğu | 8 | 8 şablon (~459 satır, 323'ü tek dosyada) |
+| satır içi olay işleyicisi (`onclick=`, `onsubmit=`, `onchange=`, `onkeydown=`) | **36** | **18 şablon** |
+| satır içi `style=` özniteliği | **127** | **39 şablon** |
+
+**CSP satır içi olay işleyicilerini script blokları kadar engeller.** İlk
+tahmin onları saymamıştı; gerçek iş iki üç katı.
+
+#### Bu yüzden sıra değişti: bedelsiz olan kısım önce gitti (PR #91)
+
+`script-src` ve `style-src` beklemek zorunda. Ama CSP'nin geri kalanı bu
+temizliğe hiç bağlı değil ve gerçek delikler kapatıyor:
+
+```
+base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'
+```
+
+- `base-uri` — enjekte edilmiş bir `<base>` sayfadaki bütün göreli URL'leri
+  yeniden yönlendiremez.
+- `object-src 'none'` — uygulamada hiç `<object>`/`<embed>` yok, bedava.
+- `frame-ancestors 'none'` — X-Frame-Options'ın modern hâli; ikisi de
+  gönderiliyor ve aynı şeyi söylüyorlar.
+- `form-action 'self'` — her form kendi origin'ine post ediyor (doğrulandı),
+  yani enjekte edilmiş bir form gönderimi dışarı sızdıramaz.
+
+`script-src` **bilerek yok**. ``'unsafe-inline'`` taşıyan bir direktif, adı olan
+ama işlevi olmayan bir politikadır; başlığı okuyan biri script'lerin
+kısıtlandığını sanmasın. Bir test bunu sabitliyor: politikada `script-src` de
+`unsafe-inline` de geçmemeli.
+
+Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
+çalışıyor.
+
+#### Kalan iş (sırayla)
+1. 36 satır içi olay işleyicisini delegasyona çevir (18 şablon)
+2. 8 satır içi `<script>`'i `static/js/`'e taşı — dördü HTMX parçası olduğu
+   için doğrudan bağlama değil delegasyon gerekiyor; `_password_rules`
+   `document.currentScript` kullanıyor, yani yeniden yazılmalı
+3. `script-src 'self' https://cdn.jsdelivr.net` ekle, `report-only` ile izle
+4. 127 satır içi `style=` → `style-src`
 
 ### ~~Y5 — Konteyner root olarak koşuyor~~ ✅ KAPANDI (PR #86)
 
