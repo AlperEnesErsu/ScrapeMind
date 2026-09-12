@@ -14,7 +14,7 @@
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
 | 🟠 Yüksek | 5 (**Y1, Y2, Y3, Y5 kapandı** — **Y4 kaldı**) | İlk hafta içinde kapanmalı |
-| 🟡 Orta | 13 (**O3, O9 kapandı**) | Planlanmalı, çıkışı engellemez |
+| 🟡 Orta | 13 (**O3, O9, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
 Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
@@ -471,7 +471,7 @@ yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
 | O11 | Yerel mypy ile CI mypy aynı sonucu vermiyor | Yerelde 98, CI'da 95 çıkabiliyor (Python sürüm farkı, bkz. O7). Geliştirici yerel ratchet'e **güvenemiyor**; bu, kırmızı bir PR'ın merge edilmesine yol açtı |
 
 | O12 | `g` testler arasında sızıyor | `tests/conftest.py`'deki `app` fixture'ı `scope="session"` ve **tek bir app context'i** bütün koşu boyunca açık tutuyor, yani `g` 1312 testin ortak malı. Kanıtlandı: bir testte `g`'ye yazıp diğerinde okunabiliyor. Y3'ün testleri buna çarptı (`generate_csrf` token'ı `g`'de önbelleğe alıyor). **Belirgin çözüm ucuz değil:** test başına iç içe app context açmak, Flask-SQLAlchemy oturumu app context'e bağladığı için testlere fixture'larından farklı bir DB oturumu verir |
-| O13 | Paylaşımlı geliştirme veritabanı dalları birbirine kilitliyor | Bir dalın migration'ı `menu_items`'a satır eklerse (patent işi ekledi), o modülü içermeyen **her dal** kimlik doğrulamalı her sayfada 500 veriyor: `url_for` bilinmeyen endpoint'te `BuildError` atıyor. Dosya çakışması değil **veri** çakışması; `git` görmüyor. Geçici çözüm: dala özel geçici veritabanı (`DATABASE_URL=... flask db upgrade`). Kalıcı çözüm tartışılmalı — sidebar bilinmeyen endpoint'i atlayabilir |
+| ~~O13~~ ✅ | ~~Paylaşımlı geliştirme veritabanı dalları birbirine kilitliyor~~ | **PR #90 ile kapandı.** Menü satırları **veri**, ve veri ona anlam veren koddan uzun yaşıyor: modül kaldırılır, kapatılır ya da o dalda hiç yoktur. `build_menu_for_user` artık uygulamanın sahip olmadığı endpoint'leri eliyor — `_prune_empty_groups`'un tıklanamayan öğeler için zaten verdiği kararın aynısı. Admin menü sayfası satırı DB'den okuyup çözmeden bastığı için elenen satır orada **hâlâ görünür ve düzeltilebilir** |
 
 Ayrıca duran teknik borç: `mypy-baseline.txt` 95'te, en yoğun yer
 `app/modules/scrape`.
