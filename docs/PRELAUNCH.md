@@ -13,7 +13,7 @@
 | Seviye | Adet | Ne demek |
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
-| 🟠 Yüksek | 5 (**Y1 kapandı**) | İlk hafta içinde kapanmalı |
+| 🟠 Yüksek | 5 (**Y1, Y5 kapandı**) | İlk hafta içinde kapanmalı |
 | 🟡 Orta | 11 | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
@@ -364,7 +364,7 @@ Sıra: satır içi script'leri `static/js/`'e taşı → nonce ya da hash'li CSP
 `report-only` ile bir hafta izle → zorunlu kıl. İlk adım tek başına birkaç
 günlük iş; CSP'yi ondan önce planlamak yanlış sırayla ilerlemek olur.
 
-### Y5 — Konteyner root olarak koşuyor
+### ~~Y5 — Konteyner root olarak koşuyor~~ ✅ KAPANDI (PR #86)
 
 `docker/Dockerfile`'da `USER` yönergesi yok. Uygulama, worker ve beat
 konteynerlerinin üçü de root.
@@ -377,6 +377,24 @@ USER app
 `uploads` volume'ünün sahipliği de buna göre ayarlanmalı, yoksa avatar
 yükleme bozulur.
 
+**Yapıldı**, ve uid **sabit** (10001) seçildi: Docker yeni bir adlandırılmış
+volume'ü imajdaki dizinden *ve onun sahipliğinden* tohumluyor. Build'den
+build'e değişen bir uid, mevcut bir volume'ü artık var olmayan bir kullanıcıya
+ait bırakırdı.
+
+Yanında iki şey daha çıktı ve aynı PR'a girdi:
+
+- **`gcc` ve `libpq-dev` gereksizmiş.** Onları oraya koyduran `psycopg2` idi;
+  proje `psycopg2-binary` kullanıyor ve kalan her bağımlılık manylinux wheel'i
+  ile geliyor. İmaj **derleyicisiz build edildi** — doğrulandı, tahmin
+  edilmedi. Çalışma imajında derleyici bırakmak boyut değil **erişim** sorunu:
+  konteynerde kod çalıştırabilen her şey yanında bir araç zinciri buluyor.
+- **O3 (aşağıda) aynı dosyada olduğu için birlikte kapatıldı.**
+
+Doğrulama (build + çalıştırma): `id` → `uid=10001(app)`, uploads dizini
+yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
+**44 tabloyu migrate edip** gunicorn'u açtı ve `/api/v1/health` **200** döndü.
+
 ---
 
 ## 🟡 Orta
@@ -385,11 +403,11 @@ yükleme bozulur.
 |---|---|---|
 | O1 | `MAX_CONTENT_LENGTH` tanımsız | nginx `client_max_body_size 3m` ile koruyor; uygulama seviyesinde derinlemesine savunma yok |
 | O2 | `audit_logs.user_id` indekssiz | Admin denetim sayfası kullanıcıya göre filtreliyor; tablo büyüdükçe yavaşlar |
-| O3 | `entrypoint.sh` `"$@"`'ı yok sayıyor | Yeni bir servis `command:` verip `entrypoint: []` yazmayı unutursa **sessizce gunicorn** koşar. Mevcut worker/beat doğru kurulmuş, ama tuzak duruyor |
+| ~~O3~~ ✅ | ~~`entrypoint.sh` `"$@"`'ı yok sayıyor~~ | **PR #86 ile kapandı.** Geçirilen komut artık kazanıyor ve migration koşmuyor (migration'lar web servisine ait). Geçici çözüm çağıranın tarafındaydı — `entrypoint: []` — yani tuzak bir sonraki servisi bekliyordu |
 | O4 | 6 env değişkeni `.env.example`'da yok | `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `OPENROUTER_BASE_URL`, `SCRAPE_RATE_{EPO_OPS,PATENTSVIEW}_PER_MIN`, `SCRAPE_RATE_SCOPUS_PER_SEC` — hepsinin varsayılanı var |
 | O5 | 1/37 migration geri alınamıyor | `c4e91b0a77d2` (çift `scrape.feed` menü kaydını gizleyen veri migration'ı). Boş `downgrade()` burada muhtemelen **doğru** — geri almak bilerek düzeltilmiş bir hatayı geri getirir. Yapılacak iş, bunu `downgrade()` içine bir satır yorum olarak yazmak; sessiz boşluk ile bilinçli karar aynı görünmemeli |
 | O6 | `journals` tablosu elle seed gerektiriyor | Scimago CSV yüklenmezse **hiçbir kartta quartile rozeti çıkmaz**. Bozukluk değil (`CLAUDE.md`), ama lansmanda "özellik eksik" gibi görünür — çıkış öncesi yüklenmeli |
-| O7 | Python sürüm farkı | Prod imajı `python:3.11-slim`, yerel geliştirme 3.14. CI hangisinde koşuyorsa prod onunla eşleşmeli |
+| O7 | Python sürüm farkı — **tarama bunu yanlış yazmış** | Prod imajı `python:3.11-slim` ve **CI de 3.11** (`ci.yml`); yani prod ile CI zaten eşleşiyor. Sapma **geliştiricinin venv'inde**: 3.14. Sonucu kozmetik değil — yerel mypy ile CI'ınkinin ayrışmasının sebebi bu (O11), ve o ayrışma bir kırmızı PR'ın merge edilmesine yol açtı. Yapılacak iş venv'i 3.11'e çekmek, Dockerfile'a dokunmak değil |
 | O8 | Zotero hiç gerçek hesaba karşı koşulmadı | Faz 7.2 yalnızca `requests` sınırında taklit edilerek doğrulandı. Çıkıştan önce bir gerçek anahtarla bir kez denenmeli |
 
 | O9 | `arxiv` SDK'sı 2.1.3, güncel 4.0.1 | `requests~=2.32.0` pinliyor ve bu, `requests` 2.33.0'ı engelliyor (bkz. E4). İki major atlama; canlı arXiv doğrulaması gerektirir |
