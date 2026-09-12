@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ScrapeMind{% endblock %}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  {# htmx evaluates `hx-on`, `js:` values and trigger filters with `new Function`,
+     which a `script-src` without 'unsafe-eval' blocks. None are used; turning
+     eval off makes a new one fail in development instead of under the policy. #}
+  <meta name="htmx-config" content='{"allowEval": false}'>
   <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
   <link rel="icon" href="{{ url_for('static', filename='img/favicon-32.png') }}" sizes="32x32">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon-180.png') }}">

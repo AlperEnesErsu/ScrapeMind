@@ -59,7 +59,7 @@
             hx-target="#chat-messages-box"
             hx-swap="beforeend"
             hx-indicator="#chat-loading"
-            hx-on::after-request="this.reset(); scrollChatToBottom();">
+            data-reset-on-success>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <textarea name="message" placeholder="{{ _('Ask a question...') }}" required autofocus
                   data-submit-on-enter></textarea>

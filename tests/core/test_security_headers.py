@@ -81,7 +81,7 @@ def test_an_existing_header_is_not_overwritten():
 
 
 # --------------------------------------------------------------------------
-# Content-Security-Policy — the half that can ship today
+# Content-Security-Policy
 # --------------------------------------------------------------------------
 
 
@@ -94,18 +94,149 @@ def test_the_policy_carries_the_directives_that_cost_nothing(headers):
     assert "form-action 'self'" in policy
 
 
-def test_the_policy_does_not_pretend_to_cover_scripts(headers):
-    """A `script-src` with `'unsafe-inline'` is a policy in name only.
+def test_script_src_is_report_only_by_default(headers):
+    """Nothing is blocked yet; browsers report what would have been."""
+    enforced = headers["Content-Security-Policy"]
+    trial = headers["Content-Security-Policy-Report-Only"]
 
-    Eight templates carry inline `<script>` and thirty-six inline event
-    handlers sit across eighteen more — CSP blocks both alike. Until those are
-    gone the honest thing is to omit the directive rather than neuter it, so
-    nobody reads the header and believes scripts are constrained.
-    """
-    policy = headers["Content-Security-Policy"]
+    assert "script-src" not in enforced
+    assert trial.startswith("script-src 'self' ")
+    assert "report-uri /csp-report" in trial
 
-    assert "script-src" not in policy
-    assert "unsafe-inline" not in policy, "an unsafe-inline allowance must not creep in"
+
+def test_enforcing_moves_script_src_into_the_real_header(app, client, monkeypatch):
+    monkeypatch.setitem(app.config, "CSP_ENFORCE_SCRIPT_SRC", True)
+
+    headers = client.get("/auth/login").headers
+
+    assert "script-src 'self' " in headers["Content-Security-Policy"]
+    assert "base-uri 'self'" in headers["Content-Security-Policy"], "baseline kept"
+    assert "Content-Security-Policy-Report-Only" not in headers
+
+
+def test_script_src_needs_no_unsafe_allowance(headers):
+    """The templates carry no inline script, handlers or `hx-on` any more
+    (test_csp_readiness.py), so neither escape hatch is needed."""
+    for name in ("Content-Security-Policy", "Content-Security-Policy-Report-Only"):
+        assert "unsafe-inline" not in headers[name]
+        assert "unsafe-eval" not in headers[name]
+
+
+def test_cdn_sources_are_pinned_to_a_package():
+    """A bare jsDelivr host would allow every package on npm."""
+    from app import SCRIPT_SRC
+
+    sources = SCRIPT_SRC.split()[1:]
+    cdn = [src for src in sources if "jsdelivr" in src]
+
+    assert cdn, "base.html loads Bootstrap from jsDelivr"
+    assert all(src.startswith("https://cdn.jsdelivr.net/npm/") and "@" in src for src in cdn)
+    assert all(src.endswith("/") for src in cdn), "a path without / matches one file only"
+
+
+def test_every_cdn_script_in_the_code_is_allowed():
+    """A new CDN <script> that the policy does not list would break once enforced."""
+    import re
+    from pathlib import Path
+
+    from app import SCRIPT_SRC
+
+    root = Path(__file__).resolve().parents[2] / "app"
+    allowed = [src for src in SCRIPT_SRC.split()[1:] if src.startswith("https://")]
+    urls = set()
+    for path in [*root.rglob("*.html"), *root.rglob("*.js")]:
+        if path.name.endswith(".min.js"):
+            continue
+        text = path.read_text(encoding="utf-8")
+        urls.update(re.findall(r"<script[^>]*src=\"(https://[^\"]+)\"", text))
+        urls.update(re.findall(r"['\"](https://[^'\"]+\.js)['\"]", text))
+
+    assert urls, "the scan found nothing -- the patterns no longer match the code"
+    missing = [u for u in sorted(urls) if not any(u.startswith(a) for a in allowed)]
+    assert not missing, f"scripts loaded but not in SCRIPT_SRC: {missing}"
+
+
+# --------------------------------------------------------------------------
+# /csp-report
+# --------------------------------------------------------------------------
+
+
+def test_a_legacy_report_is_logged_without_the_query_string(client):
+    from structlog.testing import capture_logs
+
+    body = {
+        "csp-report": {
+            "document-uri": "https://example.test/library/search?q=private+topic",
+            "blocked-uri": "https://evil.example.test/x.js?token=abc",
+            "violated-directive": "script-src",
+            "line-number": 12,
+            "original-policy": "script-src 'self'",
+        }
+    }
+    with capture_logs() as logs:
+        response = client.post(
+            "/csp-report", json=body, headers={"Content-Type": "application/csp-report"}
+        )
+
+    assert response.status_code == 204
+    [entry] = [e for e in logs if e["event"] == "csp_violation"]
+    assert entry["document"] == "https://example.test/library/search"
+    assert entry["blocked"] == "https://evil.example.test/x.js"
+    assert entry["directive"] == "script-src"
+    assert entry["line"] == 12
+    assert "private" not in str(entry), "search terms must not reach the log"
+    assert "original-policy" not in str(entry), "only known fields are kept"
+
+
+def test_a_reporting_api_batch_is_logged(client):
+    from structlog.testing import capture_logs
+
+    body = [
+        {
+            "type": "csp-violation",
+            "body": {"blockedURL": "inline", "effectiveDirective": "script-src-elem"},
+        },
+        {
+            "type": "csp-violation",
+            "body": {"blockedURL": "eval", "effectiveDirective": "script-src"},
+        },
+    ]
+    with capture_logs() as logs:
+        response = client.post("/csp-report", json=body)
+
+    assert response.status_code == 204
+    assert [e["blocked"] for e in logs if e["event"] == "csp_violation"] == ["inline", "eval"]
+
+
+@pytest.mark.parametrize("raw", [b"not json", b"{}", b"[1, 2]", b'{"csp-report": "x"}'])
+def test_junk_is_accepted_silently(client, raw):
+    from structlog.testing import capture_logs
+
+    with capture_logs() as logs:
+        response = client.post("/csp-report", data=raw, content_type="application/json")
+
+    assert response.status_code == 204
+    assert not [e for e in logs if e["event"] == "csp_violation"]
+
+
+def test_an_oversized_body_is_not_parsed(client):
+    from structlog.testing import capture_logs
+
+    padding = "a" * 20_000
+    with capture_logs() as logs:
+        response = client.post("/csp-report", json={"csp-report": {"blocked-uri": padding}})
+
+    assert response.status_code == 204
+    assert not [e for e in logs if e["event"] == "csp_violation"]
+
+
+def test_the_report_endpoint_needs_no_csrf_token(app, client, monkeypatch):
+    """Browsers send reports without one; with CSRF on this must still land."""
+    monkeypatch.setitem(app.config, "WTF_CSRF_ENABLED", True)
+
+    response = client.post("/csp-report", json={"csp-report": {"blocked-uri": "inline"}})
+
+    assert response.status_code == 204
 
 
 def test_frame_ancestors_and_x_frame_options_agree(headers):

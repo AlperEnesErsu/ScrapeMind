@@ -504,7 +504,29 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
    > `vis-network` hâlâ jsDelivr'den **dinamik** yükleniyor ve standalone
    > paketi kendi `<style>`'ını enjekte ediyor — adım 3'te `script-src`
    > jsDelivr'i kapsamalı, adım 4'te bu stil hesaba katılmalı.
-3. `script-src 'self' https://cdn.jsdelivr.net` ekle, `report-only` ile izle
+3. ✅ **`script-src` report-only olarak yayında.**
+   `Content-Security-Policy-Report-Only: script-src 'self'
+   https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/
+   https://cdn.jsdelivr.net/npm/vis-network@9.1.9/; report-uri /csp-report`.
+   - jsDelivr **paket@sürüm yoluna** sabitlendi — çıplak `cdn.jsdelivr.net`
+     npm'deki her paketi izinli yapardı, bu bir baypas olurdu. Bir test
+     koddaki her CDN script'inin listede olduğunu tarıyor.
+   - **Yolda bulunan engel:** üç formda `hx-on::after-request` vardı; htmx
+     bunları `new Function` ile çalıştırıyor, yani `'unsafe-eval'` olmadan
+     kırılacaklardı ve işleyici mandalı `hx-on`'u saymıyordu. `data-reset-on-success`
+     / `data-clear-on-success` kancasına çevrildi, mandal artık `hx-on`'u da
+     sayıyor, `base.html` htmx'in `allowEval`'ini kapattı. Sohbet formu eskiden
+     başarısız istekte de sıfırlanıp soruyu kaybediyordu.
+   - `/csp-report` (`app/core/csp_report.py`): CSRF muaf, dakikada 60, gövde
+     16 KB ile sınırlı, yalnızca bilinen alanlar loglanıyor ve URL'lerden
+     sorgu dizesi atılıyor (arama terimleri loga düşmesin). Hem eski
+     `csp-report` hem Reporting API biçimini okuyor. Log olayı: `csp_violation`.
+   - Doğrulama: oturum açıkken ana sayfa, Keşfet, makale (grafik + sohbet),
+     kütüphane, arama, profil, kullanıcılar, görevler gezildi — **sıfır ihlal**.
+     Pozitif kontrol: sayfaya bilerek satır içi script eklenince rapor sunucu
+     loguna `csp_violation blocked=inline` olarak düştü.
+   - ⬜ **Zorlamaya geçiş:** bir sürüm boyunca prod logunda `csp_violation`
+     çıkmazsa `CSP_ENFORCE_SCRIPT_SRC=true`; aynı direktif gerçek başlığa geçer.
 4. 127 satır içi `style=` → `style-src`
 
 ### ~~Y5 — Konteyner root olarak koşuyor~~ ✅ KAPANDI (PR #86)

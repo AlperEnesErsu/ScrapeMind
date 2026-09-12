@@ -483,3 +483,19 @@ function initTooltips(root) {
 }
 document.addEventListener('DOMContentLoaded', () => initTooltips(document));
 document.body.addEventListener('htmx:afterSwap', (e) => initTooltips(e.target));
+
+// <form hx-post="…" data-reset-on-success data-clear-on-success="#feedback">
+//
+// Clears a form after its HTMX request succeeds, and optionally empties a
+// feedback element. Replaces `hx-on::after-request="…"`, which htmx runs
+// through `new Function` -- blocked by a `script-src` without 'unsafe-eval',
+// so base.html also turns htmx's eval off. The paper chat used to reset even
+// on failure, throwing away a question the server never received.
+document.body.addEventListener('htmx:afterRequest', (e) => {
+  const form = e.detail.elt;
+  if (!form || !form.matches || !form.matches('form[data-reset-on-success]')) return;
+  if (!e.detail.successful) return;
+  form.reset();
+  const clear = form.dataset.clearOnSuccess;
+  if (clear) document.querySelectorAll(clear).forEach((el) => { el.innerHTML = ''; });
+});
