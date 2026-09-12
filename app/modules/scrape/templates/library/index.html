@@ -173,15 +173,6 @@
   {% endif %}
 {% endif %}
 
-<!-- Initialize Bootstrap tooltips for the heatmap -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-  });
-</script>
 
 <div class="shortcuts-hint mt-4 text-center">
   <i class="bi bi-keyboard me-2"></i><strong>{{ _('Keyboard Shortcuts') }}:</strong> <kbd>j</kbd>/<kbd>k</kbd> {{ _('select papers') }} · <kbd>f</kbd> {{ _('toggle favorite') }} · <kbd>n</kbd> {{ _('open details') }}

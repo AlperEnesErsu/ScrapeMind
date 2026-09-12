@@ -4095,6 +4095,12 @@ msgstr "What are the main findings and conclusions of the paper?"
 msgid "What are the limitations and gaps in this research?"
 msgstr "What are the limitations and gaps in this research?"
 
+msgid "Untitled"
+msgstr "Untitled"
+
+msgid "Could not add the paper to your library."
+msgstr "Could not add the paper to your library."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

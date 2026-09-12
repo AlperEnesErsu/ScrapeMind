@@ -486,10 +486,24 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
      sabit metinle eziyordu; sohbetteki dört hazır soru `_()` dışındaydı, EN
      arayüzde Türkçe görünüyordu. **Toplam işleyici sıfır** — mandal artık
      `app/modules`'ü de temiz dizin sayıyor, tavan 0.
-2. Kalan satır içi `<script>`'leri (`_citation_graph`, `_password_rules`,
-   `_splash`, profil sekmesi, kütüphane tooltip'i) `static/js/`'e taşı — dördü HTMX parçası olduğu
-   için doğrudan bağlama değil delegasyon gerekiyor; `_password_rules`
-   `document.currentScript` kullanıyor, yani yeniden yazılmalı
+2. ✅ **Satır içi `<script>` blokları → 0.** Başta sekiz sayılmıştı; üçü
+   scrape-B'de işleyicileriyle birlikte gitti, kalan beşi burada:
+   - `_citation_graph` (~330 satır) → `app/modules/scrape/static/js/citation_graph.js`.
+     `scrape` blueprint'i bunun için `static_folder` aldı; çekirdek `app.js`
+     modül koduna dokunmuyor. URL'ler ve 12 çevrilmiş metin artık
+     `data-*` özniteliklerinden okunuyor — metin JS dizesine gömülmediği için
+     tırnaklı bir çeviri script'i kıramıyor. Parça HTMX ile geldiğinde
+     `<script src>` onunla birlikte geliyor ve dosya `data-cg-ready`
+     bayrağıyla iki kez çalışmaya dayanıklı. Yolda: düğüm ipucundaki sabit
+     `Atıf:` (EN arayüzde de Türkçe), `'Untitled'` ve `alert()` ile verilen
+     İngilizce hata metinleri çeviriye / toast'a taşındı.
+   - `_splash` temizliği, profil sekmesi vurgusu ve Bootstrap tooltip
+     başlatma `app.js`'e (tooltip artık HTMX ile gelen içerikte de çalışıyor).
+   - `_password_rules.html` **silindi**: hiçbir yerden include edilmiyordu.
+   `test_no_inline_script_blocks` sıfırı kilitliyor (Jinja yorumları hariç).
+   > `vis-network` hâlâ jsDelivr'den **dinamik** yükleniyor ve standalone
+   > paketi kendi `<style>`'ını enjekte ediyor — adım 3'te `script-src`
+   > jsDelivr'i kapsamalı, adım 4'te bu stil hesaba katılmalı.
 3. `script-src 'self' https://cdn.jsdelivr.net` ekle, `report-only` ile izle
 4. 127 satır içi `style=` → `style-src`
 

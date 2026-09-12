@@ -4125,6 +4125,12 @@ msgstr "Makalenin elde ettiği temel bulgular ve sonuçlar nelerdir?"
 msgid "What are the limitations and gaps in this research?"
 msgstr "Bu araştırmanın sınırlılıkları ve eksik yönleri nelerdir?"
 
+msgid "Untitled"
+msgstr "Başlıksız"
+
+msgid "Could not add the paper to your library."
+msgstr "Makale kütüphanene eklenemedi."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
