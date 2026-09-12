@@ -14,7 +14,7 @@
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
 | 🟠 Yüksek | 5 (**Y1, Y5 kapandı**) | İlk hafta içinde kapanmalı |
-| 🟡 Orta | 11 | Planlanmalı, çıkışı engellemez |
+| 🟡 Orta | 11 (**O3, O9 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
 Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
@@ -172,7 +172,7 @@ Yapılanlar:
 
 ---
 
-### ~~E4 — Bağımlılıklarda 115 bilinen açık~~ ✅ KAPANDI (PR #85) — 115 → 1
+### ~~E4 — Bağımlılıklarda 115 bilinen açık~~ ✅ KAPANDI (PR #85, #87) — 115 → **0**
 
 `pip-audit -r requirements.txt` ile ölçüldü. 8 pakette uyarı var; ağırlık
 merkezi:
@@ -213,7 +213,12 @@ venv/Scripts/python.exe -m pip_audit -r requirements.txt --progress-spinner off
 
 **115 uyarı → 1.**
 
-Kalan tek uyarı (`requests` PYSEC-2026-2275) bilerek açık:
+> **Güncelleme (PR #87):** "bilerek açık" bırakılan son uyarı da kapandı.
+> `arxiv` 2.1.3 → 4.0.1 yükseltildi, `requests` pini serbest kaldı ve 2.33.0
+> alındı. `pip-audit` artık **"No known vulnerabilities found"** diyor.
+> Aşağıdaki gerekçe, o kararın neden o an doğru olduğunu kayda geçiriyor.
+
+Kalan tek uyarı (`requests` PYSEC-2026-2275) bilerek açıktı:
 
 - Yalnızca `requests.utils.extract_zipped_paths()`'i **doğrudan çağıran**
   uygulamaları etkiliyor; danışmanlığın kendi ifadesiyle *"standart kullanım
@@ -410,7 +415,7 @@ yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
 | O7 | Python sürüm farkı — **tarama bunu yanlış yazmış** | Prod imajı `python:3.11-slim` ve **CI de 3.11** (`ci.yml`); yani prod ile CI zaten eşleşiyor. Sapma **geliştiricinin venv'inde**: 3.14. Sonucu kozmetik değil — yerel mypy ile CI'ınkinin ayrışmasının sebebi bu (O11), ve o ayrışma bir kırmızı PR'ın merge edilmesine yol açtı. Yapılacak iş venv'i 3.11'e çekmek, Dockerfile'a dokunmak değil |
 | O8 | Zotero hiç gerçek hesaba karşı koşulmadı | Faz 7.2 yalnızca `requests` sınırında taklit edilerek doğrulandı. Çıkıştan önce bir gerçek anahtarla bir kez denenmeli |
 
-| O9 | `arxiv` SDK'sı 2.1.3, güncel 4.0.1 | `requests~=2.32.0` pinliyor ve bu, `requests` 2.33.0'ı engelliyor (bkz. E4). İki major atlama; canlı arXiv doğrulaması gerektirir |
+| ~~O9~~ ✅ | ~~`arxiv` SDK'sı 2.1.3, güncel 4.0.1~~ | **PR #87 ile kapandı.** İki major atlamaya rağmen kullanılan API yüzeyi birebir aynı çıktı: `Client(page_size, delay_seconds, num_retries)`, `Search(query, id_list, max_results, sort_by, sort_order)`, `Client.results` ve `Result`'ın sekiz alanı — hiçbiri değişmemiş, adaptör tek satır değişmeden çalıştı. **Canlı arXiv sorgusuyla doğrulandı**, üç gerçek sonuç tam alanlarla döndü. Pin kalkınca `requests` 2.33.0 alındı ve son uyarı da kapandı |
 | O10 | `authlib.jose` kullanımdan kaldırıldı | API v1 JWT'leri onu kullanıyor. authlib **2.0'da kaldırılacak**, yerine `joserfc`. Şimdi çalışıyor, ama bir sonraki major yükseltmede kırılacak — planlanmalı |
 | O11 | Yerel mypy ile CI mypy aynı sonucu vermiyor | Yerelde 98, CI'da 95 çıkabiliyor (Python sürüm farkı, bkz. O7). Geliştirici yerel ratchet'e **güvenemiyor**; bu, kırmızı bir PR'ın merge edilmesine yol açtı |
 
