@@ -1,6 +1,6 @@
 # Faz 8 — Patent Takibi (yuvarlanan tam metin penceresi)
 
-> **Durum:** 8.1 bitti ve doğrulandı, 8.2–8.6 planlandı. 12 Eylül 2026.
+> **Durum:** 8.1, 8.2, 8.3a bitti ve doğrulandı. 8.3b–8.6 planlandı. 12 Eylül 2026.
 > Dal: `feat/patent-fulltext`, taban `c7c3e3f` (main).
 > Migration zinciri head'i: **`c3f9a17d40be`** (bu fazın şeması; ebeveyni
 > `e7b204c9f83a`, tek head, 38 revizyon).
@@ -278,11 +278,43 @@ kapısı bu; alan düzeyinde sürpriz beklenir, yapısal değil.
 **route'suz bir menü satırı her sayfayı BuildError'a çevirir** — Faz 6'da bir kez canlı
 yaşandı. Nav seed'i şemadan ayrı, route'lar hazır olduktan sonra.
 
-### 9.3 İndirme + haftalık hat + admin paneli
-`discover`/`fetch`, `TASK_ROUTES`, Beat girdisi, purge, `patent_ingest_run`.
+### 9.3a ✅ İndirme + haftalık hat — bitti (12 Eylül 2026)
+`uspto.py` (keşif + indirme), `ingest.py` (parse → filtre → upsert → purge),
+`patent_bulk_tasks.py`, `TASK_ROUTES` girdileri, Beat girdileri.
 
-**Kabul:** bir haftalık dosya uçtan uca yüklenir; ikinci koşu yeni satır yaratmaz;
-purge pencere dışını siler.
+**Tasarım kararları:**
+
+- **Anahtar opsiyonel, iki rota var.** Anahtar varsa ODP ürün API'si; yoksa haftalık
+  URL **türetilir** — USPTO salı günleri yayınlıyor ve dosya adı (`ipgYYMMDD.zip`)
+  tarihin saf fonksiyonu. Anahtarı olmayan kurulum da patent takip edebilir.
+  Anahtar var ama çalışmıyorsa türetilen URL'ye düşülür; çalışmayan bir anahtar
+  özelliği komple düşürmemeli.
+- **Bugün salıysa bir önceki salı alınır** — o günün dosyası henüz yayında
+  olmayabilir ve 404 veren bir URL yerine bir hafta eski ama var olan dosya yeğdir.
+- **Filtre yazmadan önce.** Haftalık dosyadaki 6–8 bin patentin CPC eşleşmeyeni
+  veritabanına hiç girmiyor.
+- **`raw_sha256` ile değişmeyen doküman yeniden yazılmıyor.** İstemler ise
+  birleştirilmiyor, **tamamen değiştiriliyor**: düzeltilmiş bir patent istemleri
+  yeniden numaralandırabilir ve numaraya göre birleştirmek iki farklı sürümden
+  dikilmiş bir ağaç bırakır.
+- **Purge ayrı ve günlük.** İndirme bozuksa bile pencere küçülmeye devam etmeli;
+  bayat korpus kabul edilebilir, sınırsız büyüyen korpus değil.
+- **Redis kilidi** aynı anda iki yüklemeyi engelliyor; Redis yoksa yükleme yine
+  çalışıyor (kilit best-effort).
+- Beat: **Çarşamba 04:45** yükleme, **her gün 04:50** purge (Europe/Istanbul).
+
+**Doğrulandı:** 21 yeni test, tam paket **1354 yeşil**, ruff + black temiz.
+Ağ yok — modülün kendi `requests`'i monkeypatch'leniyor (`SCRAPING.md` §2 sözleşmesi).
+
+**Hâlâ doğrulanmadı — 9.3'ün asıl kapısı:** hiçbir istek gerçek servise gitmedi.
+Bu ortam `bulkdata.uspto.gov`'u çözemiyor, `data.uspto.gov` bağlantıyı resetliyor ve
+ortada anahtar yok. Dolayısıyla **ODP yanıt şeması varsayım** (bu yüzden
+`_extract_files` şekli sabitlemek yerine tolere ediyor) ve **parser gerçek bir
+haftalık dosya görmedi**. İlk gerçek koşu bu iki şeyi birden sınayacak.
+
+### 9.3b Admin paneli
+Pencere durumu, son koşular, elle tetikleme. Faz 6 rapor panelinin kalıbı.
+DESIGN.md: tetikleme birincil **dolu** garnet, temizle **outline kırmızı**.
 
 ### 9.4 Arama: FTS + filtre
 ### 9.5 Semantik + hibrit (RRF)

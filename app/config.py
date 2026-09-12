@@ -181,6 +181,9 @@ class BaseConfig:
     # directory download is attempted instead.
     USPTO_ODP_API_KEY = os.getenv("USPTO_ODP_API_KEY", "")
     PATENT_BULK_DIR = os.getenv("PATENT_BULK_DIR", "./data/patent_bulk")
+    # Guard against a redirect to something unexpected, not a real
+    # expectation: a weekly grant archive is around 100 MB.
+    PATENT_MAX_DOWNLOAD_MB = int(os.getenv("PATENT_MAX_DOWNLOAD_MB", "600"))
     # Core CPC prefixes that make a patent "AI". Extended is off by default —
     # G06V/G10L/G06F40 are AI by application rather than by classification.
     PATENT_AI_CPC_CODES = os.getenv("PATENT_AI_CPC_CODES", "G06N")
