@@ -158,7 +158,12 @@ function showToast(message, type = 'success') {
 
   const toastEl = document.createElement('div');
   const bgClass = (type === 'error' || type === 'danger') ? 'bg-danger text-white' : (type === 'warning' ? 'bg-warning text-dark' : 'bg-success text-white');
-  const icon = (type === 'error' || type === 'danger') ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill';
+  // A warning used to fall through to the tick, so "something went wrong" was
+  // announced with a success icon. Nobody noticed while the only warning toast
+  // said "Makale gizlendi"; the HTMX failure messages made it obvious.
+  const icon = (type === 'error' || type === 'danger')
+    ? 'bi-exclamation-triangle-fill'
+    : (type === 'warning' ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill');
   
   toastEl.className = `toast align-items-center ${bgClass} border-0 shadow show`;
   toastEl.setAttribute('role', 'alert');
@@ -179,6 +184,40 @@ function showToast(message, type = 'success') {
     toastEl.remove();
   }, 3500);
 }
+
+// Messages come from <body data-msg-*>, rendered through `_()`. The fallbacks
+// are here so a fragment swapped in without them still says something.
+function msg(name, fallback) {
+  return document.body.getAttribute('data-msg-' + name) || fallback;
+}
+
+// A failed HTMX request used to produce nothing at all: this handler only ever
+// looked at `evt.detail.successful`, so a 400, a 403, a 500 and a dropped
+// connection were all indistinguishable from the box simply not reacting.
+//
+// The case that made this worth fixing is the quietest one. CSRF tokens used to
+// expire after an hour, so a tab left open across a working day stopped
+// submitting, silently. That cause is gone -- tokens are bound to the session
+// now (app/config.py) -- but the silence was the worse half of the bug, and it
+// would have outlived the fix.
+document.body.addEventListener('htmx:responseError', function(evt) {
+  const status = evt.detail.xhr ? evt.detail.xhr.status : 0;
+  if (status === 400) {
+    // Reachable now only if the session itself is gone, which a reload fixes.
+    showToast(msg('stale', 'Sayfa bir süredir açık. Yenileyip tekrar deneyin.'), 'warning');
+  } else if (status === 401 || status === 403) {
+    showToast(msg('forbidden', 'Buna izniniz yok.'), 'error');
+  } else {
+    showToast(msg('error', 'Bir şeyler ters gitti. Tekrar deneyin.'), 'error');
+  }
+});
+
+// `htmx:responseError` only fires when there *was* a response. A request that
+// never arrived -- offline, DNS, the server down -- raises this one instead,
+// and it was the most silent case of all.
+document.body.addEventListener('htmx:sendError', function() {
+  showToast(msg('offline', 'Sunucuya ulaşılamadı. Bağlantınızı kontrol edin.'), 'error');
+});
 
 // Wire up HTMX response triggers for toast notifications
 document.body.addEventListener('htmx:afterRequest', function(evt) {

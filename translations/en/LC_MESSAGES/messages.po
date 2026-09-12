@@ -4068,6 +4068,18 @@ msgstr ""
 "The worker is running, but nothing is scheduling: nightly scans and "
 "alerts will not fire until the scheduler is back."
 
+msgid "Something went wrong. Please try again."
+msgstr "Something went wrong. Please try again."
+
+msgid "This page has been open a while. Refresh it and try again."
+msgstr "This page has been open a while. Refresh it and try again."
+
+msgid "You are not allowed to do that."
+msgstr "You are not allowed to do that."
+
+msgid "Could not reach the server. Check your connection."
+msgstr "Could not reach the server. Check your connection."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

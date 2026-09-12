@@ -4098,6 +4098,18 @@ msgstr ""
 "İşçi çalışıyor ama zamanlayan yok: zamanlayıcı geri gelene kadar gecelik "
 "taramalar ve uyarılar tetiklenmeyecek."
 
+msgid "Something went wrong. Please try again."
+msgstr "Bir şeyler ters gitti. Tekrar deneyin."
+
+msgid "This page has been open a while. Refresh it and try again."
+msgstr "Sayfa bir süredir açık. Yenileyip tekrar deneyin."
+
+msgid "You are not allowed to do that."
+msgstr "Buna izniniz yok."
+
+msgid "Could not reach the server. Check your connection."
+msgstr "Sunucuya ulaşılamadı. Bağlantınızı kontrol edin."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

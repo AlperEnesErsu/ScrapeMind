@@ -16,7 +16,15 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+{# Messages app.js needs, passed as data attributes rather than an inline
+   <script>. Two reasons: they have to go through `_()` like everything else a
+   user reads, and inline script is exactly what the pending CSP work has to
+   remove (PRELAUNCH Y4) -- adding one here would make that job bigger. #}
+<body
+  data-msg-error="{{ _('Something went wrong. Please try again.') }}"
+  data-msg-stale="{{ _('This page has been open a while. Refresh it and try again.') }}"
+  data-msg-forbidden="{{ _('You are not allowed to do that.') }}"
+  data-msg-offline="{{ _('Could not reach the server. Check your connection.') }}">
 
 {# Plays once, on the first full page after a login. `pop_splash()` clears the
    flag as it reads it, and only this template calls it -- HTMX fragments do
