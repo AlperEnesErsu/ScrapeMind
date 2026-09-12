@@ -19,31 +19,13 @@
   {% endif %}
 
   <div class="note-filter-chips d-flex flex-wrap gap-1 mb-3">
-    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" onclick="filterNotes('all')">{{ _('All') }}</button>
-    <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" onclick="filterNotes('deney')">{{ _('Experiment') }}</button>
-    <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" onclick="filterNotes('soru')">{{ _('Question') }}</button>
-    <button type="button" class="btn btn-xs btn-outline-warning py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" onclick="filterNotes('sonuç')">{{ _('Finding') }}</button>
-    <button type="button" class="btn btn-xs btn-outline-info py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" onclick="filterNotes('okuma')">{{ _('Reading') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" data-notes-filter="all" aria-pressed="true">{{ _('All') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" data-notes-filter="deney" aria-pressed="false">{{ _('Experiment') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" data-notes-filter="soru" aria-pressed="false">{{ _('Question') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-warning py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" data-notes-filter="sonuç" aria-pressed="false">{{ _('Finding') }}</button>
+    <button type="button" class="btn btn-xs btn-outline-info py-0 px-2 rounded-pill" style="font-size: var(--text-2xs);" data-notes-filter="okuma" aria-pressed="false">{{ _('Reading') }}</button>
   </div>
 
-  <script>
-    if (typeof filterNotes !== 'function') {
-      window.filterNotes = function(tag) {
-        const cards = document.querySelectorAll('.note-card');
-        cards.forEach(card => {
-          if (tag === 'all') {
-            card.style.display = 'block';
-          } else {
-            if (card.classList.contains('note-card--' + tag)) {
-              card.style.display = 'block';
-            } else {
-              card.style.display = 'none';
-            }
-          }
-        });
-      }
-    }
-  </script>
 
   {% for n in r.notes %}
     {% include 'scrape/_note_view.html' %}

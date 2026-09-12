@@ -4110,6 +4110,21 @@ msgstr "Buna izniniz yok."
 msgid "Could not reach the server. Check your connection."
 msgstr "Sunucuya ulaşılamadı. Bağlantınızı kontrol edin."
 
+msgid "Show less"
+msgstr "Daha az göster"
+
+msgid "Summarise the abstract in three main points."
+msgstr "Özeti 3 ana maddede özetler misin?"
+
+msgid "What core methodology and approach does this study use?"
+msgstr "Bu çalışmada kullanılan temel metodoloji ve yaklaşım nedir?"
+
+msgid "What are the main findings and conclusions of the paper?"
+msgstr "Makalenin elde ettiği temel bulgular ve sonuçlar nelerdir?"
+
+msgid "What are the limitations and gaps in this research?"
+msgstr "Bu araştırmanın sınırlılıkları ve eksik yönleri nelerdir?"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

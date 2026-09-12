@@ -461,7 +461,7 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
 çalışıyor.
 
 #### Kalan iş (sırayla)
-1. 36 satır içi olay işleyicisini delegasyona çevir (18 şablon)
+1. ✅ 36 satır içi olay işleyicisini delegasyona çevir (18 şablon)
    - ✅ **core — 7 → 0 (PR #92).** Altısı `onsubmit="return confirm(…)"`,
      biri bildirim rozetini silen `onclick`. Karşılıkları `app.js`'te
      delegasyonlu: `data-confirm` ve `data-remove-on-click`. HTMX ile sonradan
@@ -474,11 +474,20 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
      `data-submit-on-enter`, `data-submit-on-mod-enter`, `data-copy-text`.
      Silme düğmesi JS'ye hiç ihtiyaç duymadan HTML'in `form=` özniteliğiyle
      çözüldü.
-   - ⬜ **scrape-B — sayfa fonksiyonları, 16.** `filterNotes`,
-     `setChatQuestion`, `toggleBulkPanel`, `clearAllSelections` satır içi
-     `<script>` bloklarında tanımlı; o yüzden işleyiciler kendi script'leriyle
-     **birlikte** taşınmalı.
-2. 8 satır içi `<script>`'i `static/js/`'e taşı — dördü HTMX parçası olduğu
+   - ✅ **scrape-B — sayfa fonksiyonları, 16 → 0.** İşleyiciler, onları
+     tanımlayan üç satır içi `<script>` bloğuyla (`feed.html`,
+     `_notes_list.html`, `_paper_chat.html`) birlikte taşındı. Yeni kancalar:
+     `data-bulk-select` / `data-bulk-clear`, `data-toggle-abstract`,
+     `data-notes-filter`, `data-chat-question`, `data-heatmap-date-input` /
+     `data-heatmap-clear` (ısı haritası günü zaten `data-date` taşıyordu).
+     Yolda üç hata kapandı: `/library/search`'te toplu seçim kutusu
+     `ReferenceError: toggleBulkPanel is not defined` atıyordu (fonksiyon
+     yalnızca `feed.html`'de tanımlıydı); özet düğmesi çevrilmiş etiketi Türkçe
+     sabit metinle eziyordu; sohbetteki dört hazır soru `_()` dışındaydı, EN
+     arayüzde Türkçe görünüyordu. **Toplam işleyici sıfır** — mandal artık
+     `app/modules`'ü de temiz dizin sayıyor, tavan 0.
+2. Kalan satır içi `<script>`'leri (`_citation_graph`, `_password_rules`,
+   `_splash`, profil sekmesi, kütüphane tooltip'i) `static/js/`'e taşı — dördü HTMX parçası olduğu
    için doğrudan bağlama değil delegasyon gerekiyor; `_password_rules`
    `document.currentScript` kullanıyor, yani yeniden yazılmalı
 3. `script-src 'self' https://cdn.jsdelivr.net` ekle, `report-only` ile izle
