@@ -17,8 +17,8 @@ fixture and keeps the ingest task free to decide what to do with the result.
    That is the only reliable signal, so `is_independent` is derived from it
    rather than from wording like "The method of claim 3".
 
-> ⚠️ Written against USPTO's documented grant DTD (v4.x), **not yet validated
-> against a real weekly file** — the sandbox that produced it had no route to
+> NOT YET VALIDATED: written against USPTO's documented grant DTD (v4.x), but not
+> against a real weekly file — the sandbox that produced it had no route to
 > `bulkdata.uspto.gov`. Phase 8.3 must run it over one real file before the
 > pipeline is trusted; expect field-level surprises, not structural ones.
 """

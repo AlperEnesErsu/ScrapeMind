@@ -1,8 +1,9 @@
 # Faz 8 — Patent Takibi (yuvarlanan tam metin penceresi)
 
-> **Durum:** plan + 8.1 uygulanıyor. 12 Eylül 2026.
+> **Durum:** 8.1 bitti ve doğrulandı, 8.2–8.6 planlandı. 12 Eylül 2026.
 > Dal: `feat/patent-fulltext`, taban `c7c3e3f` (main).
-> Migration zinciri head'i: **`e7b204c9f83a`** (doğrulandı, tek head, 37 revizyon).
+> Migration zinciri head'i: **`c3f9a17d40be`** (bu fazın şeması; ebeveyni
+> `e7b204c9f83a`, tek head, 38 revizyon).
 >
 > **Kapsam:** `app/modules/patent/` + `app/tasks/patent_bulk_tasks.py`
 >
@@ -248,13 +249,29 @@ kaldırılmamasını açıkça yazıyor — yeni sayfalarda da duracak.
 
 Her aşama tek başına test-yeşil ve commit'lenebilir (`git bisect` güvenilir kalsın).
 
-### 9.1 Şema + modül iskeleti + parser ← **şu an burada**
-Modeller, migration (`down_revision = "e7b204c9f83a"`), blueprint, ve **ağ
-gerektirmeyen** XML parser + fixture testi.
+### 9.1 ✅ Şema + modül iskeleti + parser — bitti (12 Eylül 2026)
+Modeller, migration `c3f9a17d40be` (`down_revision = "e7b204c9f83a"`), CPC
+sınıflandırıcı ve **ağ gerektirmeyen** XML parser + fixture testi.
 
-**Kabul:** fixture'dan doküman + istem ağacı doğru çıkar; `flask db upgrade`/`downgrade`
-geçici bir DB'de sınanır (testler `create_all()` kullandığı için migration'lar test
-paketinde sınanmaz — [HANDOVER.md](HANDOVER.md) §5.5).
+**Doğrulandı:**
+
+- Tam paket **1319 test yeşil** (migration'ın eklediği tablolar her testin
+  `create_all()`'una giriyor, yani computed `tsvector` ve fonksiyonel GIN indeksi
+  orada da kuruluyor).
+- Migration sıfırdan kurulan geçici bir DB'de **upgrade → downgrade → upgrade**
+  round-trip'ini geçti; downgrade geriye tablo da indeks de bırakmıyor (0/0).
+- Şema davranışı SQL ile sınandı: generated `description_tsv` `UPDATE` sonrası
+  kendini yeniliyor, `jsonb` containment çalışıyor, `CASCADE` istemleri alıyor,
+  `paper_id` FK'si `SET NULL`.
+- `ruff` + `black` temiz.
+
+**Hâlâ doğrulanmadı:** parser gerçek bir haftalık USPTO dosyası görmedi — belgelenmiş
+grant DTD'sine (v4.x) göre yazıldı ve elle hazırlanmış fixture'da çalışıyor. 8.3'ün
+kapısı bu; alan düzeyinde sürpriz beklenir, yapısal değil.
+
+> Dev veritabanına **uygulanmadı** (damga `e7b204c9f83a`'da bırakıldı): dal merge
+> edilmeden şemayı ilerletmek, `main`'den çalışan uygulamayı kodunun tanımadığı bir
+> revizyonla karşı karşıya bırakırdı.
 
 ### 9.2 Nav girdisi (ayrı migration)
 `_sidebar.html` nav linklerini korumasız `url_for(item.endpoint)` ile kuruyor;
