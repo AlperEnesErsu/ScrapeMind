@@ -80,6 +80,40 @@ def test_an_existing_header_is_not_overwritten():
     assert headers["X-Content-Type-Options"] == "nosniff", "the rest still applied"
 
 
+# --------------------------------------------------------------------------
+# Content-Security-Policy — the half that can ship today
+# --------------------------------------------------------------------------
+
+
+def test_the_policy_carries_the_directives_that_cost_nothing(headers):
+    policy = headers["Content-Security-Policy"]
+
+    assert "base-uri 'self'" in policy
+    assert "object-src 'none'" in policy
+    assert "frame-ancestors 'none'" in policy
+    assert "form-action 'self'" in policy
+
+
+def test_the_policy_does_not_pretend_to_cover_scripts(headers):
+    """A `script-src` with `'unsafe-inline'` is a policy in name only.
+
+    Eight templates carry inline `<script>` and thirty-six inline event
+    handlers sit across eighteen more — CSP blocks both alike. Until those are
+    gone the honest thing is to omit the directive rather than neuter it, so
+    nobody reads the header and believes scripts are constrained.
+    """
+    policy = headers["Content-Security-Policy"]
+
+    assert "script-src" not in policy
+    assert "unsafe-inline" not in policy, "an unsafe-inline allowance must not creep in"
+
+
+def test_frame_ancestors_and_x_frame_options_agree(headers):
+    """Both are sent; a browser acting on either must reach the same answer."""
+    assert "frame-ancestors 'none'" in headers["Content-Security-Policy"]
+    assert headers["X-Frame-Options"] == "DENY"
+
+
 def test_headers_are_on_error_responses_too(client):
     """A 404 is still a page a browser renders."""
     headers = client.get("/definitely-not-a-route").headers
