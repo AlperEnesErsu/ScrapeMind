@@ -527,7 +527,29 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
      loguna `csp_violation blocked=inline` olarak düştü.
    - ⬜ **Zorlamaya geçiş:** bir sürüm boyunca prod logunda `csp_violation`
      çıkmazsa `CSP_ENFORCE_SCRIPT_SRC=true`; aynı direktif gerçek başlığa geçer.
-4. 127 satır içi `style=` → `style-src`
+4. ◐ **127 satır içi `style=` → `style-src`** — modül modül.
+   E-posta şablonlarındaki 12'si **kapsam dışı**: e-posta istemcisi bu
+   uygulamanın CSP'sine tabi değil ve çoğu `<style>` bloğunu yok sayıyor.
+   Gerçek hedef 115. Mandal: `test_csp_readiness.py` → `STYLE_CLEAN` +
+   `STYLE_CEILING`.
+   - ✅ **core — 40 → 0.** Değerler `theme.css`'in sonundaki "Former inline
+     styles" bölümüne sınıf olarak taşındı (`fs-2xs`/`fs-xs`/`fs-sm`/`fs-base`,
+     `icon-dot`, `empty-state-icon` gibi paylaşılanlar + kabuk/ayarlar
+     bileşenleri). Her bildirim `!important`: satır içi stil her normal
+     kuralı yeniyordu, sınıfa taşınınca bir Bootstrap bileşen kuralına
+     sessizce yenilmesin. Splash'in 12 saçılma vektörü
+     `.splash__burst i:nth-child(n)` kurallarına geçti. Sidebar/topbar
+     arka planı zaten `theme.css`'te vardı, satır içi kopyası silindi.
+     Kurtarma kodları artık Bootstrap `font-monospace` (tasarım sisteminin
+     mono yığını) kullanıyor.
+     Doğrulama: beş sayfada (profil, güvenlik, oturumlar, tüm bildirimler,
+     görevler) önce/sonra her öğenin 18 hesaplanmış stil özelliği
+     karşılaştırıldı — dördünde **sıfır fark**, profilde yalnızca alt-piksel
+     yuvarlama.
+   - ⬜ dashboard — 21
+   - ⬜ scrape — 54
+   - ⬜ `style-src` report-only. Hesaba katılacaklar: htmx'in indicator
+     `<style>`'ı (`includeIndicatorStyles`) ve vis-network'ün enjekte ettiği stil.
 
 ### ~~Y5 — Konteyner root olarak koşuyor~~ ✅ KAPANDI (PR #86)
 

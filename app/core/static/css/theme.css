@@ -1636,6 +1636,21 @@ code {
 .splash__burst i:nth-child(4n)   { background: var(--brand-800); }
 .splash__burst i:nth-child(5n)   { width: 8px; height: 10px; }
 
+/* Scatter vectors, one per aril -- see core/_splash.html for why they are
+   hand-written and uneven. */
+.splash__burst i:nth-child(1) { --dx: -168px; --dy: 4px; --r: -190deg; --d: 0ms; }
+.splash__burst i:nth-child(2) { --dx: 147px; --dy: -8px; --r: 165deg; --d: 12ms; }
+.splash__burst i:nth-child(3) { --dx: -96px; --dy: -38px; --r: -120deg; --d: 26ms; }
+.splash__burst i:nth-child(4) { --dx: 119px; --dy: 14px; --r: 205deg; --d: 4ms; }
+.splash__burst i:nth-child(5) { --dx: -134px; --dy: 16px; --r: -145deg; --d: 40ms; }
+.splash__burst i:nth-child(6) { --dx: 62px; --dy: -52px; --r: 95deg; --d: 18ms; }
+.splash__burst i:nth-child(7) { --dx: -196px; --dy: 12px; --r: -215deg; --d: 8ms; }
+.splash__burst i:nth-child(8) { --dx: 88px; --dy: -22px; --r: 130deg; --d: 33ms; }
+.splash__burst i:nth-child(9) { --dx: -44px; --dy: -58px; --r: -70deg; --d: 48ms; }
+.splash__burst i:nth-child(10) { --dx: 176px; --dy: 8px; --r: 185deg; --d: 22ms; }
+.splash__burst i:nth-child(11) { --dx: -118px; --dy: -14px; --r: -160deg; --d: 15ms; }
+.splash__burst i:nth-child(12) { --dx: 36px; --dy: -44px; --r: 60deg; --d: 44ms; }
+
 @keyframes splash-draw {
   from { transform: translateX(-50%) scaleX(0); }
   to   { transform: translateX(-50%) scaleX(1); }
@@ -1716,3 +1731,51 @@ code {
 .paper-card__meta {
   overflow-wrap: anywhere;
 }
+
+/* --------------------------------------------------------------------------
+   Former inline styles (PRELAUNCH Y4 step 4)
+
+   These were style="" attributes, which a `style-src` without 'unsafe-inline'
+   blocks. Each declaration keeps !important because an inline style beat
+   every non-important rule, and moving it into a class must not quietly
+   hand the win to a Bootstrap component rule. Sizes still come from the
+   --text-* / --icon-* scale; tests/core/test_design_system.py checks that.
+   -------------------------------------------------------------------------- */
+
+/* Shared utilities */
+.fs-2xs  { font-size: var(--text-2xs) !important; }
+.fs-xs   { font-size: var(--text-xs) !important; }
+.fs-sm   { font-size: var(--text-sm) !important; }
+.fs-base { font-size: var(--text-base) !important; }
+.icon-dot { font-size: var(--icon-dot) !important; }
+.empty-state-icon {
+  font-size: var(--icon-xl) !important;
+  color: var(--bs-secondary-color) !important;
+}
+.tracking-wider { letter-spacing: .1em !important; }
+.maxw-70p { max-width: 70% !important; }
+
+/* Shell: sidebar and topbar */
+#sidebar {
+  width: var(--sidebar-width, 240px);
+  min-height: calc(100vh - 56px);
+}
+.topbar-search { width: 240px !important; }
+.search-results-anchor { z-index: 1050 !important; top: 100% !important; }
+.search-menu {
+  min-width: 340px !important;
+  max-width: 400px !important;
+  max-height: 420px !important;
+  overflow-y: auto !important;
+}
+.search-menu-empty { min-width: 320px !important; }
+.search-menu__title { max-width: 320px !important; }
+.notif-badge { font-size: var(--text-2xs) !important; padding: 0.25em 0.4em !important; }
+.notif-menu { max-height: 350px !important; overflow-y: auto !important; }
+.notif-item { min-width: 280px !important; max-width: 320px !important; }
+.notif-empty { min-width: 250px !important; }
+
+/* Settings */
+.avatar-64 { width: 64px !important; height: 64px !important; }
+.totp-qr { max-width: 220px !important; }
+.session-agent { max-width: 340px !important; }
