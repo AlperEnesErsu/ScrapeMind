@@ -46,7 +46,7 @@
               hx-target="#bluesky-list" hx-swap="outerHTML" class="form-check form-switch mb-0">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input class="form-check-input" type="checkbox" role="switch"
-                 onchange="this.form.requestSubmit()" {% if a.active %}checked{% endif %}>
+                 data-autosubmit {% if a.active %}checked{% endif %}>
         </form>
         <form hx-post="{{ url_for('scrape.submit_bluesky_remove', bluesky_pk=a.id) }}"
               hx-target="#bluesky-list" hx-swap="outerHTML"

@@ -36,7 +36,7 @@ CLEAN = [
 #: The most inline handlers allowed across the whole app. Lower it in the same
 #: commit that removes handlers; never raise it. When it reaches zero, the next
 #: step is adding `script-src` to the policy in app/__init__.py.
-CEILING = 29
+CEILING = 16
 
 
 def _handlers_under(relative: str) -> list[str]:

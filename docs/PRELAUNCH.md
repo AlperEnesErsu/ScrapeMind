@@ -468,7 +468,16 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
      gelen işaretlemeye de yeniden bağlama gerekmeden uygulanıyor.
      `tests/core/test_csp_readiness.py` mandallı bir kapı: temizlenen dizin
      sıfırda kalmak zorunda, toplam azalabilir ama artamaz.
-   - ⬜ **scrape — 29.**
+   - ✅ **scrape-A — genel kalıplar, 13 → 0 (PR #93).** Değişince-gönder (6),
+     onay (2), Enter / Ctrl+Enter ile gönder (3), panoya kopyala (1), formun
+     dışındaki silme düğmesi (1). Yeni kancalar: `data-autosubmit`,
+     `data-submit-on-enter`, `data-submit-on-mod-enter`, `data-copy-text`.
+     Silme düğmesi JS'ye hiç ihtiyaç duymadan HTML'in `form=` özniteliğiyle
+     çözüldü.
+   - ⬜ **scrape-B — sayfa fonksiyonları, 16.** `filterNotes`,
+     `setChatQuestion`, `toggleBulkPanel`, `clearAllSelections` satır içi
+     `<script>` bloklarında tanımlı; o yüzden işleyiciler kendi script'leriyle
+     **birlikte** taşınmalı.
 2. 8 satır içi `<script>`'i `static/js/`'e taşı — dördü HTMX parçası olduğu
    için doğrudan bağlama değil delegasyon gerekiyor; `_password_rules`
    `document.currentScript` kullanıyor, yani yeniden yazılmalı
