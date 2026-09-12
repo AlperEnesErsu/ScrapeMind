@@ -1,5 +1,5 @@
 import structlog
-from flask import Flask
+from flask import Flask, has_request_context
 
 from app.config import get_config
 from app.extensions import babel, csrf, db, limiter, login_manager, mail, migrate, oauth
@@ -307,8 +307,22 @@ def _register_context_processors(app: Flask) -> None:
 
     @app.context_processor
     def inject_menu() -> dict:
-        """Inject menu_nodes and current_user_permissions into templates."""
-        if current_user.is_authenticated:
+        """Inject menu_nodes and current_user_permissions into templates.
+
+        Context processors run for *every* `render_template`, including ones
+        with no request behind them -- a template-backed email sent from a
+        Celery task is the case that matters here. Outside a request
+        `current_user` is None rather than an anonymous user, so reaching for
+        `.is_authenticated` raised AttributeError and took the render with it.
+
+        There is no user to build a menu for in that situation, and an email
+        has no sidebar, so the empty answer is the correct one rather than a
+        fallback. Today only `send_password_reset` and `send_email_verification`
+        render templates and both run inside a request; this is here so the
+        first task that renders one does not rediscover it the way the saved
+        searches did.
+        """
+        if has_request_context() and current_user.is_authenticated:
             from app.core.menu.builder import build_menu_for_user
             from app.core.rbac.service import get_user_permissions
 
