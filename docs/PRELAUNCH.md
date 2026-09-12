@@ -13,7 +13,7 @@
 | Seviye | Adet | Ne demek |
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
-| 🟠 Yüksek | 5 (**Y1, Y5 kapandı**) | İlk hafta içinde kapanmalı |
+| 🟠 Yüksek | 5 (**Y1, Y2, Y5 kapandı** — Y3, Y4 kaldı) | İlk hafta içinde kapanmalı |
 | 🟡 Orta | 11 (**O3, O9 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
@@ -322,7 +322,7 @@ olmadan kör bir atlama olur.
 En az şunlar: OAuth callback'inde state doğrulaması, hesap bağlama
 (`_oauth_link_user_id`), var olan e-postayla eşleşme davranışı.
 
-### Y2 — Test süiti istek-bağlamı hatalarını göremiyor
+### ~~Y2 — Test süiti istek-bağlamı hatalarını göremiyor~~ ✅ KAPANDI (PR #88)
 
 `pytest-flask`, `app` fixture'ını kullanan **her** testin etrafına bir istek
 bağlamı itiyor. Süit, "burada istek bağlamı yok" hatasını **yapısal olarak**
@@ -337,6 +337,33 @@ kusuru örttüğünü, hangisinin yalnızca test kolaylığı olduğunu ayırmak
 
 > Bu, `CLAUDE.md`'deki "Sıradaki iş" listesinin 2. maddesi. Canlıya çıkışı
 > engellemez ama **canlıdayken bulunacak hataların sınıfını** belirler.
+
+**Yapıldı — ve iş sanıldığı gibi çıkmadı.** Buradaki tarif "36 testin
+hangisinin gerçek hata olduğunu ayırmak" diyordu. Ayrılacak 36 test yoktu:
+**36'sı da iki yerin aynı varsayımıydı.**
+
+| kök | ne yapıyordu |
+|---|---|
+| `app/core/i18n/utils.py::select_locale` | `request.args`'ı koşulsuz okuyordu → istek dışı her `_()` `RuntimeError` |
+| `app/__init__.py::inject_menu` | `current_user.is_authenticated`'a dokunuyordu; istek dışında `current_user` `None` → `AttributeError` |
+
+İkisi düzeltildi, **hiçbir test düzenlenmedi**, 36 → 0.
+
+Selectör artık istek yokken `BABEL_DEFAULT_LOCALE`'e düşüyor. Bu takas
+bilerek ve bedava değil: `force_locale`'ı unutan bir arka plan işi, İngilizce
+okuyan birine sessizce Türkçe yazacak. Ama **yanlış dildeki bir bildirim
+görünür ve düzeltilebilir; hiç oluşturulmamış bir bildirim ikisi de değil** —
+ki Faz 7.1'de olan tam olarak buydu.
+
+`inject_menu` de istek dışında boş dönüyor. Bugün şablon render eden e-postalar
+yalnızca rotalardan çağrılıyor, ama şablonlu bir e-postayı görevden gönderen
+ilk kod aynı taşa çarpacaktı.
+
+**Geri dönmesin diye kapı:** `tests/core/test_no_ambient_request.py`. Eklenti
+geri kurulunca **üç testi düşüyor** — denendi.
+
+Ölçüldü: eklentiyi kaldırmanın süit süresine etkisi yok (aynı altküme 42.3s'ye
+karşı 43.7s).
 
 ### Y3 — HTMX + CSRF süresi dolması sessizce başarısız
 
