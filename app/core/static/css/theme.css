@@ -1779,3 +1779,21 @@ code {
 .avatar-64 { width: 64px !important; height: 64px !important; }
 .totp-qr { max-width: 220px !important; }
 .session-agent { max-width: 340px !important; }
+
+/* Shared, first needed by the dashboard */
+.minw-0 { min-width: 0 !important; }
+.maxw-80p { max-width: 80% !important; }
+.spinner-xs { width: .65rem !important; height: .65rem !important; }
+.progress-thin { height: 4px !important; }
+.empty-state-icon-sm {
+  font-size: var(--text-2xl) !important;
+  color: var(--bs-secondary-color) !important;
+}
+
+/* The unread dot is sized relative to its line on purpose -- it scales with
+   the text beside it rather than with the page, so it is a percentage of the
+   parent rather than a --text-* step. */
+.dot-unread { font-size: 50% !important; }
+
+/* Dashboard */
+.step-badge { width: 38px !important; height: 38px !important; min-width: 38px !important; }

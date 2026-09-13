@@ -109,11 +109,12 @@ STYLE_ATTR = re.compile(r"\sstyle\s*=", re.IGNORECASE)
 #: Directories whose templates hold no style attributes.
 STYLE_CLEAN = [
     "app/core/templates",
+    "app/modules/dashboard/templates",
 ]
 
 #: Style attributes left across the app. Lower it with each cleanup; never
 #: raise it. At zero, `style-src` can join the policy without 'unsafe-inline'.
-STYLE_CEILING = 75
+STYLE_CEILING = 54
 
 
 def _style_attrs_under(relative: str) -> list[str]:
