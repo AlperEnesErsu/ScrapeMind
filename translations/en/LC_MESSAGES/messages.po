@@ -4101,6 +4101,12 @@ msgstr "Untitled"
 msgid "Could not add the paper to your library."
 msgstr "Could not add the paper to your library."
 
+msgid "That upload is too large."
+msgstr "That upload is too large."
+
+msgid "Too large"
+msgstr "Too large"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 
