@@ -48,6 +48,24 @@ BEAT_SCHEDULE = {
         "task": "patents.ingest_for_all_users",
         "schedule": crontab(hour=3, minute=5),
     },
+    # Weekly USPTO bulk load (Faz 8). USPTO publishes grants on Tuesdays, so
+    # Wednesday gives the file a day to land. 04:45 sits after the three
+    # retention purges (04:00/04:15/04:30) rather than among them: this one
+    # holds a lock for minutes and would otherwise delay them.
+    #
+    # `day_of_week=3` is Wednesday (Celery counts Sunday as 0).
+    "patents-bulk-weekly": {
+        "task": "patents_bulk.refresh_window",
+        "schedule": crontab(hour=4, minute=45, day_of_week=3),
+    },
+    # The purge runs on its own daily, not only after a load: a deployment
+    # whose download is broken or switched off must still shed rows that have
+    # fallen out of the window. A stale corpus is acceptable, an unbounded
+    # one is not.
+    "patents-bulk-purge-daily": {
+        "task": "patents_bulk.purge_window",
+        "schedule": crontab(hour=4, minute=50),
+    },
     # Nightly fan-out: at 03:15 every day, queue a scrape task for every
     # active user. Each per-user task picks up their keywords + identifiers
     # at that moment.

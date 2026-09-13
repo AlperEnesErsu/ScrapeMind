@@ -86,6 +86,11 @@ TASK_ROUTES = {
     # call anywhere in the path, so they do not belong in `llm`.
     "alerts.run_for_user": {"queue": "io"},
     "alerts.run_for_all_users": {"queue": "io"},
+    # The weekly USPTO bulk load: one large download and an XML stream parse.
+    # I/O bound, not billable, and nothing about it belongs in `scrape` (no
+    # shared third-party budget) or `llm` (no model call anywhere in it).
+    "patents_bulk.refresh_window": {"queue": "io"},
+    "patents_bulk.purge_window": {"queue": "io"},
 }
 
 # Tasks deliberately left off TASK_ROUTES, so they land on the default
@@ -229,6 +234,7 @@ from app.tasks import (  # noqa: E402, F401
     embedding_tasks,
     feed_tasks,
     fulltext_tasks,
+    patent_bulk_tasks,
     patent_tasks,
     report_tasks,
     scrape_tasks,

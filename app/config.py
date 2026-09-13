@@ -201,6 +201,24 @@ class BaseConfig:
     EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "")
     EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "")
 
+    # ---- Patent tracking (Faz 8) -------------------------------------------
+    # How many weeks of USPTO grants the corpus keeps. The purge and the "N
+    # weeks" line in the UI both read this, so they cannot drift apart.
+    PATENT_WINDOW_WEEKS = int(os.getenv("PATENT_WINDOW_WEEKS", "3"))
+    # Optional: with a key the ODP API is used, without one the keyless bulk
+    # directory download is attempted instead.
+    USPTO_ODP_API_KEY = os.getenv("USPTO_ODP_API_KEY", "")
+    PATENT_BULK_DIR = os.getenv("PATENT_BULK_DIR", "./data/patent_bulk")
+    # Guard against a redirect to something unexpected, not a real
+    # expectation: a weekly grant archive is around 100 MB.
+    PATENT_MAX_DOWNLOAD_MB = int(os.getenv("PATENT_MAX_DOWNLOAD_MB", "600"))
+    # Core CPC prefixes that make a patent "AI". Extended is off by default —
+    # G06V/G10L/G06F40 are AI by application rather than by classification.
+    PATENT_AI_CPC_CODES = os.getenv("PATENT_AI_CPC_CODES", "G06N")
+    PATENT_AI_CPC_EXTENDED = os.getenv("PATENT_AI_CPC_EXTENDED", "")
+    # Skip embeddings entirely — full-text search still works.
+    PATENT_FTS_ONLY = os.getenv("PATENT_FTS_ONLY", "false").lower() == "true"
+
     # Audit log retention — rows older than this many days are purged by the
     # nightly `core.purge_audit_logs` task. 0 disables purging (keep forever).
     AUDIT_RETENTION_DAYS = int(os.getenv("AUDIT_RETENTION_DAYS", "180"))

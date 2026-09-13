@@ -4107,6 +4107,145 @@ msgstr "That upload is too large."
 msgid "Too large"
 msgstr "Too large"
 
+msgid "Patent tracking"
+msgstr "Patent tracking"
+
+msgid ""
+"Recently granted US AI patents, kept for a rolling window and searchable "
+"down to the claims."
+msgstr ""
+"Recently granted US AI patents, kept for a rolling window and searchable "
+"down to the claims."
+
+msgid "No patents have been loaded yet."
+msgstr "No patents have been loaded yet."
+
+msgid ""
+"The weekly load has not run on this deployment. Once it does, newly "
+"granted patents appear here."
+msgstr ""
+"The weekly load has not run on this deployment. Once it does, newly "
+"granted patents appear here."
+
+msgid "Patents"
+msgstr "Patents"
+
+msgid "Claims"
+msgstr "Claims"
+
+msgid "Window"
+msgstr "Window"
+
+msgid "Granted"
+msgstr "Granted"
+
+#, python-format
+msgid "%(count)s claims"
+msgstr "%(count)s claims"
+
+msgid "Filed"
+msgstr "Filed"
+
+msgid "Assignee"
+msgstr "Assignee"
+
+msgid "Inventors"
+msgstr "Inventors"
+
+#, python-format
+msgid "Claim %(number)s"
+msgstr "Claim %(number)s"
+
+#, python-format
+msgid "depends on claim %(number)s"
+msgstr "depends on claim %(number)s"
+
+msgid "defines the scope of this patent"
+msgstr "defines the scope of this patent"
+
+msgid "Claim tree"
+msgstr "Claim tree"
+
+msgid ""
+"Patent text is reproduced from the official USPTO publication. Nothing "
+"here is legal advice — confirm any conclusion with a patent attorney."
+msgstr ""
+"Patent text is reproduced from the official USPTO publication. Nothing "
+"here is legal advice — confirm any conclusion with a patent attorney."
+
+msgid "menu.patents"
+msgstr "menu.patents"
+
+msgid "module.patent.name"
+msgstr "module.patent.name"
+
+msgid "perm.patents.view"
+msgstr "perm.patents.view"
+
+msgid "perm.patents.manage"
+msgstr "perm.patents.manage"
+
+msgid "Patent loading"
+msgstr "Patent loading"
+
+msgid ""
+"The weekly USPTO load that fills Patent tracking, and the cleanup that "
+"keeps it to its window."
+msgstr ""
+"The weekly USPTO load that fills Patent tracking, and the cleanup that "
+"keeps it to its window."
+
+msgid "No worker is online. Anything queued here will wait until one starts."
+msgstr "No worker is online. Anything queued here will wait until one starts."
+
+msgid "ODP API"
+msgstr "ODP API"
+
+msgid "Derived weekly URL"
+msgstr "Derived weekly URL"
+
+msgid "Next load"
+msgstr "Next load"
+
+msgid "File"
+msgstr "File"
+
+msgid "discovered when the load runs"
+msgstr "discovered when the load runs"
+
+msgid "AI filter (CPC)"
+msgstr "AI filter (CPC)"
+
+msgid "Download and load the latest weekly USPTO file now?"
+msgstr "Download and load the latest weekly USPTO file now?"
+
+msgid "Run weekly load"
+msgstr "Run weekly load"
+
+msgid "Remove every patent older than the window now? This cannot be undone."
+msgstr "Remove every patent older than the window now? This cannot be undone."
+
+msgid "Clean up window"
+msgstr "Clean up window"
+
+msgid "Recent loads"
+msgstr "Recent loads"
+
+msgid "Kept"
+msgstr "Kept"
+
+msgid "No load has run yet."
+msgstr "No load has run yet."
+
+msgid "Weekly patent load queued."
+msgstr "Weekly patent load queued."
+
+msgid "Patent window cleanup queued."
+msgstr "Patent window cleanup queued."
+
+msgid "menu.patents_admin"
+msgstr "menu.patents_admin"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

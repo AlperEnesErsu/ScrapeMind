@@ -40,3 +40,6 @@ app/core/static/uploads/
 # the audit is reproducible; the installed tree and the rendered pages are not.
 node_modules/
 ui-audit-pages/
+
+# Weekly USPTO bulk archives (~100 MB each) and the XML unpacked from them.
+data/patent_bulk/

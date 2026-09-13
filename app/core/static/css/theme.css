@@ -1836,3 +1836,14 @@ code {
 .cg-legend-dot--reference { background-color: #198754 !important; }
 .cg-legend-dot--citation  { background-color: #6f42c1 !important; }
 .cg-legend-dot--library   { background-color: #ffc107 !important; border: 2px solid #fd7e14 !important; }
+
+/* Patent description (Faz 8). USPTO text keeps its paragraph breaks, and a
+   long unbroken chemical or sequence string must wrap rather than push the
+   page sideways. A class rather than an inline style: CSP readiness counts
+   style attributes and holds them at their ceiling. `!important` for the
+   same reason as the former inline styles above: an inline style beat every
+   normal rule, and as a class it must not quietly lose to a Bootstrap one. */
+.patent-description {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}

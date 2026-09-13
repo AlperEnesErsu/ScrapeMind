@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Patent loading') }}{% endblock %}
+{% block content %}
+
+<h4 class="mb-1"><i class="bi bi-cloud-download me-2"></i>{{ _('Patent loading') }}</h4>
+<p class="text-muted small">
+  {{ _('The weekly USPTO load that fills Patent tracking, and the cleanup that keeps it to its window.') }}
+</p>
+
+{% if not worker_ok %}
+  {# A queued task with no worker looks exactly like a running one. Saying so
+     here beats an admin pressing the button twice and wondering. #}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ _('No worker is online. Anything queued here will wait until one starts.') }}
+  </div>
+{% endif %}
+
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card card-body py-2">
+      <div class="small text-body-secondary">{{ _('Patents') }}</div>
+      <div class="fs-5">{{ stats.documents }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-body py-2">
+      <div class="small text-body-secondary">{{ _('Claims') }}</div>
+      <div class="fs-5">{{ stats.claims }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-body py-2">
+      <div class="small text-body-secondary">{{ _('Window') }}</div>
+      <div class="fs-5">{{ settings.window_weeks }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-body py-2">
+      <div class="small text-body-secondary">{{ _('Source') }}</div>
+      <div class="fs-6">
+        {% if settings.has_key %}{{ _('ODP API') }}{% else %}{{ _('Derived weekly URL') }}{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header py-2 small text-uppercase text-muted">{{ _('Next load') }}</div>
+  <div class="card-body small">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">{{ _('File') }}</dt>
+      <dd class="col-sm-9 font-monospace">
+        {{ settings.next_file or _('discovered when the load runs') }}
+      </dd>
+      <dt class="col-sm-3">{{ _('AI filter (CPC)') }}</dt>
+      <dd class="col-sm-9 font-monospace">
+        {{ settings.cpc_core }}{% if settings.cpc_extended %} + {{ settings.cpc_extended }}{% endif %}
+      </dd>
+    </dl>
+  </div>
+  <div class="card-footer d-flex flex-wrap gap-2">
+    {# DESIGN.md: the primary action is the filled button, the destructive one
+       is outline only, and the two are never both filled side by side. #}
+    <form method="post" action="{{ url_for('patent.admin_run', action='refresh') }}"
+          data-confirm="{{ _('Download and load the latest weekly USPTO file now?') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm btn-primary" {% if not worker_ok %}disabled{% endif %}>
+        <i class="bi bi-arrow-repeat me-1"></i>{{ _('Run weekly load') }}
+      </button>
+    </form>
+    <form method="post" action="{{ url_for('patent.admin_run', action='purge') }}"
+          data-confirm="{{ _('Remove every patent older than the window now? This cannot be undone.') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm btn-outline-danger" {% if not worker_ok %}disabled{% endif %}>
+        <i class="bi bi-trash3 me-1"></i>{{ _('Clean up window') }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header py-2 small text-uppercase text-muted">{{ _('Recent loads') }}</div>
+  {% if runs %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 small align-middle">
+        <thead>
+          <tr>
+            <th>{{ _('File') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th class="text-end">{{ _('Seen') }}</th>
+            <th class="text-end">{{ _('Kept') }}</th>
+            <th>{{ _('Started') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in runs %}
+            <tr>
+              <td class="font-monospace">{{ run.source_file }}</td>
+              <td>
+                {% set badge = {'ok': 'text-bg-success', 'running': 'text-bg-secondary', 'partial': 'text-bg-warning'}.get(run.status, 'text-bg-danger') %}
+                <span class="badge {{ badge }}">{{ run.status }}</span>
+                {% if run.error %}
+                  <div class="text-danger text-break">{{ run.error|truncate(160) }}</div>
+                {% endif %}
+              </td>
+              <td class="text-end">{{ run.documents_seen }}</td>
+              <td class="text-end">{{ run.documents_kept }}</td>
+              <td class="text-nowrap">{{ run.started_at.strftime('%Y-%m-%d %H:%M') if run.started_at else '' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card-body small text-body-secondary">{{ _('No load has run yet.') }}</div>
+  {% endif %}
+</div>
+
+{% endblock %}
