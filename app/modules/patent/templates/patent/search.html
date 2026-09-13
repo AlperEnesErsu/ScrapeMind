@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('Search patents') }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+  <h4 class="mb-0"><i class="bi bi-search me-2"></i>{{ _('Search patents') }}</h4>
+  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('patent.index') }}">
+    <i class="bi bi-arrow-left me-1"></i>{{ _('Patent tracking') }}
+  </a>
+</div>
+<p class="text-muted small">
+  {{ _('Searches the full text of every patent in the window: title, abstract, description and claims.') }}
+</p>
+
+<form method="get" action="{{ url_for('patent.search') }}" class="card card-body mb-3">
+  <div class="row g-2">
+    <div class="col-12">
+      <label class="form-label small" for="patent-q">{{ _('Text') }}</label>
+      <input type="search" class="form-control" id="patent-q" name="q" value="{{ filters.q }}"
+             placeholder="{{ _('e.g. \"attention weights\" quantization -image') }}">
+      <div class="form-text">
+        {{ _('Quotes match a phrase, a leading minus excludes a word, "or" allows either.') }}
+      </div>
+    </div>
+    <div class="col-12">
+      {# Claims are what a patent asserts; the description only mentions things.
+         Whether an idea is taken turns on the first, so it gets its own scope. #}
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="scope" id="scope-all" value="all"
+               {% if filters.scope != 'claims' %}checked{% endif %}>
+        <label class="form-check-label small" for="scope-all">{{ _('Anywhere in the patent') }}</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="scope" id="scope-claims" value="claims"
+               {% if filters.scope == 'claims' %}checked{% endif %}>
+        <label class="form-check-label small" for="scope-claims">{{ _('Only in the claims') }}</label>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small" for="patent-cpc">{{ _('CPC code') }}</label>
+      <input type="text" class="form-control form-control-sm font-monospace" id="patent-cpc" name="cpc"
+             value="{{ filters.cpc }}" placeholder="G06N3">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small" for="patent-assignee">{{ _('Assignee') }}</label>
+      <input type="text" class="form-control form-control-sm" id="patent-assignee" name="assignee"
+             value="{{ filters.assignee }}">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small" for="patent-from">{{ _('Granted from') }}</label>
+      <input type="date" class="form-control form-control-sm" id="patent-from" name="from"
+             value="{{ filters.granted_from.isoformat() if filters.granted_from else '' }}">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label small" for="patent-to">{{ _('Granted to') }}</label>
+      <input type="date" class="form-control form-control-sm" id="patent-to" name="to"
+             value="{{ filters.granted_to.isoformat() if filters.granted_to else '' }}">
+    </div>
+  </div>
+  <div class="mt-3 d-flex gap-2">
+    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>{{ _('Search') }}</button>
+    {% if not filters.is_empty %}
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('patent.search') }}">{{ _('Clear') }}</a>
+    {% endif %}
+  </div>
+</form>
+
+{% if query_ignored %}
+  <div class="alert alert-warning small">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ _('The text you entered contains only very common words, so it was ignored. Add a more specific term.') }}
+  </div>
+{% endif %}
+
+{% if results is none %}
+  <p class="small text-body-secondary">{{ _('Enter a term or a filter to search the window.') }}</p>
+{% elif not results.items %}
+  {# Stated carefully: the window is three weeks of US grants, so an empty
+     result is a fact about that slice, not about the world. #}
+  <div class="alert alert-light border small">
+    {{ _('No patent in the current window matches. The window only holds recent US grants, so this says nothing about older or non-US patents.') }}
+  </div>
+{% else %}
+  <p class="small text-body-secondary">{{ _('%(count)s results', count=results.total) }}</p>
+  <div class="list-group mb-3">
+    {% for doc in results.items %}
+      {% set snip = snippets.get(doc.id) %}
+      <a class="list-group-item list-group-item-action"
+         href="{{ url_for('patent.detail', doc_number=doc.doc_number) }}">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>{{ doc.title }}</div>
+          <div class="small text-body-secondary text-nowrap">
+            {{ doc.grant_date.strftime('%Y-%m-%d') if doc.grant_date else '' }}
+          </div>
+        </div>
+        <div class="small text-body-secondary">
+          <span class="font-monospace">{{ doc.doc_number }}</span>
+          {% if doc.assignees %}&middot; {{ doc.assignees|join(', ') }}{% endif %}
+        </div>
+        {% if snip %}
+          <div class="small mt-1">
+            {% if snip.claim_number %}
+              <span class="badge text-bg-light">{{ _('Claim %(number)s', number=snip.claim_number) }}</span>
+            {% endif %}
+            {{ snip.text }}
+          </div>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+  {% with pagination = results %}{% include 'core/_pagination.html' %}{% endwith %}
+{% endif %}
+
+{% endblock %}

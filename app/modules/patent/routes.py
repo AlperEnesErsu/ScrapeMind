@@ -9,7 +9,7 @@ reviewed before then.
 """
 
 import structlog
-from flask import Blueprint, abort, flash, redirect, render_template, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 from flask_login import login_required
 
@@ -31,6 +31,36 @@ def index():
         stats=service.window_stats(),
         documents=service.recent_documents(),
         window_start=service.window_start(),
+    )
+
+
+@patent_bp.route("/search")
+@login_required
+def search():
+    """Full-text search over the window, claims as their own scope.
+
+    Declared before `/<doc_number>` for readers; Werkzeug would prefer the
+    static rule anyway, so no patent number can shadow it.
+    """
+    from app.modules.patent import search as patent_search
+
+    filters = patent_search.SearchFilters.from_args(request.args)
+    page = request.args.get("page", 1, type=int)
+    results = None
+    snippets = {}
+    if not filters.is_empty:
+        results = patent_search.build_query(filters).paginate(
+            page=page, per_page=patent_search.PER_PAGE, error_out=False
+        )
+        snippets = patent_search.snippets_for(results.items, filters.q, scope=filters.scope)
+    return render_template(
+        "patent/search.html",
+        filters=filters,
+        results=results,
+        snippets=snippets,
+        # Text that reduces to stopwords only is ignored by the query; saying
+        # so stops "no results" from reading as "nobody claims this".
+        query_ignored=bool(filters.q) and not patent_search.query_is_meaningful(filters.q),
     )
 
 

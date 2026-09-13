@@ -7,6 +7,12 @@
   {{ _('Recently granted US AI patents, kept for a rolling window and searchable down to the claims.') }}
 </p>
 
+<form method="get" action="{{ url_for('patent.search') }}" class="input-group input-group-sm mb-3" role="search">
+  <input type="search" class="form-control" name="q" aria-label="{{ _('Search patents') }}"
+         placeholder="{{ _('Search claims and descriptions') }}">
+  <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search me-1"></i>{{ _('Search') }}</button>
+</form>
+
 {% if stats.is_empty %}
   {# The normal state until the weekly load ships (8.3). An empty table is not
      a failure, and saying so beats a blank page that reads as one. #}

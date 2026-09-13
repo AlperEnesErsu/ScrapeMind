@@ -1,6 +1,6 @@
 # Faz 8 — Patent Takibi (yuvarlanan tam metin penceresi)
 
-> **Durum:** 8.1, 8.2, 8.3a, 8.3b bitti ve doğrulandı. 8.4–8.6 planlandı. 12 Eylül 2026.
+> **Durum:** 8.1–8.4 bitti ve doğrulandı (8.1–8.3b PR #98). 8.5–8.6 planlandı. 12 Eylül 2026.
 > Dal: `feat/patent-fulltext`, taban `c7c3e3f` (main).
 > Migration zinciri head'i: **`c3f9a17d40be`** (bu fazın şeması; ebeveyni
 > `e7b204c9f83a`, tek head, 38 revizyon).
@@ -122,7 +122,7 @@ patent_document
   kind_code          TEXT          -- B1/B2
   country            TEXT          -- v1: "US"
   title, abstract, description   TEXT
-  description_tsv    TSVECTOR      -- GIN
+  search_tsv         TSVECTOR      -- GIN; ağırlıklı: başlık A, özet B, tarifname C (8.4)
   filing_date, grant_date, priority_date   DATE
   assignees, inventors, cpc_codes          JSONB
   ai_source          TEXT          -- "cpc_core" | "cpc_extended"
@@ -134,6 +134,7 @@ patent_document
 patent_claim
   id, patent_document_id (CASCADE)
   number INT, is_independent BOOL, depends_on INT NULL, text TEXT
+  text_tsv TSVECTOR   -- GIN, saklanan (8.4)
   UNIQUE (patent_document_id, number)
 
 patent_chunk
@@ -151,7 +152,7 @@ patent_ingest_run     -- haftalık koşu kaydı; ScanRun DEĞİL (§6)
 `grant_date` pencerenin kaydığı kolon. `depends_on` istem ağacının kaynağı.
 
 **İndeksler:** `patent_document(grant_date)`, `(ai_source, grant_date)`,
-GIN `cpc_codes`, GIN `description_tsv`, GIN `to_tsvector(patent_claim.text)`,
+GIN `cpc_codes`, GIN `search_tsv`, GIN `patent_claim.text_tsv`,
 HNSW cosine `patent_chunk.embedding`. Bu ölçekte HNSW'yi migration'da yaratmak
 güvenli — 5 bin vektörde inşa anlık.
 
@@ -213,7 +214,7 @@ Kurallar:
 Üç yol, tek sonuç listesi:
 
 1. **Yapılandırılmış filtre** — tarih, CPC, hak sahibi, istem sayısı. Düz SQL.
-2. **Tam metin** — `description_tsv` + istem metni.
+2. **Tam metin** — `search_tsv` (başlık/özet/tarifname) + istemlerin `text_tsv`'si.
 3. **Semantik** — doğal dil → embedding → `patent_chunk` komşuluğu.
 
 Filtre her zaman `WHERE`. FTS ve semantik **Reciprocal Rank Fusion** ile karıştırılır
@@ -350,7 +351,56 @@ admin'in sidebar'ında.
 > kullanıcı için her sayfayı BuildError'a çevirirdi. Bu satır, kod `main`'e girdikten
 > sonra uygulama açılışında kendiliğinden gelir.
 
-### 9.4 Arama: FTS + filtre
+### 9.4 ✅ Arama: FTS + filtre — bitti (13 Eylül 2026)
+`/patents/search`; takip sayfasında da arama kutusu var.
+
+- **Gerçek Postgres FTS, `LIKE` değil.** Kütüphane araması `LIKE` kullanıyor ve orada
+  sorun değil (başlık + özet); 50 KB'lık tarifnamede GIN indekslerini boşa çıkarır.
+- **`websearch_to_tsquery`** — tırnak, `or`, `-hariç` kabul eder, bozuk girdide hata
+  vermez. `to_tsquery` başıboş bir `&`'ı 500'e çevirir.
+- **İstemler ayrı bir kapsam.** Tarifname bir şeyden *bahseder*, istem onu *talep
+  eder*; "bu fikir alınmış mı" sorusu yalnızca ikincisine bakar. İstemde eşleşme her
+  zaman üstte: `ts_rank` 32 normalizasyonuyla [0,1)'e sınırlı, istem eşleşmesi tam bir
+  puan ekliyor — sıralama garantisi verinin uysal olmasına değil yapıya dayanıyor.
+- **Yalnızca stopword'den oluşan sorgu "sonuç yok" gibi gösterilmiyor**, yok sayıldığı
+  söyleniyor. "Sonuç yok" da pencereyle sınırlanarak yazılıyor: üç haftalık ABD
+  verisindeki bir boşluk dünya hakkında bir şey söylemez.
+- **Snippet önce escape, sonra `<mark>`** — sıra güvenliğin kendisi; ayrıca parser
+  davranışına bağlı olmayan birim testiyle kilitli.
+- **Kullanıcı metni LIKE joker karakteri olamaz** (`100%` her hak sahibini eşleştirmez),
+  CPC girdisi `[A-Z0-9/]` dışını atar, geçersiz tarih filtre daraltmaz.
+- **Ortak `_pagination.html` düzeltildi:** değerleri HTML-escape ediyor ama URL-encode
+  etmiyordu; `R&D` araması 2. sayfada `q=R`'ye bölünüyordu. Kütüphane araması da düzeldi.
+
+**Performans — ölçülerek iki kez yeniden tasarlandı.** 3000 doküman, ortalama 56 KB
+tarifname, 60 bin istem (pencerenin gerçekçi üst sınırı), uçtan uca HTTP:
+
+| Senaryo | İlk tasarım | Ara adım | Son |
+|---|---|---|---|
+| Geniş terim, her yerde | 512 ms | 4266 ms | **73 ms** |
+| Geniş terim, yalnızca istemler | 403 ms | 1561 ms | **68 ms** |
+| Eşleşme yok | 268 ms | 31 ms | **38 ms** |
+| Özgül terim, istemler | — | 14 ms | **26 ms** |
+
+1. *İlk tasarım:* başlık+özet vektörü sorgu anında hesaplanıyordu (tek başına 117 ms,
+   sıfır eşleşmede bile) ve istem eşleşmesi satır başına korelasyonlu `EXISTS`'ti.
+2. *Ara adım:* ağırlıklı saklanan `search_tsv` sıfır/özgül sorguları çözdü, ama geniş
+   terimi **kötüleştirdi**. `EXPLAIN` sebebini gösterdi: terim 60 bin istemin 49 bininde
+   geçtiği için planlayıcı haklı olarak indeksi bırakıp taradı — ve ifade indeksi
+   taramaya hiçbir şey kazandırmadığı için her istem **yeniden tokenize edildi**
+   (~1,4 s), üstelik filtre, sıralama ve sayım için ayrı ayrı. `ts_rank` masumdu (11 ms).
+3. *Son:* istemlere de saklanan `text_tsv`, ve eşleşen doküman kümesi tek bir CTE'de
+   (iki kez referans verilen CTE Postgres'te bir kez materialize edilir).
+
+Migration `a8d3e6f1b2c4` (`description_tsv` → `search_tsv`, istem ifade indeksi →
+`text_tsv`); geçici DB'de upgrade → downgrade → upgrade, downgrade eski kolon ve iki
+eski indeksi birebir geri kuruyor.
+
+**Doğrulandı:** 27 yeni test, tam paket **1424 yeşil**.
+
+> Sentetik veri tüm terimleri tüm dokümanlara yayan 23 kelimelik bir sözlükle üretildi
+> — geniş terim senaryosu bu yüzden gerçekten en kötü durum. Gerçek korpus dağılımı
+> 8.3'ün ilk gerçek yüklemesinden sonra yeniden ölçülmeli.
 ### 9.5 Semantik + hibrit (RRF)
 ### 9.6 Okuma deneyimi: istem ağacı, jargon sadeleştirme
 
