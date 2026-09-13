@@ -97,11 +97,40 @@ def detail(doc_number: str):
     document = service.get_document(doc_number)
     if document is None:
         abort(404)
+    from flask_login import current_user
+
     return render_template(
         "patent/detail.html",
         document=document,
         claim_tree=service.claim_tree(document),
+        in_library=service.in_library(current_user, document),
     )
+
+
+@patent_bp.route("/<doc_number>/library", methods=["POST"])
+@login_required
+def add_to_library(doc_number: str):
+    """Keep one patent past the rolling window."""
+    from flask_login import current_user
+
+    document = service.get_document(doc_number)
+    if document is None:
+        abort(404)
+    _link, created = service.add_to_library(current_user, document)
+    log_action(
+        "patent.add_to_library",
+        entity_type="patent",
+        entity_id=document.doc_number,
+        changes={"created": created},
+    )
+    if created:
+        flash(
+            _("Added to your library. It stays there after it leaves the tracking window."),
+            "success",
+        )
+    else:
+        flash(_("This patent is already in your library."), "info")
+    return redirect(url_for("patent.detail", doc_number=document.doc_number))
 
 
 # Whitelist, same shape as `tasks_admin._TRIGGERS`: the browser names an

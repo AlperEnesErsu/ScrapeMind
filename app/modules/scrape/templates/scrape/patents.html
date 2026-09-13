@@ -7,6 +7,16 @@
   {{ _('Search published patents for work close to an invention idea. Results are not saved to your library.') }}
 </p>
 
+{% if patent_search_available %}
+  <p class="small">
+    <i class="bi bi-search me-1"></i>
+    {{ _('Need the claims themselves? Patent tracking searches the full text of recently granted US patents.') }}
+    <a href="{{ url_for('patent.search', q=(form.idea.data or '')[:300], scope='claims', semantic='1') if form.idea.data else url_for('patent.search') }}">
+      {{ _('Search claims in the tracking window') }}
+    </a>
+  </p>
+{% endif %}
+
 {% if not sources %}
   {# No usable patent source: either the API keys are missing or an admin has
      not switched patents on. Saying which beats an empty search box that

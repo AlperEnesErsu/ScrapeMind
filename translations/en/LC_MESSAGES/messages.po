@@ -4372,6 +4372,22 @@ msgstr "none — no key"
 msgid "The weekly load needs a USPTO Open Data Portal API key."
 msgstr "The weekly load needs a USPTO Open Data Portal API key."
 
+msgid "Added to your library. It stays there after it leaves the tracking window."
+msgstr "Added to your library. It stays there after it leaves the tracking window."
+
+msgid "This patent is already in your library."
+msgstr "This patent is already in your library."
+
+msgid ""
+"Need the claims themselves? Patent tracking searches the full text of "
+"recently granted US patents."
+msgstr ""
+"Need the claims themselves? Patent tracking searches the full text of "
+"recently granted US patents."
+
+msgid "Search claims in the tracking window"
+msgstr "Search claims in the tracking window"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

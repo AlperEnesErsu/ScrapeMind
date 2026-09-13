@@ -210,3 +210,116 @@ def load_settings() -> LoadSettings:
         total=total,
         embedding_model=embedding.current_model(),
     )
+
+
+# --- Keeping a patent (Faz 8 gap F3) --------------------------------------
+
+#: `PaperPayload.source` for patents saved from the tracking window.
+LIBRARY_SOURCE = "uspto_bulk"
+
+
+def _base_number(doc_number: str) -> str:
+    """ "US11123456B2" -> "US11123456": the form PatentsView stores, without
+    the kind code."""
+    import re
+
+    match = re.match(r"^([A-Z]{2}\d+)", doc_number or "")
+    return match.group(1) if match else doc_number
+
+
+def library_paper(document: PatentDocument):
+    """The `papers` row for this patent, if one already exists.
+
+    Patents have no DOI, so `upsert_paper`'s DOI-first dedup cannot see that
+    `US11123456` (PatentsView, kind code dropped) and `US11123456B2` (EPO, and
+    this corpus) are one patent. Looking both forms up here keeps a patent a
+    user already has from a nightly scan from becoming a second library row.
+    """
+    from app.modules.scrape.models import Paper
+
+    if document.paper_id:
+        paper = db.session.get(Paper, document.paper_id)
+        if paper is not None:
+            return paper
+    return (
+        Paper.query.filter(
+            Paper.kind == "patent",
+            Paper.external_id.in_([document.doc_number, _base_number(document.doc_number)]),
+        )
+        .order_by(Paper.id)
+        .first()
+    )
+
+
+def add_to_library(user, document: PatentDocument):
+    """Keep a patent past the window. Returns (UserPaper, created).
+
+    The corpus copy is purged after `PATENT_WINDOW_WEEKS`; the `papers` row
+    made here is not -- `patent_documents.paper_id` is SET NULL precisely so
+    this survives. Idempotent: a second call links nothing new.
+    """
+    from app.modules.scrape.service import link_user_paper, upsert_paper
+    from app.modules.scrape.sources.payload import PaperPayload
+
+    paper = library_paper(document)
+    if paper is None:
+        published = (
+            datetime(
+                document.grant_date.year,
+                document.grant_date.month,
+                document.grant_date.day,
+                tzinfo=UTC,
+            )
+            if document.grant_date
+            else None
+        )
+        # Same `assignee:` prefix convention as `patentsview_source`, so the
+        # card renders organisations apart from inventors.
+        categories = (
+            list(document.cpc_codes or [])[:6]
+            + [f"assignee:{a}" for a in (document.assignees or [])][:2]
+        )
+        paper = upsert_paper(
+            PaperPayload(
+                source=LIBRARY_SOURCE,
+                external_id=document.doc_number,
+                title=document.title,
+                abstract=document.abstract,
+                authors=list(document.inventors or []),
+                url=f"https://patents.google.com/patent/{document.doc_number}",
+                pdf_url=None,
+                published_at=published,
+                categories=categories,
+                kind="patent",
+            )
+        )
+    if document.paper_id != paper.id:
+        document.paper_id = paper.id
+        db.session.commit()
+    # `matched_keyword` is a stored column; None like `add_paper_from_url`,
+    # rather than a label that would freeze in one language.
+    link, created = link_user_paper(user, paper, matched_keyword=None)
+    if link.dismissed_at is not None:
+        # The user once hid this patent from their feed. Asking to keep it is
+        # the opposite instruction and must win; otherwise the button does
+        # nothing visible and the patent stays out of the library.
+        link.dismissed_at = None
+        db.session.commit()
+        created = True
+    return link, created
+
+
+def in_library(user, document: PatentDocument) -> bool:
+    from app.modules.scrape.models import UserPaper
+
+    paper = library_paper(document)
+    if paper is None:
+        return False
+    return (
+        UserPaper.query.filter(
+            UserPaper.user_id == user.id,
+            UserPaper.paper_id == paper.id,
+            UserPaper.dismissed_at.is_(None),
+        ).first()
+        is not None
+    )
