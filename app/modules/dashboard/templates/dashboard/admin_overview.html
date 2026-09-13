@@ -167,7 +167,7 @@
             {% set pct = (q.requests_used / q.requests_limit * 100) if q.requests_limit else ((q.bytes_used / q.bytes_limit * 100) if q.bytes_limit else 0) %}
             <div class="progress mt-1 progress-thin">
               <div class="progress-bar {{ 'bg-danger' if pct >= 90 else ('bg-warning' if pct >= 70 else 'bg-primary') }}"
-                   role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                   role="progressbar" aria-label="{{ _(q.label) }}" aria-valuemin="0" aria-valuemax="100"
                    aria-valuenow="{{ [pct, 100] | min | round(1) }}"
                    data-progress="{{ [pct, 100] | min | round(1) }}"></div>
             </div>
