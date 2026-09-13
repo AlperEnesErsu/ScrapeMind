@@ -56,6 +56,14 @@ class BaseConfig:
     # cost of the safe default.
     PROXY_FIX_HOPS = int(os.getenv("PROXY_FIX_HOPS", "0"))
 
+    # Largest request body Flask will read. nginx already stops anything over
+    # `client_max_body_size 3m` (docs/DEPLOYMENT.md §3), so in production this
+    # is the second line, not the first -- but a deployment that skips nginx,
+    # or retypes its config wrong, would otherwise buffer whatever it is sent.
+    # 3 MiB matches nginx: the largest legitimate body is a 2 MB avatar plus
+    # multipart overhead.
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", str(3 * 1024 * 1024)))
+
     # `script-src` ships report-only first (PRELAUNCH Y4 step 3): violations are
     # logged by /csp-report while nothing is blocked. Flip this once a release
     # has run clean, and the same directive moves into the enforced header.

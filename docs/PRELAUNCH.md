@@ -14,7 +14,7 @@
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
 | 🟠 Yüksek | 5 (**Y1, Y2, Y3, Y5 kapandı** — **Y4: kod tamam, prod'da zorlama kaldı**) | İlk hafta içinde kapanmalı |
-| 🟡 Orta | 13 (**O3, O9, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
+| 🟡 Orta | 13 (**O1, O2, O3, O4, O5, O9, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
 Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
@@ -628,11 +628,11 @@ yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
 
 | # | Bulgu | Not |
 |---|---|---|
-| O1 | `MAX_CONTENT_LENGTH` tanımsız | nginx `client_max_body_size 3m` ile koruyor; uygulama seviyesinde derinlemesine savunma yok |
-| O2 | `audit_logs.user_id` indekssiz | Admin denetim sayfası kullanıcıya göre filtreliyor; tablo büyüdükçe yavaşlar |
+| ~~O1~~ ✅ | ~~`MAX_CONTENT_LENGTH` tanımsız~~ | **Kapandı.** `MAX_CONTENT_LENGTH` = 3 MiB (nginx'in `client_max_body_size 3m`'si ile aynı; env ile değiştirilebilir). 413 artık üç biçimde karşılanıyor: API'ye JSON, HTMX isteğine gövdesiz 413 → `app.js` "Yüklenen dosya çok büyük." toast'u, normal isteğe `errors/413.html`. Tarayıcıda 4 MB'lık HTMX POST ile toast'un çıktığı doğrulandı. **Yolda bulunan:** 403/404/500 sayfaları giriş yapmamış ziyaretçiye **boş** geliyordu — şablonlar yalnızca oturum açıkken basılan `content` bloğunu dolduruyordu; dördü de artık `auth_content`'i de dolduruyor ve bir test bunu tutuyor |
+| ~~O2~~ ✅ | ~~`audit_logs.user_id` indekssiz~~ | **Kapandı.** Migration `f8768dad5990`: bileşik `(user_id, created_at)` — denetim sayfasının hem kullanıcı filtresini hem `created_at DESC` sıralamasını tek indeksten karşılıyor; öndeki sütun kullanıcı silmedeki FK aramasını da kapsıyor. Geçici bir veritabanında tüm zincir baştan koşuldu, upgrade → downgrade → upgrade temiz; `EXPLAIN` sorgunun `Index Scan Backward using ix_audit_logs_user_id_created_at` kullandığını gösterdi. `IF NOT EXISTS`: büyük tabloda indeks önce elle `CONCURRENTLY` kurulursa migration no-op olur |
 | ~~O3~~ ✅ | ~~`entrypoint.sh` `"$@"`'ı yok sayıyor~~ | **PR #86 ile kapandı.** Geçirilen komut artık kazanıyor ve migration koşmuyor (migration'lar web servisine ait). Geçici çözüm çağıranın tarafındaydı — `entrypoint: []` — yani tuzak bir sonraki servisi bekliyordu |
-| O4 | 6 env değişkeni `.env.example`'da yok | `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `OPENROUTER_BASE_URL`, `SCRAPE_RATE_{EPO_OPS,PATENTSVIEW}_PER_MIN`, `SCRAPE_RATE_SCOPUS_PER_SEC` — hepsinin varsayılanı var |
-| O5 | 1/37 migration geri alınamıyor | `c4e91b0a77d2` (çift `scrape.feed` menü kaydını gizleyen veri migration'ı). Boş `downgrade()` burada muhtemelen **doğru** — geri almak bilerek düzeltilmiş bir hatayı geri getirir. Yapılacak iş, bunu `downgrade()` içine bir satır yorum olarak yazmak; sessiz boşluk ile bilinçli karar aynı görünmemeli |
+| ~~O4~~ ✅ | ~~6 env değişkeni `.env.example`'da yok~~ | **Kapandı — ve liste eksikti.** Tarama `app/` altında `os.getenv` okuyan her anahtarı `.env.example` ile karşılaştırdı: listedeki altıya ek olarak **`PROXY_FIX_HOPS`** da yoktu (E1 ile eklenmiş, güvenlik ayarı). Hepsi eklendi; varsayılanı genelde değişmemesi gerekenler yorumlu `# KEY=değer` olarak. `test_prelaunch_hygiene.py` artık bunu her PR'da denetliyor; bilinçli iki istisna (eski `RATELIMIT_STORAGE_URL` yazımı, iç `CELERY_WORKER_BOOTSTRAP` anahtarı) gerekçesiyle listede |
+| ~~O5~~ ✅ | ~~1/37 migration geri alınamıyor~~ | **Zaten yapılmıştı**, tarama gözden kaçırmış: `c4e91b0a77d2`'nin `downgrade()`'inde gerekçe yorumu var (geri almak kenar çubuğunu bozuk hâline döndürür, satır `/admin/menu`'den geri açılabilir). AST taramasıyla doğrulandı: gövdesi yalnızca `pass` olan tek `downgrade()` bu ve yorumlu |
 | O6 | `journals` tablosu elle seed gerektiriyor | Scimago CSV yüklenmezse **hiçbir kartta quartile rozeti çıkmaz**. Bozukluk değil (`CLAUDE.md`), ama lansmanda "özellik eksik" gibi görünür — çıkış öncesi yüklenmeli |
 | O7 | Python sürüm farkı — **tarama bunu yanlış yazmış** | Prod imajı `python:3.11-slim` ve **CI de 3.11** (`ci.yml`); yani prod ile CI zaten eşleşiyor. Sapma **geliştiricinin venv'inde**: 3.14. Sonucu kozmetik değil — yerel mypy ile CI'ınkinin ayrışmasının sebebi bu (O11), ve o ayrışma bir kırmızı PR'ın merge edilmesine yol açtı. Yapılacak iş venv'i 3.11'e çekmek, Dockerfile'a dokunmak değil |
 | O8 | Zotero hiç gerçek hesaba karşı koşulmadı | Faz 7.2 yalnızca `requests` sınırında taklit edilerek doğrulandı. Çıkıştan önce bir gerçek anahtarla bir kez denenmeli |
