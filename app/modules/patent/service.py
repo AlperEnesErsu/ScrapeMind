@@ -174,16 +174,15 @@ def recent_runs(limit: int = 10) -> list[PatentIngestRun]:
 class LoadSettings:
     """What the next load will do, stated before anyone presses the button.
 
-    `route` is the question an admin actually has when a load fails: did it
-    go through the ODP API or the derived legacy URL? Those fail for
-    different reasons and are fixed in different places.
+    `has_key` decides whether there will be a load at all: without an ODP API
+    key the weekly run is skipped, and the panel has to say so plainly --
+    otherwise an admin sees a button and a quiet week and cannot tell why.
     """
 
     window_weeks: int
     cpc_core: str
     cpc_extended: str
     has_key: bool
-    next_file: str | None
     #: Semantic search readiness (8.5). `embedded` of `total` documents have a
     #: claim-1 vector from `embedding_model`; the rest are invisible to
     #: meaning-based matching until `embed_pending` reaches them.
@@ -206,7 +205,6 @@ def load_settings() -> LoadSettings:
         # With a key the file is discovered at run time, so there is nothing
         # honest to show in advance. Without one it is a pure function of the
         # date and can be shown exactly.
-        next_file=None if has_key else uspto.legacy_weekly_file().name,
         embeddings_enabled=embedding.is_enabled(),
         embedded=embedded,
         total=total,

@@ -205,8 +205,9 @@ class BaseConfig:
     # How many weeks of USPTO grants the corpus keeps. The purge and the "N
     # weeks" line in the UI both read this, so they cannot drift apart.
     PATENT_WINDOW_WEEKS = int(os.getenv("PATENT_WINDOW_WEEKS", "3"))
-    # Optional: with a key the ODP API is used, without one the keyless bulk
-    # directory download is attempted instead.
+    # Required for the weekly load. There is no keyless route: bulkdata.uspto.gov
+    # is retired and the Open Data Portal needs a signed-in USPTO.gov account
+    # (MFA) since 18 June 2026. Without it the load is skipped, the purge runs.
     USPTO_ODP_API_KEY = os.getenv("USPTO_ODP_API_KEY", "")
     PATENT_BULK_DIR = os.getenv("PATENT_BULK_DIR", "./data/patent_bulk")
     # Guard against a redirect to something unexpected, not a real

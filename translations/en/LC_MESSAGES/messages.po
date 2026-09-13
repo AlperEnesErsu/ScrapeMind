@@ -4344,6 +4344,34 @@ msgstr ""
 "Showing the %(shown)s most relevant of %(total)s full-text matches. "
 "Narrow the search to see the rest."
 
+msgid ""
+"No USPTO Open Data Portal API key is configured, so the weekly load is "
+"skipped."
+msgstr ""
+"No USPTO Open Data Portal API key is configured, so the weekly load is "
+"skipped."
+
+msgid ""
+"USPTO issues keys only to a signed-in USPTO.gov account with multi-factor"
+" authentication. Set the key as USPTO_ODP_API_KEY and restart. The window"
+" cleanup keeps running without one."
+msgstr ""
+"USPTO issues keys only to a signed-in USPTO.gov account with multi-factor"
+" authentication. Set the key as USPTO_ODP_API_KEY and restart. The window"
+" cleanup keeps running without one."
+
+msgid "How to get a key"
+msgstr "How to get a key"
+
+msgid "Key required"
+msgstr "Key required"
+
+msgid "none — no key"
+msgstr "none — no key"
+
+msgid "The weekly load needs a USPTO Open Data Portal API key."
+msgstr "The weekly load needs a USPTO Open Data Portal API key."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

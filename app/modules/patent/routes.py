@@ -142,6 +142,16 @@ def admin_run(action: str):
         flash(_("Unknown task."), "danger")
         return redirect(url_for("patent.admin"))
 
+    if action == "refresh":
+        from app.modules.patent.uspto import credentials_ok
+
+        if not credentials_ok():
+            # The button is disabled in this state; this covers a stale page or
+            # a hand-made POST. Queuing it would only produce a skipped run
+            # reported here as "queued".
+            flash(_("The weekly load needs a USPTO Open Data Portal API key."), "warning")
+            return redirect(url_for("patent.admin"))
+
     from app.tasks import celery_app
 
     result = celery_app.send_task(task_name)

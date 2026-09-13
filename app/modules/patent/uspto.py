@@ -6,22 +6,24 @@ Module-level `requests` on purpose: the tests monkeypatch this module's own
 from a constant USPTO host, never from user input, so the SSRF surface the
 guard exists for is absent.
 
-**Two routes to the same file, in order:**
+**An Open Data Portal API key is required.** The first version of this module
+treated the key as optional: grants publish on Tuesdays and the weekly filename
+is a pure function of the date, so without a key it derived a
+`bulkdata.uspto.gov` URL. That route no longer exists, measured on 13 September
+2026 from outside any sandbox:
 
-1. The Open Data Portal product API, when `USPTO_ODP_API_KEY` is set. USPTO
-   has consolidated its bulk data there and `bulkdata.uspto.gov` is the older
-   surface.
-2. The legacy weekly path, when there is no key. Grants publish on Tuesdays
-   and the filename is a pure function of that date, so the URL can be
-   derived rather than discovered — which is what keeps this module usable on
-   a deployment that never obtained a key.
+- `bulkdata.uspto.gov` has no address record -- the host is retired;
+- since 18 June 2026 the Open Data Portal itself requires signing in with a
+  USPTO.gov account (with multi-factor authentication), and its API answers 401
+  without a key.
 
-> NOT YET VALIDATED. The ODP response shape below is inferred from its
-> documentation, and no request in this module has run against the real
-> service -- the environment it was written in could not resolve
-> `bulkdata.uspto.gov` and had no API key. `_extract_files` is therefore
-> written to tolerate shape differences rather than to assume one, and the
-> first real run is the gate on Phase 8.3 being called done.
+So there is no keyless path left to fall back to, and the module no longer
+pretends one exists. Without `USPTO_ODP_API_KEY` the weekly load is skipped
+with a stated reason instead of fetching a dead URL every Wednesday.
+
+> NOT YET VALIDATED against the live API. The ODP response shape is inferred
+> from its documentation; `_extract_files` tolerates shape differences rather
+> than assuming one. The first run with a real key is the gate.
 """
 
 from __future__ import annotations
@@ -30,7 +32,7 @@ import hashlib
 import os
 import zipfile
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import requests
@@ -42,8 +44,6 @@ logger = structlog.get_logger()
 SOURCE_NAME = "uspto_bulk"
 
 _ODP_PRODUCTS_URL = "https://api.uspto.gov/api/v1/datasets/products/search"
-#: Grant full text (the "red book"). Applications live under `application/`.
-_LEGACY_BASE = "https://bulkdata.uspto.gov/data/patent/grant/redbook/fulltext"
 
 _TIMEOUT = 60  # seconds; these are large files on a slow origin
 _CHUNK = 1 << 20  # 1 MiB
@@ -63,7 +63,7 @@ class WeeklyFile:
 
 def credentials_ok() -> bool:
     """Read per call, not captured at import — same contract as every source
-    adapter. Absence is not an error here: it selects the legacy route."""
+    adapter. Without a key there is no route to the data (see module doc)."""
     return bool(os.getenv("USPTO_ODP_API_KEY") or current_app.config.get("USPTO_ODP_API_KEY"))
 
 
@@ -71,30 +71,9 @@ def _api_key() -> str:
     return os.getenv("USPTO_ODP_API_KEY") or current_app.config.get("USPTO_ODP_API_KEY", "")
 
 
-def most_recent_tuesday(today: date | None = None) -> date:
-    """USPTO grants publish on Tuesdays.
-
-    If today *is* Tuesday the file may not be up yet, so the previous Tuesday
-    is returned — a week-old file that exists beats a URL that 404s, and the
-    window is three weeks wide either way.
-    """
-    today = today or datetime.now(UTC).date()
-    days_since_tuesday = (today.weekday() - 1) % 7
-    if days_since_tuesday == 0:
-        days_since_tuesday = 7
-    return date.fromordinal(today.toordinal() - days_since_tuesday)
-
-
-def legacy_weekly_file(published: date | None = None) -> WeeklyFile:
-    """The filename is `ipgYYMMDD.zip` — a pure function of the date, which is
-    why no key is needed to find it."""
-    published = published or most_recent_tuesday()
-    name = f"ipg{published:%y%m%d}.zip"
-    return WeeklyFile(
-        name=name,
-        url=f"{_LEGACY_BASE}/{published.year}/{name}",
-        published=published,
-    )
+class CredentialsMissingError(RuntimeError):
+    """No ODP API key. A configuration state, not a transient failure: retrying
+    changes nothing until someone sets the key."""
 
 
 def _extract_files(payload: object) -> list[dict]:
@@ -150,39 +129,31 @@ def _parse_weekly_name(name: str) -> date | None:
         return None
 
 
-def discover_latest(*, today: date | None = None) -> WeeklyFile:
-    """The newest weekly grant file, by whichever route is available.
+def discover_latest() -> WeeklyFile:
+    """The newest weekly grant file listed by the ODP API.
 
-    The legacy route is the fallback rather than an error path: a deployment
-    with no key still tracks patents, it just derives the URL instead of
-    asking for it.
+    Raises `CredentialsMissingError` without a key and lets transport or shape
+    errors propagate. The earlier version fell back to a derived legacy URL
+    here; that host is gone, so a fallback would only turn a clear failure
+    into a confusing 404 one step later.
     """
     if not credentials_ok():
-        return legacy_weekly_file(most_recent_tuesday(today))
+        raise CredentialsMissingError("USPTO_ODP_API_KEY is not set")
 
-    try:
-        resp = requests.get(
-            _ODP_PRODUCTS_URL,
-            params={"q": "patent grant full text"},
-            headers={"X-API-KEY": _api_key()},
-            timeout=_TIMEOUT,
-        )
-        resp.raise_for_status()
-        candidates = [
-            WeeklyFile(name=entry["name"], url=entry["url"], published=published)
-            for entry in _extract_files(resp.json())
-            if (published := _parse_weekly_name(entry["name"])) is not None
-        ]
-    except (requests.RequestException, ValueError) as exc:
-        # A key that is present but not working must not take the feature
-        # down when a derivable URL exists.
-        logger.warning("uspto_odp_discovery_failed", error=str(exc))
-        return legacy_weekly_file(most_recent_tuesday(today))
-
+    resp = requests.get(
+        _ODP_PRODUCTS_URL,
+        params={"q": "patent grant full text"},
+        headers={"X-API-KEY": _api_key()},
+        timeout=_TIMEOUT,
+    )
+    resp.raise_for_status()
+    candidates = [
+        WeeklyFile(name=entry["name"], url=entry["url"], published=published)
+        for entry in _extract_files(resp.json())
+        if (published := _parse_weekly_name(entry["name"])) is not None
+    ]
     if not candidates:
-        logger.warning("uspto_odp_returned_no_weekly_files")
-        return legacy_weekly_file(most_recent_tuesday(today))
-
+        raise ValueError("ODP returned no weekly grant files -- response shape may have changed")
     return max(candidates, key=lambda f: f.published)
 
 
@@ -212,7 +183,9 @@ def download(weekly: WeeklyFile, dest_dir: str | None = None) -> tuple[str, str]
         logger.info("uspto_download_reused", file=weekly.name)
         return str(target), _sha256(target)
 
-    headers = {"X-API-KEY": _api_key()} if credentials_ok() else {}
+    if not credentials_ok():
+        raise CredentialsMissingError("USPTO_ODP_API_KEY is not set")
+    headers = {"X-API-KEY": _api_key()}
     cap = _max_bytes()
     written = 0
     with requests.get(weekly.url, headers=headers, timeout=_TIMEOUT, stream=True) as resp:

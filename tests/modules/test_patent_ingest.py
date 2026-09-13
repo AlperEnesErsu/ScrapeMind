@@ -112,28 +112,13 @@ class _Resp:
 
 
 class TestDiscovery:
-    @pytest.mark.parametrize(
-        "today,expected",
-        [
-            (date(2026, 9, 10), date(2026, 9, 8)),  # Thursday -> this week
-            (date(2026, 9, 13), date(2026, 9, 8)),  # Sunday   -> this week
-            (date(2026, 9, 14), date(2026, 9, 8)),  # Monday   -> last Tuesday
-        ],
-    )
-    def test_most_recent_tuesday(self, today, expected):
-        assert uspto.most_recent_tuesday(today) == expected
+    """A key is required (see the `uspto` module doc): the keyless bulk host is
+    retired and the Open Data Portal requires a signed-in USPTO.gov account.
+    These tests used to lock in a fallback to a derived legacy URL; that
+    fallback now points at a host with no address record, so they lock in its
+    absence instead."""
 
-    def test_on_a_tuesday_it_takes_the_previous_one(self):
-        """Today's file may not be published yet; a week-old file that exists
-        beats a URL that 404s."""
-        assert uspto.most_recent_tuesday(date(2026, 9, 8)) == date(2026, 9, 1)
-
-    def test_legacy_url_is_derived_not_discovered(self):
-        weekly = uspto.legacy_weekly_file(date(2026, 9, 8))
-        assert weekly.name == "ipg260908.zip"
-        assert weekly.url.endswith("/2026/ipg260908.zip")
-
-    def test_without_a_key_the_legacy_route_is_used(self, app, monkeypatch):
+    def test_without_a_key_nothing_is_requested(self, app, monkeypatch):
         def explode(*a, **k):
             raise AssertionError("no HTTP call should happen without a key")
 
@@ -141,8 +126,8 @@ class TestDiscovery:
         with app.app_context():
             app.config["USPTO_ODP_API_KEY"] = ""
             monkeypatch.delenv("USPTO_ODP_API_KEY", raising=False)
-            weekly = uspto.discover_latest(today=date(2026, 9, 10))
-        assert weekly.name == "ipg260908.zip"
+            with pytest.raises(uspto.CredentialsMissingError):
+                uspto.discover_latest()
 
     def test_with_a_key_the_newest_file_wins(self, app, monkeypatch):
         payload = {
@@ -163,9 +148,9 @@ class TestDiscovery:
         assert weekly.name == "ipg260908.zip"
         assert weekly.url == "https://x/2.zip"
 
-    def test_a_broken_key_falls_back_instead_of_failing(self, app, monkeypatch):
-        """A key that is present but not working must not take the feature
-        down when a derivable URL exists."""
+    def test_a_transport_error_propagates_instead_of_falling_back(self, app, monkeypatch):
+        """The old fallback turned this into a 404 against a retired host one
+        step later; now the real error reaches the run record."""
 
         def boom(*a, **k):
             raise uspto.requests.ConnectionError("down")
@@ -173,12 +158,50 @@ class TestDiscovery:
         monkeypatch.setattr(uspto.requests, "get", boom)
         with app.app_context():
             app.config["USPTO_ODP_API_KEY"] = "k"
-            weekly = uspto.discover_latest(today=date(2026, 9, 10))
-        assert weekly.name == "ipg260908.zip"
+            with pytest.raises(uspto.requests.ConnectionError):
+                uspto.discover_latest()
+
+    def test_an_empty_listing_is_an_error_not_a_silent_week(self, app, monkeypatch):
+        monkeypatch.setattr(uspto.requests, "get", lambda *a, **k: _Resp(payload={"x": []}))
+        with app.app_context():
+            app.config["USPTO_ODP_API_KEY"] = "k"
+            with pytest.raises(ValueError, match="no weekly grant files"):
+                uspto.discover_latest()
 
     def test_extract_files_tolerates_a_renamed_envelope(self):
         found = uspto._extract_files({"any": {"nesting": [{"name": "ipg1.zip", "url": "u"}]}})
         assert found == [{"name": "ipg1.zip", "url": "u"}]
+
+    def test_weekly_names_parse_and_others_do_not(self):
+        assert uspto._parse_weekly_name("ipg260908.zip") == date(2026, 9, 8)
+        assert uspto._parse_weekly_name("readme.txt") is None
+
+
+class TestRefreshWithoutKey:
+    def test_the_load_is_skipped_but_the_purge_still_runs(self, app, monkeypatch):
+        called = []
+        monkeypatch.setattr(uspto, "download", lambda *a, **k: called.append("download"))
+        monkeypatch.setattr(ingest, "purge_window", lambda today=None: called.append("purge") or 0)
+        with app.app_context():
+            app.config["USPTO_ODP_API_KEY"] = ""
+            monkeypatch.delenv("USPTO_ODP_API_KEY", raising=False)
+            result = ingest.refresh_window()
+        assert result["status"] == "skipped" and result["reason"] == "no_api_key"
+        assert called == ["purge"]
+
+    def test_a_skipped_load_does_not_queue_embedding(self, app, monkeypatch):
+        from app.tasks import patent_bulk_tasks
+
+        queued = []
+        monkeypatch.setattr(
+            "app.modules.patent.ingest.refresh_window",
+            lambda limit=None: {"status": "skipped", "reason": "no_api_key"},
+        )
+        monkeypatch.setattr(patent_bulk_tasks.embed_pending, "delay", lambda: queued.append(1))
+        monkeypatch.setattr(patent_bulk_tasks, "_lock", lambda: None)
+        with app.app_context():
+            patent_bulk_tasks.refresh_window.run()
+        assert queued == []
 
 
 class TestDownload:
@@ -188,6 +211,7 @@ class TestDownload:
         )
         weekly = uspto.WeeklyFile("ipg260908.zip", "https://x/f.zip", date(2026, 9, 8))
         with app.app_context():
+            app.config["USPTO_ODP_API_KEY"] = "k"
             path, sha = uspto.download(weekly, dest_dir=str(tmp_path))
         assert open(path, "rb").read() == b"hello world"
         assert len(sha) == 64
@@ -210,10 +234,19 @@ class TestDownload:
         )
         weekly = uspto.WeeklyFile("ipg260908.zip", "https://x/f.zip", date(2026, 9, 8))
         with app.app_context():
+            app.config["USPTO_ODP_API_KEY"] = "k"
             app.config["PATENT_MAX_DOWNLOAD_MB"] = 1
             with pytest.raises(ValueError, match="cap"):
                 uspto.download(weekly, dest_dir=str(tmp_path))
         assert list(tmp_path.iterdir()) == []
+
+    def test_download_without_a_key_refuses(self, app, monkeypatch, tmp_path):
+        weekly = uspto.WeeklyFile("ipg260908.zip", "https://x/f.zip", date(2026, 9, 8))
+        with app.app_context():
+            app.config["USPTO_ODP_API_KEY"] = ""
+            monkeypatch.delenv("USPTO_ODP_API_KEY", raising=False)
+            with pytest.raises(uspto.CredentialsMissingError):
+                uspto.download(weekly, dest_dir=str(tmp_path))
 
     def test_zip_is_unpacked_to_the_xml_inside(self, tmp_path):
         archive = tmp_path / "ipg260908.zip"
