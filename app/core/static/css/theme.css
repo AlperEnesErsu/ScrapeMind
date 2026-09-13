@@ -1780,11 +1780,70 @@ code {
 .totp-qr { max-width: 220px !important; }
 .session-agent { max-width: 340px !important; }
 
+/* Shared, first needed by the dashboard */
+.minw-0 { min-width: 0 !important; }
+.maxw-80p { max-width: 80% !important; }
+.spinner-xs { width: .65rem !important; height: .65rem !important; }
+.progress-thin { height: 4px !important; }
+.empty-state-icon-sm {
+  font-size: var(--text-2xl) !important;
+  color: var(--bs-secondary-color) !important;
+}
+
+/* The unread dot is sized relative to its line on purpose -- it scales with
+   the text beside it rather than with the page, so it is a percentage of the
+   parent rather than a --text-* step. */
+.dot-unread { font-size: 50% !important; }
+
+/* Dashboard */
+.step-badge { width: 38px !important; height: 38px !important; min-width: 38px !important; }
+
+/* Shared, first needed by scrape */
+.tracking-wide { letter-spacing: .04em !important; }
+.maxw-60p { max-width: 60% !important; }
+.maxw-22rem { max-width: 22rem !important; }
+.spinner-s { width: .85rem !important; height: .85rem !important; }
+.avatar-32 { width: 32px !important; height: 32px !important; }
+
+/* Library heatmap: a year of days, one column per week */
+.heatmap-grid--year {
+  grid-auto-flow: column !important;
+  grid-template-rows: repeat(7, 10px) !important;
+  min-width: 700px !important;
+}
+.heatmap-legend-cell { width: 10px !important; height: 10px !important; }
+
+/* Paper detail */
+.cite-modal-pre {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  max-height: 50vh !important;
+  overflow-y: auto !important;
+  font-size: var(--text-sm) !important;
+}
+.collection-menu { min-width: 220px !important; }
+
+/* Citation graph. The legend colours must match the node colours set in
+   app/modules/scrape/static/js/citation_graph.js -- change both together. */
+.cg-stage { height: 520px !important; width: 100% !important; }
+.cg-legend-dot {
+  display: inline-block !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+}
+.cg-legend-dot--center    { background-color: #0d6efd !important; }
+.cg-legend-dot--reference { background-color: #198754 !important; }
+.cg-legend-dot--citation  { background-color: #6f42c1 !important; }
+.cg-legend-dot--library   { background-color: #ffc107 !important; border: 2px solid #fd7e14 !important; }
+
 /* Patent description (Faz 8). USPTO text keeps its paragraph breaks, and a
    long unbroken chemical or sequence string must wrap rather than push the
    page sideways. A class rather than an inline style: CSP readiness counts
-   style attributes and holds them at their ceiling. */
+   style attributes and holds them at their ceiling. `!important` for the
+   same reason as the former inline styles above: an inline style beat every
+   normal rule, and as a class it must not quietly lose to a Bootstrap one. */
 .patent-description {
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
 }

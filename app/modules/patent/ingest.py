@@ -126,7 +126,14 @@ def ingest_file(
         run.status = "ok"
     except Exception as exc:  # noqa: BLE001 - recorded, then re-raised
         db.session.rollback()
-        run = db.session.get(PatentIngestRun, run.id)
+        # The rollback expired `run`; re-read it so the error lands on the row
+        # that was committed before the work started. It cannot be missing --
+        # that commit happened above -- but if it somehow were, the expired
+        # instance still reloads on write, so it is kept rather than replaced
+        # with None.
+        refreshed = db.session.get(PatentIngestRun, run.id)
+        if refreshed is not None:
+            run = refreshed
         run.status = "error"
         run.error = str(exc)[:2000]
         raise

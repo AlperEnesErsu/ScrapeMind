@@ -14,7 +14,7 @@
           <div class="fs-2 fw-bold text-white">{{ metrics.users_total }}</div>
           <div class="small text-white-75">{{ _('Total Users') }}</div>
           {% if user_trend != 0 %}
-            <div class="small mt-1" style="font-size: var(--text-xs);">
+            <div class="small mt-1 fs-xs">
               {% if user_trend > 0 %}
                 <span class="badge bg-success-subtle text-success"><i class="bi bi-arrow-up-short"></i>+{{ user_trend }}</span>
               {% else %}
@@ -46,7 +46,7 @@
           <div class="fs-2 fw-bold text-white">{{ logs_last_7 }}</div>
           <div class="small text-white-75">{{ _('Operations (7d)') }}</div>
           {% if logs_trend != 0 %}
-            <div class="small mt-1" style="font-size: var(--text-xs);">
+            <div class="small mt-1 fs-xs">
               {% if logs_trend > 0 %}
                 <span class="badge bg-success-subtle text-success"><i class="bi bi-arrow-up-short"></i>+{{ logs_trend }}</span>
               {% else %}
@@ -93,7 +93,7 @@
               <td class="small text-muted text-nowrap">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
               <td class="small fw-semibold">{{ log.user_id or '—' }}</td>
               <td class="small">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2" style="font-size: var(--text-xs);">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2 fs-xs">
                   {{ humanize_action(log.action) }}
                 </span>
               </td>
@@ -165,11 +165,13 @@
               {% endif %}
             </div>
             {% set pct = (q.requests_used / q.requests_limit * 100) if q.requests_limit else ((q.bytes_used / q.bytes_limit * 100) if q.bytes_limit else 0) %}
-            <div class="progress mt-1" style="height: 4px;">
+            <div class="progress mt-1 progress-thin">
               <div class="progress-bar {{ 'bg-danger' if pct >= 90 else ('bg-warning' if pct >= 70 else 'bg-primary') }}"
-                   style="width: {{ [pct, 100] | min | round(1) }}%"></div>
+                   role="progressbar" aria-label="{{ _(q.label) }}" aria-valuemin="0" aria-valuemax="100"
+                   aria-valuenow="{{ [pct, 100] | min | round(1) }}"
+                   data-progress="{{ [pct, 100] | min | round(1) }}"></div>
             </div>
-            <div class="text-muted mt-1" style="font-size: var(--text-xs);">
+            <div class="text-muted mt-1 fs-xs">
               {{ _('Resets %(when)s', when=q.resets_at.strftime('%d.%m.%Y')) }}
             </div>
           </div>

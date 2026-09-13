@@ -24,7 +24,7 @@
      {% endif %}>
   {% if is_running %}
     <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis" data-testid="scan-running">
-      <span class="spinner-border spinner-border-sm me-1" style="width:.65rem;height:.65rem;" role="status" aria-hidden="true"></span>
+      <span class="spinner-border spinner-border-sm me-1 spinner-xs" role="status" aria-hidden="true"></span>
       {{ _('Scanning your sources…') }}
       {% if running_seconds is not none %}
         <span class="fw-normal">{{ _('(%(s)ss)', s=running_seconds) }}</span>

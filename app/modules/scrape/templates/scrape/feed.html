@@ -11,7 +11,7 @@
   <form method="get" class="ms-auto d-flex flex-wrap gap-2 align-items-center">
     {% if view != 'discover' %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
     <div class="position-relative">
-      <i class="bi bi-search position-absolute top-50 translate-middle-y ms-2 text-muted" style="left:0;"></i>
+      <i class="bi bi-search position-absolute top-50 translate-middle-y ms-2 text-muted start-0"></i>
       <input type="search" name="q" value="{{ q or '' }}"
              class="form-control form-control-sm ps-4 discover-filter"
              placeholder="{{ _('Filter — title, abstract, keyword') }}">
@@ -83,7 +83,7 @@
   <i class="bi bi-funnel"></i>
   {{ _('Filtering: %(term)s', term=q) }}
   {% if semantic %}
-    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1" style="font-size: var(--text-2xs);">
+    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 fs-2xs">
       <i class="bi bi-stars me-1"></i>{{ _('Semantic') }}
     </span>
   {% endif %}
@@ -145,7 +145,7 @@
         {% endfor %}
       {% else %}
     <div class="empty-state py-5 text-center">
-      <i class="bi bi-newspaper" style="font-size: var(--icon-xl); color: var(--bs-secondary-color);"></i>
+      <i class="bi bi-newspaper empty-state-icon"></i>
       <div class="mt-2 fw-medium">
         {% if view == 'favorites' %}{{ _('No favorites yet.') }}
         {% elif view == 'dismissed' %}{{ _('Nothing hidden.') }}

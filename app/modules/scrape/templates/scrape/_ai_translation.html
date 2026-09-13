@@ -7,14 +7,14 @@
   {% if not ai_enabled %}
     {% include 'scrape/_ai_disabled.html' %}
   {% elif translation %}
-    <p class="small text-muted text-uppercase fw-medium mb-2" style="letter-spacing: .04em;">
+    <p class="small text-muted text-uppercase fw-medium mb-2 tracking-wide">
       <i class="bi bi-translate me-1"></i>{{ _('Translated title') }}
     </p>
     {% if translation.title_translated %}
       <p class="paper-detail__title-tr mb-3">{{ translation.title_translated }}</p>
     {% endif %}
 
-    <p class="small text-muted text-uppercase fw-medium mb-2" style="letter-spacing: .04em;">
+    <p class="small text-muted text-uppercase fw-medium mb-2 tracking-wide">
       {{ _('Translated abstract') }}
     </p>
     {% if translation.abstract_translated %}

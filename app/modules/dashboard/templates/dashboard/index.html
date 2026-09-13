@@ -63,8 +63,8 @@
   <ul class="list-group list-group-flush">
     {% for r in for_you %}
     <li class="list-group-item small d-flex justify-content-between gap-2">
-      <span class="text-truncate" style="max-width: 80%;" title="{{ r.paper.title }}">
-        {% if not r.seen_at %}<i class="bi bi-circle-fill text-primary me-1" style="font-size: 0.5em;"></i>{% endif %}
+      <span class="text-truncate maxw-80p" title="{{ r.paper.title }}">
+        {% if not r.seen_at %}<i class="bi bi-circle-fill text-primary me-1 dot-unread"></i>{% endif %}
         <strong>{{ r.paper.title }}</strong>
         <span class="text-muted">
           — {% if r.paper.authors %}{{ r.paper.authors[:2] | join(', ') }}{% endif %}
