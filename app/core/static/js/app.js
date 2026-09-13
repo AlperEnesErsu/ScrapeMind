@@ -219,6 +219,8 @@ document.body.addEventListener('htmx:responseError', function(evt) {
     showToast(msg('stale', 'Sayfa bir süredir açık. Yenileyip tekrar deneyin.'), 'warning');
   } else if (status === 401 || status === 403) {
     showToast(msg('forbidden', 'Buna izniniz yok.'), 'error');
+  } else if (status === 413) {
+    showToast(msg('too-large', 'Yüklenen dosya çok büyük.'), 'warning');
   } else {
     showToast(msg('error', 'Bir şeyler ters gitti. Tekrar deneyin.'), 'error');
   }

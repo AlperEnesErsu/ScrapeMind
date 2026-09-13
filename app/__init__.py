@@ -499,6 +499,23 @@ def _register_error_handlers(app: Flask) -> None:
             )
         return render_template("errors/404.html"), 405
 
+    @app.errorhandler(413)
+    def payload_too_large(e):
+        """A body over MAX_CONTENT_LENGTH.
+
+        Plain 413 with no page for HTMX: the request came from a form swap,
+        and app.js turns the status into a toast the user can act on. A full
+        error page swapped into a tab would be worse than no answer.
+        """
+        if _wants_json():
+            return (
+                jsonify({"error": {"code": "payload_too_large", "message": "Request too large."}}),
+                413,
+            )
+        if request.headers.get("HX-Request"):
+            return "", 413
+        return render_template("errors/413.html"), 413
+
     @app.errorhandler(500)
     def server_error(e):
         if _wants_json():

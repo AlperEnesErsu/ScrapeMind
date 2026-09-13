@@ -4131,6 +4131,12 @@ msgstr "Başlıksız"
 msgid "Could not add the paper to your library."
 msgstr "Makale kütüphanene eklenemedi."
 
+msgid "That upload is too large."
+msgstr "Yüklenen dosya çok büyük."
+
+msgid "Too large"
+msgstr "Çok büyük"
+
 msgid "Patent tracking"
 msgstr "Patent Takibi"
 
