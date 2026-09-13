@@ -65,6 +65,9 @@ class SearchFilters:
     assignee: str = ""
     granted_from: date | None = None
     granted_to: date | None = None
+    #: Fuse claim-1 vectors in with full text (8.5). Not a filter: it changes
+    #: how results are found and ranked, never which structured rows qualify.
+    semantic: bool = False
 
     @classmethod
     def from_args(cls, args) -> SearchFilters:
@@ -81,6 +84,7 @@ class SearchFilters:
             assignee=(args.get("assignee") or "").strip()[:120],
             granted_from=_parse_date(args.get("from")),
             granted_to=_parse_date(args.get("to")),
+            semantic=args.get("semantic") == "1",
         )
 
     @property
@@ -250,4 +254,212 @@ def snippets_for(
             if headline and _HL_START in headline:
                 out[doc_id] = Snippet(text=_highlight(headline), claim_number=None)
 
+    return out
+
+
+# --- Semantic + hybrid (Faz 8.5) ------------------------------------------
+
+#: Reciprocal Rank Fusion constant from Cormack et al. (2009), the value every
+#: RRF implementation uses. Large enough that rank 1 does not dominate.
+RRF_K = 60
+#: How deep each list goes before fusing. Pages are fused in Python, so this
+#: bounds the work; a hybrid query almost never pages past its first 200.
+CANDIDATES = 100
+#: Cosine distance beyond which a neighbour is not treated as a match. Vector
+#: search always returns *something* -- without a floor, a query with no real
+#: match would still fill the page with the least-distant noise. 0.70 is the
+#: value the library's semantic search already uses.
+MAX_DISTANCE_DEFAULT = 0.70
+
+
+def fuse(*rankings: list[int], k: int = RRF_K) -> list[int]:
+    """Reciprocal Rank Fusion over ranked id lists, best first.
+
+    `score(d) = sum(1 / (k + rank))` over every list containing d. Chosen over
+    blending the raw scores because `ts_rank` and cosine distance are on
+    unrelated scales -- any weighted sum needs calibration that the data
+    would quietly break. RRF only uses positions.
+
+    Ties break on first appearance, so the order is deterministic and the
+    earlier list (full text, where a claim match is guaranteed first) wins.
+    """
+    scores: dict[int, float] = {}
+    first_seen: dict[int, int] = {}
+    position = 0
+    for ranking in rankings:
+        for rank, doc_id in enumerate(ranking, start=1):
+            scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+            if doc_id not in first_seen:
+                first_seen[doc_id] = position
+                position += 1
+    return sorted(scores, key=lambda d: (-scores[d], first_seen[d]))
+
+
+class ListPagination:
+    """The slice of `flask_sqlalchemy.Pagination` that `_pagination.html` uses,
+    over a list already in memory -- a fused ranking is not a SQL query."""
+
+    def __init__(self, items: list, page: int, per_page: int, total: int):
+        self.items = items
+        self.page = page
+        self.per_page = per_page
+        self.total = total
+
+    @property
+    def pages(self) -> int:
+        return max(1, -(-self.total // self.per_page)) if self.total else 0
+
+    @property
+    def has_prev(self) -> bool:
+        return self.page > 1
+
+    @property
+    def has_next(self) -> bool:
+        return self.page < self.pages
+
+    @property
+    def prev_num(self) -> int | None:
+        return self.page - 1 if self.has_prev else None
+
+    @property
+    def next_num(self) -> int | None:
+        return self.page + 1 if self.has_next else None
+
+    def iter_pages(self, left_edge=2, left_current=2, right_current=4, right_edge=2):
+        """Same contract as Flask-SQLAlchemy: page numbers, None for a gap."""
+        last = 0
+        for num in range(1, self.pages + 1):
+            if (
+                num <= left_edge
+                or self.page - left_current <= num <= self.page + right_current
+                or num > self.pages - right_edge
+            ):
+                if last + 1 != num:
+                    yield None
+                yield num
+                last = num
+
+
+@dataclass
+class HybridResult:
+    pagination: ListPagination
+    semantic_used: bool
+    #: doc id -> cosine similarity (1 - distance), for results the vector list found.
+    similarity: dict[int, float]
+    #: Full-text matches before the candidate cut. Fusion only ever sees the
+    #: top `CANDIDATES` of each list, so the fused total is a ceiling, not a
+    #: count -- showing it alone would tell someone searching a common term
+    #: that 100 patents match when 3,000 do.
+    text_total: int = 0
+
+    @property
+    def capped(self) -> bool:
+        return self.text_total > CANDIDATES
+
+
+def _filtered_ids_query(filters: SearchFilters):
+    """The structured filters alone, as an id subquery both candidate lists share."""
+    no_text = SearchFilters(
+        cpc=filters.cpc,
+        assignee=filters.assignee,
+        granted_from=filters.granted_from,
+        granted_to=filters.granted_to,
+    )
+    return build_query(no_text).with_entities(PatentDocument.id).order_by(None)
+
+
+def semantic_candidates(
+    query_vector: list[float], filters: SearchFilters, *, max_distance: float
+) -> list[tuple[int, float]]:
+    """Nearest claim-1 vectors from the current model, filtered, best first."""
+    from app.modules.patent.embedding import KIND_CLAIM1, current_model
+    from app.modules.patent.models import PatentChunk
+
+    distance = PatentChunk.embedding.cosine_distance(query_vector)
+    rows = db.session.execute(
+        db.select(PatentChunk.patent_document_id, distance)
+        .where(
+            PatentChunk.kind == KIND_CLAIM1,
+            PatentChunk.embedding.is_not(None),
+            # Only vectors this query vector can be compared with.
+            PatentChunk.embedding_model == current_model(),
+            PatentChunk.patent_document_id.in_(_filtered_ids_query(filters)),
+            distance <= max_distance,
+        )
+        .order_by(distance)
+        .limit(CANDIDATES)
+    ).all()
+    return [(doc_id, float(dist)) for doc_id, dist in rows]
+
+
+def hybrid_search(filters: SearchFilters, page: int, *, user=None) -> HybridResult:
+    """Full text and claim-1 vectors, fused with RRF.
+
+    Falls back to full text alone -- and says so through `semantic_used` --
+    when no vector can be made for the query: no provider, a failed call, or
+    a deployment set to full text only. Silence there would present lexical
+    results as semantic ones.
+    """
+    from app.modules.patent.embedding import is_enabled
+    from app.modules.scrape.embedding_service import get_embedding
+
+    text_query = build_query(filters)
+    text_ids = [d.id for d in text_query.limit(CANDIDATES).all()]
+    text_total = text_query.order_by(None).count()
+
+    vector_hits: list[tuple[int, float]] = []
+    semantic_used = False
+    if filters.q and is_enabled():
+        query_vector = get_embedding(filters.q, user=user)
+        if query_vector is not None:
+            from flask import current_app
+
+            max_distance = float(
+                current_app.config.get("PATENT_SEMANTIC_MAX_DISTANCE", MAX_DISTANCE_DEFAULT)
+            )
+            vector_hits = semantic_candidates(query_vector, filters, max_distance=max_distance)
+            semantic_used = True
+
+    fused = fuse(text_ids, [doc_id for doc_id, _ in vector_hits])
+    page = max(page, 1)
+    window = fused[(page - 1) * PER_PAGE : page * PER_PAGE]
+    by_id = (
+        {d.id: d for d in PatentDocument.query.filter(PatentDocument.id.in_(window)).all()}
+        if window
+        else {}
+    )
+    items = [by_id[i] for i in window if i in by_id]
+    return HybridResult(
+        pagination=ListPagination(items, page, PER_PAGE, len(fused)),
+        semantic_used=semantic_used,
+        similarity={doc_id: round(1.0 - dist, 3) for doc_id, dist in vector_hits},
+        text_total=text_total,
+    )
+
+
+def scope_claim_snippets(documents: list[PatentDocument], exclude: set[int]) -> dict[int, Snippet]:
+    """For results found only by meaning: show the claim that was matched.
+
+    A semantic hit has no highlighted words -- the query may share none with
+    the patent -- so the honest excerpt is the claim-1 text the vector was
+    made from, labelled as such rather than dressed up with fake highlights.
+    """
+    from app.modules.patent.embedding import KIND_CLAIM1
+    from app.modules.patent.models import PatentChunk
+
+    ids = [d.id for d in documents if d.id not in exclude]
+    if not ids:
+        return {}
+    rows = db.session.execute(
+        db.select(PatentChunk.patent_document_id, PatentChunk.ref, PatentChunk.text).where(
+            PatentChunk.patent_document_id.in_(ids), PatentChunk.kind == KIND_CLAIM1
+        )
+    ).all()
+    out: dict[int, Snippet] = {}
+    for doc_id, ref, text in rows:
+        excerpt = text if len(text) <= 320 else text[:320].rsplit(" ", 1)[0] + " …"
+        out[doc_id] = Snippet(
+            text=Markup(escape(excerpt)),
+            claim_number=int(ref) if ref and ref.isdigit() else None,
+        )
     return out

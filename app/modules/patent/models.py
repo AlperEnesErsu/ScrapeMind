@@ -180,6 +180,12 @@ class PatentChunk(BaseModel):
     # Same type as `Paper.embedding` on purpose — one embedding service, one
     # dimension, no per-table casting.
     embedding = db.Column(Vector(1536), nullable=True)
+    # "model@dimension" that produced `embedding`. A query vector is only
+    # comparable with stored vectors from the same model; change
+    # EMBEDDING_MODEL and every old vector silently turns into noise that
+    # still returns a confident-looking nearest neighbour. Search reads only
+    # rows matching the current model and `embed_pending` redoes the rest.
+    embedding_model = db.Column(db.String(96), nullable=True, index=True)
 
     document = db.relationship("PatentDocument", back_populates="chunks")
 

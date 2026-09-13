@@ -21,7 +21,7 @@ from flask import current_app
 
 from app.extensions import db
 from app.modules.patent import classify, parser, service, uspto
-from app.modules.patent.models import PatentClaim, PatentDocument, PatentIngestRun
+from app.modules.patent.models import PatentChunk, PatentClaim, PatentDocument, PatentIngestRun
 
 logger = structlog.get_logger()
 
@@ -90,6 +90,10 @@ def upsert(parsed: parser.ParsedPatent, *, ai_source: str, source_file: str) -> 
     db.session.flush()
 
     _replace_claims(document, parsed)
+    # The vector described the old claim 1. Dropping it puts the document
+    # back in `embedding.pending_documents`; keeping it would rank a
+    # corrected patent by text it no longer contains.
+    PatentChunk.query.filter_by(patent_document_id=document.id).delete()
     return True
 
 

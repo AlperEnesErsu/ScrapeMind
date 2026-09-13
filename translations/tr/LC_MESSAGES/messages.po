@@ -4339,6 +4339,46 @@ msgstr "%(count)s sonuç"
 msgid "Search claims and descriptions"
 msgstr "İstemlerde ve tarifnamelerde ara"
 
+msgid "Also match by meaning"
+msgstr "Anlamca da eşleştir"
+
+msgid ""
+"Compares your text with the first claim of each patent, so a description "
+"in your own words can find a patent that uses none of them."
+msgstr ""
+"Metninizi her patentin ilk istemiyle karşılaştırır; böylece kendi "
+"kelimelerinizle yazdığınız bir tarif, o kelimelerin hiçbirini kullanmayan"
+" bir patenti bulabilir."
+
+msgid ""
+"Meaning-based matching is not available right now, so these results come "
+"from full text only."
+msgstr ""
+"Anlam tabanlı eşleştirme şu anda kullanılamıyor; bu sonuçlar yalnızca tam"
+" metin aramasından geliyor."
+
+#, python-format
+msgid "%(percent)s%% similar"
+msgstr "%%%(percent)s benzer"
+
+msgid "Meaning-based search"
+msgstr "Anlam tabanlı arama"
+
+#, python-format
+msgid "%(done)s of %(total)s patents ready"
+msgstr "%(total)s patentin %(done)s tanesi hazır"
+
+msgid "Off — no embedding provider, or full text only is configured."
+msgstr "Kapalı — embedding sağlayıcısı yok ya da yalnızca tam metin ayarlı."
+
+#, python-format
+msgid ""
+"Showing the %(shown)s most relevant of %(total)s full-text matches. "
+"Narrow the search to see the rest."
+msgstr ""
+"%(total)s tam metin eşleşmesinin en alakalı %(shown)s tanesi "
+"gösteriliyor. Gerisini görmek için aramayı daraltın."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

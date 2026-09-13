@@ -64,7 +64,11 @@ def refresh_window(self, *, limit: int | None = None) -> dict:
         return {"status": "skipped", "reason": "already_running"}
 
     try:
-        return run_cycle(limit=limit)
+        result = run_cycle(limit=limit)
+        # Queued, not called: embedding is billable and belongs to the `llm`
+        # pool, and a slow provider must not hold this I/O worker or the lock.
+        embed_pending.delay()
+        return result
     except Exception as exc:  # noqa: BLE001 - retried once, then surfaced
         logger.warning("patents_bulk_refresh_failed", error=str(exc))
         raise self.retry(exc=exc, countdown=300) from exc
@@ -84,3 +88,16 @@ def purge_window() -> dict:
     from app.modules.patent.ingest import purge_window as run_purge
 
     return {"removed": run_purge()}
+
+
+@celery_app.task(name="patents_bulk.embed_pending")
+def embed_pending(limit: int | None = None) -> dict:
+    """Claim-1 vectors for documents that lack one from the current model.
+
+    Queued by `refresh_window` after each load, and on its own daily as a
+    catch-up: a provider outage during the weekly run would otherwise leave
+    that week's patents out of semantic search until the next one.
+    """
+    from app.modules.patent.embedding import embed_pending as run_embed
+
+    return run_embed(limit=limit)

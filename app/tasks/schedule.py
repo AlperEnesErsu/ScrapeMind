@@ -66,6 +66,13 @@ BEAT_SCHEDULE = {
         "task": "patents_bulk.purge_window",
         "schedule": crontab(hour=4, minute=50),
     },
+    # Catch-up for claim-1 vectors. `refresh_window` already queues this after
+    # each load; the daily run covers a provider that was down at the time.
+    # After the purge, so nothing about to be deleted is paid for.
+    "patents-bulk-embed-daily": {
+        "task": "patents_bulk.embed_pending",
+        "schedule": crontab(hour=4, minute=55),
+    },
     # Nightly fan-out: at 03:15 every day, queue a scrape task for every
     # active user. Each per-user task picks up their keywords + identifiers
     # at that moment.

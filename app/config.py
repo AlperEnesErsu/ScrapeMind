@@ -218,6 +218,11 @@ class BaseConfig:
     PATENT_AI_CPC_EXTENDED = os.getenv("PATENT_AI_CPC_EXTENDED", "")
     # Skip embeddings entirely — full-text search still works.
     PATENT_FTS_ONLY = os.getenv("PATENT_FTS_ONLY", "false").lower() == "true"
+    # Cosine distance past which a claim-1 vector is not a match in semantic
+    # search. Vector search always returns a nearest neighbour; this floor is
+    # what keeps a query with no real match from filling the page with noise.
+    # 0.70 is the library's semantic-search value.
+    PATENT_SEMANTIC_MAX_DISTANCE = float(os.getenv("PATENT_SEMANTIC_MAX_DISTANCE", "0.70"))
 
     # Audit log retention — rows older than this many days are purged by the
     # nightly `core.purge_audit_logs` task. 0 disables purging (keep forever).
