@@ -1779,3 +1779,12 @@ code {
 .avatar-64 { width: 64px !important; height: 64px !important; }
 .totp-qr { max-width: 220px !important; }
 .session-agent { max-width: 340px !important; }
+
+/* Patent description (Faz 8). USPTO text keeps its paragraph breaks, and a
+   long unbroken chemical or sequence string must wrap rather than push the
+   page sideways. A class rather than an inline style: CSP readiness counts
+   style attributes and holds them at their ceiling. */
+.patent-description {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
