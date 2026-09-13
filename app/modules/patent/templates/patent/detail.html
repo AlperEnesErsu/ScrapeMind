@@ -24,11 +24,27 @@
 
 <div class="d-flex justify-content-between align-items-start gap-3 mb-1">
   <h4 class="mb-0">{{ document.title }}</h4>
-  <a class="btn btn-sm btn-outline-secondary text-nowrap"
-     href="https://patents.google.com/patent/{{ document.doc_number }}"
-     target="_blank" rel="noopener noreferrer">
-    <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('Source') }}
-  </a>
+  <div class="d-flex gap-2">
+    {% if in_library %}
+      <a class="btn btn-sm btn-outline-secondary text-nowrap" href="{{ url_for('library.index') }}">
+        <i class="bi bi-bookmark-check me-1"></i>{{ _('In your library') }}
+      </a>
+    {% else %}
+      {# The window forgets this patent in a few weeks; this is how a user keeps
+         it. Filled primary per DESIGN.md -- it is the page's main action. #}
+      <form method="post" action="{{ url_for('patent.add_to_library', doc_number=document.doc_number) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-primary text-nowrap">
+          <i class="bi bi-bookmark-plus me-1"></i>{{ _('Add to library') }}
+        </button>
+      </form>
+    {% endif %}
+    <a class="btn btn-sm btn-outline-secondary text-nowrap"
+       href="https://patents.google.com/patent/{{ document.doc_number }}"
+       target="_blank" rel="noopener noreferrer">
+      <i class="bi bi-box-arrow-up-right me-1"></i>{{ _('Source') }}
+    </a>
+  </div>
 </div>
 
 <p class="small text-body-secondary">

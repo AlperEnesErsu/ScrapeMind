@@ -4407,6 +4407,22 @@ msgstr "yok — anahtar yok"
 msgid "The weekly load needs a USPTO Open Data Portal API key."
 msgstr "Haftalık yükleme için USPTO Open Data Portal API anahtarı gerekiyor."
 
+msgid "Added to your library. It stays there after it leaves the tracking window."
+msgstr "Kütüphanenize eklendi. Takip penceresinden çıktıktan sonra da orada kalır."
+
+msgid "This patent is already in your library."
+msgstr "Bu patent zaten kütüphanenizde."
+
+msgid ""
+"Need the claims themselves? Patent tracking searches the full text of "
+"recently granted US patents."
+msgstr ""
+"İstemlerin kendisi mi lazım? Patent Takibi, yakın zamanda verilmiş ABD "
+"patentlerinin tam metninde arar."
+
+msgid "Search claims in the tracking window"
+msgstr "Takip penceresindeki istemlerde ara"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

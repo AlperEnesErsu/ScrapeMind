@@ -1911,6 +1911,8 @@ def prior_art():
     list is the part with evidentiary value; the LLM output is a reading aid
     over it.
     """
+    from flask import current_app
+
     from app.modules.scrape.ai_service import analyze_novelty, is_ai_enabled
     from app.modules.scrape.forms import PriorArtForm
     from app.modules.scrape.service import patent_sources, search_patents_live
@@ -1925,6 +1927,15 @@ def prior_art():
         "per_source": {},
         "assessment": None,
         "terms": [],
+        # The patent tracking module (Faz 8) searches claims and descriptions
+        # of recent US grants locally. Offered here because the two searches
+        # answer different questions -- this one live, worldwide and saving
+        # nothing, that one local, US-only and deep -- and neither page knew
+        # the other existed. Checked against `view_functions`, not assumed: a
+        # deployment without the module must not get a link that 404s. Set
+        # before the no-sources return, which is where it helps most: no
+        # EPO/PatentsView keys, but a local corpus to search.
+        "patent_search_available": "patent.search" in current_app.view_functions,
     }
 
     if not sources:

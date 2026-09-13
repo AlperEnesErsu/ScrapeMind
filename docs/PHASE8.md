@@ -453,6 +453,26 @@ kaldırıldığında ilgili test kırılıyor.
 > özelliği gerçek modelin özelliğidir ve mock'larla gösterilemez. Testler tesisatı ve
 > füzyon matematiğini doğruluyor; anlam kalitesi gerçek sağlayıcıyla ilk kullanımda
 > gözden geçirilmeli.
+### 9.5b ✅ Patenti saklamak + prior-art bağlantısı — bitti (13 Eylül 2026)
+Değerlendirmede (F2, F3) planlanıp yapılmamış olarak bulunan iki eksik.
+
+- **"Kütüphaneye ekle"** (detay sayfası). Pencere bir patenti birkaç hafta sonra
+  unutuyor; bu, kullanıcının onu tutma yolu. `patent_documents.paper_id` köprüsü ve
+  purge'ün `SET NULL`'u baştan bunun için vardı, ama köprüyü dolduran kod yoktu.
+- **Çift kayıt önleniyor.** Patentlerin DOI'si yok, `upsert_paper` PatentsView'in
+  `US11123456`'sı ile EPO'nun/bu korpusun `US11123456B2`'sinin aynı patent olduğunu
+  göremez. İki biçim de aranıyor, varsa mevcut satır yeniden kullanılıyor; numara önek
+  olarak değil bütün olarak karşılaştırılıyor (`US1112345` ≠ `US11123456`).
+- **Gizlenmiş patent geri geliyor.** Akıştan gizlenmiş (`dismissed_at`) bir patenti
+  açıkça saklamak istemek ters talimattır ve kazanmalı; yoksa düğme görünür hiçbir şey
+  yapmaz.
+- **Prior-art sayfası patent aramasına bağlanıyor** — iki arama farklı soruları
+  cevaplıyor (canlı/dünya/saklamayan vs yerel/ABD/derin) ve birbirinden habersizdi.
+  Bağlantı yalnızca `patent.search` gerçekten kayıtlıysa çıkıyor, ve patent kaynağı
+  anahtarı olmayan kurulumda da (en çok orada işe yarıyor) görünüyor.
+
+**Doğrulandı:** 12 test; üç koruma mutasyonla sınandı.
+
 ### 9.6 Okuma deneyimi: istem ağacı, jargon sadeleştirme
 
 ---
