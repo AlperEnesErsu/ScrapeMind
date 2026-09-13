@@ -13,7 +13,7 @@
 | Seviye | Adet | Ne demek |
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
-| 🟠 Yüksek | 5 (**Y1, Y2, Y3, Y5 kapandı** — **Y4 kaldı**) | İlk hafta içinde kapanmalı |
+| 🟠 Yüksek | 5 (**Y1, Y2, Y3, Y5 kapandı** — **Y4: kod tamam, prod'da zorlama kaldı**) | İlk hafta içinde kapanmalı |
 | 🟡 Orta | 13 (**O3, O9, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
@@ -407,7 +407,7 @@ toast'ı "Makale gizlendi" iken kimse fark etmemiş.
 Doğrulama tarayıcıda: gerçek bir başarısız HTMX isteği 400 dalını tetikledi;
 403, 500 ve ağ hatası dalları da doğru mesajı verdi.
 
-### Y4 — CSP yok, ve satır içi script'ler onu engelliyor  ◐ **kısmen yapıldı (PR #91)**
+### Y4 — CSP yok, ve satır içi script'ler onu engelliyor  ◐ **kod tarafı tamam (PR #91 ve devamı) — yalnızca prod'da zorlamaya geçiş kaldı**
 
 E2'nin ayrılan parçası, ve asıl iş burada: **sekiz şablonda** satır içi
 `<script>` var (`base.html`, `core/_password_rules.html`, `core/_splash.html`,
@@ -527,7 +527,7 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
      loguna `csp_violation blocked=inline` olarak düştü.
    - ⬜ **Zorlamaya geçiş:** bir sürüm boyunca prod logunda `csp_violation`
      çıkmazsa `CSP_ENFORCE_SCRIPT_SRC=true`; aynı direktif gerçek başlığa geçer.
-4. ◐ **127 satır içi `style=` → `style-src`** — modül modül.
+4. ✅ **127 satır içi `style=` → `style-src`** — modül modül.
    E-posta şablonlarındaki 12'si **kapsam dışı**: e-posta istemcisi bu
    uygulamanın CSP'sine tabi değil ve çoğu `<style>` bloğunu yok sayıyor.
    Gerçek hedef 115. Mandal: `test_csp_readiness.py` → `STYLE_CLEAN` +
@@ -567,8 +567,29 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
      şablonla render edilip 26 hesaplanmış özellikle karşılaştırıldı: sekizinde
      sıfır fark; Keşfet ve aramadaki tek fark **veriydi** (render sırasında
      detay sayfası açıldığı için bir kart "yeni" → "Görüldü" oldu), stil değil.
-   - ⬜ `style-src` report-only. Hesaba katılacaklar: htmx'in indicator
-     `<style>`'ı (`includeIndicatorStyles`) ve vis-network'ün enjekte ettiği stil.
+   - ✅ **`style-src` report-only**, `'unsafe-inline'` yok. Kaynaklar:
+     `'self'`, Bootstrap 5.3.3, Bootstrap Icons 1.11.3, vis-network 9.1.9 ve
+     `https://fonts.googleapis.com/css2`. Kendi bayrağı var
+     (`CSP_ENFORCE_STYLE_SRC`): script ve style **ayrı ayrı** zorlanabilir,
+     zorlanmayan report-only başlıkta kalır.
+     - htmx'in enjekte ettiği indicator `<style>`'ı kapatıldı
+       (`includeIndicatorStyles: false`); `theme.css` göstergeyi zaten
+       `display` ile yönetiyordu, yalnızca 200 ms'lik solma kayboldu.
+     - vis-network **standalone → peer** paketine geçti: standalone yüklenirken
+       koşulsuz `<style>` enjekte ediyor. Peer = `vis-data` script'i +
+       `vis-network` script'i + paketin kendi `vis-network.min.css` dosyası
+       (`SCRIPT_SRC`'ye `vis-data@7.1.9/` eklendi).
+     - **İlk koşunun yakaladığı:** `theme.css` IBM Plex'i Google Fonts'tan
+       `@import` ediyor; ne politikada ne de CDN tarama testindeydi. İkisi de
+       düzeltildi — test artık `.css` dosyalarındaki `@import`'u da tarıyor.
+     - Doğrulama: yeni başlıkla açılan sayfaya kütüphane, arama, Keşfet,
+       makale detayı (özgün/sohbet/Türkçe), raporlar, koleksiyonlar render'ı
+       enjekte edildi ve atıf grafiği peer paketle gerçekten yüklendi (canvas
+       çizildi, `vis-tooltip` kuralı CSS dosyasından geliyor) — **sıfır
+       ihlal**. Giriş/kayıt/404 sunucu logunda temiz; bilerek eklenen
+       `<style>` ve `style=` denemeleri raporlandı.
+     - ⬜ **Zorlama:** bir sürüm boyunca prod logunda `csp_violation` yoksa
+       `CSP_ENFORCE_SCRIPT_SRC=true`, ardından `CSP_ENFORCE_STYLE_SRC=true`.
 
 ### ~~Y5 — Konteyner root olarak koşuyor~~ ✅ KAPANDI (PR #86)
 
