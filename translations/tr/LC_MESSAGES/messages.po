@@ -4279,6 +4279,66 @@ msgstr "Patent penceresi temizliği kuyruğa alındı."
 msgid "menu.patents_admin"
 msgstr "Patent yükleme"
 
+msgid "Search patents"
+msgstr "Patent ara"
+
+msgid ""
+"Searches the full text of every patent in the window: title, abstract, "
+"description and claims."
+msgstr ""
+"Penceredeki her patentin tam metninde arar: başlık, özet, tarifname ve "
+"istemler."
+
+msgid "e.g. \"attention weights\" quantization -image"
+msgstr "ör. \"attention weights\" quantization -image"
+
+msgid ""
+"Quotes match a phrase, a leading minus excludes a word, \"or\" allows "
+"either."
+msgstr ""
+"Tırnak tam ifade arar, başa eklenen eksi bir kelimeyi hariç tutar, \"or\""
+" ikisinden birini kabul eder."
+
+msgid "Anywhere in the patent"
+msgstr "Patentin herhangi bir yerinde"
+
+msgid "Only in the claims"
+msgstr "Yalnızca istemlerde"
+
+msgid "CPC code"
+msgstr "CPC kodu"
+
+msgid "Granted from"
+msgstr "Veriliş (başlangıç)"
+
+msgid "Granted to"
+msgstr "Veriliş (bitiş)"
+
+msgid ""
+"The text you entered contains only very common words, so it was ignored. "
+"Add a more specific term."
+msgstr ""
+"Girdiğiniz metin yalnızca çok yaygın kelimelerden oluşuyor, bu yüzden yok"
+" sayıldı. Daha belirgin bir terim ekleyin."
+
+msgid "Enter a term or a filter to search the window."
+msgstr "Pencerede aramak için bir terim ya da filtre girin."
+
+msgid ""
+"No patent in the current window matches. The window only holds recent US "
+"grants, so this says nothing about older or non-US patents."
+msgstr ""
+"Mevcut pencerede eşleşen patent yok. Pencere yalnızca yakın tarihli ABD "
+"patentlerini tutar; bu, daha eski ya da ABD dışı patentler hakkında bir "
+"şey söylemez."
+
+#, python-format
+msgid "%(count)s results"
+msgstr "%(count)s sonuç"
+
+msgid "Search claims and descriptions"
+msgstr "İstemlerde ve tarifnamelerde ara"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

@@ -4246,6 +4246,65 @@ msgstr "Patent window cleanup queued."
 msgid "menu.patents_admin"
 msgstr "menu.patents_admin"
 
+msgid "Search patents"
+msgstr "Search patents"
+
+msgid ""
+"Searches the full text of every patent in the window: title, abstract, "
+"description and claims."
+msgstr ""
+"Searches the full text of every patent in the window: title, abstract, "
+"description and claims."
+
+msgid "e.g. \"attention weights\" quantization -image"
+msgstr "e.g. \"attention weights\" quantization -image"
+
+msgid ""
+"Quotes match a phrase, a leading minus excludes a word, \"or\" allows "
+"either."
+msgstr ""
+"Quotes match a phrase, a leading minus excludes a word, \"or\" allows "
+"either."
+
+msgid "Anywhere in the patent"
+msgstr "Anywhere in the patent"
+
+msgid "Only in the claims"
+msgstr "Only in the claims"
+
+msgid "CPC code"
+msgstr "CPC code"
+
+msgid "Granted from"
+msgstr "Granted from"
+
+msgid "Granted to"
+msgstr "Granted to"
+
+msgid ""
+"The text you entered contains only very common words, so it was ignored. "
+"Add a more specific term."
+msgstr ""
+"The text you entered contains only very common words, so it was ignored. "
+"Add a more specific term."
+
+msgid "Enter a term or a filter to search the window."
+msgstr "Enter a term or a filter to search the window."
+
+msgid ""
+"No patent in the current window matches. The window only holds recent US "
+"grants, so this says nothing about older or non-US patents."
+msgstr ""
+"No patent in the current window matches. The window only holds recent US "
+"grants, so this says nothing about older or non-US patents."
+
+#, python-format
+msgid "%(count)s results"
+msgstr "%(count)s results"
+
+msgid "Search claims and descriptions"
+msgstr "Search claims and descriptions"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

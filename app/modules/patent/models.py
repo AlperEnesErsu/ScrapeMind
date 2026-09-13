@@ -42,13 +42,22 @@ class PatentDocument(BaseModel):
     abstract = db.Column(db.Text, nullable=True)
     description = db.Column(db.Text, nullable=True)
 
-    # Generated rather than trigger-maintained: Postgres keeps it in sync on
-    # its own, so no ingest path can forget to update it. `coalesce` because a
-    # NULL description would make the whole vector NULL and silently drop the
-    # row out of every full-text result.
-    description_tsv = db.Column(
+    # One weighted vector over title (A), abstract (B) and description (C).
+    # Generated rather than trigger-maintained, so no ingest path can forget
+    # it; `coalesce` because one NULL part would make the whole vector NULL.
+    #
+    # It replaced a description-only `description_tsv` (migration
+    # a8d3e6f1b2c4): searching title and abstract meant building their vector
+    # per row at query time, which measured ~117 ms on 3,000 documents before
+    # ranking even started, and a zero-match query still paid it. The weights
+    # also say something true -- a term in the title is a stronger signal than
+    # the same term deep in a 50 KB description.
+    search_tsv = db.Column(
         TSVECTOR,
-        db.Computed("to_tsvector('english', coalesce(description, ''))", persisted=True),
+        db.Computed(
+            "setweight(to_tsvector('english', coalesce(title, '')), 'A') || setweight(to_tsvector('english', coalesce(abstract, '')), 'B') || setweight(to_tsvector('english', coalesce(description, '')), 'C')",
+            persisted=True,
+        ),
         nullable=True,
     )
 
@@ -102,8 +111,8 @@ class PatentDocument(BaseModel):
         db.Index("ix_patent_documents_ai_grant", "ai_source", "grant_date"),
         db.Index("ix_patent_documents_cpc_gin", "cpc_codes", postgresql_using="gin"),
         db.Index(
-            "ix_patent_documents_tsv_gin",
-            "description_tsv",
+            "ix_patent_documents_search_tsv_gin",
+            "search_tsv",
             postgresql_using="gin",
         ),
     )
@@ -129,16 +138,23 @@ class PatentClaim(BaseModel):
     is_independent = db.Column(db.Boolean, nullable=False, default=True)
     depends_on = db.Column(db.Integer, nullable=True)
     text = db.Column(db.Text, nullable=False)
+    # Stored, not an expression index. A broad term ("network", "model")
+    # appears in most claims, the planner rightly abandons the index and
+    # scans -- and with only an expression index every scanned claim was
+    # re-tokenised: ~1.4 s over 60k claims, paid once for the filter, again
+    # for the ranking, again for the count. A stored vector turns the same
+    # scan into a cheap tsvector comparison.
+    text_tsv = db.Column(
+        TSVECTOR,
+        db.Computed("to_tsvector('english', text)", persisted=True),
+        nullable=True,
+    )
 
     document = db.relationship("PatentDocument", back_populates="claims")
 
     __table_args__ = (
         db.UniqueConstraint("patent_document_id", "number", name="uq_patent_claim_number"),
-        db.Index(
-            "ix_patent_claims_text_gin",
-            db.text("to_tsvector('english', text)"),
-            postgresql_using="gin",
-        ),
+        db.Index("ix_patent_claims_text_tsv_gin", "text_tsv", postgresql_using="gin"),
     )
 
     def __repr__(self) -> str:
