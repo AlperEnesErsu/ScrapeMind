@@ -178,10 +178,12 @@ def build_query(filters: SearchFilters):
     return query.order_by(PatentDocument.grant_date.desc(), PatentDocument.id.desc())
 
 
-def _highlight(raw: str | None) -> Markup | None:
-    """Escape first, then turn the markers into <mark>. Order is the safety."""
-    if not raw:
-        return None
+def _highlight(raw: str) -> Markup:
+    """Escape first, then turn the markers into <mark>. Order is the safety.
+
+    Takes a non-empty headline only; callers skip empty ones, so a `Snippet`
+    can never be built around nothing.
+    """
     safe = str(escape(raw))
     return Markup(safe.replace(_HL_START, "<mark>").replace(_HL_END, "</mark>"))
 
@@ -223,7 +225,7 @@ def snippets_for(
         .order_by(PatentClaim.patent_document_id, PatentClaim.number)
     ).all()
     for doc_id, number, headline in claim_rows:
-        if doc_id not in out:
+        if headline and doc_id not in out:
             out[doc_id] = Snippet(text=_highlight(headline), claim_number=number)
 
     if scope == "claims":
