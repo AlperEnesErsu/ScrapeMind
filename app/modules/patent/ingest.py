@@ -169,8 +169,19 @@ def purge_window(now: date | None = None) -> int:
 
 
 def refresh_window(*, today: date | None = None, limit: int | None = None) -> dict:
-    """Discover, download, ingest, purge — the whole weekly cycle."""
-    weekly = uspto.discover_latest(today=today)
+    """Discover, download, ingest, purge -- the whole weekly cycle.
+
+    Without an ODP API key there is no route to the data (see `uspto`), so the
+    load is skipped with that reason rather than attempted. The purge still
+    runs: a deployment that loses its key must keep shedding rows that fall
+    out of the window instead of freezing the corpus at its last size.
+    """
+    if not uspto.credentials_ok():
+        removed = purge_window(today)
+        logger.warning("patent_refresh_skipped", reason="no_api_key", purged=removed)
+        return {"status": "skipped", "reason": "no_api_key", "purged": removed}
+
+    weekly = uspto.discover_latest()
     archive, _sha = uspto.download(weekly)
     xml_path = uspto.ensure_xml(archive)
     run = ingest_file(xml_path, source_file=weekly.name, limit=limit)

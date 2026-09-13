@@ -4379,6 +4379,34 @@ msgstr ""
 "%(total)s tam metin eşleşmesinin en alakalı %(shown)s tanesi "
 "gösteriliyor. Gerisini görmek için aramayı daraltın."
 
+msgid ""
+"No USPTO Open Data Portal API key is configured, so the weekly load is "
+"skipped."
+msgstr ""
+"USPTO Open Data Portal API anahtarı tanımlı değil, bu yüzden haftalık "
+"yükleme atlanıyor."
+
+msgid ""
+"USPTO issues keys only to a signed-in USPTO.gov account with multi-factor"
+" authentication. Set the key as USPTO_ODP_API_KEY and restart. The window"
+" cleanup keeps running without one."
+msgstr ""
+"USPTO anahtarı yalnızca çok faktörlü doğrulamalı ve oturum açmış bir "
+"USPTO.gov hesabına veriyor. Anahtarı USPTO_ODP_API_KEY olarak tanımlayıp "
+"yeniden başlatın. Pencere temizliği anahtarsız da çalışmaya devam eder."
+
+msgid "How to get a key"
+msgstr "Anahtar nasıl alınır"
+
+msgid "Key required"
+msgstr "Anahtar gerekli"
+
+msgid "none — no key"
+msgstr "yok — anahtar yok"
+
+msgid "The weekly load needs a USPTO Open Data Portal API key."
+msgstr "Haftalık yükleme için USPTO Open Data Portal API anahtarı gerekiyor."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

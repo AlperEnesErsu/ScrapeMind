@@ -83,9 +83,21 @@ Eski `bulkdata.uspto.gov` yerine **Open Data Portal**:
 | Doküman | `https://data.uspto.gov/apis/bulk-data/{search,product,download}` | Swagger UI |
 | Dizin | `https://data.uspto.gov/bulkdata/datasets` | Site üzerinden key'siz indirme de mümkün |
 
-`USPTO_ODP_API_KEY` **opsiyonel** tutulur: varsa ODP API'si, yoksa key'siz dizin
-indirmesi denenir. Anahtar import'ta yakalanmaz, çağrı başına okunur
-(`credentials_ok()` kalıbı).
+> **Güncelleme (13 Eylül 2026) — anahtar ZORUNLU, anahtarsız yol yok.** İlk tasarım
+> anahtarı opsiyonel tutuyordu: anahtar yoksa `bulkdata.uspto.gov` URL'si tarihten
+> türetiliyordu. Sandbox dışından ölçüldü: **`bulkdata.uspto.gov`'un adres kaydı yok**
+> (host emekli), ve **18 Haziran 2026'dan beri** Open Data Portal'ın kendisi
+> **USPTO.gov hesabıyla (MFA zorunlu) giriş** istiyor; dataset sayfası kayıt ekranına
+> yönleniyor, API anahtarsız 401 dönüyor. 18 Ağustos 2026'dan beri profilde dört ek alan
+> da zorunlu, yoksa anahtar erişimi kesiliyor.
+>
+> Sonuç: türetilmiş URL kaldırıldı. Anahtar yoksa haftalık yükleme **gerekçesiyle
+> atlanıyor** (`no_api_key`), purge çalışmaya devam ediyor; panel durumu açıkça
+> söylüyor ve yükleme düğmesi (sunucu tarafında da) kapalı. ODP keşfi başarısız olursa
+> artık ölü bir adrese düşülmüyor, hata doğrudan koşu kaydına yansıyor.
+> Anahtar: giriş yaptıktan sonra `https://data.uspto.gov/apikey`.
+
+Anahtar import'ta yakalanmaz, çağrı başına okunur (`credentials_ok()` kalıbı).
 
 > `data.uspto.gov` bir Angular SPA — sunucudan metin dönmez, HTML kazımaya çalışma.
 
@@ -285,13 +297,11 @@ yaşandı. Nav seed'i şemadan ayrı, route'lar hazır olduktan sonra.
 
 **Tasarım kararları:**
 
-- **Anahtar opsiyonel, iki rota var.** Anahtar varsa ODP ürün API'si; yoksa haftalık
-  URL **türetilir** — USPTO salı günleri yayınlıyor ve dosya adı (`ipgYYMMDD.zip`)
-  tarihin saf fonksiyonu. Anahtarı olmayan kurulum da patent takip edebilir.
-  Anahtar var ama çalışmıyorsa türetilen URL'ye düşülür; çalışmayan bir anahtar
-  özelliği komple düşürmemeli.
-- **Bugün salıysa bir önceki salı alınır** — o günün dosyası henüz yayında
-  olmayabilir ve 404 veren bir URL yerine bir hafta eski ama var olan dosya yeğdir.
+- ~~**Anahtar opsiyonel, iki rota var.**~~ **Geçersiz — 13 Eylül 2026'da kaldırıldı**
+  (§3.2). Anahtarsız rota `bulkdata.uspto.gov`'dan tarihe göre URL türetiyordu; o host
+  emekli ve ODP giriş istiyor. Artık anahtar yoksa yükleme gerekçesiyle atlanıyor.
+  Ders: bu karar gerçek servise hiç istek atılamadan verilmişti ve "varsayım" diye
+  işaretliydi — ilk gerçek ağ denemesi onu çürüttü.
 - **Filtre yazmadan önce.** Haftalık dosyadaki 6–8 bin patentin CPC eşleşmeyeni
   veritabanına hiç girmiyor.
 - **`raw_sha256` ile değişmeyen doküman yeniden yazılmıyor.** İstemler ise
@@ -451,7 +461,7 @@ kaldırıldığında ilgili test kırılıyor.
 
 | Değişken | Default | Ne yapar |
 |---|---|---|
-| `USPTO_ODP_API_KEY` | — | **Opsiyonel.** Varsa ODP API'si, yoksa key'siz indirme |
+| `USPTO_ODP_API_KEY` | — | **Zorunlu** (haftalık yükleme için). Yoksa yükleme atlanır, purge çalışır |
 | `PATENT_BULK_DIR` | `./data/patent_bulk` | İndirilen XML'ler (gitignore) |
 | `PATENT_WINDOW_WEEKS` | `3` | Pencere genişliği; purge bunu kullanır |
 | `PATENT_AI_CPC_CODES` | `G06N` | Çekirdek filtre |

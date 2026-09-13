@@ -67,8 +67,23 @@ def test_panel_renders_on_an_empty_window(client, manager, monkeypatch):
     _login(client, manager.id)
     body = client.get("/patents/admin").get_data(as_text=True)
     assert "Henüz yükleme çalışmadı." in body
-    # No key configured in tests: the file is derivable and shown exactly.
-    assert "ipg" in body and ".zip" in body
+
+
+def test_without_a_key_the_panel_says_so_and_only_cleanup_is_offered(client, manager, monkeypatch):
+    """No keyless route exists any more, so a load button that could only fail
+    must not be pressable -- and the reason must be on the page."""
+    import re
+
+    monkeypatch.setattr("app.core.health.system_health", _health("ok"))
+    monkeypatch.delenv("USPTO_ODP_API_KEY", raising=False)
+    monkeypatch.setitem(client.application.config, "USPTO_ODP_API_KEY", "")
+    _login(client, manager.id)
+    body = client.get("/patents/admin").get_data(as_text=True)
+    assert "USPTO_ODP_API_KEY" in body
+    load = re.search(r"<button[^>]*btn-primary[^>]*>", body).group(0)
+    purge = re.search(r"<button[^>]*btn-outline-danger[^>]*>", body).group(0)
+    assert "disabled" in load
+    assert "disabled" not in purge
 
 
 def test_no_worker_is_stated_and_the_buttons_are_disabled(client, manager, monkeypatch):
@@ -97,6 +112,19 @@ def test_recent_runs_are_listed_with_their_error(client, manager, db, monkeypatc
     assert "Could not resolve host" in body
 
 
+def test_refresh_is_refused_server_side_without_a_key(client, manager, monkeypatch):
+    """A disabled button is a hint, not a control: the route must not queue a
+    load that can only be skipped, and then report it as queued."""
+    sent = []
+    monkeypatch.setattr("app.tasks.celery_app.send_task", _fake_send(sent))
+    monkeypatch.delenv("USPTO_ODP_API_KEY", raising=False)
+    monkeypatch.setitem(client.application.config, "USPTO_ODP_API_KEY", "")
+    _login(client, manager.id)
+    body = client.post("/patents/admin/run/refresh", follow_redirects=True).get_data(as_text=True)
+    assert sent == []
+    assert "kuyruğa alındı" not in body
+
+
 @pytest.mark.parametrize(
     "action,task",
     [("refresh", "patents_bulk.refresh_window"), ("purge", "patents_bulk.purge_window")],
@@ -104,6 +132,7 @@ def test_recent_runs_are_listed_with_their_error(client, manager, db, monkeypatc
 def test_actions_dispatch_their_whitelisted_task(client, manager, monkeypatch, action, task):
     sent = []
     monkeypatch.setattr("app.tasks.celery_app.send_task", _fake_send(sent))
+    monkeypatch.setitem(client.application.config, "USPTO_ODP_API_KEY", "k")
     _login(client, manager.id)
     resp = client.post(f"/patents/admin/run/{action}", follow_redirects=False)
     assert resp.status_code == 302
@@ -122,6 +151,7 @@ def test_an_unknown_action_dispatches_nothing(client, manager, monkeypatch):
 
 def test_a_manual_trigger_is_audited(client, manager, db, monkeypatch):
     monkeypatch.setattr("app.tasks.celery_app.send_task", _fake_send([]))
+    monkeypatch.setitem(client.application.config, "USPTO_ODP_API_KEY", "k")
     _login(client, manager.id)
     client.post("/patents/admin/run/refresh")
     action = db.session.execute(

@@ -57,6 +57,7 @@ def refresh_window(self, *, limit: int | None = None) -> dict:
     person, not another attempt.
     """
     from app.modules.patent.ingest import refresh_window as run_cycle
+    from app.modules.patent.uspto import CredentialsMissingError
 
     client = _lock()
     if client is not None and not client.set(_LOCK_KEY, "1", nx=True, ex=_LOCK_TTL):
@@ -67,8 +68,15 @@ def refresh_window(self, *, limit: int | None = None) -> dict:
         result = run_cycle(limit=limit)
         # Queued, not called: embedding is billable and belongs to the `llm`
         # pool, and a slow provider must not hold this I/O worker or the lock.
-        embed_pending.delay()
+        # Not after a skipped load -- nothing new arrived to embed.
+        if result.get("status") != "skipped":
+            embed_pending.delay()
         return result
+    except CredentialsMissingError:
+        # Configuration, not a blip: a retry in five minutes finds the same
+        # missing key. `run_cycle` checks first, so this is a race with the key
+        # being removed mid-run.
+        raise
     except Exception as exc:  # noqa: BLE001 - retried once, then surfaced
         logger.warning("patents_bulk_refresh_failed", error=str(exc))
         raise self.retry(exc=exc, countdown=300) from exc

@@ -7,6 +7,20 @@
   {{ _('The weekly USPTO load that fills Patent tracking, and the cleanup that keeps it to its window.') }}
 </p>
 
+{% if not settings.has_key %}
+  {# Without a key there is no route to USPTO's data at all: the old keyless
+     bulk host is retired and the Open Data Portal requires a signed-in
+     USPTO.gov account. Say exactly that, and what fixes it. #}
+  <div class="alert alert-warning">
+    <i class="bi bi-key me-1"></i>
+    {{ _('No USPTO Open Data Portal API key is configured, so the weekly load is skipped.') }}
+    <div class="small mt-1 text-body-secondary">
+      {{ _('USPTO issues keys only to a signed-in USPTO.gov account with multi-factor authentication. Set the key as USPTO_ODP_API_KEY and restart. The window cleanup keeps running without one.') }}
+      <a href="https://data.uspto.gov/apis/getting-started" target="_blank" rel="noopener noreferrer">{{ _('How to get a key') }}</a>
+    </div>
+  </div>
+{% endif %}
+
 {% if not worker_ok %}
   {# A queued task with no worker looks exactly like a running one. Saying so
      here beats an admin pressing the button twice and wondering. #}
@@ -39,7 +53,7 @@
     <div class="card card-body py-2">
       <div class="small text-body-secondary">{{ _('Source') }}</div>
       <div class="fs-6">
-        {% if settings.has_key %}{{ _('ODP API') }}{% else %}{{ _('Derived weekly URL') }}{% endif %}
+        {% if settings.has_key %}{{ _('ODP API') }}{% else %}{{ _('Key required') }}{% endif %}
       </div>
     </div>
   </div>
@@ -50,8 +64,8 @@
   <div class="card-body small">
     <dl class="row mb-0">
       <dt class="col-sm-3">{{ _('File') }}</dt>
-      <dd class="col-sm-9 font-monospace">
-        {{ settings.next_file or _('discovered when the load runs') }}
+      <dd class="col-sm-9">
+        {% if settings.has_key %}{{ _('discovered when the load runs') }}{% else %}{{ _('none — no key') }}{% endif %}
       </dd>
       <dt class="col-sm-3">{{ _('AI filter (CPC)') }}</dt>
       <dd class="col-sm-9 font-monospace">
@@ -74,7 +88,7 @@
     <form method="post" action="{{ url_for('patent.admin_run', action='refresh') }}"
           data-confirm="{{ _('Download and load the latest weekly USPTO file now?') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-sm btn-primary" {% if not worker_ok %}disabled{% endif %}>
+      <button type="submit" class="btn btn-sm btn-primary" {% if not worker_ok or not settings.has_key %}disabled{% endif %}>
         <i class="bi bi-arrow-repeat me-1"></i>{{ _('Run weekly load') }}
       </button>
     </form>
