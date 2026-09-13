@@ -48,19 +48,46 @@ def search():
     page = request.args.get("page", 1, type=int)
     results = None
     snippets = {}
+    similarity: dict[int, float] = {}
+    semantic_unavailable = False
+    capped_total = None
     if not filters.is_empty:
-        results = patent_search.build_query(filters).paginate(
-            page=page, per_page=patent_search.PER_PAGE, error_out=False
-        )
+        if filters.semantic and filters.q:
+            from flask_login import current_user
+
+            hybrid = patent_search.hybrid_search(filters, page, user=current_user)
+            results = hybrid.pagination
+            similarity = hybrid.similarity
+            semantic_unavailable = not hybrid.semantic_used
+            if hybrid.capped:
+                capped_total = hybrid.text_total
+        else:
+            results = patent_search.build_query(filters).paginate(
+                page=page, per_page=patent_search.PER_PAGE, error_out=False
+            )
         snippets = patent_search.snippets_for(results.items, filters.q, scope=filters.scope)
+        if similarity:
+            snippets.update(
+                patent_search.scope_claim_snippets(results.items, exclude=set(snippets))
+            )
     return render_template(
         "patent/search.html",
         filters=filters,
         results=results,
         snippets=snippets,
+        similarity=similarity,
+        capped_total=capped_total,
+        candidates=patent_search.CANDIDATES,
+        # Asked for semantic, got full text only. Said out loud so lexical
+        # results are never mistaken for meaning-based ones.
+        semantic_unavailable=semantic_unavailable,
         # Text that reduces to stopwords only is ignored by the query; saying
         # so stops "no results" from reading as "nobody claims this".
-        query_ignored=bool(filters.q) and not patent_search.query_is_meaningful(filters.q),
+        # Semantic search does not need searchable words, so the warning only
+        # applies when full text is all that ran.
+        query_ignored=bool(filters.q)
+        and not (filters.semantic and similarity)
+        and not patent_search.query_is_meaningful(filters.q),
     )
 
 

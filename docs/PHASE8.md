@@ -1,6 +1,6 @@
 # Faz 8 — Patent Takibi (yuvarlanan tam metin penceresi)
 
-> **Durum:** 8.1–8.4 bitti ve doğrulandı (8.1–8.3b PR #98). 8.5–8.6 planlandı. 12 Eylül 2026.
+> **Durum:** 8.1–8.5 bitti ve doğrulandı (8.1–8.3b PR #98, 8.4 PR #103). 8.6 planlandı. 12 Eylül 2026.
 > Dal: `feat/patent-fulltext`, taban `c7c3e3f` (main).
 > Migration zinciri head'i: **`c3f9a17d40be`** (bu fazın şeması; ebeveyni
 > `e7b204c9f83a`, tek head, 38 revizyon).
@@ -401,7 +401,48 @@ eski indeksi birebir geri kuruyor.
 > Sentetik veri tüm terimleri tüm dokümanlara yayan 23 kelimelik bir sözlükle üretildi
 > — geniş terim senaryosu bu yüzden gerçekten en kötü durum. Gerçek korpus dağılımı
 > 8.3'ün ilk gerçek yüklemesinden sonra yeniden ölçülmeli.
-### 9.5 Semantik + hibrit (RRF)
+### 9.5 ✅ Semantik + hibrit (RRF) — bitti (13 Eylül 2026)
+Arama sayfasında "Anlamca da eşleştir" anahtarı.
+
+- **Doküman başına tek vektör, istem 1'den.** Parçalama ve ortalama yok (Faz 7.0'ın
+  reddettiği şey değil): hukuken tanımlı tek bir birim bütün olarak gömülüyor.
+- **Her vektör hangi modelden geldiğini taşıyor** (`patent_chunks.embedding_model`,
+  migration `d2f6b8c31a57`). Farklı modellerin vektörleri arasındaki kosinüs mesafesi
+  bir sayıdır, ölçüm değil; `EMBEDDING_MODEL` değişince eski vektörler hâlâ aynı
+  güvenle "en yakın komşu" döndürür ve hiçbir yerde hata çıkmaz. Arama yalnızca
+  geçerli modelin vektörlerini okuyor, `embed_pending` gerisini yeniden üretiyor.
+  `papers` tablosunda bu koruma yok.
+- **Füzyon RRF, skor harmanlama değil** — `ts_rank` ile kosinüs mesafesi ilgisiz
+  ölçeklerde; ağırlıklı toplam, verinin sessizce bozacağı bir kalibrasyon ister. RRF
+  yalnızca sıra kullanır (k=60).
+- **Anlamsal eşleşme yoksa sayfa bunu söylüyor.** Sağlayıcı yok / çağrı başarısız /
+  yalnızca tam metin ayarlı ise sonuçlar tam metinden gelir ve uyarı gösterilir —
+  sözcüksel sonuçlar anlamsal diye sunulmaz.
+- **Mesafe tabanı** (`PATENT_SEMANTIC_MAX_DISTANCE`, 0.70): vektör araması her zaman
+  bir komşu döndürür; taban olmazsa gerçek eşleşmesi olmayan sorgu sayfayı gürültüyle
+  doldurur.
+- **Aday sınırı dürüstçe gösteriliyor.** Her liste ilk 100 adayla füzyona girer; geniş
+  bir terimde "100 sonuç" demek "yalnızca 100 eşleşme var" diye okunurdu. Toplam tam
+  metin eşleşmesi ayrıca yazılıyor.
+- **Embedding faturalı iş:** `patents_bulk.embed_pending` `llm` kuyruğunda; haftalık
+  yüklemenin ardından kuyruğa giriyor, ayrıca her gün 04:55 telafi koşusu (sağlayıcı
+  kesintisinde o haftanın patentleri dışarıda kalmasın). Yeniden yazılan patentin eski
+  vektörü siliniyor. Yükleme panelinde kapsama: "N patentin M tanesi hazır (model)".
+
+**Performans** (3000 doküman + 1536 boyutlu vektör): vektör adayları 11–20 ms (bu
+boyutta planlayıcı HNSW yerine düz taramayı seçiyor, 9 ms), hibrit arama uçtan uca
+~85 ms.
+
+**Doğrulandı:** 23 yeni test, tam paket **1462 yeşil** (%82.63). Dört kritik koruma
+mutasyonla sınandı — model filtresi, yeniden yazımda vektör silme, yapısal filtrenin
+vektör adaylarına uygulanması, anlamsal kullanılamadığında bayrak — her biri
+kaldırıldığında ilgili test kırılıyor.
+
+> **Testlerin kanıtlayamadığı:** test embedding'leri hash tabanlı; yalnızca aynı metin
+> aynı vektörü verir. Yani "sorguyla ortak kelimesi olmayan patenti anlamca bulma"
+> özelliği gerçek modelin özelliğidir ve mock'larla gösterilemez. Testler tesisatı ve
+> füzyon matematiğini doğruluyor; anlam kalitesi gerçek sağlayıcıyla ilk kullanımda
+> gözden geçirilmeli.
 ### 9.6 Okuma deneyimi: istem ağacı, jargon sadeleştirme
 
 ---
@@ -416,6 +457,7 @@ eski indeksi birebir geri kuruyor.
 | `PATENT_AI_CPC_CODES` | `G06N` | Çekirdek filtre |
 | `PATENT_AI_CPC_EXTENDED` | *(boş)* | `G06V,G10L,G06F40` ile genişletilir |
 | `PATENT_FTS_ONLY` | `false` | Embedding'i tamamen kapatır |
+| `PATENT_SEMANTIC_MAX_DISTANCE` | `0.70` | Semantik eşleşme için azami kosinüs mesafesi (8.5) |
 
 Hepsi `.env.example`'a açıklamalı girer.
 

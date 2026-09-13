@@ -184,12 +184,20 @@ class LoadSettings:
     cpc_extended: str
     has_key: bool
     next_file: str | None
+    #: Semantic search readiness (8.5). `embedded` of `total` documents have a
+    #: claim-1 vector from `embedding_model`; the rest are invisible to
+    #: meaning-based matching until `embed_pending` reaches them.
+    embeddings_enabled: bool = False
+    embedded: int = 0
+    total: int = 0
+    embedding_model: str = ""
 
 
 def load_settings() -> LoadSettings:
-    from app.modules.patent import uspto
+    from app.modules.patent import embedding, uspto
 
     has_key = uspto.credentials_ok()
+    embedded, total = embedding.coverage()
     return LoadSettings(
         window_weeks=window_weeks(),
         cpc_core=current_app.config.get("PATENT_AI_CPC_CODES") or "G06N",
@@ -199,4 +207,8 @@ def load_settings() -> LoadSettings:
         # honest to show in advance. Without one it is a pure function of the
         # date and can be shown exactly.
         next_file=None if has_key else uspto.legacy_weekly_file().name,
+        embeddings_enabled=embedding.is_enabled(),
+        embedded=embedded,
+        total=total,
+        embedding_model=embedding.current_model(),
     )

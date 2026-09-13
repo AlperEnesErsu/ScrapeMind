@@ -4305,6 +4305,45 @@ msgstr "%(count)s results"
 msgid "Search claims and descriptions"
 msgstr "Search claims and descriptions"
 
+msgid "Also match by meaning"
+msgstr "Also match by meaning"
+
+msgid ""
+"Compares your text with the first claim of each patent, so a description "
+"in your own words can find a patent that uses none of them."
+msgstr ""
+"Compares your text with the first claim of each patent, so a description "
+"in your own words can find a patent that uses none of them."
+
+msgid ""
+"Meaning-based matching is not available right now, so these results come "
+"from full text only."
+msgstr ""
+"Meaning-based matching is not available right now, so these results come "
+"from full text only."
+
+#, python-format
+msgid "%(percent)s%% similar"
+msgstr "%(percent)s%% similar"
+
+msgid "Meaning-based search"
+msgstr "Meaning-based search"
+
+#, python-format
+msgid "%(done)s of %(total)s patents ready"
+msgstr "%(done)s of %(total)s patents ready"
+
+msgid "Off — no embedding provider, or full text only is configured."
+msgstr "Off — no embedding provider, or full text only is configured."
+
+#, python-format
+msgid ""
+"Showing the %(shown)s most relevant of %(total)s full-text matches. "
+"Narrow the search to see the rest."
+msgstr ""
+"Showing the %(shown)s most relevant of %(total)s full-text matches. "
+"Narrow the search to see the rest."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

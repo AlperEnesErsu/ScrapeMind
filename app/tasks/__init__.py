@@ -91,6 +91,9 @@ TASK_ROUTES = {
     # shared third-party budget) or `llm` (no model call anywhere in it).
     "patents_bulk.refresh_window": {"queue": "io"},
     "patents_bulk.purge_window": {"queue": "io"},
+    # Claim-1 embeddings are a paid provider call per batch -- same reasoning
+    # as `embeddings.embed_paper`: billable work shares the `llm` pool.
+    "patents_bulk.embed_pending": {"queue": "llm"},
 }
 
 # Tasks deliberately left off TASK_ROUTES, so they land on the default

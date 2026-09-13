@@ -57,6 +57,15 @@
       <dd class="col-sm-9 font-monospace">
         {{ settings.cpc_core }}{% if settings.cpc_extended %} + {{ settings.cpc_extended }}{% endif %}
       </dd>
+      <dt class="col-sm-3">{{ _('Meaning-based search') }}</dt>
+      <dd class="col-sm-9">
+        {% if settings.embeddings_enabled %}
+          {{ _('%(done)s of %(total)s patents ready', done=settings.embedded, total=settings.total) }}
+          <span class="text-body-secondary font-monospace">({{ settings.embedding_model }})</span>
+        {% else %}
+          {{ _('Off — no embedding provider, or full text only is configured.') }}
+        {% endif %}
+      </dd>
     </dl>
   </div>
   <div class="card-footer d-flex flex-wrap gap-2">
