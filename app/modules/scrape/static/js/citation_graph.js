@@ -13,18 +13,41 @@
 (function () {
   'use strict';
 
-  const VIS_SRC = 'https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js';
+  // The "peer" builds, not "standalone": standalone vis-network injects its CSS
+  // as <style> elements while it loads, which a `style-src` without
+  // 'unsafe-inline' blocks. Peer ships the CSS as a file and takes vis-data as
+  // a separate script; both must stay in SCRIPT_SRC / STYLE_SRC in
+  // app/__init__.py at these exact versions.
+  const VIS_CSS = 'https://cdn.jsdelivr.net/npm/vis-network@9.1.9/styles/vis-network.min.css';
+  const VIS_SCRIPTS = [
+    'https://cdn.jsdelivr.net/npm/vis-data@7.1.9/peer/umd/vis-data.min.js',
+    'https://cdn.jsdelivr.net/npm/vis-network@9.1.9/peer/umd/vis-network.min.js',
+  ];
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.addEventListener('load', resolve);
+      script.addEventListener('error', reject);
+      document.head.appendChild(script);
+    });
+  }
 
   function loadVis(onReady, onFail) {
-    if (window.vis && window.vis.Network) {
+    if (window.vis && window.vis.Network && window.vis.DataSet) {
       onReady();
       return;
     }
-    const script = document.createElement('script');
-    script.src = VIS_SRC;
-    script.addEventListener('load', onReady);
-    script.addEventListener('error', onFail);
-    document.head.appendChild(script);
+    if (!document.querySelector(`link[href="${VIS_CSS}"]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = VIS_CSS;
+      document.head.appendChild(link);
+    }
+    // In order: vis-network's peer build reads vis-data from the `vis` global.
+    VIS_SCRIPTS.reduce((chain, src) => chain.then(() => loadScript(src)), Promise.resolve())
+      .then(onReady, onFail);
   }
 
   function notify(message) {
