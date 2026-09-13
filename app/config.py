@@ -60,6 +60,7 @@ class BaseConfig:
     # logged by /csp-report while nothing is blocked. Flip this once a release
     # has run clean, and the same directive moves into the enforced header.
     CSP_ENFORCE_SCRIPT_SRC = os.getenv("CSP_ENFORCE_SCRIPT_SRC", "false").lower() == "true"
+    CSP_ENFORCE_STYLE_SRC = os.getenv("CSP_ENFORCE_STYLE_SRC", "false").lower() == "true"
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

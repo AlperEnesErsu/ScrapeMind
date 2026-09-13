@@ -153,13 +153,31 @@ def _register_oauth_providers(app: Flask) -> list[str]:
 
 
 #: Every script this app loads: its own static files (core and module
-#: blueprints alike are same-origin), Bootstrap from base.html, and vis-network,
-#: which the citation graph loads on demand. Adding a CDN script means adding
-#: its package@version path here -- the report-only log will say so first.
+#: blueprints alike are same-origin), Bootstrap from base.html, and vis-data +
+#: vis-network, which the citation graph loads on demand. Adding a CDN script
+#: means adding its package@version path here -- the report-only log will say
+#: so first.
 SCRIPT_SRC = (
     "script-src 'self' "
     "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/ "
+    "https://cdn.jsdelivr.net/npm/vis-data@7.1.9/ "
     "https://cdn.jsdelivr.net/npm/vis-network@9.1.9/"
+)
+
+#: Every stylesheet: theme.css, the IBM Plex stylesheet theme.css @imports from
+#: Google Fonts (one exact path; the font files it points at are governed by
+#: font-src, which is not set), Bootstrap and its icon font from base.html, and
+#: vis-network's own stylesheet. No 'unsafe-inline' -- the templates carry no
+#: style attributes (test_csp_readiness.py), htmx's injected indicator <style>
+#: is switched off in base.html, and the citation graph uses vis-network's
+#: "peer" build, because the "standalone" one injects <style> as it loads.
+#: Setting element.style from JavaScript is not governed by style-src.
+STYLE_SRC = (
+    "style-src 'self' "
+    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/ "
+    "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/ "
+    "https://cdn.jsdelivr.net/npm/vis-network@9.1.9/ "
+    "https://fonts.googleapis.com/css2"
 )
 
 
@@ -195,8 +213,9 @@ def _register_security_headers(app: Flask) -> None:
     pinned to package and version: a bare `https://cdn.jsdelivr.net` would
     allow every package on npm, which is a bypass rather than a policy.
 
-    `style-src` is still absent: 127 inline `style=` attributes remain, and
-    `'unsafe-inline'` for them would be a policy in name only (Y4 step 4).
+    `style-src` follows the same path a step behind, under its own flag
+    (`CSP_ENFORCE_STYLE_SRC`), so the two can be enforced one at a time:
+    whichever is not yet enforced stays in the report-only header.
 
     What is here costs nothing and closes real holes, so it ships now rather
     than waiting for that cleanup (PRELAUNCH Y4):
@@ -216,14 +235,18 @@ def _register_security_headers(app: Flask) -> None:
 
     @app.after_request
     def _security_headers(response):
-        if app.config.get("CSP_ENFORCE_SCRIPT_SRC"):
+        enforced, trial = [baseline], []
+        for flag, directive in (
+            ("CSP_ENFORCE_SCRIPT_SRC", SCRIPT_SRC),
+            ("CSP_ENFORCE_STYLE_SRC", STYLE_SRC),
+        ):
+            (enforced if app.config.get(flag) else trial).append(directive)
+        if len(enforced) > 1:
+            enforced.append(report)
+        response.headers.setdefault("Content-Security-Policy", "; ".join(enforced))
+        if trial:
             response.headers.setdefault(
-                "Content-Security-Policy", f"{baseline}; {SCRIPT_SRC}; {report}"
-            )
-        else:
-            response.headers.setdefault("Content-Security-Policy", baseline)
-            response.headers.setdefault(
-                "Content-Security-Policy-Report-Only", f"{SCRIPT_SRC}; {report}"
+                "Content-Security-Policy-Report-Only", "; ".join([*trial, report])
             )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         # DENY rather than SAMEORIGIN: nothing in this app frames itself.
