@@ -8,7 +8,7 @@
    `align-items-start` + `flex-wrap` keeps it honest on mobile — the control
    wraps to its own line and `ms-auto` keeps it right-aligned there. #}
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
-  <div class="flex-grow-1" style="min-width: 0;">
+  <div class="flex-grow-1 minw-0">
     <h4 class="m-0 d-inline-flex align-items-center gap-2">
       <i class="bi bi-stars text-primary"></i>{{ _('For you') }}
     </h4>
@@ -160,9 +160,9 @@
           <!-- Step 1 -->
           <div class="d-flex gap-3 mb-4">
             {% if step1_done %}
-              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;"><i class="bi bi-check-lg"></i></div>
+              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm step-badge"><i class="bi bi-check-lg"></i></div>
             {% else %}
-              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">1</div>
+              <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm step-badge">1</div>
             {% endif %}
             <div>
               <h6 class="fw-semibold mb-1 {% if step1_done %}text-muted text-decoration-line-through{% endif %}">{{ _('Add Research Interests') }}</h6>
@@ -175,9 +175,9 @@
           <!-- Step 2 -->
           <div class="d-flex gap-3 mb-4">
             {% if step2_done %}
-              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;"><i class="bi bi-check-lg"></i></div>
+              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm step-badge"><i class="bi bi-check-lg"></i></div>
             {% else %}
-              <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">2</div>
+              <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm step-badge">2</div>
             {% endif %}
             <div>
               <h6 class="fw-semibold mb-1 {% if step2_done %}text-muted text-decoration-line-through{% endif %}">{{ _('Papers get collected for you') }}</h6>
@@ -190,9 +190,9 @@
           <!-- Step 3 -->
           <div class="d-flex gap-3">
             {% if step3_done %}
-              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;"><i class="bi bi-check-lg"></i></div>
+              <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm step-badge"><i class="bi bi-check-lg"></i></div>
             {% else %}
-              <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm" style="width: 38px; height: 38px; min-width: 38px;">3</div>
+              <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-5 shadow-sm step-badge">3</div>
             {% endif %}
             <div>
               <h6 class="fw-semibold mb-1 {% if step3_done %}text-muted text-decoration-line-through{% endif %}">{{ _('Read and Analyze') }}</h6>
@@ -226,7 +226,7 @@
     {% else %}
       {% if has_interests %}
       <div class="empty-state py-5 text-center shadow-sm bg-body card border-0">
-        <i class="bi bi-newspaper" style="font-size: var(--icon-xl); color: var(--bs-secondary-color);"></i>
+        <i class="bi bi-newspaper empty-state-icon"></i>
         <div class="mt-2 fw-medium">{{ _('No personalised papers yet.') }}</div>
         <p class="small text-muted mt-2 mb-3">
           {{ _('Run a scrape to fill your feed — or check the Discover page.') }}
@@ -310,7 +310,7 @@
                     <form method="post" action="{{ url_for('dashboard.add_interest') }}" class="m-0">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <input type="hidden" name="value" value="{{ kw }}">
-                      <button type="submit" class="btn btn-xs btn-outline-primary py-1 px-2 rounded-pill font-monospace" style="font-size: var(--text-xs);">
+                      <button type="submit" class="btn btn-xs btn-outline-primary py-1 px-2 rounded-pill font-monospace fs-xs">
                         <i class="bi bi-plus-lg me-1"></i>{{ _('Follow') }}
                       </button>
                     </form>
@@ -362,7 +362,7 @@
             <tbody>
               {% for log in recent_logs %}
               <tr>
-                <td class="text-muted text-nowrap px-3 py-2" style="font-size: var(--text-sm);">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
+                <td class="text-muted text-nowrap px-3 py-2 fs-sm">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
                 <td class="fw-semibold px-2 py-2">{{ log.user_id or '—' }}</td>
                 <td class="text-muted px-3 py-2">{{ humanize_action(log.action) }}</td>
               </tr>

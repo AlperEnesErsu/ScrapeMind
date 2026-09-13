@@ -546,8 +546,18 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
      görevler) önce/sonra her öğenin 18 hesaplanmış stil özelliği
      karşılaştırıldı — dördünde **sıfır fark**, profilde yalnızca alt-piksel
      yuvarlama.
-   - ⬜ dashboard — 21
-   - ⬜ scrape — 54
+   - ✅ **dashboard — 21 → 0.** Yeni paylaşılanlar: `minw-0`, `maxw-80p`,
+     `spinner-xs`, `progress-thin`, `empty-state-icon-sm`, `dot-unread`.
+     İlerleme çubuğunun genişliği **veri**, sınıf olamaz: `data-progress`
+     ile geliyor ve `app.js` `element.style.width` ile yazıyor — CSP
+     işaretlemeyi ve stil sayfalarını denetler, CSSOM'u değil. Çubuk bu arada
+     `role="progressbar"` + `aria-valuenow` kazandı. Okunmamış noktasının
+     `0.5em`'i `font-size: 50%` oldu; tasarım sistemi testindeki şablon
+     istisnası artık gereksiz olduğu için kaldırıldı.
+     Doğrulama: "Senin için" (576 öğe) ve admin genel bakış (337 öğe),
+     eski ve yeni şablonla render edilip aynı CSS altında 18 hesaplanmış
+     özellikle karşılaştırıldı — **sıfır fark**.
+   - ⬜ scrape — 54 (kalan toplam da bu)
    - ⬜ `style-src` report-only. Hesaba katılacaklar: htmx'in indicator
      `<style>`'ı (`includeIndicatorStyles`) ve vis-network'ün enjekte ettiği stil.
 

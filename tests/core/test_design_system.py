@@ -100,9 +100,6 @@ def test_templates_size_type_from_the_scale():
                 r"font-size:\s*((?:[0-9]*\.)?[0-9]+(?:px|rem|em))",
                 path.read_text(encoding="utf-8"),
             )
-            # 0.5em on the notification badge is relative to its parent by
-            # design -- it scales with the badge rather than with the page.
-            if value != "0.5em"
         ]
         if found:
             offenders[str(path.relative_to(ROOT))] = found
