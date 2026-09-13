@@ -14,7 +14,7 @@
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
 | 🟠 Yüksek | 5 (**Y1, Y2, Y3, Y5 kapandı** — **Y4: kod tamam, prod'da zorlama kaldı**) | İlk hafta içinde kapanmalı |
-| 🟡 Orta | 13 (**O1, O2, O3, O4, O5, O9, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
+| 🟡 Orta | 13 (**O1, O2, O3, O4, O5, O9, O10, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
 Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
@@ -638,7 +638,7 @@ yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
 | O8 | Zotero hiç gerçek hesaba karşı koşulmadı | Faz 7.2 yalnızca `requests` sınırında taklit edilerek doğrulandı. Çıkıştan önce bir gerçek anahtarla bir kez denenmeli |
 
 | ~~O9~~ ✅ | ~~`arxiv` SDK'sı 2.1.3, güncel 4.0.1~~ | **PR #87 ile kapandı.** İki major atlamaya rağmen kullanılan API yüzeyi birebir aynı çıktı: `Client(page_size, delay_seconds, num_retries)`, `Search(query, id_list, max_results, sort_by, sort_order)`, `Client.results` ve `Result`'ın sekiz alanı — hiçbiri değişmemiş, adaptör tek satır değişmeden çalıştı. **Canlı arXiv sorgusuyla doğrulandı**, üç gerçek sonuç tam alanlarla döndü. Pin kalkınca `requests` 2.33.0 alındı ve son uyarı da kapandı |
-| O10 | `authlib.jose` kullanımdan kaldırıldı | API v1 JWT'leri onu kullanıyor. authlib **2.0'da kaldırılacak**, yerine `joserfc`. Şimdi çalışıyor, ama bir sonraki major yükseltmede kırılacak — planlanmalı |
+| ~~O10~~ ✅ | ~~`authlib.jose` kullanımdan kaldırıldı~~ | **Kapandı.** API v1 JWT'leri artık `joserfc` (Authlib'in kendi bağımlılığı; `requirements.txt`'e doğrudan pinlendi). Geçiş öncesi ölçüldü: eski kod `alg=none`'ı reddediyordu ama **HS256 config'inde HS512 token'ı kabul ediyordu** — gizli anahtarsız sömürülemez, ama ayar uygulanmıyordu; `algorithms=[JWT_ALGORITHM]` artık sabitliyor. Deploy anında dışarıdaki eski imzalı refresh token'lar geçerli kalıyor (testli). Uygulama açılışındaki `AuthlibDeprecationWarning` kalktı |
 | O11 | Yerel mypy ile CI mypy aynı sonucu vermiyor | Yerelde 98, CI'da 95 çıkabiliyor (Python sürüm farkı, bkz. O7). Geliştirici yerel ratchet'e **güvenemiyor**; bu, kırmızı bir PR'ın merge edilmesine yol açtı |
 
 | O12 | `g` testler arasında sızıyor | `tests/conftest.py`'deki `app` fixture'ı `scope="session"` ve **tek bir app context'i** bütün koşu boyunca açık tutuyor, yani `g` 1312 testin ortak malı. Kanıtlandı: bir testte `g`'ye yazıp diğerinde okunabiliyor. Y3'ün testleri buna çarptı (`generate_csrf` token'ı `g`'de önbelleğe alıyor). **Belirgin çözüm ucuz değil:** test başına iç içe app context açmak, Flask-SQLAlchemy oturumu app context'e bağladığı için testlere fixture'larından farklı bir DB oturumu verir |

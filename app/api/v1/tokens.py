@@ -1,7 +1,8 @@
 """JWT issue/verify + revocation for the v1 API.
 
-HS256 via Authlib (`authlib.jose`) — already a project dependency, so no
-PyJWT. Two token types share one signing key:
+HS256 via `joserfc` -- already installed as Authlib's own dependency, now pinned
+directly. It replaced `authlib.jose`, which Authlib deprecates and removes in
+2.0. Two token types share one signing key:
 
 - access  — short-lived, sent as `Authorization: Bearer <token>` on every call
 - refresh — long-lived, exchanged at /auth/refresh for a fresh token pair
@@ -25,8 +26,10 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from authlib.jose import JoseError, jwt
 from flask import current_app
+from joserfc import jwt
+from joserfc.errors import JoseError
+from joserfc.jwk import OctKey
 
 from app.core.models.revoked_token import RevokedToken
 from app.extensions import db
@@ -41,10 +44,16 @@ def _secret() -> str:
     return current_app.config.get("JWT_SECRET_KEY") or current_app.config["SECRET_KEY"]
 
 
+def _key() -> OctKey:
+    return OctKey.import_key(_secret())
+
+
+def _algorithm() -> str:
+    return current_app.config["JWT_ALGORITHM"]
+
+
 def _encode(payload: dict[str, Any]) -> str:
-    header = {"alg": current_app.config["JWT_ALGORITHM"], "typ": "JWT"}
-    token = jwt.encode(header, payload, _secret())
-    return token.decode("ascii") if isinstance(token, bytes) else token
+    return jwt.encode({"alg": _algorithm(), "typ": "JWT"}, payload, _key())
 
 
 def _base_claims(user_id: int, token_type: str, ttl: int) -> dict[str, Any]:
@@ -82,9 +91,15 @@ def decode_token(token: str, expected_type: str) -> dict[str, Any] | None:
     checks need different data.
     """
     try:
-        claims = jwt.decode(token, _secret())
-        claims.validate()  # enforces exp / nbf / iat
-    except (JoseError, ValueError, KeyError):
+        # `algorithms` pins what JWT_ALGORITHM says. `authlib.jose` did not:
+        # measured before the switch, it accepted an HS512 token under an HS256
+        # config. Not exploitable -- forging either needs the secret -- but the
+        # setting was a statement the verifier did not enforce.
+        decoded = jwt.decode(token, _key(), algorithms=[_algorithm()])
+        # exp / nbf / iat, no leeway: the same checks `claims.validate()` made.
+        jwt.JWTClaimsRegistry(leeway=0).validate(decoded.claims)
+        claims = decoded.claims
+    except (JoseError, ValueError, KeyError, TypeError):
         return None
     if claims.get("type") != expected_type:
         return None
