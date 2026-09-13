@@ -157,3 +157,46 @@ def _is_descendant(
         parent_number = cursor.claim.depends_on
         cursor = nodes.get(parent_number) if parent_number is not None else None
     return False
+
+
+def recent_runs(limit: int = 10) -> list[PatentIngestRun]:
+    """Newest first, for the admin panel. `id` breaks ties because two manual
+    triggers in the same second share a `started_at`."""
+    return (
+        PatentIngestRun.query.filter(PatentIngestRun.deleted_at.is_(None))
+        .order_by(PatentIngestRun.started_at.desc(), PatentIngestRun.id.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+@dataclass
+class LoadSettings:
+    """What the next load will do, stated before anyone presses the button.
+
+    `route` is the question an admin actually has when a load fails: did it
+    go through the ODP API or the derived legacy URL? Those fail for
+    different reasons and are fixed in different places.
+    """
+
+    window_weeks: int
+    cpc_core: str
+    cpc_extended: str
+    has_key: bool
+    next_file: str | None
+
+
+def load_settings() -> LoadSettings:
+    from app.modules.patent import uspto
+
+    has_key = uspto.credentials_ok()
+    return LoadSettings(
+        window_weeks=window_weeks(),
+        cpc_core=current_app.config.get("PATENT_AI_CPC_CODES") or "G06N",
+        cpc_extended=current_app.config.get("PATENT_AI_CPC_EXTENDED") or "",
+        has_key=has_key,
+        # With a key the file is discovered at run time, so there is nothing
+        # honest to show in advance. Without one it is a pure function of the
+        # date and can be shown exactly.
+        next_file=None if has_key else uspto.legacy_weekly_file().name,
+    )

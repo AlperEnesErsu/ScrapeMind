@@ -1,6 +1,6 @@
 # Faz 8 — Patent Takibi (yuvarlanan tam metin penceresi)
 
-> **Durum:** 8.1, 8.2, 8.3a bitti ve doğrulandı. 8.3b–8.6 planlandı. 12 Eylül 2026.
+> **Durum:** 8.1, 8.2, 8.3a, 8.3b bitti ve doğrulandı. 8.4–8.6 planlandı. 12 Eylül 2026.
 > Dal: `feat/patent-fulltext`, taban `c7c3e3f` (main).
 > Migration zinciri head'i: **`c3f9a17d40be`** (bu fazın şeması; ebeveyni
 > `e7b204c9f83a`, tek head, 38 revizyon).
@@ -312,9 +312,43 @@ ortada anahtar yok. Dolayısıyla **ODP yanıt şeması varsayım** (bu yüzden
 `_extract_files` şekli sabitlemek yerine tolere ediyor) ve **parser gerçek bir
 haftalık dosya görmedi**. İlk gerçek koşu bu iki şeyi birden sınayacak.
 
-### 9.3b Admin paneli
-Pencere durumu, son koşular, elle tetikleme. Faz 6 rapor panelinin kalıbı.
-DESIGN.md: tetikleme birincil **dolu** garnet, temizle **outline kırmızı**.
+### 9.3b ✅ Admin paneli — bitti (13 Eylül 2026)
+`/patents/admin`, `patents.manage` izniyle. Pencere durumu, sonraki yüklemenin ne
+yapacağı (hangi rota, hangi dosya, hangi CPC filtresi), son 10 koşu ve hatası,
+iki tetikleyici.
+
+- **Sonraki dosya önceden gösteriliyor** — anahtar yoksa dosya adı tarihin saf
+  fonksiyonu olduğu için tam olarak; anahtar varsa "yükleme çalışınca bulunur".
+  Bir yükleme başarısız olunca yöneticinin asıl sorusu "ODP mi, türetilmiş URL mi?"
+  — ikisi farklı sebeplerle bozulur ve farklı yerde düzeltilir.
+- **Worker yoksa söyleniyor ve butonlar pasif.** Worker'ı olmayan kuyruğa alınmış
+  bir iş, çalışan bir işle aynı görünür.
+- **Tarayıcı task adı değil aksiyon adı gönderir** (`tasks_admin._TRIGGERS` kalıbı);
+  task adı post etmek hiçbir şey tetiklemiyor, testli. Her tetikleme audit'e yazılıyor.
+- **Panel ayrı bir menü satırı** (`required_permission="patents.manage"`), takip
+  sayfasında şablon içinde koşullu bir link değil: kimin göreceğine şablonda karar
+  vermek `permission_required` dışında bir izin kontrolü yazmak demekti — superuser
+  bypass'ının yaşadığı ve yalnızca orada yaşaması gereken yer (CLAUDE.md kural 2).
+- DESIGN.md: yükleme **dolu** garnet, temizleme **outline kırmızı**. Onay CSP-uyumlu
+  `data-confirm` ile, inline script yok.
+
+**Doğrulandı:** 8 yeni test, tam paket **1397 yeşil**. Geçici bir DB'de sıfırdan
+migration + gerçek istekler: admin 200, yetkisiz kullanıcı 403, panel linki yalnızca
+admin'in sidebar'ında.
+
+> **Doğrulama tuzağı (kod değil, betik):** birden fazla kullanıcının isteklerini
+> tek bir dış `app.app_context()` içinde yapmak yanlış sonuç verir — Flask açık
+> app context'i istek sırasında yeniden kullanır, Flask-Login yüklenen kullanıcıyı
+> `g`'ye koyar, ve ikinci kullanıcının istekleri **birincisi olarak** çalışır.
+> Yetkisiz kullanıcı için sahte bir 200 bu şekilde üretildi ve ayrı context'lerle
+> tekrarlanınca 403'e döndü. Elle doğrulama betiklerinde her istemciyi dış context
+> olmadan kullan.
+
+> **Dev DB'ye karşı doğrulama yapılmadı, bilerek:** worktree kodunu dev DB'ye karşı
+> başlatmak manifest sync'iyle `patent.admin`'e bakan menü satırını oraya yazardı.
+> `main`'den çalışan uygulamada o endpoint yok, ve korumasız `url_for` admin
+> kullanıcı için her sayfayı BuildError'a çevirirdi. Bu satır, kod `main`'e girdikten
+> sonra uygulama açılışında kendiliğinden gelir.
 
 ### 9.4 Arama: FTS + filtre
 ### 9.5 Semantik + hibrit (RRF)

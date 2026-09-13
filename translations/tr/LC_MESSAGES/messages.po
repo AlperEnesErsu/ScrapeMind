@@ -4210,6 +4210,69 @@ msgstr "Patentleri görüntüle"
 msgid "perm.patents.manage"
 msgstr "Patent yüklemesini yönet"
 
+msgid "Patent loading"
+msgstr "Patent yükleme"
+
+msgid ""
+"The weekly USPTO load that fills Patent tracking, and the cleanup that "
+"keeps it to its window."
+msgstr ""
+"Patent Takibi'ni dolduran haftalık USPTO yüklemesi ve onu pencere "
+"sınırında tutan temizlik."
+
+msgid "No worker is online. Anything queued here will wait until one starts."
+msgstr ""
+"Çevrimiçi worker yok. Buradan kuyruğa alınan iş, bir worker başlayana "
+"kadar bekler."
+
+msgid "ODP API"
+msgstr "ODP API"
+
+msgid "Derived weekly URL"
+msgstr "Türetilmiş haftalık URL"
+
+msgid "Next load"
+msgstr "Sonraki yükleme"
+
+msgid "File"
+msgstr "Dosya"
+
+msgid "discovered when the load runs"
+msgstr "yükleme çalışınca bulunur"
+
+msgid "AI filter (CPC)"
+msgstr "Yapay zekâ filtresi (CPC)"
+
+msgid "Download and load the latest weekly USPTO file now?"
+msgstr "En son haftalık USPTO dosyası şimdi indirilip yüklensin mi?"
+
+msgid "Run weekly load"
+msgstr "Haftalık yüklemeyi çalıştır"
+
+msgid "Remove every patent older than the window now? This cannot be undone."
+msgstr "Pencereden eski tüm patentler şimdi silinsin mi? Bu geri alınamaz."
+
+msgid "Clean up window"
+msgstr "Pencereyi temizle"
+
+msgid "Recent loads"
+msgstr "Son yüklemeler"
+
+msgid "Kept"
+msgstr "Tutulan"
+
+msgid "No load has run yet."
+msgstr "Henüz yükleme çalışmadı."
+
+msgid "Weekly patent load queued."
+msgstr "Haftalık patent yüklemesi kuyruğa alındı."
+
+msgid "Patent window cleanup queued."
+msgstr "Patent penceresi temizliği kuyruğa alındı."
+
+msgid "menu.patents_admin"
+msgstr "Patent yükleme"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
