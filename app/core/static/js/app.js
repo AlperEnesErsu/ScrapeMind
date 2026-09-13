@@ -499,3 +499,17 @@ document.body.addEventListener('htmx:afterRequest', (e) => {
   const clear = form.dataset.clearOnSuccess;
   if (clear) document.querySelectorAll(clear).forEach((el) => { el.innerHTML = ''; });
 });
+
+// <div class="progress-bar" data-progress="42.5">
+//
+// A bar's width is data, so it cannot become a class, and a style="" attribute
+// is blocked by a `style-src` without 'unsafe-inline'. Setting it through the
+// CSSOM is not: CSP governs markup and stylesheets, not element.style.
+function applyProgress(root) {
+  (root || document).querySelectorAll('[data-progress]').forEach((bar) => {
+    const pct = Math.max(0, Math.min(100, parseFloat(bar.dataset.progress) || 0));
+    bar.style.width = pct + '%';
+  });
+}
+document.addEventListener('DOMContentLoaded', () => applyProgress(document));
+document.body.addEventListener('htmx:afterSwap', (e) => applyProgress(e.target));

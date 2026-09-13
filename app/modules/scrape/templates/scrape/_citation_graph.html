@@ -37,26 +37,26 @@
   {# Legend #}
   <div class="d-flex flex-wrap align-items-center gap-3 py-2 px-3 mb-2 rounded bg-body-tertiary small">
     <span class="d-flex align-items-center gap-1">
-      <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:#0d6efd;"></span>
+      <span class="cg-legend-dot cg-legend-dot--center"></span>
       {{ _('Center paper') }}
     </span>
     <span class="d-flex align-items-center gap-1">
-      <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:#198754;"></span>
+      <span class="cg-legend-dot cg-legend-dot--reference"></span>
       {{ _('References (cites)') }}
     </span>
     <span class="d-flex align-items-center gap-1">
-      <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:#6f42c1;"></span>
+      <span class="cg-legend-dot cg-legend-dot--citation"></span>
       {{ _('Citations (cited by)') }}
     </span>
     <span class="d-flex align-items-center gap-1">
-      <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:#ffc107; border:2px solid #fd7e14;"></span>
+      <span class="cg-legend-dot cg-legend-dot--library"></span>
       {{ _('In your library') }}
     </span>
   </div>
 
   {# Graph Canvas Container #}
-  <div class="position-relative border rounded-3 overflow-hidden bg-body" style="height: 520px; width: 100%;">
-    <div id="cg-network-container" style="height: 100%; width: 100%;"></div>
+  <div class="position-relative border rounded-3 overflow-hidden bg-body cg-stage">
+    <div class="w-100 h-100" id="cg-network-container"></div>
 
     {# Spinner overlay #}
     <div id="cg-spinner" class="position-absolute top-50 start-50 translate-middle text-center p-3 rounded bg-body shadow-sm">

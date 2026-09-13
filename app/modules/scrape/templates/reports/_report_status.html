@@ -20,12 +20,12 @@
      {% endif %}>
   {% if report.status == 'pending' %}
     <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis" data-testid="report-status-pending">
-      <span class="spinner-border spinner-border-sm me-1" style="width:.65rem;height:.65rem;" role="status" aria-hidden="true"></span>
+      <span class="spinner-border spinner-border-sm me-1 spinner-xs" role="status" aria-hidden="true"></span>
       {{ _('Queued…') }}
     </span>
   {% elif report.status == 'running' %}
     <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis" data-testid="report-status-running">
-      <span class="spinner-border spinner-border-sm me-1" style="width:.65rem;height:.65rem;" role="status" aria-hidden="true"></span>
+      <span class="spinner-border spinner-border-sm me-1 spinner-xs" role="status" aria-hidden="true"></span>
       {{ _('Generating…') }}
     </span>
   {% elif report.status == 'ok' %}
