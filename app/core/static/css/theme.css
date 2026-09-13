@@ -1797,3 +1797,42 @@ code {
 
 /* Dashboard */
 .step-badge { width: 38px !important; height: 38px !important; min-width: 38px !important; }
+
+/* Shared, first needed by scrape */
+.tracking-wide { letter-spacing: .04em !important; }
+.maxw-60p { max-width: 60% !important; }
+.maxw-22rem { max-width: 22rem !important; }
+.spinner-s { width: .85rem !important; height: .85rem !important; }
+.avatar-32 { width: 32px !important; height: 32px !important; }
+
+/* Library heatmap: a year of days, one column per week */
+.heatmap-grid--year {
+  grid-auto-flow: column !important;
+  grid-template-rows: repeat(7, 10px) !important;
+  min-width: 700px !important;
+}
+.heatmap-legend-cell { width: 10px !important; height: 10px !important; }
+
+/* Paper detail */
+.cite-modal-pre {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  max-height: 50vh !important;
+  overflow-y: auto !important;
+  font-size: var(--text-sm) !important;
+}
+.collection-menu { min-width: 220px !important; }
+
+/* Citation graph. The legend colours must match the node colours set in
+   app/modules/scrape/static/js/citation_graph.js -- change both together. */
+.cg-stage { height: 520px !important; width: 100% !important; }
+.cg-legend-dot {
+  display: inline-block !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+}
+.cg-legend-dot--center    { background-color: #0d6efd !important; }
+.cg-legend-dot--reference { background-color: #198754 !important; }
+.cg-legend-dot--citation  { background-color: #6f42c1 !important; }
+.cg-legend-dot--library   { background-color: #ffc107 !important; border: 2px solid #fd7e14 !important; }

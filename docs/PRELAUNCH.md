@@ -557,7 +557,16 @@ Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
      Doğrulama: "Senin için" (576 öğe) ve admin genel bakış (337 öğe),
      eski ve yeni şablonla render edilip aynı CSS altında 18 hesaplanmış
      özellikle karşılaştırıldı — **sıfır fark**.
-   - ⬜ scrape — 54 (kalan toplam da bu)
+   - ✅ **scrape — 54 → 0. Uygulamada `style=` kalmadı** (e-posta hariç).
+     Mandal artık tüm `app/`'i temiz sayıyor, tavan 0. Isı haritası yıl ızgarası
+     `heatmap-grid--year`, atıf grafiği lejantı `cg-legend-dot--*` (renkler
+     `citation_graph.js`'teki düğüm renkleriyle aynı — CSS'te yorum var),
+     arama ikonunun `left:0`'ı Bootstrap `start-0`, grafik kabı `w-100 h-100`.
+     Doğrulama: 10 sayfa (kütüphane, zaman çizelgesi, arama, Keşfet — 3616
+     öğe —, makale detayının dört modu, raporlar, koleksiyonlar) eski/yeni
+     şablonla render edilip 26 hesaplanmış özellikle karşılaştırıldı: sekizinde
+     sıfır fark; Keşfet ve aramadaki tek fark **veriydi** (render sırasında
+     detay sayfası açıldığı için bir kart "yeni" → "Görüldü" oldu), stil değil.
    - ⬜ `style-src` report-only. Hesaba katılacaklar: htmx'in indicator
      `<style>`'ı (`includeIndicatorStyles`) ve vis-network'ün enjekte ettiği stil.
 
