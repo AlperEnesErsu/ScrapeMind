@@ -21,7 +21,7 @@
   {# Queued, but nothing consumed it. Almost always "no Celery worker": say
      that instead of spinning forever as if work were happening. #}
   {% if worker_stalled %}
-  <div class="small text-warning-emphasis mb-1" data-testid="worker-stalled" style="max-width: 22rem;">
+  <div class="small text-warning-emphasis mb-1 maxw-22rem" data-testid="worker-stalled">
     <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Your scan is queued but no worker has picked it up. It will run as soon as one is available.') }}
   </div>
   {% endif %}
