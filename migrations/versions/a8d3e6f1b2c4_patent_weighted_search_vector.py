@@ -1,7 +1,7 @@
 """patent search: stored vectors for documents and claims
 
 Revision ID: a8d3e6f1b2c4
-Revises: c3f9a17d40be
+Revises: b1e4c7a90d2f
 Create Date: 2026-09-13 11:40:00.000000
 
 Replaces `description_tsv` rather than adding beside it, and the reason is a
@@ -35,7 +35,12 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a8d3e6f1b2c4"
-down_revision = "c3f9a17d40be"
+# Parented on the merge revision, not on `c3f9a17d40be` where it was written.
+# Re-parenting is safe here and only here: this revision had never been applied
+# to a persistent database when it moved (scratch databases only), so no stamp
+# can disagree with it. Contrast `b1e4c7a90d2f`, which exists precisely because
+# `c3f9a17d40be` *had* been applied and could not be moved.
+down_revision = "b1e4c7a90d2f"
 branch_labels = None
 depends_on = None
 

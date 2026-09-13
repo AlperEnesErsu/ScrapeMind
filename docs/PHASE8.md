@@ -392,7 +392,7 @@ tarifname, 60 bin istem (pencerenin gerçekçi üst sınırı), uçtan uca HTTP:
 3. *Son:* istemlere de saklanan `text_tsv`, ve eşleşen doküman kümesi tek bir CTE'de
    (iki kez referans verilen CTE Postgres'te bir kez materialize edilir).
 
-Migration `a8d3e6f1b2c4` (`description_tsv` → `search_tsv`, istem ifade indeksi →
+Migration `a8d3e6f1b2c4` (ebeveyni merge revizyonu `b1e4c7a90d2f`; `description_tsv` → `search_tsv`, istem ifade indeksi →
 `text_tsv`); geçici DB'de upgrade → downgrade → upgrade, downgrade eski kolon ve iki
 eski indeksi birebir geri kuruyor.
 
