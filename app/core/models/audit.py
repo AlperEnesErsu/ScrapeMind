@@ -3,6 +3,9 @@ from app.extensions import db
 
 class AuditLog(db.Model):
     __tablename__ = "audit_logs"
+    # The admin audit page filters by user and sorts newest first; see
+    # migration f8768dad5990.
+    __table_args__ = (db.Index("ix_audit_logs_user_id_created_at", "user_id", "created_at"),)
 
     id = db.Column(
         db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True, autoincrement=True

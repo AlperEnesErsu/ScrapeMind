@@ -9,3 +9,6 @@
   </a>
 </div>
 {% endblock %}
+{# Signed-out visitors get the same page: base.html renders `auth_content`,
+   not `content`, when nobody is logged in. #}
+{% block auth_content %}{{ self.content() }}{% endblock %}
