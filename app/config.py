@@ -24,6 +24,20 @@ class BaseConfig:
     SUPPORTED_LOCALES = ["tr", "en"]
 
     WTF_CSRF_ENABLED = True
+    # Bound to the session, not to a clock. Flask-WTF's default is 3600s, which
+    # is a default rather than a decision anyone made here, and it fails badly
+    # in this app specifically: researchers leave a tab open across a working
+    # day, and after an hour every HTMX form on that page stops working. The
+    # server answers a bare 400 that HTMX does not surface, so the box simply
+    # does nothing (docs/PRELAUNCH.md Y3).
+    #
+    # `None` does not mean "no protection": the token is still signed with
+    # SECRET_KEY and tied to the session's own CSRF value, so using one still
+    # requires the victim's session. The time limit guards against a *leaked*
+    # token being replayed later -- and this app never puts the token in a URL,
+    # only in form bodies and the X-CSRFToken header, with a Referrer-Policy
+    # (PR #81) that keeps URLs from travelling off-site anyway.
+    WTF_CSRF_TIME_LIMIT = None
 
     # How many reverse proxies sit in front of this app. 0 disables the
     # X-Forwarded-* handling entirely.
@@ -41,6 +55,11 @@ class BaseConfig:
     # nginx has to raise this to 2, and nothing will remind it to; that is the
     # cost of the safe default.
     PROXY_FIX_HOPS = int(os.getenv("PROXY_FIX_HOPS", "0"))
+
+    # `script-src` ships report-only first (PRELAUNCH Y4 step 3): violations are
+    # logged by /csp-report while nothing is blocked. Flip this once a release
+    # has run clean, and the same directive moves into the enforced header.
+    CSP_ENFORCE_SCRIPT_SRC = os.getenv("CSP_ENFORCE_SCRIPT_SRC", "false").lower() == "true"
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

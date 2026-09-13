@@ -1,5 +1,5 @@
 import structlog
-from flask import Flask
+from flask import Flask, has_request_context
 
 from app.config import get_config
 from app.extensions import babel, csrf, db, limiter, login_manager, mail, migrate, oauth
@@ -152,6 +152,17 @@ def _register_oauth_providers(app: Flask) -> list[str]:
     return registered
 
 
+#: Every script this app loads: its own static files (core and module
+#: blueprints alike are same-origin), Bootstrap from base.html, and vis-network,
+#: which the citation graph loads on demand. Adding a CDN script means adding
+#: its package@version path here -- the report-only log will say so first.
+SCRIPT_SRC = (
+    "script-src 'self' "
+    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/ "
+    "https://cdn.jsdelivr.net/npm/vis-network@9.1.9/"
+)
+
+
 def _register_security_headers(app: Flask) -> None:
     """Headers the app was serving none of.
 
@@ -175,14 +186,45 @@ def _register_security_headers(app: Flask) -> None:
     is a host shared with every other project on the machine -- the kind of
     breakage that outlives the session that caused it.
 
-    **No `Content-Security-Policy` here.** Eight templates still carry inline
-    `<script>`, so the only CSP that would not break the app today is one with
-    `'unsafe-inline'`, which is not a policy. That work is tracked separately
-    (PRELAUNCH Y4) and starts with moving those scripts out, not with a header.
+    **`script-src` ships report-only first.** The templates no longer carry
+    inline `<script>`, inline event handlers or `hx-on` (tests/core/
+    test_csp_readiness.py holds all three at zero), so the directive needs no
+    `'unsafe-inline'` and no `'unsafe-eval'`. Until `CSP_ENFORCE_SCRIPT_SRC`
+    is set it goes out in `Content-Security-Policy-Report-Only`, and browsers
+    post what it *would* have blocked to /csp-report. The two CDN sources are
+    pinned to package and version: a bare `https://cdn.jsdelivr.net` would
+    allow every package on npm, which is a bypass rather than a policy.
+
+    `style-src` is still absent: 127 inline `style=` attributes remain, and
+    `'unsafe-inline'` for them would be a policy in name only (Y4 step 4).
+
+    What is here costs nothing and closes real holes, so it ships now rather
+    than waiting for that cleanup (PRELAUNCH Y4):
+
+    * `base-uri 'self'` — an injected `<base>` cannot re-point every relative
+      URL on the page.
+    * `object-src 'none'` — there are no `<object>`/`<embed>` elements, so
+      this is free.
+    * `frame-ancestors 'none'` — the modern X-Frame-Options, and the one
+      browsers still act on. Both are sent; they agree.
+    * `form-action 'self'` — every form in this app posts to its own origin,
+      so an injected form cannot exfiltrate a submission.
     """
+
+    baseline = "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'"
+    report = "report-uri /csp-report"
 
     @app.after_request
     def _security_headers(response):
+        if app.config.get("CSP_ENFORCE_SCRIPT_SRC"):
+            response.headers.setdefault(
+                "Content-Security-Policy", f"{baseline}; {SCRIPT_SRC}; {report}"
+            )
+        else:
+            response.headers.setdefault("Content-Security-Policy", baseline)
+            response.headers.setdefault(
+                "Content-Security-Policy-Report-Only", f"{SCRIPT_SRC}; {report}"
+            )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         # DENY rather than SAMEORIGIN: nothing in this app frames itself.
         response.headers.setdefault("X-Frame-Options", "DENY")
@@ -307,8 +349,22 @@ def _register_context_processors(app: Flask) -> None:
 
     @app.context_processor
     def inject_menu() -> dict:
-        """Inject menu_nodes and current_user_permissions into templates."""
-        if current_user.is_authenticated:
+        """Inject menu_nodes and current_user_permissions into templates.
+
+        Context processors run for *every* `render_template`, including ones
+        with no request behind them -- a template-backed email sent from a
+        Celery task is the case that matters here. Outside a request
+        `current_user` is None rather than an anonymous user, so reaching for
+        `.is_authenticated` raised AttributeError and took the render with it.
+
+        There is no user to build a menu for in that situation, and an email
+        has no sidebar, so the empty answer is the correct one rather than a
+        fallback. Today only `send_password_reset` and `send_email_verification`
+        render templates and both run inside a request; this is here so the
+        first task that renders one does not rediscover it the way the saved
+        searches did.
+        """
+        if has_request_context() and current_user.is_authenticated:
             from app.core.menu.builder import build_menu_for_user
             from app.core.rbac.service import get_user_permissions
 
@@ -352,6 +408,7 @@ def _register_blueprints(app: Flask) -> None:
     from app.api.v1 import api_v1_bp
     from app.core.audit.routes import audit_bp
     from app.core.auth import auth_bp
+    from app.core.csp_report import csp_report_bp
     from app.core.menu.routes import menu_bp
     from app.core.rbac.routes import rbac_bp
     from app.core.search.routes import search_bp
@@ -383,6 +440,11 @@ def _register_blueprints(app: Flask) -> None:
     # JSON API — token auth, so exempt from the session-cookie CSRF guard.
     app.register_blueprint(api_v1_bp, url_prefix="/api/v1")
     csrf.exempt(api_v1_bp)
+
+    # Browsers post CSP violation reports without a CSRF token; the endpoint
+    # takes no action beyond logging and is rate limited instead.
+    app.register_blueprint(csp_report_bp)
+    csrf.exempt(csp_report_bp)
 
 
 def _register_error_handlers(app: Flask) -> None:

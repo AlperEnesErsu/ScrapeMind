@@ -7,7 +7,7 @@
     <input type="checkbox" name="paper_ids" value="{{ r.id }}"
            class="form-check-input bulk-select-checkbox"
            aria-label="{{ _('Select') }} — {{ r.paper.title }}"
-           onclick="toggleBulkPanel()">
+           data-bulk-select>
   </div>
   <div class="flex-grow-1">
     {% if flash_msg %}
@@ -105,7 +105,8 @@
   {% if (r.paper.video_summary.tldr | length) > 200 %}
     <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-primary small mb-2"
             style="font-size: var(--text-xs);"
-            onclick="toggleAbstract('abstract-{{ r.id }}', this)">
+            data-toggle-abstract="abstract-{{ r.id }}" aria-expanded="false"
+            data-label-more="{{ _('Show more') }}" data-label-less="{{ _('Show less') }}">
       {{ _('Show more') }}
     </button>
   {% endif %}
@@ -114,7 +115,8 @@
   {% if (r.paper.abstract | length) > 200 %}
     <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-primary small mb-2"
             style="font-size: var(--text-xs);"
-            onclick="toggleAbstract('abstract-{{ r.id }}', this)">
+            data-toggle-abstract="abstract-{{ r.id }}" aria-expanded="false"
+            data-label-more="{{ _('Show more') }}" data-label-less="{{ _('Show less') }}">
       {{ _('Show more') }}
     </button>
   {% endif %}

@@ -18,8 +18,7 @@
         <i class="bi bi-clipboard me-1"></i>{{ _('Copy') }}
       </button>
     </div>
-    <pre id="recovery-codes-text" class="mt-2 mb-0 p-2 bg-body-secondary rounded small"
-         style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">{% for c in fresh_recovery_codes %}{{ c }}
+    <pre id="recovery-codes-text" class="mt-2 mb-0 p-2 bg-body-secondary rounded small font-monospace">{% for c in fresh_recovery_codes %}{{ c }}
 {% endfor %}</pre>
   </div>
 {% endif %}
@@ -67,13 +66,12 @@
   </div>
 
   <div class="text-center mb-3">
-    <img src="{{ setup_qr }}" alt="QR" class="img-fluid border rounded p-2 bg-white" style="max-width:220px;">
+    <img src="{{ setup_qr }}" alt="QR" class="img-fluid border rounded p-2 bg-white totp-qr">
   </div>
 
   <div class="mb-3">
     <label class="form-label small text-muted">{{ _('Or enter this key manually:') }}</label>
-    <code class="d-block p-2 bg-body-secondary rounded text-center user-select-all"
-          style="letter-spacing:.1em;">{{ setup_secret }}</code>
+    <code class="d-block p-2 bg-body-secondary rounded text-center user-select-all tracking-wider">{{ setup_secret }}</code>
   </div>
 
   <form hx-post="{{ url_for('settings.security_enable') }}"

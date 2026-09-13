@@ -165,14 +165,10 @@ değil — script'leri komşu `UI-UX/` klasöründe, elle koşulur.
    (ORCID kimlikleri, ilgi alanları, LLM anahtarları, takip edilen yazarlar). Bir
    kullanıcının LLM sağlayıcısı profil ayarı değil. Sol menü **zaten sakin** — sorun
    sidebar'da değil, profil sayfasının içinde; çözüm sidebar'ı şişirmemeli.
-2. **`pytest-flask`'i süitten çıkar.** Eklenti, `app` fixture'ını kullanan
-   **her** testin etrafına `GET /` için bir istek bağlamı itiyor. Yani süit
-   "burada istek bağlamı yok" hatasını **yapısal olarak yakalayamıyor** —
-   Faz 7.1 tam bu yüzden ölü çıktı (PR #71). Proje kendi `app` / `client` /
-   `auth_client` fixture'larını zaten tanımlıyor; eklenti kalıntı görünüyor.
-   `-p no:flask` ile **36 test düşüyor**; iş, o 36'sının hangisinin gerçek bir
-   hata hangisinin yalnızca test kolaylığı olduğunu ayırmak.
-3. Küçük borç: `mypy-baseline.txt` 95'te; en yoğun yer `app/modules/scrape`.
+2. Küçük borç: `mypy-baseline.txt` 95'te; en yoğun yer `app/modules/scrape`.
+3. Canlı öncesi kalanlar: `docs/PRELAUNCH.md` — engellerin hepsi kapandı,
+   yüksek seviyede **Y3** (HTMX + CSRF süresi dolunca sessiz başarısızlık) ve
+   **Y4** (CSP; önce sekiz şablondaki satır içi `<script>` taşınmalı) duruyor.
 
 > ✅ **Faz 7.1 (kayıtlı arama + uyarı)** PR #64, **Faz 7.2 (Zotero aktarımı)**
 > PR #65 ile main'de. 7.1 indiği hâlde **çalışmıyordu** — uyarılar beat'te koşuyor,
@@ -193,10 +189,15 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
 > kaydı aynı endpoint'i gösteriyordu.
 
 ## Bilinen Kısıtlar / Tuzaklar
-- **Arka planda `_()` çağıran her yol `force_locale` ile sarılmalı.** Locale seçicisi
-  `request.args`'ı okuyor; beat/worker'da istek yok ve `_()` `RuntimeError` atıyor.
-  Kalıp `digest_tasks` ve `report_tasks`'ta; dil **alıcının** dili olmalı, worker'ı
-  çalıştıranın değil. Testler bunu yakalayamaz — bkz. sıradaki iş #2.
+- **Arka planda `_()` çağıran her yol `force_locale` ile sarılmalı.** Dil **alıcının**
+  dili olmalı, worker'ı çalıştıranın değil; kalıp `digest_tasks`, `report_tasks` ve
+  `alerts`'te. Unutmak artık `RuntimeError` değil **yanlış dil** üretiyor: PR #88
+  `select_locale`'i istek yokken `BABEL_DEFAULT_LOCALE`'e düşürdü, çünkü atılan hata
+  zaten yutuluyordu ve Faz 7.1'i ölü gösteriyordu.
+- **`pytest-flask` süitten çıkarıldı (PR #88).** Eklenti her testin etrafına bir istek
+  bağlamı itiyordu, yani süit "burada istek bağlamı yok" hatasını **göremiyordu**.
+  Geri kurulursa `tests/core/test_no_ambient_request.py` düşer — bilerek.
+  Bir teste istek gerekiyorsa **kendi içinde** `app.test_request_context()` ile ister.
 - **i18n denetimi: `venv/Scripts/python.exe scripts/i18n_audit.py`** (CI'da da koşuyor).
   Üç kontrol: kaynakta `_()` ile sarılıp katalogda olmayan string; tek kelimelik
   etiketin cümleye çevrilmesi; **bir Türkçe metnin iki msgid'de görünmesi** — sonuncusu

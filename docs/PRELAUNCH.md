@@ -13,8 +13,8 @@
 | Seviye | Adet | Ne demek |
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
-| 🟠 Yüksek | 5 (**Y1 kapandı**) | İlk hafta içinde kapanmalı |
-| 🟡 Orta | 11 | Planlanmalı, çıkışı engellemez |
+| 🟠 Yüksek | 5 (**Y1, Y2, Y3, Y5 kapandı** — **Y4 kaldı**) | İlk hafta içinde kapanmalı |
+| 🟡 Orta | 13 (**O3, O9, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
 Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
@@ -172,7 +172,7 @@ Yapılanlar:
 
 ---
 
-### ~~E4 — Bağımlılıklarda 115 bilinen açık~~ ✅ KAPANDI (PR #85) — 115 → 1
+### ~~E4 — Bağımlılıklarda 115 bilinen açık~~ ✅ KAPANDI (PR #85, #87) — 115 → **0**
 
 `pip-audit -r requirements.txt` ile ölçüldü. 8 pakette uyarı var; ağırlık
 merkezi:
@@ -213,7 +213,12 @@ venv/Scripts/python.exe -m pip_audit -r requirements.txt --progress-spinner off
 
 **115 uyarı → 1.**
 
-Kalan tek uyarı (`requests` PYSEC-2026-2275) bilerek açık:
+> **Güncelleme (PR #87):** "bilerek açık" bırakılan son uyarı da kapandı.
+> `arxiv` 2.1.3 → 4.0.1 yükseltildi, `requests` pini serbest kaldı ve 2.33.0
+> alındı. `pip-audit` artık **"No known vulnerabilities found"** diyor.
+> Aşağıdaki gerekçe, o kararın neden o an doğru olduğunu kayda geçiriyor.
+
+Kalan tek uyarı (`requests` PYSEC-2026-2275) bilerek açıktı:
 
 - Yalnızca `requests.utils.extract_zipped_paths()`'i **doğrudan çağıran**
   uygulamaları etkiliyor; danışmanlığın kendi ifadesiyle *"standart kullanım
@@ -317,7 +322,7 @@ olmadan kör bir atlama olur.
 En az şunlar: OAuth callback'inde state doğrulaması, hesap bağlama
 (`_oauth_link_user_id`), var olan e-postayla eşleşme davranışı.
 
-### Y2 — Test süiti istek-bağlamı hatalarını göremiyor
+### ~~Y2 — Test süiti istek-bağlamı hatalarını göremiyor~~ ✅ KAPANDI (PR #88)
 
 `pytest-flask`, `app` fixture'ını kullanan **her** testin etrafına bir istek
 bağlamı itiyor. Süit, "burada istek bağlamı yok" hatasını **yapısal olarak**
@@ -333,7 +338,34 @@ kusuru örttüğünü, hangisinin yalnızca test kolaylığı olduğunu ayırmak
 > Bu, `CLAUDE.md`'deki "Sıradaki iş" listesinin 2. maddesi. Canlıya çıkışı
 > engellemez ama **canlıdayken bulunacak hataların sınıfını** belirler.
 
-### Y3 — HTMX + CSRF süresi dolması sessizce başarısız
+**Yapıldı — ve iş sanıldığı gibi çıkmadı.** Buradaki tarif "36 testin
+hangisinin gerçek hata olduğunu ayırmak" diyordu. Ayrılacak 36 test yoktu:
+**36'sı da iki yerin aynı varsayımıydı.**
+
+| kök | ne yapıyordu |
+|---|---|
+| `app/core/i18n/utils.py::select_locale` | `request.args`'ı koşulsuz okuyordu → istek dışı her `_()` `RuntimeError` |
+| `app/__init__.py::inject_menu` | `current_user.is_authenticated`'a dokunuyordu; istek dışında `current_user` `None` → `AttributeError` |
+
+İkisi düzeltildi, **hiçbir test düzenlenmedi**, 36 → 0.
+
+Selectör artık istek yokken `BABEL_DEFAULT_LOCALE`'e düşüyor. Bu takas
+bilerek ve bedava değil: `force_locale`'ı unutan bir arka plan işi, İngilizce
+okuyan birine sessizce Türkçe yazacak. Ama **yanlış dildeki bir bildirim
+görünür ve düzeltilebilir; hiç oluşturulmamış bir bildirim ikisi de değil** —
+ki Faz 7.1'de olan tam olarak buydu.
+
+`inject_menu` de istek dışında boş dönüyor. Bugün şablon render eden e-postalar
+yalnızca rotalardan çağrılıyor, ama şablonlu bir e-postayı görevden gönderen
+ilk kod aynı taşa çarpacaktı.
+
+**Geri dönmesin diye kapı:** `tests/core/test_no_ambient_request.py`. Eklenti
+geri kurulunca **üç testi düşüyor** — denendi.
+
+Ölçüldü: eklentiyi kaldırmanın süit süresine etkisi yok (aynı altküme 42.3s'ye
+karşı 43.7s).
+
+### ~~Y3 — HTMX + CSRF süresi dolması sessizce başarısız~~ ✅ KAPANDI (PR #89)
 
 `WTF_CSRF_TIME_LIMIT = 3600`. Bir sekme bir saat açık kaldıktan sonra HTMX
 formu gönderildiğinde sunucu ham bir Flask `400 Bad Request` döndürüyor;
@@ -346,12 +378,36 @@ gövde: "The CSRF token has expired.").
 Araştırmacıların sekmeyi gün boyu açık bırakması bu uygulamanın normal
 kullanımı, yani bu **kesin** yaşanacak.
 
-Seçenekler bir mimari karar:
+Seçenekler bir mimari karardı:
 - global bir `htmx:responseError` yakalayıcı + görünür uyarı, ya da
 - `hx-headers` yerine her yanıtta tazelenen token, ya da
 - CSRF süresini kaldırıp yalnızca oturum ömrüne bağlamak.
 
-### Y4 — CSP yok, ve satır içi script'ler onu engelliyor
+**Yapılan: birinci ve üçüncü, çünkü ayrı şeyleri çözüyorlar.** Üçüncüsü sebebi
+kaldırıyor, birincisi geriye kalan sessizliği.
+
+**`WTF_CSRF_TIME_LIMIT = None`.** 3600 bu projenin verdiği bir karar değil,
+Flask-WTF'nin varsayılanıydı. `None` "koruma yok" demek değil: token hâlâ
+`SECRET_KEY` ile imzalı ve oturumun kendi CSRF değerine bağlı, yani kullanmak
+için **kurbanın oturumu** gerekiyor. Süre sınırının koruduğu şey *sızmış* bir
+token'ın sonradan tekrar oynatılması — ve bu uygulama token'ı hiçbir zaman
+URL'ye koymuyor, yalnızca form gövdesine ve `X-CSRFToken` başlığına.
+
+**Sessizlik ise daha kötü yarısıydı ve sebebi düzeltilse de kalırdı.**
+`app.js`'teki tek HTMX dinleyicisi sadece `evt.detail.successful` dalına
+bakıyordu: 400, 403, 500 ve kopmuş bağlantı, "kutu tepki vermedi"den ayırt
+edilemiyordu. Dört dal da artık görünür bir toast veriyor, mesajlar
+`<body data-msg-*>` üzerinden `_()`'den geçiyor — satır içi `<script>` değil,
+çünkü onları kaldırmak Y4'ün işi.
+
+Yolda çıkan bir kusur: `showToast` uyarı tipinde **onay işareti** gösteriyordu,
+yani "bir şeyler ters gitti" metni "başarılı" ikonuyla çıkıyordu. Tek uyarı
+toast'ı "Makale gizlendi" iken kimse fark etmemiş.
+
+Doğrulama tarayıcıda: gerçek bir başarısız HTMX isteği 400 dalını tetikledi;
+403, 500 ve ağ hatası dalları da doğru mesajı verdi.
+
+### Y4 — CSP yok, ve satır içi script'ler onu engelliyor  ◐ **kısmen yapıldı (PR #91)**
 
 E2'nin ayrılan parçası, ve asıl iş burada: **sekiz şablonda** satır içi
 `<script>` var (`base.html`, `core/_password_rules.html`, `core/_splash.html`,
@@ -364,7 +420,138 @@ Sıra: satır içi script'leri `static/js/`'e taşı → nonce ya da hash'li CSP
 `report-only` ile bir hafta izle → zorunlu kıl. İlk adım tek başına birkaç
 günlük iş; CSP'yi ondan önce planlamak yanlış sırayla ilerlemek olur.
 
-### Y5 — Konteyner root olarak koşuyor
+---
+
+#### ⚠️ Kapsam düzeltmesi — bu madde eksik sayılmıştı
+
+İşe başlayınca ölçüldü: sorun sekiz `<script>` bloğundan ibaret değil.
+
+| ne | adet | nerede |
+|---|---|---|
+| satır içi `<script>` bloğu | 8 | 8 şablon (~459 satır, 323'ü tek dosyada) |
+| satır içi olay işleyicisi (`onclick=`, `onsubmit=`, `onchange=`, `onkeydown=`) | **36** | **18 şablon** |
+| satır içi `style=` özniteliği | **127** | **39 şablon** |
+
+**CSP satır içi olay işleyicilerini script blokları kadar engeller.** İlk
+tahmin onları saymamıştı; gerçek iş iki üç katı.
+
+#### Bu yüzden sıra değişti: bedelsiz olan kısım önce gitti (PR #91)
+
+`script-src` ve `style-src` beklemek zorunda. Ama CSP'nin geri kalanı bu
+temizliğe hiç bağlı değil ve gerçek delikler kapatıyor:
+
+```
+base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'
+```
+
+- `base-uri` — enjekte edilmiş bir `<base>` sayfadaki bütün göreli URL'leri
+  yeniden yönlendiremez.
+- `object-src 'none'` — uygulamada hiç `<object>`/`<embed>` yok, bedava.
+- `frame-ancestors 'none'` — X-Frame-Options'ın modern hâli; ikisi de
+  gönderiliyor ve aynı şeyi söylüyorlar.
+- `form-action 'self'` — her form kendi origin'ine post ediyor (doğrulandı),
+  yani enjekte edilmiş bir form gönderimi dışarı sızdıramaz.
+
+`script-src` **bilerek yok**. ``'unsafe-inline'`` taşıyan bir direktif, adı olan
+ama işlevi olmayan bir politikadır; başlığı okuyan biri script'lerin
+kısıtlandığını sanmasın. Bir test bunu sabitliyor: politikada `script-src` de
+`unsafe-inline` de geçmemeli.
+
+Doğrulandı: dört sayfa gezildi, **tek bir CSP ihlali yok**; form gönderimi
+çalışıyor.
+
+#### Kalan iş (sırayla)
+1. ✅ 36 satır içi olay işleyicisini delegasyona çevir (18 şablon)
+   - ✅ **core — 7 → 0 (PR #92).** Altısı `onsubmit="return confirm(…)"`,
+     biri bildirim rozetini silen `onclick`. Karşılıkları `app.js`'te
+     delegasyonlu: `data-confirm` ve `data-remove-on-click`. HTMX ile sonradan
+     gelen işaretlemeye de yeniden bağlama gerekmeden uygulanıyor.
+     `tests/core/test_csp_readiness.py` mandallı bir kapı: temizlenen dizin
+     sıfırda kalmak zorunda, toplam azalabilir ama artamaz.
+   - ✅ **scrape-A — genel kalıplar, 13 → 0 (PR #93).** Değişince-gönder (6),
+     onay (2), Enter / Ctrl+Enter ile gönder (3), panoya kopyala (1), formun
+     dışındaki silme düğmesi (1). Yeni kancalar: `data-autosubmit`,
+     `data-submit-on-enter`, `data-submit-on-mod-enter`, `data-copy-text`.
+     Silme düğmesi JS'ye hiç ihtiyaç duymadan HTML'in `form=` özniteliğiyle
+     çözüldü.
+   - ✅ **scrape-B — sayfa fonksiyonları, 16 → 0.** İşleyiciler, onları
+     tanımlayan üç satır içi `<script>` bloğuyla (`feed.html`,
+     `_notes_list.html`, `_paper_chat.html`) birlikte taşındı. Yeni kancalar:
+     `data-bulk-select` / `data-bulk-clear`, `data-toggle-abstract`,
+     `data-notes-filter`, `data-chat-question`, `data-heatmap-date-input` /
+     `data-heatmap-clear` (ısı haritası günü zaten `data-date` taşıyordu).
+     Yolda üç hata kapandı: `/library/search`'te toplu seçim kutusu
+     `ReferenceError: toggleBulkPanel is not defined` atıyordu (fonksiyon
+     yalnızca `feed.html`'de tanımlıydı); özet düğmesi çevrilmiş etiketi Türkçe
+     sabit metinle eziyordu; sohbetteki dört hazır soru `_()` dışındaydı, EN
+     arayüzde Türkçe görünüyordu. **Toplam işleyici sıfır** — mandal artık
+     `app/modules`'ü de temiz dizin sayıyor, tavan 0.
+2. ✅ **Satır içi `<script>` blokları → 0.** Başta sekiz sayılmıştı; üçü
+   scrape-B'de işleyicileriyle birlikte gitti, kalan beşi burada:
+   - `_citation_graph` (~330 satır) → `app/modules/scrape/static/js/citation_graph.js`.
+     `scrape` blueprint'i bunun için `static_folder` aldı; çekirdek `app.js`
+     modül koduna dokunmuyor. URL'ler ve 12 çevrilmiş metin artık
+     `data-*` özniteliklerinden okunuyor — metin JS dizesine gömülmediği için
+     tırnaklı bir çeviri script'i kıramıyor. Parça HTMX ile geldiğinde
+     `<script src>` onunla birlikte geliyor ve dosya `data-cg-ready`
+     bayrağıyla iki kez çalışmaya dayanıklı. Yolda: düğüm ipucundaki sabit
+     `Atıf:` (EN arayüzde de Türkçe), `'Untitled'` ve `alert()` ile verilen
+     İngilizce hata metinleri çeviriye / toast'a taşındı.
+   - `_splash` temizliği, profil sekmesi vurgusu ve Bootstrap tooltip
+     başlatma `app.js`'e (tooltip artık HTMX ile gelen içerikte de çalışıyor).
+   - `_password_rules.html` **silindi**: hiçbir yerden include edilmiyordu.
+   `test_no_inline_script_blocks` sıfırı kilitliyor (Jinja yorumları hariç).
+   > `vis-network` hâlâ jsDelivr'den **dinamik** yükleniyor ve standalone
+   > paketi kendi `<style>`'ını enjekte ediyor — adım 3'te `script-src`
+   > jsDelivr'i kapsamalı, adım 4'te bu stil hesaba katılmalı.
+3. ✅ **`script-src` report-only olarak yayında.**
+   `Content-Security-Policy-Report-Only: script-src 'self'
+   https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/
+   https://cdn.jsdelivr.net/npm/vis-network@9.1.9/; report-uri /csp-report`.
+   - jsDelivr **paket@sürüm yoluna** sabitlendi — çıplak `cdn.jsdelivr.net`
+     npm'deki her paketi izinli yapardı, bu bir baypas olurdu. Bir test
+     koddaki her CDN script'inin listede olduğunu tarıyor.
+   - **Yolda bulunan engel:** üç formda `hx-on::after-request` vardı; htmx
+     bunları `new Function` ile çalıştırıyor, yani `'unsafe-eval'` olmadan
+     kırılacaklardı ve işleyici mandalı `hx-on`'u saymıyordu. `data-reset-on-success`
+     / `data-clear-on-success` kancasına çevrildi, mandal artık `hx-on`'u da
+     sayıyor, `base.html` htmx'in `allowEval`'ini kapattı. Sohbet formu eskiden
+     başarısız istekte de sıfırlanıp soruyu kaybediyordu.
+   - `/csp-report` (`app/core/csp_report.py`): CSRF muaf, dakikada 60, gövde
+     16 KB ile sınırlı, yalnızca bilinen alanlar loglanıyor ve URL'lerden
+     sorgu dizesi atılıyor (arama terimleri loga düşmesin). Hem eski
+     `csp-report` hem Reporting API biçimini okuyor. Log olayı: `csp_violation`.
+   - Doğrulama: oturum açıkken ana sayfa, Keşfet, makale (grafik + sohbet),
+     kütüphane, arama, profil, kullanıcılar, görevler gezildi — **sıfır ihlal**.
+     Pozitif kontrol: sayfaya bilerek satır içi script eklenince rapor sunucu
+     loguna `csp_violation blocked=inline` olarak düştü.
+   - ⬜ **Zorlamaya geçiş:** bir sürüm boyunca prod logunda `csp_violation`
+     çıkmazsa `CSP_ENFORCE_SCRIPT_SRC=true`; aynı direktif gerçek başlığa geçer.
+4. ◐ **127 satır içi `style=` → `style-src`** — modül modül.
+   E-posta şablonlarındaki 12'si **kapsam dışı**: e-posta istemcisi bu
+   uygulamanın CSP'sine tabi değil ve çoğu `<style>` bloğunu yok sayıyor.
+   Gerçek hedef 115. Mandal: `test_csp_readiness.py` → `STYLE_CLEAN` +
+   `STYLE_CEILING`.
+   - ✅ **core — 40 → 0.** Değerler `theme.css`'in sonundaki "Former inline
+     styles" bölümüne sınıf olarak taşındı (`fs-2xs`/`fs-xs`/`fs-sm`/`fs-base`,
+     `icon-dot`, `empty-state-icon` gibi paylaşılanlar + kabuk/ayarlar
+     bileşenleri). Her bildirim `!important`: satır içi stil her normal
+     kuralı yeniyordu, sınıfa taşınınca bir Bootstrap bileşen kuralına
+     sessizce yenilmesin. Splash'in 12 saçılma vektörü
+     `.splash__burst i:nth-child(n)` kurallarına geçti. Sidebar/topbar
+     arka planı zaten `theme.css`'te vardı, satır içi kopyası silindi.
+     Kurtarma kodları artık Bootstrap `font-monospace` (tasarım sisteminin
+     mono yığını) kullanıyor.
+     Doğrulama: beş sayfada (profil, güvenlik, oturumlar, tüm bildirimler,
+     görevler) önce/sonra her öğenin 18 hesaplanmış stil özelliği
+     karşılaştırıldı — dördünde **sıfır fark**, profilde yalnızca alt-piksel
+     yuvarlama.
+   - ⬜ dashboard — 21
+   - ⬜ scrape — 54
+   - ⬜ `style-src` report-only. Hesaba katılacaklar: htmx'in indicator
+     `<style>`'ı (`includeIndicatorStyles`) ve vis-network'ün enjekte ettiği stil.
+
+### ~~Y5 — Konteyner root olarak koşuyor~~ ✅ KAPANDI (PR #86)
 
 `docker/Dockerfile`'da `USER` yönergesi yok. Uygulama, worker ve beat
 konteynerlerinin üçü de root.
@@ -377,6 +564,24 @@ USER app
 `uploads` volume'ünün sahipliği de buna göre ayarlanmalı, yoksa avatar
 yükleme bozulur.
 
+**Yapıldı**, ve uid **sabit** (10001) seçildi: Docker yeni bir adlandırılmış
+volume'ü imajdaki dizinden *ve onun sahipliğinden* tohumluyor. Build'den
+build'e değişen bir uid, mevcut bir volume'ü artık var olmayan bir kullanıcıya
+ait bırakırdı.
+
+Yanında iki şey daha çıktı ve aynı PR'a girdi:
+
+- **`gcc` ve `libpq-dev` gereksizmiş.** Onları oraya koyduran `psycopg2` idi;
+  proje `psycopg2-binary` kullanıyor ve kalan her bağımlılık manylinux wheel'i
+  ile geliyor. İmaj **derleyicisiz build edildi** — doğrulandı, tahmin
+  edilmedi. Çalışma imajında derleyici bırakmak boyut değil **erişim** sorunu:
+  konteynerde kod çalıştırabilen her şey yanında bir araç zinciri buluyor.
+- **O3 (aşağıda) aynı dosyada olduğu için birlikte kapatıldı.**
+
+Doğrulama (build + çalıştırma): `id` → `uid=10001(app)`, uploads dizini
+yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
+**44 tabloyu migrate edip** gunicorn'u açtı ve `/api/v1/health` **200** döndü.
+
 ---
 
 ## 🟡 Orta
@@ -385,16 +590,19 @@ yükleme bozulur.
 |---|---|---|
 | O1 | `MAX_CONTENT_LENGTH` tanımsız | nginx `client_max_body_size 3m` ile koruyor; uygulama seviyesinde derinlemesine savunma yok |
 | O2 | `audit_logs.user_id` indekssiz | Admin denetim sayfası kullanıcıya göre filtreliyor; tablo büyüdükçe yavaşlar |
-| O3 | `entrypoint.sh` `"$@"`'ı yok sayıyor | Yeni bir servis `command:` verip `entrypoint: []` yazmayı unutursa **sessizce gunicorn** koşar. Mevcut worker/beat doğru kurulmuş, ama tuzak duruyor |
+| ~~O3~~ ✅ | ~~`entrypoint.sh` `"$@"`'ı yok sayıyor~~ | **PR #86 ile kapandı.** Geçirilen komut artık kazanıyor ve migration koşmuyor (migration'lar web servisine ait). Geçici çözüm çağıranın tarafındaydı — `entrypoint: []` — yani tuzak bir sonraki servisi bekliyordu |
 | O4 | 6 env değişkeni `.env.example`'da yok | `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `OPENROUTER_BASE_URL`, `SCRAPE_RATE_{EPO_OPS,PATENTSVIEW}_PER_MIN`, `SCRAPE_RATE_SCOPUS_PER_SEC` — hepsinin varsayılanı var |
 | O5 | 1/37 migration geri alınamıyor | `c4e91b0a77d2` (çift `scrape.feed` menü kaydını gizleyen veri migration'ı). Boş `downgrade()` burada muhtemelen **doğru** — geri almak bilerek düzeltilmiş bir hatayı geri getirir. Yapılacak iş, bunu `downgrade()` içine bir satır yorum olarak yazmak; sessiz boşluk ile bilinçli karar aynı görünmemeli |
 | O6 | `journals` tablosu elle seed gerektiriyor | Scimago CSV yüklenmezse **hiçbir kartta quartile rozeti çıkmaz**. Bozukluk değil (`CLAUDE.md`), ama lansmanda "özellik eksik" gibi görünür — çıkış öncesi yüklenmeli |
-| O7 | Python sürüm farkı | Prod imajı `python:3.11-slim`, yerel geliştirme 3.14. CI hangisinde koşuyorsa prod onunla eşleşmeli |
+| O7 | Python sürüm farkı — **tarama bunu yanlış yazmış** | Prod imajı `python:3.11-slim` ve **CI de 3.11** (`ci.yml`); yani prod ile CI zaten eşleşiyor. Sapma **geliştiricinin venv'inde**: 3.14. Sonucu kozmetik değil — yerel mypy ile CI'ınkinin ayrışmasının sebebi bu (O11), ve o ayrışma bir kırmızı PR'ın merge edilmesine yol açtı. Yapılacak iş venv'i 3.11'e çekmek, Dockerfile'a dokunmak değil |
 | O8 | Zotero hiç gerçek hesaba karşı koşulmadı | Faz 7.2 yalnızca `requests` sınırında taklit edilerek doğrulandı. Çıkıştan önce bir gerçek anahtarla bir kez denenmeli |
 
-| O9 | `arxiv` SDK'sı 2.1.3, güncel 4.0.1 | `requests~=2.32.0` pinliyor ve bu, `requests` 2.33.0'ı engelliyor (bkz. E4). İki major atlama; canlı arXiv doğrulaması gerektirir |
+| ~~O9~~ ✅ | ~~`arxiv` SDK'sı 2.1.3, güncel 4.0.1~~ | **PR #87 ile kapandı.** İki major atlamaya rağmen kullanılan API yüzeyi birebir aynı çıktı: `Client(page_size, delay_seconds, num_retries)`, `Search(query, id_list, max_results, sort_by, sort_order)`, `Client.results` ve `Result`'ın sekiz alanı — hiçbiri değişmemiş, adaptör tek satır değişmeden çalıştı. **Canlı arXiv sorgusuyla doğrulandı**, üç gerçek sonuç tam alanlarla döndü. Pin kalkınca `requests` 2.33.0 alındı ve son uyarı da kapandı |
 | O10 | `authlib.jose` kullanımdan kaldırıldı | API v1 JWT'leri onu kullanıyor. authlib **2.0'da kaldırılacak**, yerine `joserfc`. Şimdi çalışıyor, ama bir sonraki major yükseltmede kırılacak — planlanmalı |
 | O11 | Yerel mypy ile CI mypy aynı sonucu vermiyor | Yerelde 98, CI'da 95 çıkabiliyor (Python sürüm farkı, bkz. O7). Geliştirici yerel ratchet'e **güvenemiyor**; bu, kırmızı bir PR'ın merge edilmesine yol açtı |
+
+| O12 | `g` testler arasında sızıyor | `tests/conftest.py`'deki `app` fixture'ı `scope="session"` ve **tek bir app context'i** bütün koşu boyunca açık tutuyor, yani `g` 1312 testin ortak malı. Kanıtlandı: bir testte `g`'ye yazıp diğerinde okunabiliyor. Y3'ün testleri buna çarptı (`generate_csrf` token'ı `g`'de önbelleğe alıyor). **Belirgin çözüm ucuz değil:** test başına iç içe app context açmak, Flask-SQLAlchemy oturumu app context'e bağladığı için testlere fixture'larından farklı bir DB oturumu verir |
+| ~~O13~~ ✅ | ~~Paylaşımlı geliştirme veritabanı dalları birbirine kilitliyor~~ | **PR #90 ile kapandı.** Menü satırları **veri**, ve veri ona anlam veren koddan uzun yaşıyor: modül kaldırılır, kapatılır ya da o dalda hiç yoktur. `build_menu_for_user` artık uygulamanın sahip olmadığı endpoint'leri eliyor — `_prune_empty_groups`'un tıklanamayan öğeler için zaten verdiği kararın aynısı. Admin menü sayfası satırı DB'den okuyup çözmeden bastığı için elenen satır orada **hâlâ görünür ve düzeltilebilir** |
 
 Ayrıca duran teknik borç: `mypy-baseline.txt` 95'te, en yoğun yer
 `app/modules/scrape`.

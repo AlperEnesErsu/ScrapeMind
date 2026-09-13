@@ -82,7 +82,7 @@
             {% endif %}
             {% if u.username != 'admin' and u.id != current_user.id %}
               <form method="post" action="{{ url_for('users.user_delete', user_id=u.id) }}" class="d-inline"
-                    onsubmit="return confirm('{{ _('Delete this user?') }}');">
+                    data-confirm="{{ _('Delete this user?') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger"
                         aria-label="{{ _('Delete') }} — {{ u.username }}"><i class="bi bi-trash" aria-hidden="true"></i></button>

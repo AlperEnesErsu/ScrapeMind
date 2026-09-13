@@ -8,11 +8,9 @@
   <div class="mb-3 d-flex align-items-center gap-3">
     {% if current_user.avatar_url %}
       <img src="{{ current_user.avatar_url }}" alt="{{ _('Avatar') }}"
-           class="rounded-circle border" width="64" height="64"
-           style="object-fit: cover;">
+           class="rounded-circle border object-fit-cover" width="64" height="64">
     {% else %}
-      <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center"
-           style="width:64px;height:64px;">
+      <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center avatar-64">
         <i class="bi bi-person fs-3 text-secondary"></i>
       </div>
     {% endif %}

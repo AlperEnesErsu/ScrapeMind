@@ -16,7 +16,8 @@
       </button>
     </form>
     {% if collection.is_public and collection.share_token %}
-      <button class="btn btn-sm btn-outline-info" onclick="navigator.clipboard.writeText('{{ url_for('library.public_collection', share_token=collection.share_token, _external=True) }}'); alert('{{ _('Public link copied to clipboard!') }}');">
+      <button class="btn btn-sm btn-outline-info" data-copy-text="{{ url_for('library.public_collection', share_token=collection.share_token, _external=True) }}"
+              data-copied-label="{{ _('Copied') }}">
         <i class="bi bi-link-45deg me-1"></i>{{ _('Copy Link') }}
       </button>
     {% endif %}
@@ -79,8 +80,7 @@
           <input type="text" name="description" value="{{ collection.description or '' }}" maxlength="500" class="form-control form-control-sm">
         </div>
         <div class="modal-footer justify-content-between">
-          <button type="button" class="btn btn-sm btn-outline-danger"
-                  onclick="if(confirm('{{ _('Delete this collection? The papers stay in your library.') }}')) document.getElementById('deleteCollectionForm').submit();">
+          <button type="submit" form="deleteCollectionForm" class="btn btn-sm btn-outline-danger">
             <i class="bi bi-trash3 me-1"></i>{{ _('Delete') }}
           </button>
           <div>
@@ -92,7 +92,8 @@
     </div>
   </div>
 </div>
-<form method="post" action="{{ url_for('library.delete_collection', collection_id=collection.id) }}" id="deleteCollectionForm" class="d-none">
+<form method="post" action="{{ url_for('library.delete_collection', collection_id=collection.id) }}" id="deleteCollectionForm" class="d-none"
+      data-confirm="{{ _('Delete this collection? The papers stay in your library.') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 </form>
 

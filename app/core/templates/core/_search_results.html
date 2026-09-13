@@ -1,17 +1,17 @@
 {% if not q %}
 {% elif not users and not roles and not menu_items and not papers and not keywords %}
-  <div class="dropdown-menu show small p-2 shadow" style="min-width: 320px;"><span class="text-muted">{{ _('No matches.') }}</span></div>
+  <div class="dropdown-menu show small p-2 shadow search-menu-empty"><span class="text-muted">{{ _('No matches.') }}</span></div>
 {% else %}
-<div class="dropdown-menu show p-0 shadow" style="min-width: 340px; max-width: 400px; max-height: 420px; overflow-y: auto;">
+<div class="dropdown-menu show p-0 shadow search-menu">
   {% if papers %}
     <h6 class="dropdown-header py-1 small text-uppercase bg-body-tertiary fw-bold">{{ _('Publications') }}</h6>
     {% for p in papers %}
       <a class="dropdown-item small py-1 px-3 d-flex flex-column text-wrap"
          href="{{ url_for('scrape.detail', user_paper_id=p.id) }}">
-        <span class="fw-semibold text-truncate" style="max-width: 320px;">
+        <span class="fw-semibold text-truncate search-menu__title">
           <i class="bi bi-file-earmark-text me-1 text-primary"></i>{{ p.paper.title }}
         </span>
-        <span class="text-muted" style="font-size: var(--text-2xs);">
+        <span class="text-muted fs-2xs">
           {{ p.paper.source }} · {{ p.matched_keyword or 'Paper' }}
         </span>
       </a>

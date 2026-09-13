@@ -64,7 +64,7 @@
             </a>
             {% if not is_critical(item) %}
             <form method="post" action="{{ url_for('menu.item_delete', item_id=item.id) }}"
-                  class="d-inline" onsubmit="return confirm('{{ _('Delete this menu item?') }}');">
+                  class="d-inline" data-confirm="{{ _('Delete this menu item?') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-sm btn-outline-danger">
                 <i class="bi bi-trash"></i>

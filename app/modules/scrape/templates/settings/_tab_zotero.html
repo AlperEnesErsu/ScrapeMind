@@ -51,7 +51,7 @@
   {# Disconnecting is destructive, so it is an outline and never sits as a
      filled button beside the filled primary above — see docs/DESIGN.md. #}
   <form method="post" action="{{ url_for('alerts.zotero_credentials') }}"
-        onsubmit="return confirm('{{ _('Disconnect Zotero?') }}');">
+        data-confirm="{{ _('Disconnect Zotero?') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="zotero_api_key" value="">
     <input type="hidden" name="zotero_user_id" value="">

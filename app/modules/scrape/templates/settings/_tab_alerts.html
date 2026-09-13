@@ -61,7 +61,7 @@
                 </label>
                 <select name="cadence" id="cadence-{{ s.id }}"
                         class="form-select form-select-sm w-auto"
-                        onchange="this.form.submit()">
+                        data-autosubmit>
                   {% for c in cadences %}
                     <option value="{{ c }}" {% if s.cadence == c %}selected{% endif %}>
                       {{ {'daily': _('Daily'), 'weekly': _('Weekly'), 'off': _('Off')}[c] }}
@@ -76,7 +76,7 @@
               <form method="post"
                     action="{{ url_for('alerts.delete', search_id=s.id) }}"
                     class="d-inline"
-                    onsubmit="return confirm('{{ _('Delete this saved search?') }}');">
+                    data-confirm="{{ _('Delete this saved search?') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger"
                         aria-label="{{ _('Delete') }} — {{ s.name }}">

@@ -4068,6 +4068,39 @@ msgstr ""
 "The worker is running, but nothing is scheduling: nightly scans and "
 "alerts will not fire until the scheduler is back."
 
+msgid "Something went wrong. Please try again."
+msgstr "Something went wrong. Please try again."
+
+msgid "This page has been open a while. Refresh it and try again."
+msgstr "This page has been open a while. Refresh it and try again."
+
+msgid "You are not allowed to do that."
+msgstr "You are not allowed to do that."
+
+msgid "Could not reach the server. Check your connection."
+msgstr "Could not reach the server. Check your connection."
+
+msgid "Show less"
+msgstr "Show less"
+
+msgid "Summarise the abstract in three main points."
+msgstr "Summarise the abstract in three main points."
+
+msgid "What core methodology and approach does this study use?"
+msgstr "What core methodology and approach does this study use?"
+
+msgid "What are the main findings and conclusions of the paper?"
+msgstr "What are the main findings and conclusions of the paper?"
+
+msgid "What are the limitations and gaps in this research?"
+msgstr "What are the limitations and gaps in this research?"
+
+msgid "Untitled"
+msgstr "Untitled"
+
+msgid "Could not add the paper to your library."
+msgstr "Could not add the paper to your library."
+
 msgid "Patent tracking"
 msgstr "Patent tracking"
 
