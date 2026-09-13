@@ -143,6 +143,8 @@ DUPLICATE_EXCEPTIONS: set[str] = {
     "Keşfet",  # Discover / Open discover / menu.discover
     "Kütüphanem",  # My library / menu.library
     "Notlarım",  # My notes / menu.library.notes
+    "Patent Takibi",  # Patent tracking / menu.patents / module.patent.name
+    "Patent yükleme",  # Patent loading / menu.patents_admin
     "Raporlar",  # Reports / menu.reports
     "Sistem Ayarları",  # System Settings / menu.system
     "Zaman",  # Time / Timeline -- the tab reads correctly as either
