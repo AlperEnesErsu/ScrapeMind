@@ -8,7 +8,11 @@ logger = structlog.get_logger()
 
 
 def create_app() -> Flask:
-    import app.core.models  # noqa: F401 — registers all SQLAlchemy models before init
+    # Imported for its side effect: registers all SQLAlchemy models before init.
+    # Not `import app.core.models`, which binds the local name `app` to the
+    # package -- the next line then rebinds it to the Flask instance, and mypy
+    # typed `app` as a module for the rest of the function (17 errors).
+    from app.core import models as _core_models  # noqa: F401
     from app.modules import discover_and_register_models
 
     discover_and_register_models()
