@@ -52,6 +52,12 @@ class Paper(BaseModel):
     # Vector embedding for semantic search & RAG (Faz 5.4).
     # 1536 dimensions matches text-embedding-3-small and standard modern models.
     embedding = db.Column(Vector(1536), nullable=True)
+    # "model@dimension" that produced `embedding`. Distance between vectors
+    # from two models is a number, not a measurement: change EMBEDDING_MODEL
+    # and every old vector keeps returning confident neighbours that mean
+    # nothing. Semantic reads compare only same-model vectors, and the pending
+    # task re-embeds the rest. See migration e5c9a2d4b7f1.
+    embedding_model = db.Column(db.String(96), nullable=True, index=True)
 
     # --- Open access (Faz 7) ---
     # `pdf_url` above is whatever link a source happened to carry and says

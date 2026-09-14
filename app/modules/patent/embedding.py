@@ -28,12 +28,14 @@ BATCH_SIZE = 32
 
 
 def current_model() -> str:
-    """ "model@dimension" -- what a stored vector must match to be comparable."""
-    from app.modules.scrape.embedding_service import DEFAULT_EMBEDDING_DIM, DEFAULT_EMBEDDING_MODEL
+    """ "model@dimension" -- what a stored vector must match to be comparable.
 
-    model = (current_app.config.get("EMBEDDING_MODEL") or DEFAULT_EMBEDDING_MODEL).strip()
-    dim = int(current_app.config.get("EMBEDDING_DIM") or DEFAULT_EMBEDDING_DIM)
-    return f"{model}@{dim}"
+    Delegates to the paper embedder so patent chunks and papers can never
+    disagree about what the current model is called.
+    """
+    from app.modules.scrape.embedding_service import current_embedding_model
+
+    return current_embedding_model()
 
 
 def is_enabled() -> bool:

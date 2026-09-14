@@ -7,7 +7,10 @@ import pytest
 from app.core.auth.strategies.local import LocalAuthStrategy
 from app.core.models.user import User
 from app.modules.scrape import ai_service
-from app.modules.scrape.embedding_service import deterministic_mock_embedding
+from app.modules.scrape.embedding_service import (
+    current_embedding_model,
+    deterministic_mock_embedding,
+)
 from app.modules.scrape.models import Paper, PaperAnalysis, PaperNote, UserPaper
 
 
@@ -48,6 +51,9 @@ def test_ask_paper_full_rag_context(app, db, rag_user, monkeypatch):
             title="Efficient Attention for Long Documents",
             abstract="We present linear attention mechanisms that scale to 100k tokens.",
             embedding=deterministic_mock_embedding("efficient attention linear transformer"),
+            # What migration e5c9a2d4b7f1 stamps on existing rows: a vector
+            # without its model is not comparable and is skipped by every read.
+            embedding_model=current_embedding_model(),
         )
         # Setup another paper in the library that is relevant to the question
         p_related = Paper(
@@ -56,6 +62,9 @@ def test_ask_paper_full_rag_context(app, db, rag_user, monkeypatch):
             title="State Space Models for Sequential Data",
             abstract="Mamba architecture alternative to transformers with sub-quadratic compute.",
             embedding=deterministic_mock_embedding("state space models mamba architecture"),
+            # What migration e5c9a2d4b7f1 stamps on existing rows: a vector
+            # without its model is not comparable and is skipped by every read.
+            embedding_model=current_embedding_model(),
         )
         db.session.add_all([p_target, p_related])
         db.session.commit()
