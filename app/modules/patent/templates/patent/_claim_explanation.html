@@ -1,0 +1,56 @@
+{# One claim's plain-language reading. Rendered inline on the patent page and
+   returned alone by the HTMX route, so the id must stay stable for the swap. #}
+<div id="claim-explain-{{ claim.id }}" class="mt-1">
+  {% if reading %}
+    <div class="border-start border-info-subtle ps-2 small">
+      <div class="text-body-secondary">
+        <i class="bi bi-stars me-1"></i>{{ _('In plain language') }}
+      </div>
+      <div>{{ reading.plain }}</div>
+      {% if reading.narrows %}
+        <div class="mt-1"><strong>{{ _('What it adds') }}:</strong> {{ reading.narrows }}</div>
+      {% endif %}
+      {% if reading.terms %}
+        <dl class="mb-0 mt-1">
+          {% for t in reading.terms %}
+            <dt class="d-inline fw-semibold">{{ t.term }}</dt>
+            <dd class="d-inline me-2">— {{ t.meaning }}</dd>
+          {% endfor %}
+        </dl>
+      {% endif %}
+      <div class="text-body-secondary mt-1 d-flex align-items-center gap-2">
+        {# The original text above is what the patent says; this is a reading of
+           it. Said on every reading, not once per page, because readers skim. #}
+        <span>{{ _('A machine reading of the claim above, not legal advice.') }}
+          {% if reading.model_version %}<code>{{ reading.model_version }}</code>{% endif %}</span>
+        {% if ai_available and document %}
+          <button type="button" class="btn btn-sm btn-link p-0 ms-auto"
+                  hx-post="{{ url_for('patent.explain_claim', doc_number=document.doc_number, number=claim.number) }}?force=1"
+                  hx-target="#claim-explain-{{ claim.id }}" hx-swap="outerHTML"
+                  hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+                  hx-disabled-elt="this"
+                  aria-label="{{ _('Regenerate reading') }}" title="{{ _('Regenerate reading') }}">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  {% elif not ai_available %}
+    <div class="small text-body-secondary">
+      <i class="bi bi-key me-1"></i>{{ _('Plain-language readings need an AI provider to be configured.') }}
+    </div>
+  {% else %}
+    {% if failed %}
+      <div class="small text-warning-emphasis mb-1">
+        <i class="bi bi-exclamation-triangle me-1"></i>{{ _('The reading could not be generated. Try again in a moment.') }}
+      </div>
+    {% endif %}
+    <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+            hx-post="{{ url_for('patent.explain_claim', doc_number=document.doc_number, number=claim.number) }}"
+            hx-target="#claim-explain-{{ claim.id }}" hx-swap="outerHTML"
+            hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+            hx-disabled-elt="this">
+      <i class="bi bi-chat-square-text me-1"></i>{{ _('Explain in plain language') }}
+    </button>
+  {% endif %}
+</div>
