@@ -291,6 +291,12 @@ kapısı bu; alan düzeyinde sürpriz beklenir, yapısal değil.
 **route'suz bir menü satırı her sayfayı BuildError'a çevirir** — Faz 6'da bir kez canlı
 yaşandı. Nav seed'i şemadan ayrı, route'lar hazır olduktan sonra.
 
+> **Güncelleme (14 Eylül 2026) — bu tuzak artık yok.** PR #90'dan beri
+> `app/core/menu/builder.py:_drop_unreachable` uygulamanın sahip olmadığı endpoint'e
+> bakan menü satırlarını eliyor. Faz 8 boyunca bu uyarıya göre davranıldı; bayat
+> olduğu değerlendirmede kodu okuyarak bulundu. Aşağıdaki "dev DB'ye bilerek
+> uygulanmadı" gerekçesi de aynı sebeple geçersiz.
+
 ### 9.3a ✅ İndirme + haftalık hat — bitti (12 Eylül 2026)
 `uspto.py` (keşif + indirme), `ingest.py` (parse → filtre → upsert → purge),
 `patent_bulk_tasks.py`, `TASK_ROUTES` girdileri, Beat girdileri.
@@ -355,7 +361,7 @@ admin'in sidebar'ında.
 > tekrarlanınca 403'e döndü. Elle doğrulama betiklerinde her istemciyi dış context
 > olmadan kullan.
 
-> **Dev DB'ye karşı doğrulama yapılmadı, bilerek:** worktree kodunu dev DB'ye karşı
+> ~~**Dev DB'ye karşı doğrulama yapılmadı, bilerek:**~~ *(PR #90 sonrası geçersiz, §9.2)* worktree kodunu dev DB'ye karşı
 > başlatmak manifest sync'iyle `patent.admin`'e bakan menü satırını oraya yazardı.
 > `main`'den çalışan uygulamada o endpoint yok, ve korumasız `url_for` admin
 > kullanıcı için her sayfayı BuildError'a çevirirdi. Bu satır, kod `main`'e girdikten

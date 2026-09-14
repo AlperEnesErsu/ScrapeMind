@@ -9,9 +9,10 @@
 
 ## 1. Nerede Duruyoruz
 
-**Faz 0-6 tamamı `main`'de, açık dal yok.** En son inen üç iş: Faz 6 (retrospektif
-raporlar + yazar grupları, §5.5), tasarım sistemi (§5.6) ve CI'ın onarımı — pipeline
-9 Eylül'den beri kırmızıydı ve bunu kimse fark etmemişti (§4.10).
+**Faz 0-8 tamamı `main`'de.** En son inen: Faz 8 — Patent Takibi (§5.9,
+[PHASE8.md](PHASE8.md)) ve onu kurarken çıkan ortak düzeltmeler: makale vektörlerinin
+model takibi, kütüphane aramasının tam metni hiç okumaması, testlerde `g` sızıntısı,
+`.mo` dosyalarının derleme çıktısına dönmesi, `authlib.jose` → `joserfc`.
 
 Çalışan özellikler, kabaca:
 
@@ -39,15 +40,17 @@ raporlar + yazar grupları, §5.5), tasarım sistemi (§5.6) ve CI'ın onarımı
 | **Retrospektif raporlar** + yazar grupları + OpenAlex aralık hasadı (Faz 6) | ✅ on-demand, llm kuyruğunda (§5.5) |
 | **Tasarım sistemi**: nar işareti, garnet palet, tip ölçeği, CVD-güvenli kategorik palet | ✅ [DESIGN.md](DESIGN.md) — **arayüze dokunmadan önce oku** |
 | Dark mode | ❌ bilerek kaldırıldı — token'lar üzerinden geri gelebilir (§5.6) |
+| **Kayıtlı arama + uyarı**, **Zotero'ya aktarım**, OA tam metin (Faz 7) | ✅ [PHASE7.md](PHASE7.md) |
+| **Patent Takibi** (Faz 8): USPTO 3 haftalık pencere, istem ağacı, istem düzeyinde FTS + semantik, düz dille açıklama | ✅ **`USPTO_ODP_API_KEY` gerekir**; gerçek USPTO'ya henüz istek gitmedi (§5.9) |
 
-**Doğrulama durumu (10 Eylül 2026):**
+**Doğrulama durumu (14 Eylül 2026):**
 
 ```
-pytest -q                        →  1193 passed in ~110s
-pytest --cov=app                 →  %81.51  (CI eşiği 80)
+pytest -q                        →  1530 passed in ~100s
+pytest --cov=app                 →  %82.96  (CI eşiği 80)
 ruff check app/ tests/ scripts/  →  All checks passed!
-black --check app/ tests/ scripts/ →  225 files would be left unchanged
-python scripts/mypy_ratchet.py   →  95 errors, baseline'da (yükselemez)
+black --check app/ tests/ scripts/ →  281 files would be left unchanged
+python scripts/mypy_ratchet.py   →  CI'da 75, baseline'da (yerel 3.14'te 78 — §4.12)
 node scripts/audit_ui.mjs …      →  7 sayfa, 0 WCAG ihlali, 280/320/414px'te taşma yok
 ```
 
@@ -327,6 +330,51 @@ değişir.
 
 **İkinci kural:** CI'ın kırmızı olduğunu fark eden bir şey yok. Dört koşu
 boyunca kimse bakmadı. Bir dal açmadan önce `gh run list --branch main --limit 1`.
+
+### 4.11 Migration head çakışması: merge revision, ebeveyn değiştirme değil
+İki dal aynı ebeveynden migration eklerse CI'ın boş DB kontrolü "Multiple head
+revisions" ile düşer. Faz 8'de bu oldu: `c3f9a17d40be` (patent) ve `f8768dad5990`
+(audit indeksi, #102) ikisi de `e7b204c9f83a`'dan ayrıldı.
+
+**Çözüm merge revision** (`b1e4c7a90d2f`, gövdesi boş, `down_revision` iki head'in
+tuple'ı). Birinin `down_revision`'ını diğerine çevirmek **§4.9'daki tuzağın aynısı**:
+eski ucunda damgalı bir DB (burada dev DB `c3f9a17d40be`'deydi) taşınan migration'ı
+zaten koşulmuş sayar ve diğerini **sessizce atlar**. Sınandı: damgalı DB taklidi merge
+revision ile upgrade edilince audit indeksi 0 → 1 oldu.
+
+Kural: **hiçbir kalıcı DB'ye uygulanmamış** bir migration'ın ebeveyni değiştirilebilir
+(8.4'ün `a8d3e6f1b2c4`'ü böyle taşındı); uygulanmış olanınki değiştirilmez. Yeni
+migration eklemeden hemen önce `origin/main`'in head'ine bak.
+
+### 4.12 Push'tan önce CI'ın tamamı, yerelde
+Faz 8 PR'ları üç kez yalnızca yerelde atlanan bir adım yüzünden CI'da düştü. CI bir
+adımda düşünce **sonraki adımlar hiç koşmaz** — mypy'de düşen PR'ın i18n hatası ancak
+mypy düzelince göründü. Sırayla:
+
+```
+python scripts/compile_translations.py
+ruff check app/ tests/ scripts/
+black --check app/ tests/ scripts/
+python scripts/mypy_ratchet.py         # yerel 3.14 CI'dan 3 fazla sayar (PRELAUNCH O7/O11);
+                                       # karşılaştırmayı sayıyla değil origin/main'in hata
+                                       # kümesiyle yap
+python scripts/i18n_audit.py
+flask db upgrade                       # BOŞ bir DB'ye; testler create_all() kullanır ve
+                                       # migration zincirini hiç görmez
+pytest --timeout=60 --timeout-method=thread --cov=app --cov-fail-under=80
+```
+
+Windows'ta mypy yolları ters eğik çizgiyle basar: `app/modules/...` diye filtrelemek
+hiçbir şey bulmaz. Üst üste açılan PR'larda (taban `main`/`dev` değilse) **CI hiç
+tetiklenmez**; taban değişikliği de tetiklemez, yeni bir push gerekir.
+
+### 4.13 Ana checkout paylaşımlı
+12 Eylül'de başka bir oturumun `git merge`'ü, ana klasör 30 saniye önce başka bir
+dala geçirildiği için yanlış dala indi ve bir süre "main'de" diye raporlandı. Git'e
+yazan işleri **ayrı bir worktree'de** yap (`git worktree add ../ScrapeMind-<iş> <dal>`),
+yazan her komutla **aynı satırda** `git branch --show-current` doğrula. Dev DB ve Redis
+de paylaşımlı: bir oturumun migration'ı diğerinin kodunun tanımadığı bir damga
+bırakabilir.
 
 ---
 
@@ -764,6 +812,24 @@ admin **ne bozuk diye bakmak için açtığında** 12 saniye sürüyordu. `healt
 bu tuzağı zaten yazmıştı; panel yine de içine düşmüştü. **Test süiti 121s →
 86s.** İki panel artık aynı kaynaktan okuduğu için birbiriyle de çelişmiyor.
 
+### 5.9 ✅ Faz 8 — Patent Takibi (10–14 Eylül 2026, PR #98 → #109)
+Tam plan, ölçümler ve gerekçeler: [PHASE8.md](PHASE8.md). Burada yalnızca devralanın
+bilmesi gerekenler.
+
+- **Kapsam iki kez bilinçli daraldı.** 10 yıllık korpus (400–600 bin doküman, ~20 GB)
+  yerine **3 haftalık kayan pencere** (~5 bin doküman); `halfvec`, ertelenmiş HNSW ve
+  çok yıllık resume mantığı bu sayede gereksizleşti. AIPD elendi (yıllık, gecikmeli).
+- **Açık kalan tek büyük şey: gerçek veri.** Anahtarsız rota ilk ağ denemesinde
+  çürüdü (PR #105). Parser USPTO'nun belgelenmiş DTD'sine göre yazıldı, ODP yanıt
+  şeması varsayım, 8.4/8.5 performansı 23 kelimelik sentetik sözlükle (en kötü durum)
+  ölçüldü, 8.5 anlam kalitesi ve 8.6 okumaların isteme sadakati mock'larla
+  gösterilemedi. Hepsi ilk gerçek koşudan sonra yeniden gözden geçirilmeli.
+- **Yolda bulunan, patent dışı:** `search_user_papers_query` Faz 7.0'dan beri tam
+  metni okuduğunu söylüyordu ama okumuyordu — kayıtlı arama uyarıları tam metin
+  gelince tetiklenemiyordu (PR #108). Ortak `_pagination.html` URL-encode etmiyordu
+  (PR #103). Makale vektörleri modelini saklamıyordu (PR #108).
+- Süreç dersleri §4.11–§4.13'te.
+
 ## 6. Doküman Haritası
 
 > 🚀 **Canlıya çıkmadan önce `docs/PRELAUNCH.md`.** 11 Eylül 2026'da
@@ -778,6 +844,8 @@ bu tuzağı zaten yazmıştı; panel yine de içine düşmüştü. **Test süiti
 | [docs/SCRAPING.md](SCRAPING.md) | Veri toplama mimarisi — **yeni kaynak eklemeden önce oku** |
 | [docs/PHASE5.md](PHASE5.md) | Faz 5 planı — patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus |
 | [docs/PHASE7.md](PHASE7.md) | Faz 7 planı — kayıtlı arama + uyarı, Zotero, #58 |
+| [docs/PHASE8.md](PHASE8.md) | Faz 8 — Patent Takibi: plan, ölçümler, doğrulanmayanlar |
+| [docs/PRELAUNCH.md](PRELAUNCH.md) | Canlı öncesi tarama ve açık maddeler |
 | [docs/API_V1.md](API_V1.md) | JSON API referansı |
 | [docs/DESIGN.md](DESIGN.md) | Tasarım sistemi — **arayüze dokunmadan önce oku** |
 | [docs/UI_REVIEW.md](UI_REVIEW.md) | UI inceleme notları |
