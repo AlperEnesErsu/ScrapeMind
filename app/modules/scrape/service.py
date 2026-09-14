@@ -1550,6 +1550,22 @@ def _user_papers_query(user: User, view: str):
     return q
 
 
+def _contains_pattern(q: str) -> str:
+    """A case-folded LIKE pattern that matches `q` literally.
+
+    Without escaping, a user typing `%` or `_` matched almost every row, and a
+    search for `50%` or `snake_case` matched the wrong ones. Pair with
+    `.like(pattern, escape="\\")`.
+
+    The escaping here is the guard, not the `escape=` argument: backslash is
+    already Postgres's default LIKE escape, so the argument is redundant there
+    (a mutation test confirmed removing it changes nothing). It is kept so the
+    pattern means the same on any engine that does not default to backslash.
+    """
+    escaped = q.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
 def list_user_papers(
     user: User,
     *,
@@ -1599,43 +1615,49 @@ def list_user_papers(
     q = (q or "").strip()
     is_semantic_active = False
     if q and semantic:
-        from app.modules.scrape.embedding_service import get_embedding
+        from app.modules.scrape.embedding_service import (
+            current_embedding_model,
+            get_embedding,
+        )
 
         query_vector = get_embedding(q, user=user)
         if query_vector is not None:
             is_semantic_active = True
+            like = _contains_pattern(q)
+            # Only vectors this query vector can be compared with.
+            comparable = db.and_(
+                Paper.embedding.is_not(None),
+                Paper.embedding_model == current_embedding_model(),
+            )
             query = query.filter(
                 db.or_(
-                    db.and_(
-                        Paper.embedding.is_not(None),
-                        Paper.embedding.cosine_distance(query_vector) < 0.70,
-                    ),
-                    db.func.lower(Paper.title).like(f"%{q.lower()}%"),
-                    db.func.lower(Paper.abstract).like(f"%{q.lower()}%"),
-                    db.func.lower(UserPaper.matched_keyword).like(f"%{q.lower()}%"),
-                    db.func.lower(Paper.fulltext).like(f"%{q.lower()}%"),
+                    db.and_(comparable, Paper.embedding.cosine_distance(query_vector) < 0.70),
+                    db.func.lower(Paper.title).like(like, escape="\\"),
+                    db.func.lower(Paper.abstract).like(like, escape="\\"),
+                    db.func.lower(UserPaper.matched_keyword).like(like, escape="\\"),
+                    db.func.lower(Paper.fulltext).like(like, escape="\\"),
                 )
             ).order_by(
                 db.case(
-                    (Paper.embedding.is_not(None), Paper.embedding.cosine_distance(query_vector)),
+                    (comparable, Paper.embedding.cosine_distance(query_vector)),
                     else_=1.0,
                 ).asc(),
                 desc(Paper.published_at),
             )
 
     if q and not is_semantic_active:
-        like = f"%{q.lower()}%"
+        like = _contains_pattern(q)
         query = query.filter(
             db.or_(
-                db.func.lower(Paper.title).like(like),
-                db.func.lower(Paper.abstract).like(like),
-                db.func.lower(UserPaper.matched_keyword).like(like),
-                db.func.lower(db.cast(Paper.authors, db.String)).like(like),
+                db.func.lower(Paper.title).like(like, escape="\\"),
+                db.func.lower(Paper.abstract).like(like, escape="\\"),
+                db.func.lower(UserPaper.matched_keyword).like(like, escape="\\"),
+                db.func.lower(db.cast(Paper.authors, db.String)).like(like, escape="\\"),
                 # Full text, for the papers whose licence let us keep it.
                 # NULL for every other row, and `like` on NULL is NULL rather
                 # than an error, so this simply never matches there -- no
                 # extra guard needed, and no claim that the corpus is complete.
-                db.func.lower(Paper.fulltext).like(like),
+                db.func.lower(Paper.fulltext).like(like, escape="\\"),
             )
         )
 
@@ -2588,37 +2610,50 @@ def search_user_papers_query(
     q = (q or "").strip()
     is_semantic_active = False
     if q and semantic:
-        from app.modules.scrape.embedding_service import get_embedding
+        from app.modules.scrape.embedding_service import (
+            current_embedding_model,
+            get_embedding,
+        )
 
         query_vector = get_embedding(q, user=user)
         if query_vector is not None:
             is_semantic_active = True
+            like = _contains_pattern(q)
+            # Only vectors this query vector can be compared with.
+            comparable = db.and_(
+                Paper.embedding.is_not(None),
+                Paper.embedding_model == current_embedding_model(),
+            )
             query = query.filter(
                 db.or_(
-                    db.and_(
-                        Paper.embedding.is_not(None),
-                        Paper.embedding.cosine_distance(query_vector) < 0.70,
-                    ),
-                    db.func.lower(Paper.title).like(f"%{q.lower()}%"),
-                    db.func.lower(Paper.abstract).like(f"%{q.lower()}%"),
-                    db.func.lower(UserPaper.matched_keyword).like(f"%{q.lower()}%"),
+                    db.and_(comparable, Paper.embedding.cosine_distance(query_vector) < 0.70),
+                    db.func.lower(Paper.title).like(like, escape="\\"),
+                    db.func.lower(Paper.abstract).like(like, escape="\\"),
+                    db.func.lower(UserPaper.matched_keyword).like(like, escape="\\"),
+                    db.func.lower(Paper.fulltext).like(like, escape="\\"),
                 )
             ).order_by(
                 db.case(
-                    (Paper.embedding.is_not(None), Paper.embedding.cosine_distance(query_vector)),
+                    (comparable, Paper.embedding.cosine_distance(query_vector)),
                     else_=1.0,
                 ).asc(),
                 desc(Paper.published_at),
             )
 
     if q and not is_semantic_active:
-        like = f"%{q.lower()}%"
+        like = _contains_pattern(q)
         query = query.filter(
             db.or_(
-                db.func.lower(Paper.title).like(like),
-                db.func.lower(Paper.abstract).like(like),
-                db.func.lower(UserPaper.matched_keyword).like(like),
-                db.func.lower(db.cast(Paper.authors, db.String)).like(like),
+                db.func.lower(Paper.title).like(like, escape="\\"),
+                db.func.lower(Paper.abstract).like(like, escape="\\"),
+                db.func.lower(UserPaper.matched_keyword).like(like, escape="\\"),
+                db.func.lower(db.cast(Paper.authors, db.String)).like(like, escape="\\"),
+                # Full text. This function's docstring has promised it since
+                # Faz 7.0 and the query never did it -- which also meant a
+                # saved-search alert could not fire when OA full text arrived and
+                # put the term in the body, the case `e7b204c9f83a` says alerts
+                # exist for.
+                db.func.lower(Paper.fulltext).like(like, escape="\\"),
             )
         )
     if source:

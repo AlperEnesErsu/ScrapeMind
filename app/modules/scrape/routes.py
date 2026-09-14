@@ -902,7 +902,7 @@ def _get_internal_similar(link, limit=4):
     seen_ids = set()
 
     # 1. Vector similarity (pgvector)
-    if link.paper and link.paper.embedding is not None:
+    if link.paper and link.paper.embedding is not None and link.paper.embedding_model:
         dist_col = Paper.embedding.cosine_distance(link.paper.embedding).label("dist")
         vector_matches = (
             db.session.query(UserPaper, dist_col)
@@ -912,6 +912,8 @@ def _get_internal_similar(link, limit=4):
                 UserPaper.id != link.id,
                 UserPaper.dismissed_at.is_(None),
                 Paper.embedding.is_not(None),
+                # Two stored vectors: comparable only if one model made both.
+                Paper.embedding_model == link.paper.embedding_model,
             )
             .order_by(dist_col.asc())
             .limit(limit)
@@ -1113,7 +1115,9 @@ def add_citation_paper(user_paper_id: int):
     paper = upsert_paper(payload)
     new_link, created = link_user_paper(current_user, paper, matched_keyword="citation_graph")
 
-    if paper.embedding is None:
+    from app.modules.scrape.embedding_service import needs_embedding
+
+    if needs_embedding(paper):
         try:
             from app.tasks.embedding_tasks import embed_paper_task
 

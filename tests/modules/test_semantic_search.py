@@ -5,7 +5,10 @@ from __future__ import annotations
 import pytest
 
 from app.core.models.user import User
-from app.modules.scrape.embedding_service import deterministic_mock_embedding
+from app.modules.scrape.embedding_service import (
+    current_embedding_model,
+    deterministic_mock_embedding,
+)
 from app.modules.scrape.models import Paper, UserPaper
 from app.modules.scrape.routes import _get_internal_similar
 from app.modules.scrape.service import search_user_papers_query
@@ -53,6 +56,9 @@ def test_internal_similar_uses_pgvector_cosine_distance(app, db, semantic_user):
             title="Transformer Models in Natural Language",
             abstract="Deep attention architectures.",
             embedding=deterministic_mock_embedding("transformer attention language"),
+            # What migration e5c9a2d4b7f1 stamps on existing rows: a vector
+            # without its model is not comparable and is skipped by every read.
+            embedding_model=current_embedding_model(),
         )
         # Very close semantic neighbor
         p_close = Paper(
@@ -61,6 +67,9 @@ def test_internal_similar_uses_pgvector_cosine_distance(app, db, semantic_user):
             title="Self-Attention for Language Understanding",
             abstract="Attention mechanisms in NLP.",
             embedding=deterministic_mock_embedding("transformer attention language"),
+            # What migration e5c9a2d4b7f1 stamps on existing rows: a vector
+            # without its model is not comparable and is skipped by every read.
+            embedding_model=current_embedding_model(),
         )
         # Distant paper
         p_distant = Paper(
@@ -69,6 +78,9 @@ def test_internal_similar_uses_pgvector_cosine_distance(app, db, semantic_user):
             title="Marine Biology in the Pacific Ocean",
             abstract="Study of deep sea corals and marine life.",
             embedding=deterministic_mock_embedding("marine biology ocean coral"),
+            # What migration e5c9a2d4b7f1 stamps on existing rows: a vector
+            # without its model is not comparable and is skipped by every read.
+            embedding_model=current_embedding_model(),
         )
 
         db.session.add_all([p_target, p_close, p_distant])
@@ -149,6 +161,9 @@ def test_search_user_papers_query_semantic(app, db, semantic_user):
             title="Deep Convolutional Networks",
             abstract="Image recognition with CNNs.",
             embedding=deterministic_mock_embedding("computer vision convolutional networks"),
+            # What migration e5c9a2d4b7f1 stamps on existing rows: a vector
+            # without its model is not comparable and is skipped by every read.
+            embedding_model=current_embedding_model(),
         )
         p2 = Paper(
             source="arxiv",
@@ -156,6 +171,9 @@ def test_search_user_papers_query_semantic(app, db, semantic_user):
             title="Ancient Roman Architecture",
             abstract="Building techniques in antiquity.",
             embedding=deterministic_mock_embedding("history ancient rome architecture"),
+            # What migration e5c9a2d4b7f1 stamps on existing rows: a vector
+            # without its model is not comparable and is skipped by every read.
+            embedding_model=current_embedding_model(),
         )
         db.session.add_all([p1, p2])
         db.session.commit()

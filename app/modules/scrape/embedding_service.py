@@ -79,6 +79,19 @@ def _resolve_embedding_config(user=None) -> tuple[str, str, str, str, int] | Non
     return provider, base_url, api_key, model, dim
 
 
+def current_embedding_model() -> str:
+    """ "model@dimension" -- what a stored vector must match to be comparable
+    with a vector made now. The patent module uses the same string."""
+    model = (current_app.config.get("EMBEDDING_MODEL") or DEFAULT_EMBEDDING_MODEL).strip()
+    dim = int(current_app.config.get("EMBEDDING_DIM") or DEFAULT_EMBEDDING_DIM)
+    return f"{model}@{dim}"
+
+
+def needs_embedding(paper: Paper) -> bool:
+    """No vector, or one from a model that is no longer configured."""
+    return paper.embedding is None or paper.embedding_model != current_embedding_model()
+
+
 def is_embedding_enabled(user=None) -> bool:
     """True iff an embedding provider + key is configured (or testing mock is enabled)."""
     provider = (
@@ -250,6 +263,7 @@ def embed_paper(paper: Paper, user=None, commit: bool = True) -> bool:
         return False
 
     paper.embedding = vec
+    paper.embedding_model = current_embedding_model()
     if commit:
         db.session.commit()
     return True
@@ -257,7 +271,7 @@ def embed_paper(paper: Paper, user=None, commit: bool = True) -> bool:
 
 def embed_papers_batch(papers: list[Paper], user=None, commit: bool = True) -> int:
     """Embed multiple papers in chunks. Returns count of successfully embedded papers."""
-    to_embed = [p for p in papers if p.embedding is None and paper_text_for_embedding(p)]
+    to_embed = [p for p in papers if needs_embedding(p) and paper_text_for_embedding(p)]
     if not to_embed:
         return 0
 
@@ -270,6 +284,7 @@ def embed_papers_batch(papers: list[Paper], user=None, commit: bool = True) -> i
         for paper, vec in zip(batch, vectors):
             if vec is not None:
                 paper.embedding = vec
+                paper.embedding_model = current_embedding_model()
                 success_count += 1
 
     if commit and success_count > 0:

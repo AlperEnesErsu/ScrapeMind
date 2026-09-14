@@ -1072,7 +1072,10 @@ def ask_paper(paper: Paper, question: str, history: list[dict] = None, *, user=N
     rag_library_text = ""
     if user is not None and question:
         try:
-            from app.modules.scrape.embedding_service import get_embedding
+            from app.modules.scrape.embedding_service import (
+                current_embedding_model,
+                get_embedding,
+            )
 
             q_vector = get_embedding(question, user=user)
             if q_vector is not None:
@@ -1085,6 +1088,8 @@ def ask_paper(paper: Paper, question: str, history: list[dict] = None, *, user=N
                         Paper.id != paper.id,
                         UserPaper.dismissed_at.is_(None),
                         Paper.embedding.is_not(None),
+                        # Only vectors the question's vector can be compared with.
+                        Paper.embedding_model == current_embedding_model(),
                     )
                     .order_by(dist_col.asc())
                     .limit(3)

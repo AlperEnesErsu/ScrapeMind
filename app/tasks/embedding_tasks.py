@@ -10,9 +10,11 @@ import structlog
 
 from app.extensions import db
 from app.modules.scrape.embedding_service import (
+    current_embedding_model,
     embed_paper,
     embed_papers_batch,
     is_embedding_enabled,
+    needs_embedding,
 )
 from app.modules.scrape.models import Paper
 from app.tasks import celery_app
@@ -27,7 +29,7 @@ def embed_paper_task(paper_id: int) -> bool:
         return False
 
     paper = db.session.get(Paper, paper_id)
-    if paper is None or paper.embedding is not None:
+    if paper is None or not needs_embedding(paper):
         return False
 
     return embed_paper(paper)
@@ -44,7 +46,15 @@ def embed_pending_papers_task(limit: int = 50) -> int:
         return 0
 
     pending = (
-        Paper.query.filter(Paper.embedding.is_(None))
+        # Missing, or stale after an EMBEDDING_MODEL change -- a stale vector
+        # is excluded from every semantic read, so leaving it would quietly
+        # drop the paper out of semantic search for good.
+        Paper.query.filter(
+            db.or_(
+                Paper.embedding.is_(None),
+                Paper.embedding_model.is_distinct_from(current_embedding_model()),
+            )
+        )
         .order_by(Paper.created_at.desc())
         .limit(limit)
         .all()
