@@ -22,6 +22,8 @@ vaat ediyordu, doğru değil.)
 - `docs/PHASE5.md` — Faz 5 planı (patentler, dergi kalitesi, yazar takibi, opsiyonel Scopus)
 - `docs/DESIGN.md` — tasarım sistemi, **arayüze dokunmadan önce zorunlu**
 - `docs/PHASE7.md` — Faz 7 planı (kayıtlı arama + uyarı, Zotero, #58)
+- `docs/PHASE8.md` — Faz 8, Patent Takibi (USPTO tam metni, 3 haftalık pencere)
+- `docs/PRELAUNCH.md` — canlı öncesi tarama; **açık maddeler burada**
 
 ## Veritabanı (yerel geliştirme)
 - **Postgres artık ScrapeMind'in kendisinin, Redis hâlâ paylaşımlı.** Postgres: `scrapemind-db-1`, **5433**, `pgvector/pgvector:pg17`, kullanıcı/şifre `scrapemind`, volume `scrapemind_pg_data`. Ayağa kaldır:
@@ -54,15 +56,18 @@ app/core/          → Auth, RBAC, Menü, Settings, Audit, i18n, Email, Sessions
 app/modules/
   ├── dashboard/   → ana sayfa, ilgi alanları, kaynak seçici kartı
   ├── academic/    → kimlikler (ORCID/Scopus/WoS), Keyword sözlüğü (+ TR→EN çeviri kolonları)
+  ├── patent/      → Patent Takibi (Faz 8): uspto.py · parser.py · ingest.py · search.py
+                     embedding.py · explain.py — kendi tabloları, `papers`'a yazmaz
   └── scrape/      → sources/ (adaptörler) · service.py (orkestrasyon) · ai_service.py (LLM)
                      net_guard.py (SSRF) · ratelimit.py (Redis bütçe) · doi.py · forms.py
 app/tasks/         → core_tasks, scrape_tasks, feed_tasks, digest_tasks, channel_tasks,
+                     patent_bulk_tasks (haftalık USPTO yükleme, purge, istem-1 embedding),
                      schedule (BEAT_SCHEDULE), schedule_info (crontab→zaman), fanout
 translations/      → TR + EN .po (`.mo` derleme çıktısı, commit'lenmez — `scripts/compile_translations.py`)
 scripts/           → seed.py, create_module.py, export_core_template.py,
                      render_favicon.py (işareti logo.svg'den türetir)
 docs/              → SCRAPING.md, HANDOVER.md, API_V1.md, UI_REVIEW.md, DESIGN.md,
-                     PHASE5.md, PHASE7.md
+                     PHASE5.md, PHASE7.md, PHASE8.md, PRELAUNCH.md
 docs/adr/          → mimari karar kayıtları — neden **yapmadığımız** şeyler
 ```
 
@@ -159,6 +164,22 @@ rampası, gerçeği söylemeyen kontrast yorumu, kalkan outline varyantları.
 Tarayıcı gerektiren denetimler (axe, durum bazlı kontrast, 280px reflow) CI'da
 değil — script'leri komşu `UI-UX/` klasöründe, elle koşulur.
 
+### Faz 8 ✅ — Patent Takibi, PR #98 → #109 ile main'de
+USPTO haftalık verilmiş patent tam metninden **son ~3 hafta** (`PATENT_WINDOW_WEEKS`),
+`app/modules/patent/`, kendi tabloları. İstem ağacı, istem düzeyinde FTS, istem-1
+vektörleri + RRF, kütüphaneye ekleme, düz dille istem açıklaması, yükleme paneli.
+Ayrıntı: `docs/PHASE8.md`. Değiştirmeden önce bilinmesi gerekenler:
+- **`USPTO_ODP_API_KEY` zorunlu, anahtarsız yol yok.** `bulkdata.uspto.gov` emekli;
+  Open Data Portal 18 Haziran 2026'dan beri MFA'lı USPTO.gov hesabı istiyor. Anahtar
+  yoksa haftalık yükleme gerekçesiyle **atlanır**, purge çalışır. **Hiçbir istek henüz
+  gerçek USPTO'ya gitmedi** — parser ve ODP yanıt şeması ilk gerçek koşuda sınanacak.
+- **AI filtresi CPC** (`G06N`); AIPD kullanılmıyor (yıllık, pencereye yetişmez).
+- **Tam metin `papers`'a girmez.** Kütüphaneye ekleme `papers` satırı üretir; purge
+  onu silemez (`paper_id` SET NULL). Patentlerin DOI'si yok — aynı patentin
+  `US11123456` / `US11123456B2` biçimleri `service.library_paper`'da eşleniyor.
+- **Vektörler modelini taşır** (`patent_chunks.embedding_model`, `papers.embedding_model`).
+  Model adının tek kaynağı `embedding_service.current_embedding_model()`.
+
 ### Sıradaki iş (öncelik sırasıyla)
 1. **[#58](https://github.com/AlperEnesErsu/ScrapeMind/issues/58) — hesap ayarları ile
    ürün yapılandırmasını ayır.** `Profilim` altında 12 sekme var ve ikisi farklı şey:
@@ -166,10 +187,12 @@ değil — script'leri komşu `UI-UX/` klasöründe, elle koşulur.
    (ORCID kimlikleri, ilgi alanları, LLM anahtarları, takip edilen yazarlar). Bir
    kullanıcının LLM sağlayıcısı profil ayarı değil. Sol menü **zaten sakin** — sorun
    sidebar'da değil, profil sayfasının içinde; çözüm sidebar'ı şişirmemeli.
-2. Küçük borç: `mypy-baseline.txt` 95'te; en yoğun yer `app/modules/scrape`.
-3. Canlı öncesi kalanlar: `docs/PRELAUNCH.md` — engellerin hepsi kapandı,
-   yüksek seviyede **Y3** (HTMX + CSRF süresi dolunca sessiz başarısızlık) ve
-   **Y4** (CSP; önce sekiz şablondaki satır içi `<script>` taşınmalı) duruyor.
+2. **Faz 8'i gerçek USPTO verisiyle koş** — ODP anahtarı (MFA'lı USPTO.gov hesabı)
+   gerekiyor; `/patents/admin` → "Haftalık yüklemeyi çalıştır".
+3. Canlı öncesi kalanlar: `docs/PRELAUNCH.md` — engeller ve yüksek seviye kapandı;
+   **Y4**'te yalnızca prod'da CSP zorlamasına geçiş kaldı. Orta: O6 (Scimago CSV),
+   O7/O11 (yerel venv 3.14 → 3.11), O8 (Zotero'yu gerçek hesapla dene).
+4. Küçük borç: `mypy-baseline.txt` 75'te (14 Eylül'de 95'ten indi).
 
 > ✅ **Faz 7.1 (kayıtlı arama + uyarı)** PR #64, **Faz 7.2 (Zotero aktarımı)**
 > PR #65 ile main'de. 7.1 indiği hâlde **çalışmıyordu** — uyarılar beat'te koşuyor,
@@ -227,8 +250,21 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
 - Test config'i bilinçli "kırık": `FEED_ALLOW_PRIVATE_HOSTS=True` (CI'da dışa DNS yok),
   `REDIS_URL` kapalı porta bakar (kilit/rate limit fail-open olsun), LLM anahtarları
   boşaltılır (yanlışlıkla faturalı çağrı olmasın)
-- `ask_paper` "RAG chat" diye anılıyor ama RAG **değil** — başlık+abstract prompt'a
-  dolduruluyor. pgvector repoda yok
+- `ask_paper` **gerçek RAG** (PR #50): soru vektörleştirilir, kütüphaneden en yakın
+  makaleler bağlama girer — yalnızca geçerli modelin vektörleri karşılaştırılır
+- **Uygulanmış bir migration'ın `down_revision`'ı değiştirilmez.** İki dal aynı
+  ebeveynden migration eklerse ("multiple heads") **merge revision** yaz; ebeveyn
+  değiştirmek damgalı DB'de diğer migration'ı sessizce atlatır (HANDOVER §4.9,
+  §4.11). Yeni migration eklemeden hemen önce `origin/main`'in head'ine bak
+- **Push'tan önce CI'ın tamamını yerelde koş** — liste HANDOVER §4.12. Testler
+  `create_all()` kullanır, migration zincirini **görmez**: boş DB'ye
+  `flask db upgrade` ayrı adımdır. CI bir adımda düşünce sonrakiler koşmaz
+- **Ana checkout paylaşımlı** — başka bir oturum ya da geliştirici orada dal
+  değiştiriyor olabilir. Git'e yazan işleri ayrı bir worktree'de yap, komutla aynı
+  satırda `git branch --show-current` doğrula (HANDOVER §4.13)
+- **Testlerde `g` artık her istek ve her test başında temiz** (PR #110). Tek
+  session app context'i yüzünden eskiden aynı test içindeki iki kullanıcının
+  istekleri aynı `g._login_user`'ı görüyordu — sahte bir 200 böyle üretildi
 - **Video transkripti saklanmaz** — `VideoSummary` yalnızca özeti ve `transcript_chars`
   sayacını tutar (`docs/SCRAPING.md §11` telif sınırı). `paper_id` üzerinde tekil, yani
   dil başına cache yok — feed'de N+1 olmasın diye bilinçli
