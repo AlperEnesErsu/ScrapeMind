@@ -4423,6 +4423,29 @@ msgstr ""
 msgid "Search claims in the tracking window"
 msgstr "Takip penceresindeki istemlerde ara"
 
+msgid "In plain language"
+msgstr "Düz dille"
+
+msgid "What it adds"
+msgstr "Ne ekliyor"
+
+msgid "A machine reading of the claim above, not legal advice."
+msgstr "Yukarıdaki istemin makine okuması; hukuki tavsiye değildir."
+
+msgid "Regenerate reading"
+msgstr "Okumayı yeniden üret"
+
+msgid "Plain-language readings need an AI provider to be configured."
+msgstr ""
+"Düz dille okumalar için bir AI sağlayıcısının yapılandırılmış olması "
+"gerekir."
+
+msgid "The reading could not be generated. Try again in a moment."
+msgstr "Okuma üretilemedi. Biraz sonra tekrar deneyin."
+
+msgid "Explain in plain language"
+msgstr "Düz dille açıkla"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

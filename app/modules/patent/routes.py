@@ -104,6 +104,65 @@ def detail(doc_number: str):
         document=document,
         claim_tree=service.claim_tree(document),
         in_library=service.in_library(current_user, document),
+        # Readings already paid for are shown on load; only a miss costs a call.
+        explanations=_cached_explanations(document),
+        ai_available=_ai_available(current_user),
+    )
+
+
+def _cached_explanations(document) -> dict:
+    from app.modules.patent import explain
+    from app.modules.patent.models import PatentClaimExplanation
+
+    claim_ids = [c.id for c in document.claims]
+    if not claim_ids:
+        return {}
+    rows = PatentClaimExplanation.query.filter(
+        PatentClaimExplanation.patent_claim_id.in_(claim_ids),
+        PatentClaimExplanation.target_lang == explain.TARGET_LANG,
+    ).all()
+    return {row.patent_claim_id: row for row in rows}
+
+
+def _ai_available(user) -> bool:
+    from app.modules.scrape.ai_service import is_ai_enabled
+
+    return is_ai_enabled(user)
+
+
+@patent_bp.route("/<doc_number>/claims/<int:number>/explain", methods=["POST"])
+@login_required
+def explain_claim(doc_number: str, number: int):
+    """HTMX: a plain-language reading of one claim, swapped in beside it."""
+    from flask_login import current_user
+
+    from app.modules.patent import explain
+    from app.modules.patent.models import PatentClaim
+
+    document = service.get_document(doc_number)
+    if document is None:
+        abort(404)
+    claim = PatentClaim.query.filter_by(patent_document_id=document.id, number=number).first()
+    if claim is None:
+        abort(404)
+    if not _ai_available(current_user):
+        return render_template("patent/_claim_explanation.html", claim=claim, ai_available=False)
+
+    force = request.args.get("force") == "1"
+    reading = explain.get_or_generate(claim, user=current_user, force=force)
+    log_action(
+        "patent.claim_explained",
+        entity_type="patent",
+        entity_id=f"{document.doc_number}#{number}",
+        changes={"force": force, "ok": reading is not None},
+    )
+    return render_template(
+        "patent/_claim_explanation.html",
+        claim=claim,
+        document=document,
+        reading=reading,
+        failed=reading is None,
+        ai_available=True,
     )
 
 

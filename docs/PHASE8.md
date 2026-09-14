@@ -1,6 +1,6 @@
 # Faz 8 — Patent Takibi (yuvarlanan tam metin penceresi)
 
-> **Durum:** 8.1–8.5 bitti ve doğrulandı (8.1–8.3b PR #98, 8.4 PR #103). 8.6 planlandı. 12 Eylül 2026.
+> **Durum:** 8.1–8.6 bitti ve doğrulandı (PR #98, #103, #104, #105, #106 ve 8.6). 12 Eylül 2026.
 > Dal: `feat/patent-fulltext`, taban `c7c3e3f` (main).
 > Migration zinciri head'i: **`c3f9a17d40be`** (bu fazın şeması; ebeveyni
 > `e7b204c9f83a`, tek head, 38 revizyon).
@@ -473,7 +473,37 @@ Değerlendirmede (F2, F3) planlanıp yapılmamış olarak bulunan iki eksik.
 
 **Doğrulandı:** 12 test; üç koruma mutasyonla sınandı.
 
-### 9.6 Okuma deneyimi: istem ağacı, jargon sadeleştirme
+### 9.6 ✅ İstem sadeleştirme — bitti (14 Eylül 2026)
+İstem ağacındaki her istemin altında **"Düz dille açıkla"** (istek üzerine, HTMX).
+
+- **Bağımlı istem zinciriyle açıklanıyor.** "İstem 3'ün yöntemi, burada…" tek başına
+  anlamsız; prompta bağımsız istemden doğrudan ebeveyne kadar zincir (en fazla 5) giriyor,
+  hedef istem ayrıca işaretleniyor. Zincir `claim_tree` gibi savunmacı: eksik ebeveyn
+  zinciri bitiriyor, döngü ilk tekrarda duruyor.
+- **Kaynağa bağlı prompt:** metinde olmayan özellik/amaç/avantaj ekleme, kapsamı
+  genişletme-daraltma, belirsizliği tahminle doldurma, hukuki yorum yok. Bağımsız istem
+  için model bir "neyi daraltıyor" satırı dönse bile atılıyor — metinde olmayan bir ilişki.
+- **Önbellek istem + dil başına, kullanıcılar arasında paylaşımlı** (`PaperTranslation`
+  gibi; istem metni herkese aynı). Sayfa açılınca yalnızca önbellekteki okumalar
+  gösteriliyor — sayfayı açmak hiçbir çağrı yapmıyor. **Yeniden yüklemede istemler toptan
+  değiştirildiği için okumalar CASCADE ile siliniyor**: önbellek artık o metni söylemeyen
+  bir istemi anlatamaz.
+- **Başarısız yenileme eski okumayı silmiyor.** `force` daha iyi bir cevap ister; bir
+  sağlayıcı aksaklığı kullanıcıyı elindekinden daha azıyla bırakmamalı.
+- Her okumanın altında "yukarıdaki istemin makine okuması; hukuki tavsiye değildir" ve
+  üreten model. Orijinal istem her zaman üstünde.
+
+Migration `f6a1b3c5d7e9` (ebeveyn `e5c9a2d4b7f1` — main'in o anki head'i, iki head
+tuzağından kaçınmak için).
+
+**Doğrulandı:** 17 test; dört koruma (bağımsızda daraltma satırı, başarısız yenilemede
+eskiyi koruma, zincirin prompta girmesi, CASCADE) mutasyonla sınandı.
+
+> **Testlerin kanıtlayamadığı:** LLM `_call_llm`'de taklit edildi. Testler prompta ne
+> girdiğini ve cevapla ne yapıldığını doğruluyor, **okumanın isteme sadık olup
+> olmadığını değil**. Tasarım bunun testle gösterilememesine dayanıyor: orijinal metin
+> hep sayfada, prompt eklemeyi yasaklıyor, her okuma makine okuması diye etiketli. Gerçek
+> sağlayıcıyla birkaç istemde elle gözden geçirilmeli.
 
 ---
 

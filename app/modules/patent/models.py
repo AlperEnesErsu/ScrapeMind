@@ -226,3 +226,41 @@ class PatentIngestRun(BaseModel):
 
     def __repr__(self) -> str:
         return f"<PatentIngestRun {self.source_file} {self.status}>"
+
+
+class PatentClaimExplanation(BaseModel):
+    """A plain-language reading of one claim, cached per language (Faz 8.6).
+
+    Hangs off the claim row, not the document, and cascades with it. That is
+    what keeps a cached reading honest: when a corrected grant is re-ingested,
+    `ingest._replace_claims` deletes and recreates every claim, the old
+    explanations go with them, and nothing can describe text that is no longer
+    there.
+
+    Shared across users, like `PaperTranslation`: the claim text is public and
+    the same for everyone, and a reading generated once should not be paid for
+    again by the next reader. `model_version` records what wrote it.
+    """
+
+    __tablename__ = "patent_claim_explanations"
+
+    patent_claim_id = db.Column(
+        db.BigInteger().with_variant(db.Integer, "sqlite"),
+        db.ForeignKey("patent_claims.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    target_lang = db.Column(db.String(8), nullable=False)
+    plain = db.Column(db.Text, nullable=False)
+    #: For a dependent claim: what it adds to or narrows in its parent. Empty
+    #: for an independent claim, which narrows nothing.
+    narrows = db.Column(db.Text, nullable=True)
+    #: [{"term": ..., "meaning": ...}] -- jargon the reader needs, capped.
+    terms = db.Column(db.JSON, nullable=True)
+    model_version = db.Column(db.String(64), nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "patent_claim_id", "target_lang", name="uq_patent_claim_explanation_lang"
+        ),
+    )

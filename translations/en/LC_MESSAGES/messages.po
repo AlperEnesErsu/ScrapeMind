@@ -4388,6 +4388,27 @@ msgstr ""
 msgid "Search claims in the tracking window"
 msgstr "Search claims in the tracking window"
 
+msgid "In plain language"
+msgstr "In plain language"
+
+msgid "What it adds"
+msgstr "What it adds"
+
+msgid "A machine reading of the claim above, not legal advice."
+msgstr "A machine reading of the claim above, not legal advice."
+
+msgid "Regenerate reading"
+msgstr "Regenerate reading"
+
+msgid "Plain-language readings need an AI provider to be configured."
+msgstr "Plain-language readings need an AI provider to be configured."
+
+msgid "The reading could not be generated. Try again in a moment."
+msgstr "The reading could not be generated. Try again in a moment."
+
+msgid "Explain in plain language"
+msgstr "Explain in plain language"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

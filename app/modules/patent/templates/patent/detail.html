@@ -12,6 +12,12 @@
       {% endif %}
     </div>
     <div>{{ node.claim.text }}</div>
+    {% set reading = explanations.get(node.claim.id) %}
+    {% if reading or ai_available %}
+      {% with claim=node.claim, document=document, reading=reading, failed=false %}
+        {% include 'patent/_claim_explanation.html' %}
+      {% endwith %}
+    {% endif %}
     {% if node.children %}
       <ul class="list-unstyled ms-3 mt-2 border-start ps-3">
         {% for child in node.children %}{{ claim_branch(child) }}{% endfor %}
