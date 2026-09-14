@@ -116,7 +116,7 @@ venv\Scripts\activate                 # Linux/macOS: source venv/bin/activate
 pip install -r requirements.txt
 copy .env.example .env                # Linux/macOS: cp .env.example .env
 docker compose -f docker/docker-compose.yml up -d db redis
-pybabel compile -d translations
+python scripts/compile_translations.py
 set FLASK_APP=wsgi.py                 # Linux/macOS: export FLASK_APP=wsgi.py
 flask db upgrade
 python scripts/seed.py
@@ -234,7 +234,7 @@ ScrapeMind/
 │       ├── schedule_info.py     # crontab → gerçek "sıradaki çalışma" zamanı
 │       ├── fanout.py            # deterministik kullanıcı dağıtımı
 │       └── {core,scrape,feed,digest}_tasks.py
-├── translations/                # Babel — tr/en .po + .mo
+├── translations/                # Babel — tr/en .po (.mo derleme çıktısı)
 ├── migrations/versions/         # Alembic
 ├── tests/{core,modules}/        # 426 test
 ├── scripts/{seed.py, create_module.py, export_core_template.py}
@@ -293,7 +293,7 @@ PR açmadan önce:
 ruff check app/
 black --check app/
 pytest tests/
-pybabel compile -d translations    # .po değiştiyse
+python scripts/compile_translations.py    # .po değiştiyse (.mo commit'lenmez)
 ```
 
 > ⚠️ **Çeviri eklerken `pybabel extract` + `pybabel update` KULLANMA.** Bu akış bir kez

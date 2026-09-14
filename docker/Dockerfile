@@ -28,6 +28,11 @@ RUN useradd --create-home --uid 10001 app \
 
 COPY --chown=app:app . .
 
+# Compiled translation catalogs are build output, not committed. Without this
+# step the image would serve every page untranslated -- silently, since Flask-
+# Babel falls back to the msgid rather than failing.
+RUN python scripts/compile_translations.py --force
+
 RUN chmod +x docker/entrypoint.sh \
     && chown -R app:app /app/app/core/static/uploads
 

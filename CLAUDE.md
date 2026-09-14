@@ -58,7 +58,7 @@ app/modules/
                      net_guard.py (SSRF) · ratelimit.py (Redis bütçe) · doi.py · forms.py
 app/tasks/         → core_tasks, scrape_tasks, feed_tasks, digest_tasks, channel_tasks,
                      schedule (BEAT_SCHEDULE), schedule_info (crontab→zaman), fanout
-translations/      → TR + EN .po/.mo dosyaları
+translations/      → TR + EN .po (`.mo` derleme çıktısı, commit'lenmez — `scripts/compile_translations.py`)
 scripts/           → seed.py, create_module.py, export_core_template.py,
                      render_favicon.py (işareti logo.svg'den türetir)
 docs/              → SCRAPING.md, HANDOVER.md, API_V1.md, UI_REVIEW.md, DESIGN.md,
@@ -80,8 +80,9 @@ with open("translations/tr/LC_MESSAGES/messages.po", "wb") as f:
     write_po(f, cat, sort_output=False, sort_by_file=False)
 ```
 ```bash
-# Sonra derle (bu güvenli):
-pybabel compile -d translations
+# Sonra derle (bu güvenli). `.mo` commit'lenmez; Docker build, CI, test paketi
+# ve production dışındaki `create_app` bayat katalogları kendiliğinden derler:
+python scripts/compile_translations.py
 ```
 - TR ve EN kataloglarının **msgid key set'leri eşit olmalı** — CI bunu kontrol ediyor
 - EN kataloğunda çeviri = msgid'nin kendisi (identity translation)
