@@ -19,26 +19,11 @@ import pytest
 from flask import g
 from flask_wtf.csrf import generate_csrf, validate_csrf
 
-
-@pytest.fixture(autouse=True)
-def _clear_cached_token(app):  # noqa: ARG001 — `app` only to order after it
-    """Drop `g.csrf_token` between these tests.
-
-    `generate_csrf` caches the signed token on `g`, and `g` is shared across
-    the whole run here: conftest's `app` fixture is session-scoped and holds
-    one app context open for every test. Without this, the second test in the
-    file gets the first test's token — signed against a session that no longer
-    exists — and fails with "The CSRF session token is missing", which reads
-    like a CSRF bug and is a fixture-scope bug.
-
-    Fixing it at the source means a per-test app context, and that is not a
-    free change: Flask-SQLAlchemy scopes `db.session` to the app context, so a
-    nested one would hand tests a different session than their fixtures used.
-    Recorded in docs/PRELAUNCH.md rather than done in passing.
-    """
-    g.pop("csrf_token", None)
-    yield
-    g.pop("csrf_token", None)
+# There used to be an autouse fixture here popping `g.csrf_token` between
+# tests, because `generate_csrf` caches the token on `g` and `g` was shared by
+# the whole run. `tests/conftest.py` now resets `g` after every test and at the
+# start of every request (PRELAUNCH O12), so the second test no longer gets the
+# first test's token.
 
 
 def test_the_token_has_no_time_limit():

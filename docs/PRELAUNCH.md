@@ -14,7 +14,7 @@
 |---|---|---|
 | 🔴 Engel | 6 — **hepsi kapandı** ✅ | Canlıya çıkışı engelleyen madde kalmadı |
 | 🟠 Yüksek | 5 (**Y1, Y2, Y3, Y5 kapandı** — **Y4: kod tamam, prod'da zorlama kaldı**) | İlk hafta içinde kapanmalı |
-| 🟡 Orta | 13 (**O1, O2, O3, O4, O5, O9, O10, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
+| 🟡 Orta | 13 (**O1, O2, O3, O4, O5, O9, O10, O12, O13 kapandı**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
 Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
@@ -641,7 +641,7 @@ yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
 | ~~O10~~ ✅ | ~~`authlib.jose` kullanımdan kaldırıldı~~ | **Kapandı.** API v1 JWT'leri artık `joserfc` (Authlib'in kendi bağımlılığı; `requirements.txt`'e doğrudan pinlendi). Geçiş öncesi ölçüldü: eski kod `alg=none`'ı reddediyordu ama **HS256 config'inde HS512 token'ı kabul ediyordu** — gizli anahtarsız sömürülemez, ama ayar uygulanmıyordu; `algorithms=[JWT_ALGORITHM]` artık sabitliyor. Deploy anında dışarıdaki eski imzalı refresh token'lar geçerli kalıyor (testli). Uygulama açılışındaki `AuthlibDeprecationWarning` kalktı |
 | O11 | Yerel mypy ile CI mypy aynı sonucu vermiyor | Yerelde 98, CI'da 95 çıkabiliyor (Python sürüm farkı, bkz. O7). Geliştirici yerel ratchet'e **güvenemiyor**; bu, kırmızı bir PR'ın merge edilmesine yol açtı |
 
-| O12 | `g` testler arasında sızıyor | `tests/conftest.py`'deki `app` fixture'ı `scope="session"` ve **tek bir app context'i** bütün koşu boyunca açık tutuyor, yani `g` 1312 testin ortak malı. Kanıtlandı: bir testte `g`'ye yazıp diğerinde okunabiliyor. Y3'ün testleri buna çarptı (`generate_csrf` token'ı `g`'de önbelleğe alıyor). **Belirgin çözüm ucuz değil:** test başına iç içe app context açmak, Flask-SQLAlchemy oturumu app context'e bağladığı için testlere fixture'larından farklı bir DB oturumu verir |
+| ~~O12~~ ✅ | ~~`g` testler arasında sızıyor~~ | **Kapandı — ve etkisi sanılandan büyükmüş.** Flask zaten açık bir app context varsa istek için yenisini açmıyor, onu kullanıyor; session boyu açık tek context yüzünden `g` yalnızca testler arasında değil **aynı test içindeki istekler arasında** da ortaktı. Flask-Login yüklenen kullanıcıyı `g._login_user`'da tuttuğu için iki kullanıcıyla istek atan bir testte **ikinci kullanıcı birincisi olarak çalışıyordu** (Faz 8 doğrulamasında yetkisiz kullanıcıya sahte 200 üretti). Test başına context açmak gerekmedi (Flask-SQLAlchemy oturumu bozulurdu): `conftest` her isteğin başında `g`'yi temizliyor — prod'daki gibi — ve her testten sonra da. Kanıt testleri sızıntıyı düzeltmeden önce kırmızı gösterdi, iki temizleme de mutasyonla gerekli çıktı; `test_csrf_lifetime`'daki geçici fixture kaldırıldı, tam paket geçiyor |
 | ~~O13~~ ✅ | ~~Paylaşımlı geliştirme veritabanı dalları birbirine kilitliyor~~ | **PR #90 ile kapandı.** Menü satırları **veri**, ve veri ona anlam veren koddan uzun yaşıyor: modül kaldırılır, kapatılır ya da o dalda hiç yoktur. `build_menu_for_user` artık uygulamanın sahip olmadığı endpoint'leri eliyor — `_prune_empty_groups`'un tıklanamayan öğeler için zaten verdiği kararın aynısı. Admin menü sayfası satırı DB'den okuyup çözmeden bastığı için elenen satır orada **hâlâ görünür ve düzeltilebilir** |
 
 Ayrıca duran teknik borç: `mypy-baseline.txt` 95'te, en yoğun yer
