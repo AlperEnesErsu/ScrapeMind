@@ -80,6 +80,19 @@ def app():
 
     app.config["SQLALCHEMY_DATABASE_URI"] = test_db_url
 
+    # A fresh `g` for every request, as production gets (PRELAUNCH O12). This
+    # fixture keeps one app context open for the whole session, and Flask
+    # reuses an already-pushed app context for a request instead of pushing its
+    # own -- so without this `g` was shared by every request in the run.
+    # Flask-Login caches the loaded user on `g._login_user`, which is how a
+    # second user's requests ended up running as the first.
+    #
+    # Pushing a context per test instead was ruled out in PRELAUNCH: Flask-
+    # SQLAlchemy binds the session to the app context, so tests would get a
+    # different session from their fixtures. Clearing `g` at the start of each
+    # request changes nothing about the session.
+    app.before_request_funcs.setdefault(None, []).insert(0, _reset_g)
+
     with app.app_context():
         # Ensure pgvector extension is enabled in PostgreSQL before create_all
         try:
@@ -97,6 +110,30 @@ def app():
         _db.session.rollback()
         _db.session.close()
         _db.drop_all()
+
+
+def _reset_g():
+    from flask import g
+
+    vars(g._get_current_object()).clear()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_g(request):
+    """`g` written by one test must not be read by the next (PRELAUNCH O12).
+
+    Cleared after the test rather than before, so a fixture that sets `g` for
+    the test it serves is not wiped. Only touches `g` when the session `app`
+    fixture is already active -- tests that never ask for an app must not
+    create one.
+    """
+    yield
+    if "app" not in request.fixturenames:
+        return
+    from flask import has_app_context
+
+    if has_app_context():
+        _reset_g()
 
 
 @pytest.fixture
