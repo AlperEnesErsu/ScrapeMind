@@ -24,8 +24,19 @@ def pytest_runtest_logfinish(nodeid, location):  # noqa: ARG001
     sys.stderr.flush()
 
 
+def _compile_translations() -> None:
+    """Compiled catalogs are build output, not committed. Several tests assert
+    Turkish strings, so a missing or stale .mo would fail them in a way that
+    reads like a translation bug. `create_app` compiles stale catalogs outside
+    production too; doing it here first keeps the test run independent of that."""
+    from app.core.i18n.catalogs import compile_catalogs
+
+    compile_catalogs()
+
+
 @pytest.fixture(scope="session")
 def app():
+    _compile_translations()
     app = create_app()
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False

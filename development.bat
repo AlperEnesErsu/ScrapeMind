@@ -61,7 +61,7 @@ if %HTMX_SIZE% LSS 10000 (
 )
 
 :: --- Ceviriler ---
-flask translate compile >nul 2>&1 || pybabel compile -d translations >nul 2>&1
+python scripts\compile_translations.py >nul 2>&1
 
 :: --- Migration ---
 echo.

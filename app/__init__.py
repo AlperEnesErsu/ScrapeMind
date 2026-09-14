@@ -16,6 +16,7 @@ def create_app() -> Flask:
     app = Flask(__name__, template_folder="core/templates", static_folder="core/static")
     app.config.from_object(get_config())
     _validate_production_config(app)
+    _ensure_translations_compiled()
 
     from app.core.audit.labels import humanize_action
     from app.core.ui.splash import pop_splash
@@ -54,6 +55,34 @@ def create_app() -> Flask:
             )
 
     return app
+
+
+def _ensure_translations_compiled() -> None:
+    """Compile stale translation catalogs, outside production only.
+
+    .mo files are build output and are not committed. The Docker image compiles
+    them at build time; a local server started any other way than
+    `development.bat` -- `flask run`, an IDE, a preview config -- would find
+    none, and Flask-Babel does not fail on a missing catalog: it silently serves
+    every page in English. Compiling here removes that failure instead of
+    documenting it.
+
+    Production is skipped: the image's catalogs are compiled at build time, and
+    a production app should not be writing into its own code directory at
+    start-up. Never fatal -- an untranslated page beats an app that will not start.
+    """
+    import os
+
+    if os.getenv("FLASK_ENV") == "production":
+        return
+    try:
+        from app.core.i18n.catalogs import compile_catalogs
+
+        written = compile_catalogs()
+        if written:
+            logger.info("translations_compiled", catalogs=[p.parent.parent.name for p in written])
+    except Exception:  # noqa: BLE001 - see docstring: never block start-up
+        logger.warning("translations_compile_failed", exc_info=True)
 
 
 def _validate_production_config(app: Flask) -> None:

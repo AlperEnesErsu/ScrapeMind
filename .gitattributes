@@ -16,5 +16,6 @@ Dockerfile      text eol=lf
 *.Dockerfile    text eol=lf
 docker/entrypoint.sh text eol=lf
 
-# Compiled catalogs are binary — never normalise, never diff as text.
+# Compiled catalogs are binary — never normalise, never diff as text. They are
+# no longer committed (see .gitignore); kept for any .mo that is added by hand.
 *.mo binary

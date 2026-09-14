@@ -87,7 +87,7 @@ python -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
 SCRAPEMIND_DB_PORT=5433 docker compose -f docker/docker-compose.yml -p scrapemind up -d db redis
-pybabel compile -d translations
+python scripts/compile_translations.py
 set FLASK_APP=wsgi.py
 flask db upgrade
 python scripts/seed.py
@@ -179,7 +179,7 @@ cat.add("New string", string="Yeni metin")   # EN kataloğunda string=msgid
 with open("translations/tr/LC_MESSAGES/messages.po", "wb") as f:
     write_po(f, cat, sort_output=False, sort_by_file=False)
 ```
-Sonra `pybabel compile -d translations` (bu güvenli). **TR ve EN msgid key set'leri
+Sonra `python scripts/compile_translations.py` (bu güvenli; `.mo` commit'lenmez, Docker/CI/testler/`create_app` bayat katalogları kendisi derler). **TR ve EN msgid key set'leri
 eşit olmalı** — CI kontrol ediyor. EN kataloğunda çeviri = msgid'in kendisi.
 
 ### 4.2 Beat saatleri UTC değil

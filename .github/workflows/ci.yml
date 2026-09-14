@@ -58,6 +58,11 @@ jobs:
       - name: Install Chromium
         run: npx playwright install chromium --with-deps
 
+      - name: Compile translations
+        # .mo files are build output, not committed; the rendered pages would
+        # otherwise be audited in English.
+        run: python scripts/compile_translations.py --force
+
       - name: Build the schema
         run: flask db upgrade
 
@@ -109,6 +114,11 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Compile translations
+        # .mo files are build output, not committed. conftest also compiles
+        # stale catalogs; doing it here keeps a compile error its own red step.
+        run: python scripts/compile_translations.py --force
 
       - name: Lint — ruff
         run: ruff check app/ tests/ scripts/

@@ -43,3 +43,8 @@ ui-audit-pages/
 
 # Weekly USPTO bulk archives (~100 MB each) and the XML unpacked from them.
 data/patent_bulk/
+
+# Compiled translation catalogs are build output: every consumer compiles
+# them (scripts/compile_translations.py). Committed, they conflicted on
+# every branch that touched a translation.
+translations/*/LC_MESSAGES/*.mo
