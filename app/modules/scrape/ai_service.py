@@ -1028,7 +1028,9 @@ def get_or_generate_video_summary(
     return generate_video_summary(paper, transcript, user=user)
 
 
-def ask_paper(paper: Paper, question: str, history: list[dict] = None, *, user=None) -> str | None:
+def ask_paper(
+    paper: Paper, question: str, history: list[dict] | None = None, *, user=None
+) -> str | None:
     """Ask a question about a paper using the resolved LLM, with multi-source
     RAG context retrieval (abstract, structured analysis, user notes, and
     semantically retrieved cross-paper library context).

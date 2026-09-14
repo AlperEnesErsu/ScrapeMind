@@ -33,4 +33,6 @@ def is_safe_next_url(target: str | None) -> bool:
 
 def safe_next_or(target: str | None, fallback: str) -> str:
     """Return `target` if it's a safe same-site path, else `fallback`."""
-    return target if is_safe_next_url(target) else fallback
+    # `is_safe_next_url(None)` is already False; the explicit check only lets
+    # the type checker see that a returned `target` is a `str`.
+    return target if target is not None and is_safe_next_url(target) else fallback

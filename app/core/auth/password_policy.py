@@ -12,6 +12,7 @@ hep buraya bakar — tek kaynak.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from flask_babel import lazy_gettext as _l
@@ -20,7 +21,7 @@ from flask_babel import lazy_gettext as _l
 @dataclass(frozen=True)
 class PolicyRule:
     key: str  # makine adı (test için)
-    check: object  # callable(password) -> bool
+    check: Callable[[str], bool]
     label: object  # lazy_gettext string (template'de gösterilir)
     error: object  # lazy_gettext string (form hatasında gösterilir)
 

@@ -4,4 +4,8 @@
 # rise without a deliberate commit saying why. Roughly 54 of these sit in
 # app/modules/scrape, and a large share across the tree are SQLAlchemy
 # relationship attributes mypy cannot resolve on untyped models.
-95
+#
+# 95 -> 75 on 14 September 2026 (one shadowed name in create_app, three
+# annotations). 75 is the count CI reported, read from its log -- a local
+# run on a newer Python counts 3 more, see PRELAUNCH O7/O11.
+75
