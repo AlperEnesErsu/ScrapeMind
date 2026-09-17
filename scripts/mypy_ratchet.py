@@ -13,6 +13,13 @@ baseline into a small deliberate commit rather than a project.
     venv/Scripts/python.exe scripts/mypy_ratchet.py
 
 The baseline lives in `mypy-baseline.txt` so lowering it shows up in a diff.
+
+A count is only comparable with CI's if the installed packages are the ones
+requirements.txt pins -- several ship their own type hints. A venv that had
+drifted to beautifulsoup4 4.15 (pinned: 4.12.3) counted 3 more errors than CI,
+and that was blamed on the Python version for weeks (PRELAUNCH O7/O11). So the
+script names any drifted pin before it reports. For CI's exact answer, run
+`python scripts/ci_local.py --only mypy`.
 """
 
 from __future__ import annotations
@@ -20,6 +27,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from importlib import metadata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -35,6 +43,25 @@ def _baseline() -> int:
         if line and not line.startswith("#"):
             return int(line)
     raise SystemExit(f"{BASELINE_FILE.name} has no number in it")
+
+
+def _drifted_pins() -> list[str]:
+    """`name==version` pins in requirements.txt that this interpreter does not match."""
+    drifted = []
+    for line in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines():
+        spec = line.split("#", 1)[0].strip()
+        if "==" not in spec:
+            continue
+        name, pinned = (part.strip() for part in spec.split("==", 1))
+        name = name.split("[", 1)[0]
+        try:
+            installed = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            drifted.append(f"{name}: pinned {pinned}, not installed")
+            continue
+        if installed != pinned:
+            drifted.append(f"{name}: pinned {pinned}, installed {installed}")
+    return drifted
 
 
 def _run_mypy() -> tuple[int, str]:
@@ -55,6 +82,14 @@ def _run_mypy() -> tuple[int, str]:
 
 def main() -> int:
     baseline = _baseline()
+    drifted = _drifted_pins()
+    if drifted:
+        print("WARNING: installed packages differ from requirements.txt, so this count")
+        print("may not match CI's. `pip install -r requirements.txt`, or run")
+        print("`python scripts/ci_local.py --only mypy` for CI's exact answer.")
+        for entry in drifted:
+            print(f"  {entry}")
+        print()
     count, output = _run_mypy()
 
     if count > baseline:

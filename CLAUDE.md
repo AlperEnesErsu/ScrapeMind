@@ -32,7 +32,7 @@ vaat ediyordu, doğru değil.)
   > Bu bir geri dönüş: uzun süre paylaşımlı `myo_postgres17` (5432) kullanıldı ve bu dosya "5433 artık doğru değil" diyordu. Faz 5.4 `Paper.embedding`'i `VECTOR(1536)` yapınca o kurulum çalışamaz oldu — `myo_postgres17` `postgres:17-alpine` ve pgvector içermiyor; alpine'ın hazır paketi de `postgresql18`'e bağlı. `myo_postgres17` başka bir projenin (myoChtBt) container'ı olduğu için imajı değiştirilmedi; `scrapemind` veritabanı oradan `pg_dump` ile kopyalandı ve orijinali olduğu gibi duruyor. Tam gerekçe + eski bir DB'nin nasıl onarılacağı: `docs/HANDOVER.md §4.9`.
 - **`TEST_DATABASE_URL` kökteki `.env`'de bulunmak zorunda** — yoksa `create_app()` conftest override'ından önce TestingConfig default'uyla bağlanmaya kalkar ve testlerin tamamı `psycopg2.OperationalError` verir. Bu, "kod bozuk" gibi okunur; ilk bakılacak yer burasıdır.
 - Docker kapalıysa `docker ps` boş döner ve yine aynı tabloya çıkarsın — önce Docker Desktop'ı aç.
-- **venv Python 3.11 olmalı** — CI ve Docker imajı 3.11. `setup.bat` venv'i 3.11 ile kurar; başka bir sürümde (ör. 3.14) mypy CI'dan 3 fazla sayar ve `scripts/mypy_ratchet.py` sebepsiz düşer. Repo dışında bir venv kullanmak için `SCRAPEMIND_VENV` (`setup/development/worker.bat` okur).
+- **venv Python 3.11 olmalı** — CI ve Docker imajı 3.11. `setup.bat` venv'i 3.11 ile kurar. mypy'nin CI'dan farklı sayması ise sürümden değil **pin kaymasından**: 3.11'de bile `beautifulsoup4` pinden farklıysa sayı değişir; `scripts/mypy_ratchet.py` kaymış pin'leri uyarı olarak basar, CI'ın kesin sayısı `scripts/ci_local.py --only mypy`. Repo dışında bir venv kullanmak için `SCRAPEMIND_VENV` (`setup/development/worker.bat` okur).
 - **`venv`'i `requirements.txt` ile senkron tut.** `sentry-sdk` ve `prometheus-flask-exporter` eksikken `tests/core/test_observability.py` 4 test patlatır; kodla ilgisi yoktur.
 - `.env.local` → `.env`'e kopyalanarak aktif edilir
 
@@ -257,7 +257,9 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
   ebeveynden migration eklerse ("multiple heads") **merge revision** yaz; ebeveyn
   değiştirmek damgalı DB'de diğer migration'ı sessizce atlatır (HANDOVER §4.9,
   §4.11). Yeni migration eklemeden hemen önce `origin/main`'in head'ine bak
-- **Push'tan önce CI'ın tamamını yerelde koş** — liste HANDOVER §4.12. Testler
+- **Push'tan önce CI'ın tamamını yerelde koş** — `python scripts/ci_local.py` (Docker;
+  Python 3.11, kendi geçici DB'si, CI'ın sırası), liste HANDOVER §4.12. Yerel mypy
+  sayısı venv `requirements.txt`'ten kaymışsa CI'dan farklıdır. Testler
   `create_all()` kullanır, migration zincirini **görmez**: boş DB'ye
   `flask db upgrade` ayrı adımdır. CI bir adımda düşünce sonrakiler koşmaz
 - **Ana checkout paylaşımlı** — başka bir oturum ya da geliştirici orada dal

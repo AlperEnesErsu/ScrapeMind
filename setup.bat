@@ -20,9 +20,10 @@ if %errorlevel% neq 0 (
 )
 
 :: --- Sanal ortam ---
-:: Python 3.11 ile kurulur, varsayilan "python" ile degil. CI ve Docker imaji
-:: 3.11; baska bir surumle kurulan venv'de mypy farkli sayar ve ratchet yerelde
-:: sebepsiz duser. Bu ayrim 2026 Eylul'e kadar yoktu ve venv 3.14 ile kuruluyordu.
+:: Python 3.11 ile kurulur, varsayilan "python" ile degil: CI ve Docker imaji
+:: 3.11. Bu ayrim 2026 Eylul'e kadar yoktu ve venv 3.14 ile kuruluyordu. Yerel
+:: mypy sayisinin CI'dan farkli cikmasi ise surumden degil requirements.txt'ten
+:: kayan paketlerden (PRELAUNCH O7); scripts\mypy_ratchet.py onlari uyarir.
 :: SCRAPEMIND_VENV tanimliysa venv oraya kurulur.
 echo [1/7] Sanal ortam olusturuluyor...
 if not defined SCRAPEMIND_VENV set "SCRAPEMIND_VENV=%~dp0venv"
