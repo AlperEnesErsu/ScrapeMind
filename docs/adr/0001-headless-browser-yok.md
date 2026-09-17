@@ -46,7 +46,8 @@ içinde takip eder** — bu kontrolün tamamı devre dışı kalır ve yerine ko
 yazılmamıştır.
 
 Ayrıca `SCRAPING.md` §11, genel sayfa scrape'i başladığı an `robots.txt` uyumunu
-zorunlu kılıyor; `app/modules/scrape/robots.py` henüz yok.
+zorunlu kılıyor; `app/modules/scrape/robots.py` bu karar yazıldığında yoktu (PR #47/#48
+ile eklendi).
 
 ### Karşı taraf — dürüstçe
 Sorun gerçek: [`rss_source.py`](../../app/modules/scrape/sources/rss_source.py)

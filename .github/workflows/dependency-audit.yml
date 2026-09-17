@@ -1,0 +1,49 @@
+name: Dependency audit
+
+# Known vulnerabilities in requirements.txt. This existed as a manual command
+# in docs/PRELAUNCH.md E4, and a manual command is how 115 advisories piled up
+# unseen -- including ones on the OAuth path (authlib), the Fernet secrets
+# (cryptography) and the parsers that read remote content (lxml, pypdf).
+#
+# A separate workflow rather than a step in CI because advisories arrive
+# without any commit: the weekly schedule is what surfaces one published
+# against a pin nobody touched. A failed scheduled run notifies the repository
+# owner.
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    # Mondays 06:00 UTC -- 09:00 Europe/Istanbul, before the working week.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Same interpreter as the image and CI: advisories can be scoped to
+          # a Python version, and resolution differs by version.
+          python-version: "3.11"
+
+      - name: Install pip-audit
+        # Pinned for the same reason black is (docs/HANDOVER.md §4.10): an
+        # unpinned tool changes its verdict without a change here.
+        run: pip install pip-audit==2.10.1
+
+      - name: Audit requirements.txt
+        # Exits non-zero on any known vulnerability. To accept one knowingly,
+        # add `--ignore-vuln <ID>` here with the reason beside it, as E4 did
+        # for PYSEC-2026-2275 -- never by dropping the step.
+        run: pip-audit -r requirements.txt --progress-spinner off --desc on
