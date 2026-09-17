@@ -161,7 +161,7 @@
         {% endif %}
       </p>
       {% if view != 'favorites' and view != 'dismissed' %}
-      <a href="{{ url_for('settings.profile', tab='interests') }}" class="btn btn-sm btn-outline-primary">
+      <a href="{{ url_for('settings.workspace', tab='interests') }}" class="btn btn-sm btn-outline-primary">
         <i class="bi bi-tags me-1"></i>{{ _('Add interests') }}
       </a>
       {% endif %}

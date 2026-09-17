@@ -9,7 +9,12 @@
    with room to stack both; the modal is a fixed-height dialog and used to
    just scroll past the RSS section to reach the channels one). The section
    bodies themselves (`feeds_section`/`channels_section` macros below) are
-   never duplicated between the two layouts. #}
+   never duplicated between the two layouts.
+
+   Field ids carry the surface and the form's name: four forms here each
+   have a `url` and most a `label`, and WTForms' default id is the field
+   name, so every <label for> would have pointed at the first `url` on the
+   page. The labels had no `for` at all until ui-audit first saw this tab. #}
 {% set surface = surface | default('tab') %}
 {% set swap_target = '#tab-content' if surface == 'tab' else '#source-manager-body' %}
 
@@ -47,13 +52,13 @@
   {{ feed_form.csrf_token }}
   <input type="hidden" name="surface" value="{{ surface }}">
   <div class="mb-2">
-    <label class="form-label">{{ feed_form.url.label.text }}</label>
-    {{ feed_form.url(class="form-control", placeholder="https://example.com/feed.xml") }}
+    <label class="form-label" for="sm-{{ surface }}-feed-url">{{ feed_form.url.label.text }}</label>
+    {{ feed_form.url(id="sm-" ~ surface ~ "-feed-url", class="form-control", placeholder="https://example.com/feed.xml") }}
     {% for err in feed_form.url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
   </div>
   <div class="mb-2">
-    <label class="form-label">{{ feed_form.label.label.text }}</label>
-    {{ feed_form.label(class="form-control") }}
+    <label class="form-label" for="sm-{{ surface }}-feed-label">{{ feed_form.label.label.text }}</label>
+    {{ feed_form.label(id="sm-" ~ surface ~ "-feed-label", class="form-control") }}
     {% for err in feed_form.label.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     <div class="form-text">{{ _('Leave blank to use the feed\'s own title.') }}</div>
   </div>
@@ -78,13 +83,13 @@
   {{ channel_form.csrf_token }}
   <input type="hidden" name="surface" value="{{ surface }}">
   <div class="mb-2">
-    <label class="form-label">{{ channel_form.url.label.text }}</label>
-    {{ channel_form.url(class="form-control", placeholder="https://www.youtube.com/@channel") }}
+    <label class="form-label" for="sm-{{ surface }}-channel-url">{{ channel_form.url.label.text }}</label>
+    {{ channel_form.url(id="sm-" ~ surface ~ "-channel-url", class="form-control", placeholder="https://www.youtube.com/@channel") }}
     {% for err in channel_form.url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
   </div>
   <div class="mb-2">
-    <label class="form-label">{{ channel_form.label.label.text }}</label>
-    {{ channel_form.label(class="form-control") }}
+    <label class="form-label" for="sm-{{ surface }}-channel-label">{{ channel_form.label.label.text }}</label>
+    {{ channel_form.label(id="sm-" ~ surface ~ "-channel-label", class="form-control") }}
     {% for err in channel_form.label.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     <div class="form-text">{{ _('Leave blank to use the channel\'s own title.') }}</div>
   </div>
@@ -106,20 +111,20 @@
   {{ page_form.csrf_token }}
   <input type="hidden" name="surface" value="{{ surface }}">
   <div class="mb-2">
-    <label class="form-label">{{ page_form.url.label.text }}</label>
-    {{ page_form.url(class="form-control", placeholder="https://example.com/blog") }}
+    <label class="form-label" for="sm-{{ surface }}-page-url">{{ page_form.url.label.text }}</label>
+    {{ page_form.url(id="sm-" ~ surface ~ "-page-url", class="form-control", placeholder="https://example.com/blog") }}
     {% for err in page_form.url.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
   </div>
   <div class="row g-2 mb-2">
     <div class="col-md-6">
-      <label class="form-label">{{ page_form.label.label.text }}</label>
-      {{ page_form.label(class="form-control") }}
+      <label class="form-label" for="sm-{{ surface }}-page-label">{{ page_form.label.label.text }}</label>
+      {{ page_form.label(id="sm-" ~ surface ~ "-page-label", class="form-control") }}
       {% for err in page_form.label.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
       <div class="form-text">{{ _('Leave blank to use the page\'s title.') }}</div>
     </div>
     <div class="col-md-6">
-      <label class="form-label">{{ page_form.selector.label.text }}</label>
-      {{ page_form.selector(class="form-control", placeholder=".post, article, .news-item") }}
+      <label class="form-label" for="sm-{{ surface }}-page-selector">{{ page_form.selector.label.text }}</label>
+      {{ page_form.selector(id="sm-" ~ surface ~ "-page-selector", class="form-control", placeholder=".post, article, .news-item") }}
       {% for err in page_form.selector.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
       <div class="form-text">{{ _('Optional CSS selector for repeating items.') }}</div>
     </div>
@@ -142,8 +147,8 @@
   {{ bluesky_form.csrf_token }}
   <input type="hidden" name="surface" value="{{ surface }}">
   <div class="mb-2">
-    <label class="form-label">{{ bluesky_form.handle.label.text }}</label>
-    {{ bluesky_form.handle(class="form-control", placeholder="@username.bsky.social or https://bsky.app/profile/...") }}
+    <label class="form-label" for="sm-{{ surface }}-bluesky-handle">{{ bluesky_form.handle.label.text }}</label>
+    {{ bluesky_form.handle(id="sm-" ~ surface ~ "-bluesky-handle", class="form-control", placeholder="@username.bsky.social or https://bsky.app/profile/...") }}
     {% for err in bluesky_form.handle.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
     <div class="form-text">{{ _('Enter a handle (e.g. ylecun.bsky.social) or a bsky.app profile link.') }}</div>
   </div>

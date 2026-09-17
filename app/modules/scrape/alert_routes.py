@@ -129,7 +129,7 @@ def set_cadence(search_id: int):
 
     log_action("saved_search.set_cadence", entity_type="saved_search", entity_id=str(search.id))
     flash(_("Updated."), "success")
-    return redirect(url_for("settings.profile", tab="alerts"))
+    return redirect(url_for("settings.workspace", tab="alerts"))
 
 
 @alerts_bp.route("/saved-searches/<int:search_id>/delete", methods=["POST"])
@@ -142,7 +142,7 @@ def delete(search_id: int):
 
     log_action("saved_search.delete", entity_type="saved_search", entity_id=str(search_id))
     flash(_("Deleted “%(name)s”.", name=name), "success")
-    return redirect(url_for("settings.profile", tab="alerts"))
+    return redirect(url_for("settings.workspace", tab="alerts"))
 
 
 def alerts_tab_ctx() -> dict:
@@ -191,7 +191,7 @@ def zotero_credentials():
 
     if api_key.strip() and not zotero_user_id.strip():
         flash(_("Zotero needs both the API key and your numeric user ID."), "warning")
-        return redirect(url_for("settings.profile", tab="zotero"))
+        return redirect(url_for("settings.workspace", tab="zotero"))
 
     set_credentials(current_user, api_key, zotero_user_id)
 
@@ -203,7 +203,7 @@ def zotero_credentials():
         entity_id=str(current_user.id),
     )
     flash(_("Saved.") if api_key.strip() else _("Zotero disconnected."), "success")
-    return redirect(url_for("settings.profile", tab="zotero"))
+    return redirect(url_for("settings.workspace", tab="zotero"))
 
 
 @alerts_bp.route("/zotero/export", methods=["POST"])

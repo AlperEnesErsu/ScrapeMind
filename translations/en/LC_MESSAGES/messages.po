@@ -4409,6 +4409,15 @@ msgstr "The reading could not be generated. Try again in a moment."
 msgid "Explain in plain language"
 msgstr "Explain in plain language"
 
+msgid "menu.research_settings"
+msgstr "My Research Settings"
+
+msgid "Research Settings"
+msgstr "Research Settings"
+
+msgid "Workspace Settings"
+msgstr "Workspace Settings"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

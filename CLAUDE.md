@@ -41,7 +41,12 @@ vaat ediyordu, doğru değil.)
 2. `is_superuser` bypass YALNIZCA `app/core/auth/decorators.py`'deki `permission_required`'da
 3. Plugin discovery (`app/modules/__init__.py`) tablo yokken sessizce geçer
 4. Migration sırası: `flask db upgrade` → uygulama başlatma (bkz. `docker/entrypoint.sh`)
-5. Profil tab'ları genişletilebilir: `app/core/settings/tab_registry.py`
+5. Ayar sekmeleri genişletilebilir: `app/core/settings/tab_registry.py`. İki sayfa var
+   (#58): `CORE_TABS` hesap sayfası (`/settings/profile`), `register_profile_tab()` ile
+   gelen modül sekmeleri varsayılan olarak **workspace** sayfası (`/settings/workspace`,
+   ScrapeMind'da "Araştırma Ayarları"). Modül sekmesine link verirken
+   `url_for('settings.workspace', tab=...)` — eski `settings.profile?tab=` yönlendirilir
+   ama bir test yeni kodda bunu yakalar
 6. Kaynak adaptörleri **duck-typed modül**, ABC yok — `SOURCE_NAME` + `search()` +
    `search_for_keywords()`. Yeni kaynak = modül + `sources/__init__.py`'de 3 satır
 7. **Tek atışlık GET yapan adaptörler** modül seviyesinde `requests` kullanır — testler
@@ -182,18 +187,12 @@ Ayrıntı: `docs/PHASE8.md`. Değiştirmeden önce bilinmesi gerekenler:
   Model adının tek kaynağı `embedding_service.current_embedding_model()`.
 
 ### Sıradaki iş (öncelik sırasıyla)
-1. **[#58](https://github.com/AlperEnesErsu/ScrapeMind/issues/58) — hesap ayarları ile
-   ürün yapılandırmasını ayır.** `Profilim` altında 12 sekme var ve ikisi farklı şey:
-   sekiz tanesi hesap (kim olduğun, nasıl giriş yaptığın), dördü ürün yapılandırması
-   (ORCID kimlikleri, ilgi alanları, LLM anahtarları, takip edilen yazarlar). Bir
-   kullanıcının LLM sağlayıcısı profil ayarı değil. Sol menü **zaten sakin** — sorun
-   sidebar'da değil, profil sayfasının içinde; çözüm sidebar'ı şişirmemeli.
-2. **Faz 8'i gerçek USPTO verisiyle koş** — ODP anahtarı (MFA'lı USPTO.gov hesabı)
+1. **Faz 8'i gerçek USPTO verisiyle koş** — ODP anahtarı (MFA'lı USPTO.gov hesabı)
    gerekiyor; `/patents/admin` → "Haftalık yüklemeyi çalıştır".
-3. Canlı öncesi kalanlar: `docs/PRELAUNCH.md` — engeller ve yüksek seviye kapandı;
+2. Canlı öncesi kalanlar: `docs/PRELAUNCH.md` — engeller ve yüksek seviye kapandı;
    **Y4**'te yalnızca prod'da CSP zorlamasına geçiş kaldı. Orta: O6 (Scimago CSV),
    O8 (Zotero'yu gerçek hesapla dene).
-4. Küçük borç: `mypy-baseline.txt` 75'te (14 Eylül'de 95'ten indi).
+3. Küçük borç: `mypy-baseline.txt` 75'te (14 Eylül'de 95'ten indi).
 
 > ✅ **Faz 7.1 (kayıtlı arama + uyarı)** PR #64, **Faz 7.2 (Zotero aktarımı)**
 > PR #65 ile main'de. 7.1 indiği hâlde **çalışmıyordu** — uyarılar beat'te koşuyor,

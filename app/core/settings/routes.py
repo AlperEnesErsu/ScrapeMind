@@ -38,9 +38,13 @@ from app.core.settings.service import (
     update_preferences,
 )
 from app.core.settings.tab_registry import (
-    all_tabs,
+    ACCOUNT_PAGE,
+    WORKSPACE_PAGE,
     get_extra_ctx_builder,
     is_registered,
+    page_of,
+    tabs_for,
+    workspace_title,
 )
 from app.extensions import db
 
@@ -161,19 +165,52 @@ def _get_ctx(tab: str) -> dict:
 # ------------------------------------------------------------------ #
 
 
-@settings_bp.route("/profile")
-@login_required
-def profile():
-    tab = request.args.get("tab", "personal")
-    if not is_registered(tab):
-        tab = "personal"
-    ctx = _get_ctx(tab)
+#: page -> (endpoint, heading msgid, heading icon)
+_PAGES = {
+    ACCOUNT_PAGE: ("settings.profile", "Profile", "bi-person-circle"),
+    WORKSPACE_PAGE: ("settings.workspace", None, "bi-gear"),
+}
+
+
+def _settings_page(page: str):
+    """Render one settings page, or send a tab to the page it belongs to.
+
+    The redirect is what keeps old links working: every `?tab=ai` bookmark,
+    email and template link was written when all tabs shared /settings/profile.
+    """
+    tabs = tabs_for(page)
+    requested = request.args.get("tab")
+    home = page_of(requested) if requested else None
+    if home is not None and home != page:
+        return redirect(url_for(_PAGES[home][0], tab=requested))
+    if not tabs:
+        # A core-only install registers no workspace tabs; there is no page.
+        return redirect(url_for("settings.profile"))
+    codes = [code for code, _icon, _label in tabs]
+    tab = requested if requested in codes else codes[0]
+
+    endpoint, title, icon = _PAGES[page]
     return render_template(
         "settings/profile.html",
         active_tab=tab,
-        profile_tabs=all_tabs(),
-        **ctx,
+        profile_tabs=tabs,
+        page_endpoint=endpoint,
+        page_title=title or workspace_title(),
+        page_icon=icon,
+        **_get_ctx(tab),
     )
+
+
+@settings_bp.route("/profile")
+@login_required
+def profile():
+    return _settings_page(ACCOUNT_PAGE)
+
+
+@settings_bp.route("/workspace")
+@login_required
+def workspace():
+    return _settings_page(WORKSPACE_PAGE)
 
 
 @settings_bp.route("/profile/tabs/<tab>", methods=["GET"])

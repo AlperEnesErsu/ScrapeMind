@@ -46,7 +46,7 @@
                 title="{{ _('Manage your sources') }}" aria-label="{{ _('Manage your sources') }}">
           <i class="bi bi-plus-lg"></i>
         </button>
-        <a href="{{ url_for('settings.profile') }}" class="text-decoration-none">
+        <a href="{{ url_for('settings.workspace', tab='identifiers') }}" class="text-decoration-none">
           <span class="badge rounded-pill bg-body-secondary text-body py-1 px-3 border border-dark-subtle">
             <i class="bi bi-person-vcard me-1"></i>{{ _('%(n)s verified identifiers', n=verified_identifier_count) }}
           </span>

@@ -1,20 +1,20 @@
 {% extends 'base.html' %}
-{% block title %}{{ _('Profile') }}{% endblock %}
+{# Both settings pages: /settings/profile (account) and /settings/workspace
+   (what the product does for you). See app/core/settings/tab_registry.py. #}
+{% block title %}{{ _(page_title) }}{% endblock %}
 {% block content %}
-<h4 class="mb-3"><i class="bi bi-person-circle me-2"></i>{{ _('Profile') }}</h4>
+<h4 class="mb-3"><i class="bi {{ page_icon }} me-2"></i>{{ _(page_title) }}</h4>
 
 <div class="row g-3">
   <div class="col-md-3">
     <div class="list-group" id="profile-tabs">
-      {# profile_tabs is injected by settings.profile — core tabs + module-registered tabs #}
-      {% set tabs = profile_tabs %}
-      {% for code, icon, label in tabs %}
-      <a href="{{ url_for('settings.profile', tab=code) }}"
+      {% for code, icon, label in profile_tabs %}
+      <a href="{{ url_for(page_endpoint, tab=code) }}"
          class="list-group-item list-group-item-action {% if code == active_tab %}active{% endif %}"
          hx-get="{{ url_for('settings.profile_tab', tab=code) }}"
          hx-target="#tab-content"
          hx-swap="innerHTML"
-         hx-push-url="{{ url_for('settings.profile', tab=code) }}"
+         hx-push-url="{{ url_for(page_endpoint, tab=code) }}"
          data-tab="{{ code }}">
         <i class="bi {{ icon }} me-2"></i>{{ _(label) }}
       </a>

@@ -605,7 +605,7 @@ def test_manual_digest_trigger_htmx_returns_202(auth_client):
 
 def test_ai_tab_renders_via_profile_page(auth_client):
     client, _uid = auth_client
-    r = client.get("/settings/profile?tab=ai")
+    r = client.get("/settings/workspace?tab=ai")
     assert r.status_code == 200
 
 

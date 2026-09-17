@@ -12,14 +12,14 @@
 </div>
 {% endif %}
 
-<div class="d-flex align-items-center gap-2 mb-3">
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
   {% if status.has_key %}
     <span class="badge rounded-pill text-bg-success-subtle text-success">
       <i class="bi bi-key-fill me-1"></i>{{ _('Key configured') }}
     </span>
     <code class="small">{{ status.masked }}</code>
   {% else %}
-    <span class="badge rounded-pill text-bg-secondary-subtle text-secondary">
+    <span class="badge rounded-pill text-bg-secondary-subtle text-secondary text-wrap text-start">
       <i class="bi bi-key me-1"></i>{{ _('No key set — using deployment default (if any)') }}
     </span>
   {% endif %}

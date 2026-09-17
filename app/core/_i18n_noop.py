@@ -33,3 +33,10 @@ _TAB_LABELS = [
     _l("Active Sessions"),
     _l("Account"),
 ]
+
+# Settings page headings (app/core/settings/tab_registry.py). The workspace
+# page's title is set by a module at runtime, so no literal _() call names it.
+_PAGE_TITLES = [
+    _l("Workspace Settings"),
+    _l("Research Settings"),
+]
