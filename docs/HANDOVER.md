@@ -50,7 +50,7 @@ pytest -q                        →  1530 passed in ~100s
 pytest --cov=app                 →  %82.96  (CI eşiği 80)
 ruff check app/ tests/ scripts/  →  All checks passed!
 black --check app/ tests/ scripts/ →  281 files would be left unchanged
-python scripts/mypy_ratchet.py   →  CI'da 75, baseline'da (yerel 3.14'te 78 — §4.12)
+python scripts/mypy_ratchet.py   →  75, baseline'da (venv 3.11 olmalı — §2)
 node scripts/audit_ui.mjs …      →  7 sayfa, 0 WCAG ihlali, 280/320/414px'te taşma yok
 ```
 
@@ -84,9 +84,13 @@ setup.bat
 development.bat            # http://localhost:5000
 ```
 
+`setup.bat` venv'i **Python 3.11** ile kurar (CI ve Docker imajıyla aynı); 3.11 yoksa
+`uv python install 3.11`. Repo dışında bir venv için `SCRAPEMIND_VENV` ortam değişkeni
+(`setup/development/worker.bat` üçü de okur).
+
 Manuel:
 ```bash
-python -m venv venv && venv\Scripts\activate
+py -3.11 -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
 SCRAPEMIND_DB_PORT=5433 docker compose -f docker/docker-compose.yml -p scrapemind up -d db redis
@@ -359,9 +363,9 @@ tek adım da seçilebilir (Docker gerekir). Yerel venv'le elle koşulacaksa sır
 python scripts/compile_translations.py
 ruff check app/ tests/ scripts/
 black --check app/ tests/ scripts/
-python scripts/mypy_ratchet.py         # venv requirements.txt'ten kaymışsa CI'dan farklı
-                                       # sayar ve kaymış pin'leri uyarı olarak basar
-                                       # (PRELAUNCH O7/O11); CI'ın sayısı için ci_local.py
+python scripts/mypy_ratchet.py         # venv 3.11 ve requirements.txt ile senkron olmalı;
+                                       # kaymış pin'leri uyarı olarak basar (PRELAUNCH
+                                       # O7/O11). CI'ın kesin sayısı: ci_local.py --only mypy
 python scripts/i18n_audit.py
 flask db upgrade                       # BOŞ bir DB'ye; testler create_all() kullanır ve
                                        # migration zincirini hiç görmez
