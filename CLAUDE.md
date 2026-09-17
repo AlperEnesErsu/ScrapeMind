@@ -191,7 +191,7 @@ Ayrıntı: `docs/PHASE8.md`. Değiştirmeden önce bilinmesi gerekenler:
    gerekiyor; `/patents/admin` → "Haftalık yüklemeyi çalıştır".
 3. Canlı öncesi kalanlar: `docs/PRELAUNCH.md` — engeller ve yüksek seviye kapandı;
    **Y4**'te yalnızca prod'da CSP zorlamasına geçiş kaldı. Orta: O6 (Scimago CSV),
-   O7/O11 (yerel venv 3.14 → 3.11), O8 (Zotero'yu gerçek hesapla dene).
+   O8 (Zotero'yu gerçek hesapla dene).
 4. Küçük borç: `mypy-baseline.txt` 75'te (14 Eylül'de 95'ten indi).
 
 > ✅ **Faz 7.1 (kayıtlı arama + uyarı)** PR #64, **Faz 7.2 (Zotero aktarımı)**
@@ -256,7 +256,9 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
   ebeveynden migration eklerse ("multiple heads") **merge revision** yaz; ebeveyn
   değiştirmek damgalı DB'de diğer migration'ı sessizce atlatır (HANDOVER §4.9,
   §4.11). Yeni migration eklemeden hemen önce `origin/main`'in head'ine bak
-- **Push'tan önce CI'ın tamamını yerelde koş** — liste HANDOVER §4.12. Testler
+- **Push'tan önce CI'ın tamamını yerelde koş** — `python scripts/ci_local.py` (Docker;
+  Python 3.11, kendi geçici DB'si, CI'ın sırası), liste HANDOVER §4.12. Yerel mypy
+  sayısı venv `requirements.txt`'ten kaymışsa CI'dan farklıdır. Testler
   `create_all()` kullanır, migration zincirini **görmez**: boş DB'ye
   `flask db upgrade` ayrı adımdır. CI bir adımda düşünce sonrakiler koşmaz
 - **Ana checkout paylaşımlı** — başka bir oturum ya da geliştirici orada dal

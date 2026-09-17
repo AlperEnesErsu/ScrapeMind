@@ -349,15 +349,19 @@ migration eklemeden hemen önce `origin/main`'in head'ine bak.
 ### 4.12 Push'tan önce CI'ın tamamı, yerelde
 Faz 8 PR'ları üç kez yalnızca yerelde atlanan bir adım yüzünden CI'da düştü. CI bir
 adımda düşünce **sonraki adımlar hiç koşmaz** — mypy'de düşen PR'ın i18n hatası ancak
-mypy düzelince göründü. Sırayla:
+mypy düzelince göründü.
+
+**Tek komut:** `python scripts/ci_local.py` — aşağıdaki adımları CI'ın sırasıyla,
+**Python 3.11** konteynerinde ve kendi geçici veritabanıyla koşar; `--only mypy` gibi
+tek adım da seçilebilir (Docker gerekir). Yerel venv'le elle koşulacaksa sırayla:
 
 ```
 python scripts/compile_translations.py
 ruff check app/ tests/ scripts/
 black --check app/ tests/ scripts/
-python scripts/mypy_ratchet.py         # yerel 3.14 CI'dan 3 fazla sayar (PRELAUNCH O7/O11);
-                                       # karşılaştırmayı sayıyla değil origin/main'in hata
-                                       # kümesiyle yap
+python scripts/mypy_ratchet.py         # venv requirements.txt'ten kaymışsa CI'dan farklı
+                                       # sayar ve kaymış pin'leri uyarı olarak basar
+                                       # (PRELAUNCH O7/O11); CI'ın sayısı için ci_local.py
 python scripts/i18n_audit.py
 flask db upgrade                       # BOŞ bir DB'ye; testler create_all() kullanır ve
                                        # migration zincirini hiç görmez
