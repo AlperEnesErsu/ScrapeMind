@@ -279,9 +279,10 @@ def _authors_ctx():
 
 
 def _register_tabs():
-    """Tab registry'ye scrape modülünün AI Settings ve Followed Authors
-    tablarını ekle — uygulama başlarken (bu modül import edildiğinde)
-    çağrılır."""
+    """Register the scrape module's settings tabs -- called at startup, when
+    this module is imported. They land on the workspace page, not the profile
+    (issue #58); the academic module names that page and adds its menu entry.
+    """
     from app.core.settings.tab_registry import register_profile_tab
     from app.modules.scrape.alert_routes import alerts_tab_ctx, zotero_tab_ctx
 

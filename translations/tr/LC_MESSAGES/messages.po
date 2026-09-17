@@ -4446,6 +4446,15 @@ msgstr "Okuma üretilemedi. Biraz sonra tekrar deneyin."
 msgid "Explain in plain language"
 msgstr "Düz dille açıkla"
 
+msgid "menu.research_settings"
+msgstr "Araştırma Ayarlarım"
+
+msgid "Research Settings"
+msgstr "Araştırma Ayarları"
+
+msgid "Workspace Settings"
+msgstr "Çalışma Alanı Ayarları"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

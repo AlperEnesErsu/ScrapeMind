@@ -128,7 +128,7 @@ second one, and does not consume a cap slot.
 
 Feeds have no update or delete endpoint yet, and **YouTube channel
 subscriptions are not exposed through the API at all** — they are web-UI only
-(`/settings/profile?tab=ai`).
+(`/settings/workspace?tab=ai`).
 
 ### Notes
 

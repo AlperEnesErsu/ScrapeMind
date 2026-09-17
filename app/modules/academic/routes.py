@@ -48,9 +48,13 @@ def _interests_ctx():
 
 
 def _register_tabs():
-    """Tab registry'ye academic tablarını ekle — uygulama başlarken çağrılır."""
-    from app.core.settings.tab_registry import register_profile_tab
+    """Register the academic settings tabs at startup, and name the page they
+    share with the scrape module's -- in ScrapeMind the product settings are
+    research settings (issue #58). The menu entry is in manifest.py.
+    """
+    from app.core.settings.tab_registry import register_profile_tab, set_workspace_title
 
+    set_workspace_title("Research Settings")
     register_profile_tab("identifiers", "bi-person-vcard", "Academic Identifiers", _identifiers_ctx)
     register_profile_tab("interests", "bi-tags", "Research Interests", _interests_ctx)
 
@@ -75,7 +79,7 @@ def verify_email(token: str):
         )
         flash(_("Email verified."), "success")
     if current_user.is_authenticated:
-        return redirect(url_for("settings.profile", tab="identifiers"))
+        return redirect(url_for("settings.workspace", tab="identifiers"))
     return redirect(url_for("auth.login"))
 
 

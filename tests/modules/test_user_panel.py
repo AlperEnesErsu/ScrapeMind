@@ -536,7 +536,7 @@ def test_papers_feed_renders_sources_panel_and_interests_strip(auth_client, clea
 
 def test_ai_tab_renders_topics_and_empty_feed_state(auth_client, clean_papers):
     client, _uid = auth_client
-    r = client.get("/settings/profile?tab=ai")
+    r = client.get("/settings/workspace?tab=ai")
     assert r.status_code == 200
     body = r.get_data(as_text=True)
     # Turkish translations (BABEL_DEFAULT_LOCALE=tr in tests) —
@@ -1057,7 +1057,7 @@ def test_settings_tab_source_manager_has_no_tab_strip(auth_client, clean_papers)
     tabs are a modal-only affordance, changing the tab surface would be an
     unrequested regression."""
     client, _uid = auth_client
-    r = client.get("/settings/profile?tab=ai")
+    r = client.get("/settings/workspace?tab=ai")
     assert r.status_code == 200
     body = r.get_data(as_text=True)
     assert 'id="feed-list"' in body

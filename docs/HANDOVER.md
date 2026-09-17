@@ -589,6 +589,22 @@ seçiciyle override eder.
 
 ### 5.7 [#58](https://github.com/AlperEnesErsu/ScrapeMind/issues/58) Hesap ayarları ile ürün yapılandırmasının ayrılması
 
+> ✅ **Uygulandı (17 Eylül 2026)** — aşağıdaki "en küçük müdahale" okuması, kullanıcının
+> seçimiyle. Profil **8 hesap sekmesine** indi; altı modül sekmesi (kimlikler, ilgi
+> alanları, AI, yazarlar, kayıtlı aramalar, Zotero) `/settings/workspace`'e taşındı —
+> ScrapeMind'da başlığı "Araştırma Ayarları", sidebar'da **tek** öğe "Araştırma
+> Ayarlarım" (`academic` manifest'i, sıra 85, Profilim'in hemen üstü).
+> `tab_registry`'ye sekmenin sayfasını söyleyen `page` alanı eklendi; modül sekmesi
+> varsayılan olarak workspace'e gider, gerçekten hesapla ilgili bir modül sekmesi
+> `page=ACCOUNT_PAGE` ile profile katılabilir. Sayfa başlığı çekirdekte jenerik
+> ("Workspace Settings"), `set_workspace_title()` ile modül adlandırıyor — çekirdek
+> modül import etmiyor (kural 1). Eski `?tab=` linkleri doğru sayfaya **302** ile
+> yönleniyor (e-postalar, yer imleri); kodda kalan her link güncellendi ve
+> `tests/core/test_settings_pages.py` yeni kodun eski yola dayanmasını yakalıyor.
+> Menü satırı migration değil manifest ile geliyor: açılışta idempotent senkronlanır;
+> `settings.workspace` endpoint'i olmayan eski bir dalda O13'ün budaması satırı gizler.
+> Aşağıdaki çözümleme karar öncesi hâliyle duruyor.
+
 birmstf'nin açtığı issue. Şikâyet yerinde ve ölçülebilir: `/settings/profile`
 altında **12 sekme** var ve ikisi kavramsal olarak ayrı şey.
 

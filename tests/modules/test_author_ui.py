@@ -114,7 +114,7 @@ def test_tab_is_registered(app):
 
 
 def test_tab_renders_empty_state(logged_in):
-    body = logged_in.get("/settings/profile?tab=authors").get_data(as_text=True)
+    body = logged_in.get("/settings/workspace?tab=authors").get_data(as_text=True)
     assert "not following anyone" in body or "kimseyi takip etmiyorsunuz" in body
 
 
@@ -162,7 +162,7 @@ def test_own_orcid_is_offered_as_a_one_click_follow(logged_in, db, a_user, orcid
 
     add_identifier(a_user, "orcid", _ORCID)
 
-    body = logged_in.get("/settings/profile?tab=authors").get_data(as_text=True)
+    body = logged_in.get("/settings/workspace?tab=authors").get_data(as_text=True)
     assert _ORCID in body
 
 
@@ -173,7 +173,7 @@ def test_own_orcid_disappears_once_followed(logged_in, db, a_user, orcid_type, m
     add_identifier(a_user, "orcid", _ORCID)
     _follow(logged_in, monkeypatch)
 
-    body = logged_in.get("/settings/profile?tab=authors").get_data(as_text=True)
+    body = logged_in.get("/settings/workspace?tab=authors").get_data(as_text=True)
     assert "Follow your own publications" not in body
     assert "Kendi yayınlarınızı takip edin" not in body
 

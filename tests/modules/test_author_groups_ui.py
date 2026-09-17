@@ -386,7 +386,7 @@ def test_group_member_name_appears_in_rendered_tab(logged_in, db, a_user, monkey
     author, _ = service.follow_author(a_user, _AUTHOR_ID, activate=False)
     service.add_group_member(a_user, group.id, author.id)
 
-    body = logged_in.get("/settings/profile?tab=authors").get_data(as_text=True)
+    body = logged_in.get("/settings/workspace?tab=authors").get_data(as_text=True)
     assert author.author_name in body
 
 
