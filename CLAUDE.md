@@ -32,6 +32,7 @@ vaat ediyordu, doğru değil.)
   > Bu bir geri dönüş: uzun süre paylaşımlı `myo_postgres17` (5432) kullanıldı ve bu dosya "5433 artık doğru değil" diyordu. Faz 5.4 `Paper.embedding`'i `VECTOR(1536)` yapınca o kurulum çalışamaz oldu — `myo_postgres17` `postgres:17-alpine` ve pgvector içermiyor; alpine'ın hazır paketi de `postgresql18`'e bağlı. `myo_postgres17` başka bir projenin (myoChtBt) container'ı olduğu için imajı değiştirilmedi; `scrapemind` veritabanı oradan `pg_dump` ile kopyalandı ve orijinali olduğu gibi duruyor. Tam gerekçe + eski bir DB'nin nasıl onarılacağı: `docs/HANDOVER.md §4.9`.
 - **`TEST_DATABASE_URL` kökteki `.env`'de bulunmak zorunda** — yoksa `create_app()` conftest override'ından önce TestingConfig default'uyla bağlanmaya kalkar ve testlerin tamamı `psycopg2.OperationalError` verir. Bu, "kod bozuk" gibi okunur; ilk bakılacak yer burasıdır.
 - Docker kapalıysa `docker ps` boş döner ve yine aynı tabloya çıkarsın — önce Docker Desktop'ı aç.
+- **venv Python 3.11 olmalı** — CI ve Docker imajı 3.11. `setup.bat` venv'i 3.11 ile kurar; başka bir sürümde (ör. 3.14) mypy CI'dan 3 fazla sayar ve `scripts/mypy_ratchet.py` sebepsiz düşer. Repo dışında bir venv kullanmak için `SCRAPEMIND_VENV` (`setup/development/worker.bat` okur).
 - **`venv`'i `requirements.txt` ile senkron tut.** `sentry-sdk` ve `prometheus-flask-exporter` eksikken `tests/core/test_observability.py` 4 test patlatır; kodla ilgisi yoktur.
 - `.env.local` → `.env`'e kopyalanarak aktif edilir
 
@@ -191,7 +192,7 @@ Ayrıntı: `docs/PHASE8.md`. Değiştirmeden önce bilinmesi gerekenler:
    gerekiyor; `/patents/admin` → "Haftalık yüklemeyi çalıştır".
 3. Canlı öncesi kalanlar: `docs/PRELAUNCH.md` — engeller ve yüksek seviye kapandı;
    **Y4**'te yalnızca prod'da CSP zorlamasına geçiş kaldı. Orta: O6 (Scimago CSV),
-   O7/O11 (yerel venv 3.14 → 3.11), O8 (Zotero'yu gerçek hesapla dene).
+   O8 (Zotero'yu gerçek hesapla dene).
 4. Küçük borç: `mypy-baseline.txt` 75'te (14 Eylül'de 95'ten indi).
 
 > ✅ **Faz 7.1 (kayıtlı arama + uyarı)** PR #64, **Faz 7.2 (Zotero aktarımı)**

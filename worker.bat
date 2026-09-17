@@ -2,16 +2,29 @@
 title ScrapeMind - Worker + Beat
 echo ScrapeMind arka plan gorevleri baslatiliyor (Celery worker + beat)...
 
-:: Sanal ortami aktif et
-call venv\Scripts\activate.bat
+:: --- Sanal ortam ---
+:: SCRAPEMIND_VENV tanimliysa o kullanilir (ornegin repo disinda kurulmus bir
+:: Python 3.11 ortami), degilse proje icindeki venv. Aktif etmeden ONCE varligi
+:: kontrol edilir: yoksa "call" sessizce hicbir sey yapmaz ve asagidaki python,
+:: pip ve flask PATH'teki sistem Python'una gider -- paketler oraya kurulur.
+if not defined SCRAPEMIND_VENV set "SCRAPEMIND_VENV=%~dp0venv"
+if not exist "%SCRAPEMIND_VENV%\Scripts\activate.bat" goto venv_missing
+call "%SCRAPEMIND_VENV%\Scripts\activate.bat"
+goto venv_active
+
+:venv_missing
+echo [HATA] Sanal ortam bulunamadi: %SCRAPEMIND_VENV%
+echo        Once setup.bat calistir.
+pause & exit /b 1
+
+:venv_active
+:: CI ve Docker imaji Python 3.11. Farkli bir surumle mypy farkli sayar ve
+:: scripts\mypy_ratchet.py yerelde sebepsiz yere duser. Engellemez, uyarir.
+python -c "import sys; sys.exit(0 if sys.version_info[:2] == (3, 11) else 1)" >nul 2>&1
+if %errorlevel% neq 0 echo [UYARI] Sanal ortamdaki Python 3.11 degil. CI ve Docker 3.11 kullaniyor; setup.bat ile yeniden kur.
 
 :: Proje koku Python path'e ekle
 set PYTHONPATH=%~dp0
-
-if not exist venv (
-    echo [HATA] venv bulunamadi. Once setup.bat calistir.
-    pause & exit /b 1
-)
 
 :: --- Worker ---
 :: -Q celery,io,scrape,llm : "celery" default kuyruktur (yonlendirilmemis
