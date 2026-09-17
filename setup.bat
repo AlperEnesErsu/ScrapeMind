@@ -20,14 +20,46 @@ if %errorlevel% neq 0 (
 )
 
 :: --- Sanal ortam ---
+:: Python 3.11 ile kurulur, varsayilan "python" ile degil. CI ve Docker imaji
+:: 3.11; baska bir surumle kurulan venv'de mypy farkli sayar ve ratchet yerelde
+:: sebepsiz duser. Bu ayrim 2026 Eylul'e kadar yoktu ve venv 3.14 ile kuruluyordu.
+:: SCRAPEMIND_VENV tanimliysa venv oraya kurulur.
 echo [1/7] Sanal ortam olusturuluyor...
-if not exist venv (
-    python -m venv venv
-    echo       venv olusturuldu.
-) else (
-    echo       venv zaten mevcut.
-)
-call venv\Scripts\activate.bat
+if not defined SCRAPEMIND_VENV set "SCRAPEMIND_VENV=%~dp0venv"
+if exist "%SCRAPEMIND_VENV%\Scripts\activate.bat" goto venv_exists
+
+where uv >nul 2>&1
+if %errorlevel% equ 0 goto venv_with_uv
+py -3.11 --version >nul 2>&1
+if %errorlevel% equ 0 goto venv_with_py
+echo [HATA] Python 3.11 bulunamadi. "uv python install 3.11" ya da python.org uzerinden 3.11 kur.
+pause & exit /b 1
+
+:venv_with_uv
+:: --seed: uv venv'e varsayilan olarak pip koymaz. pip olmazsa asagidaki
+:: "pip install" PATH'teki sistem pip'ine gider ve paketleri oraya kurar.
+uv venv --seed --python 3.11 "%SCRAPEMIND_VENV%"
+goto venv_created
+
+:venv_with_py
+py -3.11 -m venv "%SCRAPEMIND_VENV%"
+
+:venv_created
+if not exist "%SCRAPEMIND_VENV%\Scripts\activate.bat" goto venv_failed
+echo       venv olusturuldu (Python 3.11): %SCRAPEMIND_VENV%
+goto venv_ready
+
+:venv_failed
+echo [HATA] Sanal ortam olusturulamadi: %SCRAPEMIND_VENV%
+pause & exit /b 1
+
+:venv_exists
+echo       venv zaten mevcut: %SCRAPEMIND_VENV%
+
+:venv_ready
+call "%SCRAPEMIND_VENV%\Scripts\activate.bat"
+python -c "import sys; sys.exit(0 if sys.version_info[:2] == (3, 11) else 1)" >nul 2>&1
+if %errorlevel% neq 0 echo [UYARI] Mevcut venv Python 3.11 degil. Silip setup.bat'i yeniden calistir.
 set PYTHONPATH=%~dp0
 
 :: --- Paketler ---
