@@ -730,8 +730,20 @@ table code {
   border-left: 3px solid var(--paper-favorite);
 }
 
+/* A seen card recedes by sitting on the page ground, not by fading. It used
+   `opacity: 0.78`, which blends every colour inside into the page behind it: muted
+   text fell to 3.71:1 and the source badge to 4.48:1. The page audits never
+   saw it because their fixture paper had never been opened; render_pages.py
+   now renders a seen card too. --neutral-600 on --neutral-50 is 5.8:1.
+   The token is re-pointed, not the property, so the abstract's fade-out
+   (which paints in --paper-card-bg) follows the card instead of leaving a
+   white patch on it. */
 .paper-card.is-seen {
-  opacity: 0.78;
+  --paper-card-bg: var(--neutral-50);
+}
+
+.paper-card.is-seen .paper-card__title {
+  font-weight: 400;
 }
 
 .paper-card__head {
