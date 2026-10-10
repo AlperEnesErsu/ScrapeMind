@@ -101,7 +101,7 @@ düşüyorlar.
 
 ### Tarayıcı denetimi (CI'da, ayrı iş olarak)
 
-`ui-audit` işi yedi sayfayı basıp axe-core (WCAG 2.2 A/AA) ve 280/320/414px
+`ui-audit` işi on bir sayfayı basıp axe-core (WCAG 2.2 A/AA) ve 280/320/414px
 reflow kontrolünden geçirir. Yerelde de aynısını koşabilirsin:
 
 ```bash
@@ -118,6 +118,18 @@ denetleniyor.
 `pytest` bu sınıfı göremez: bu uygulamanın **her sayfası** aylarca 320px'te
 yana kaydı ve altı sayfada ekran okuyucunun isimsiz okuduğu kontroller vardı,
 suite bunların hiçbirinde kırmızıya dönmedi.
+
+Denetim yalnızca **basılan durumu** görür. Görülmüş makale kartı `opacity: 0.78`
+ile soluklaştırılıyordu; saydamlık karttaki her rengi zemine karıştırdığı için
+ikincil metin 3.71:1'e, kaynak rozeti 4.48:1'e düştü. Örnek makale hiç açılmadığı
+için CI o durumu hiç basmadı; `render_pages.py` artık görülmüş bir kart da üretiyor.
+İki kural çıkıyor:
+
+- **Bir durumu saydamlıkla soluklaştırma.** Geri plana itmek için zemin ya da ağırlık
+  değiştir (görülmüş kart `--paper-card-bg`'yi `--neutral-50`'ye çeker), metin
+  renklerini değil.
+- **Yeni bir kart durumu eklerken örnek veriye de ekle** — denetimin göremediği durum
+  denetlenmemiş durumdur.
 
 ### Bilinen muafiyet
 

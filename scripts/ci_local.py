@@ -4,17 +4,16 @@
     python scripts/ci_local.py --only mypy      # one or more named steps
     python scripts/ci_local.py --list           # the step names
 
-Why this exists (docs/PRELAUNCH.md O7/O11): CI and the production image run
-Python 3.11; developer venvs here run 3.14. mypy's `python_version = "3.11"`
-does not close that gap -- the packages installed under 3.14 differ -- and the
-local ratchet counted 78 where CI counted 75. A local count nobody can compare
-with CI is how a red PR got merged. HANDOVER §4.12 lists the steps to run
-before pushing; this runs them where the answer is the one CI will give.
+Each run gets its own throwaway pgvector container on a private network,
+removed afterwards. Every local test run used to share one `scrapemind_test`
+database, and two sessions running pytest at once locked each other.
 
-It also answers a second problem: every local test run shared one
-`scrapemind_test` database, and two sessions running pytest at once locked
-each other. Each run here gets its own throwaway pgvector container on a
-private network, removed afterwards.
+It also gives the answer CI will give (docs/PRELAUNCH.md O7/O11). A local venv
+drifts from requirements.txt over time, and a drifted venv counts mypy errors
+differently: with only beautifulsoup4 moved from its pin, the ratchet counted
+78 where CI counted 75. A local count nobody can compare with CI is how a red
+PR got merged. HANDOVER §4.12 lists the steps to run before pushing; this runs
+them on Python 3.11 with the pinned requirements, as CI does.
 
 What the container sees is what CI checks out: files git tracks plus new files
 it does not ignore -- uncommitted edits included, but never `.env`, compiled

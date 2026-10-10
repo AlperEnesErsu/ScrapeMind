@@ -1,6 +1,6 @@
 # Devir Dokümanı
 
-> **Tarih:** 10 Eylül 2026 · **Branch:** `main` · **Açık dal yok**
+> **Tarih:** 17 Eylül 2026 · **Branch:** `main` · **Açık dal yok**
 >
 > Bu dosya projeyi devralan geliştirici için yazıldı. Sırayla oku: §1 durum → §2 kurulum
 > → §3 commit geçmişi → §4 tuzaklar → §5 sıradaki iş.
@@ -54,8 +54,10 @@ python scripts/mypy_ratchet.py   →  75, baseline'da (venv 3.11 olmalı — §2
 node scripts/audit_ui.mjs …      →  7 sayfa, 0 WCAG ihlali, 280/320/414px'te taşma yok
 ```
 
-CI iki iş koşuyor: `lint-and-test` ve `ui-audit`. İkincisi tarayıcı indirdiği için
-ayrı — erişilebilirlik ve reflow regresyonlarını `pytest` göremez.
+CI'da iki iş var: `lint-and-test` ve `ui-audit`. İkincisi tarayıcı indirdiği için
+ayrı — erişilebilirlik ve reflow regresyonlarını `pytest` göremez. Ayrı bir workflow
+(`dependency-audit.yml`) `pip-audit` koşuyor: PR'da, push'ta ve **haftalık**, çünkü yeni
+bir açık commit beklemeden yayımlanır.
 
 > ⚠️ `ruff`/`black`'i `migrations/` üzerinde çalıştırma — o klasörde eski lint borcu
 > var ve formatlayıcı 21 eski migration'ı gereksizce yeniden yazar. `scripts/` artık
@@ -800,12 +802,15 @@ kümesini bildirimden **önce** commit ediyordu. Hata 150 makaleyi "bildirildi"
 yapıp öldü; o makaleler o aramayla bir daha asla eşleşmeyecek ve kimseye bir
 şey söylenmedi. Sıra artık **önce teslim et, sonra işaretle**.
 
-#### Ve bunun neden test edilemediği — açık borç
+#### Ve bunun neden test edilemediği — ✅ kapandı (PR #88)
 `pytest-flask`, `app` fixture'ını kullanan **her** testin etrafına `GET /` için
 bir istek bağlamı itiyor. Süit, "istek bağlamı yok" hatasını **yeniden
 üretemiyor**; 7.1 tam bu yüzden ölü çıktı. `-p no:flask` ile **36 test
-düşüyor**. Bu, sıradaki iş listesinde 2. madde — o 36'sının hangisinin gerçek
-hata, hangisinin yalnızca test kolaylığı olduğunu ayırmak gerekiyor.
+düşüyor**.
+
+> ✅ **PR #88:** ayrılacak 36 test yoktu — 36'sı da iki yerin (`select_locale`,
+> `inject_menu`) aynı varsayımıydı; ikisi düzeltildi, hiçbir test düzenlenmedi.
+> `pytest-flask` süitten çıktı. Ayrıntı: [PRELAUNCH.md](PRELAUNCH.md) Y2.
 
 #### Lokal koşunun kendisi
 Gerçek tarama uçtan uca çalıştı: ilgi alanı → "Şimdi tara" → Celery → **151
@@ -857,7 +862,8 @@ bilmesi gerekenler.
 ## 6. Doküman Haritası
 
 > 🚀 **Canlıya çıkmadan önce `docs/PRELAUNCH.md`.** 11 Eylül 2026'da
-> koşturularak yapılan tarama: 5 engel, 5 yüksek, 8 orta madde. `DEPLOYMENT.md
+> koşturularak yapılan tarama: 6 engel, 5 yüksek, 13 orta madde; bugün açık olan 3
+> (Y4'te prod'da CSP zorlaması, O6, O8). `DEPLOYMENT.md
 > §8`'deki kontrol listesinin yerine geçmez, kapsamadıklarını ekler.
 
 | Dosya | İçerik |

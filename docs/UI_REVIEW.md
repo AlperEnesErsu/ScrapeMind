@@ -4,6 +4,19 @@
 > **Kapsam:** Admin paneli + Kullanıcı (araştırmacı) paneli — tasarımsal iyileştirmeler ve eklenebilecek özellikler
 > **Amaç:** Faz 2 frontend redesign'ı sonrası biriken fikirleri tek yerde toplamak. Bu bir "yapılacaklar" listesi değil, "değerlendirilecekler" havuzu.
 
+> **Durum (17 Eylül 2026).** Bu havuzun büyük kısmı sonraki fazlarda yapıldı; tablolar
+> yazıldıkları hâliyle duruyor. Kodda kanıtıyla doğrulananlar:
+> - ✅ **Yapıldı:** U1 (satır içi stil kalmadı, PRELAUNCH Y4), U3 (dinamik stepper),
+>   U4 (mod geçişi `hx-get`), U5 (özet solması), U6 (not filtresi), UF1 (RAG sohbet),
+>   UF2 (digest), UF3 (toplu işlem), UF4 (sonra oku), UF5 (not dışa aktarma, Markdown),
+>   UF6 (yazar takibi, Faz 5.4), UF7 (benzer makaleler), UF8 (ısı haritası), UF10
+>   (kayıtlı arama, Faz 7.1), A2 (admin genel bakışa yönlenir), A4 (`ACTION_LABELS`),
+>   AF1 (audit retention, PR #25), AF2 (sağlık paneli), X1 (tasarım sistemi, PR #54),
+>   X2 (uygulama içi bildirimler, PR #17), X6 (CI'da axe denetimi).
+> - ⊘ **Geçersiz:** U7 — dark mode bilerek kaldırıldı (HANDOVER §5.6).
+> - ⬜ **Yok (doğrulandı):** AF3 (impersonation), AF4 (toplu kullanıcı işlemleri).
+> - Kalanların durumu yeniden doğrulanmadı.
+
 Öncelik notasyonu: 🔴 yüksek (görünür etki/kolay) · 🟡 orta · 🟢 düşük (nice-to-have)
 
 ---

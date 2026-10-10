@@ -17,7 +17,9 @@
 | 🟡 Orta | 13 (**O1–O5, O7, O9–O13 kapandı; açık: O6, O8**) | Planlanmalı, çıkışı engellemez |
 | ✅ Doğrulandı | 8 | Bakıldı, iyi durumda — tekrar bakmaya gerek yok |
 
-Toplam **18 açık madde**. Sıralama etkiye göre, çabaya göre değil.
+Açık **3 madde** kaldı (17 Eylül 2026): Y4'te prod'da CSP zorlamasına geçiş, O6
+(Scimago CSV), O8 (gerçek Zotero hesabı). Üçü de kod değil — canlı ortam, veri ya da
+hesap bekliyor. Sıralama etkiye göre, çabaya göre değil.
 
 ---
 
@@ -217,6 +219,13 @@ venv/Scripts/python.exe -m pip_audit -r requirements.txt --progress-spinner off
 > `arxiv` 2.1.3 → 4.0.1 yükseltildi, `requests` pini serbest kaldı ve 2.33.0
 > alındı. `pip-audit` artık **"No known vulnerabilities found"** diyor.
 > Aşağıdaki gerekçe, o kararın neden o an doğru olduğunu kayda geçiriyor.
+
+> **Kalıcı kapı (17 Eylül 2026):** tarama artık elle değil.
+> `.github/workflows/dependency-audit.yml` her PR'da, `main`'e her push'ta ve haftalık
+> (Pazartesi 09:00 İstanbul) `pip-audit` koşuyor. 115 uyarı taramanın elle olması
+> yüzünden birikti; zamanlı koşu, kodda hiçbir şey değişmeden yayımlanan bir açığı da
+> gösteriyor. Bilerek kabul edilen bir uyarı `--ignore-vuln` ile, gerekçesi yanında
+> yazılarak geçilir — adım kaldırılarak değil.
 
 Kalan tek uyarı (`requests` PYSEC-2026-2275) bilerek açıktı:
 
@@ -644,8 +653,7 @@ yazılabilir, imajda `gcc` yok, varsayılan yol boş bir veritabanında
 | ~~O12~~ ✅ | ~~`g` testler arasında sızıyor~~ | **Kapandı — ve etkisi sanılandan büyükmüş.** Flask zaten açık bir app context varsa istek için yenisini açmıyor, onu kullanıyor; session boyu açık tek context yüzünden `g` yalnızca testler arasında değil **aynı test içindeki istekler arasında** da ortaktı. Flask-Login yüklenen kullanıcıyı `g._login_user`'da tuttuğu için iki kullanıcıyla istek atan bir testte **ikinci kullanıcı birincisi olarak çalışıyordu** (Faz 8 doğrulamasında yetkisiz kullanıcıya sahte 200 üretti). Test başına context açmak gerekmedi (Flask-SQLAlchemy oturumu bozulurdu): `conftest` her isteğin başında `g`'yi temizliyor — prod'daki gibi — ve her testten sonra da. Kanıt testleri sızıntıyı düzeltmeden önce kırmızı gösterdi, iki temizleme de mutasyonla gerekli çıktı; `test_csrf_lifetime`'daki geçici fixture kaldırıldı, tam paket geçiyor |
 | ~~O13~~ ✅ | ~~Paylaşımlı geliştirme veritabanı dalları birbirine kilitliyor~~ | **PR #90 ile kapandı.** Menü satırları **veri**, ve veri ona anlam veren koddan uzun yaşıyor: modül kaldırılır, kapatılır ya da o dalda hiç yoktur. `build_menu_for_user` artık uygulamanın sahip olmadığı endpoint'leri eliyor — `_prune_empty_groups`'un tıklanamayan öğeler için zaten verdiği kararın aynısı. Admin menü sayfası satırı DB'den okuyup çözmeden bastığı için elenen satır orada **hâlâ görünür ve düzeltilebilir** |
 
-Ayrıca duran teknik borç: `mypy-baseline.txt` 95'te, en yoğun yer
-`app/modules/scrape`.
+Ayrıca duran teknik borç: `mypy-baseline.txt` 75'te (14 Eylül'de 95'ten indi, PR #112).
 
 ---
 

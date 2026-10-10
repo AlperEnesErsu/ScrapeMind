@@ -48,7 +48,7 @@ STATIC_DIR = ROOT / "app" / "core" / "static"
 
 
 def _ensure_a_paper(app, user_id: int) -> None:
-    """Put one paper in the library if it is empty.
+    """Put a paper in the library if it is empty, and a seen one if none is.
 
     Without this the audit is weaker in CI than it is locally, and silently:
     a freshly seeded database has no papers, so no paper card renders, so the
@@ -59,36 +59,55 @@ def _ensure_a_paper(app, user_id: int) -> None:
     Idempotent, and the row is obviously synthetic so nobody mistakes it for
     scraped data.
     """
-    from app.modules.scrape.models import Paper, UserPaper
+    from app.modules.scrape.models import UserPaper
 
     with app.app_context():
-        existing = UserPaper.query.filter_by(user_id=user_id).first()
-        if existing is not None:
-            return
+        if UserPaper.query.filter_by(user_id=user_id).first() is None:
+            _add_fixture_paper(user_id, "ui-audit-fixture")
+        # A seen card is styled differently, and that style once dropped every
+        # text colour on the card below AA -- invisible here because the one
+        # fixture paper had never been opened. Render both states.
+        seen = UserPaper.query.filter(
+            UserPaper.user_id == user_id, UserPaper.seen_at.isnot(None)
+        ).first()
+        if seen is None:
+            _add_fixture_paper(user_id, "ui-audit-fixture-seen", seen=True)
 
-        paper = Paper.query.filter_by(source="manual", external_id="ui-audit-fixture").first()
-        if paper is None:
-            paper = Paper(
-                source="manual",
-                external_id="ui-audit-fixture",
-                # Long on purpose. A short title fits at 280px and proves
-                # nothing; the reflow bug this fixture exists to catch only
-                # appears once the card holds something the length of a real
-                # paper. The DOI is here for the same reason -- it is one
-                # unbreakable token, which is the other way this row overflows.
-                title=(
-                    "UI audit fixture — not a real paper, deliberately given a title "
-                    "as long as a real one so the card is measured at the width it "
-                    "actually has to survive"
-                ),
-                abstract="Present so the audited pages actually render a paper card.",
-                authors=["Audit Fixture"],
-                doi="10.0000/ui-audit-fixture-with-a-deliberately-long-identifier",
-            )
-            db.session.add(paper)
-            db.session.flush()
-        db.session.add(UserPaper(user_id=user_id, paper_id=paper.id))
-        db.session.commit()
+
+def _add_fixture_paper(user_id: int, external_id: str, *, seen: bool = False) -> None:
+    from datetime import UTC, datetime
+
+    from app.modules.scrape.models import Paper, UserPaper
+
+    paper = Paper.query.filter_by(source="manual", external_id=external_id).first()
+    if paper is None:
+        paper = Paper(
+            source="manual",
+            external_id=external_id,
+            # Long on purpose. A short title fits at 280px and proves
+            # nothing; the reflow bug this fixture exists to catch only
+            # appears once the card holds something the length of a real
+            # paper. The DOI is here for the same reason -- it is one
+            # unbreakable token, which is the other way this row overflows.
+            title=(
+                "UI audit fixture — not a real paper, deliberately given a title "
+                "as long as a real one so the card is measured at the width it "
+                "actually has to survive"
+            ),
+            abstract="Present so the audited pages actually render a paper card.",
+            authors=["Audit Fixture"],
+            doi=f"10.0000/{external_id}-with-a-deliberately-long-identifier",
+        )
+        db.session.add(paper)
+        db.session.flush()
+    db.session.add(
+        UserPaper(
+            user_id=user_id,
+            paper_id=paper.id,
+            seen_at=datetime.now(UTC) if seen else None,
+        )
+    )
+    db.session.commit()
 
 
 def _admin_id(app) -> str:
