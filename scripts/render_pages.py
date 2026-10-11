@@ -94,7 +94,14 @@ def _add_fixture_paper(user_id: int, external_id: str, *, seen: bool = False) ->
                 "as long as a real one so the card is measured at the width it "
                 "actually has to survive"
             ),
-            abstract="Present so the audited pages actually render a paper card.",
+            # The TeX is there so KaTeX's output is audited too -- its
+            # MathML, its colours and, at 280px, whether an inline formula
+            # pushes the card sideways. Written the way arXiv writes it.
+            abstract=(
+                "Present so the audited pages actually render a paper card, with "
+                r"inline TeX such as $E_{\mathrm{inc}}/E_{\mathrm{mat}}\in[10^{-2},10^{2}]$ "
+                r"and a gain of $3.58\%$, as arXiv abstracts carry it."
+            ),
             authors=["Audit Fixture"],
             doi=f"10.0000/{external_id}-with-a-deliberately-long-identifier",
         )
@@ -226,7 +233,6 @@ def main() -> int:
     # Its id is only known once the row exists, so it joins the list here.
     pages = dict(PAGES)
     pages["report-learning-map"] = f"/papers/reports/{_ensure_a_learning_map(app, int(user_id))}"
-
     # Module blueprints serve their own static files (`/papers/static/...`).
     # Left as absolute paths they 404 under file://, so a page's own script
     # never runs and the audit sees only its no-JavaScript state -- for the

@@ -40,7 +40,7 @@
     <code class="small text-muted">{{ r.paper.external_id }}</code>
   </div>
 
-  <h2 class="paper-detail__title mb-2">{{ r.paper.title }}</h2>
+  <h2 class="paper-detail__title mb-2"{% if not r.paper.kind %} data-math{% endif %}>{{ r.paper.title }}</h2>
 
   <p class="paper-detail__authors text-muted mb-3">
     {% if r.paper.authors %}
@@ -92,3 +92,6 @@
 </div>
 
 {% endblock %}
+
+{% block extra_css %}{% include 'scrape/_math_css.html' %}{% endblock %}
+{% block extra_js %}{% include 'scrape/_math_js.html' %}{% endblock %}
