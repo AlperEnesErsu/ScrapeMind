@@ -196,6 +196,29 @@ adları, sayılar, oklar, her düğümün anahtar makalesinin başlık + özeti)
 **Telif (§11):** girdi yalnızca başlık + özet, çıktı iki cümle. Tam metin
 kullanılmaz; lisansı izin verse bile, çünkü kartın işi özet değil yönlendirme.
 
+**Uygulanan hâli (9.3):**
+
+- İmza: `narrate_learning_map(graph, *, topic, user=None) -> dict | None`. Dönüş
+  **id'ye göre sözlük**, liste değil — çağıran kartı elindeki id ile arar:
+  `{"nodes": {id: {"label", "explain", "check_question"}}}`.
+- Girdi: düğüm başına `id, name, role, count, layer` + anahtar makalenin
+  **yalnızca başlığı**. 9.1'in `key_work`'ünde özet yok; ileride gelirse
+  `REPORT_ABSTRACT_CHARS`'a kırpılıp eklenir. Oklardan yalnızca `from`/`to`
+  okunur, yani okların ağırlığı (subsumption → atıf akışı) değişse de fonksiyon
+  değişmez.
+- Dil: `flask_babel.get_locale()` — çağıranın `force_locale`'i belirler (sistem
+  istemi "DAİMA Türkçe / İngilizce (English)"). Göndermediğimiz bir locale
+  Türkçe'ye düşer. Mevcut rapor fonksiyonları dili sabit Türkçe tutuyor; bu
+  fonksiyon ilk locale'e uyan rapor çağrısı. 9.2'nin `run_report` dalı çağrıyı
+  `force_locale(<isteyenin locale'i>)` ile sarmalı — `report_tasks` şu an yalnızca
+  bildirimi sarıyor.
+- Kırpma: `label` 40, `explain` 360, `check_question` 200 karakter (kelime
+  sınırında, "…" ile). Boş/eksik alan `""` olur, anlatıyı düşürmez.
+- `None` döner (hiç çağrı yapılmadan): AI kapalı, `insufficient`, düğüm yok.
+  Çağrıdan sonra: JSON nesnesi değil (bir onarım denemesinden sonra), `nodes`
+  liste değil, öğe nesne değil, id eksik/fazla/tekrarlı ya da büyük-küçük harf
+  farklı. Eşleme birebir; "yakın" id kabul edilmez.
+
 ## 5. Şema
 
 Yeni tablo **yok**. `Report.stats`'e `graph` anahtarı:
@@ -240,7 +263,7 @@ yalnızca `insufficient` iken dolu: `"too_few_concepts"` ya da
 | 9.1 ✅ | `learning_map_graph(payloads)` — saf fonksiyon, IO yok (#127) | 42 test, %97 kapsam. Canlı ölçüm §3.5 |
 | 9.1b ✅ | Oklar atıf akışından; `PaperPayload.referenced_works`; açgözlü döngü kırma | 50 test (25'i rastgele külliyat) + 6 adaptör testi, %99 kapsam; canlı: GNN 12, CRISPR 14 ok |
 | 9.2 | `run_report` dalı + `stats.graph`, LLM'siz | `kind` `VALID_KINDS` + `_RUNNABLE_KINDS`'ta; anlatısız `partial` harita |
-| 9.3 | `narrate_learning_map` + doğrulama | Sahte sağlayıcıyla şema / id kümesi testleri; locale testi |
+| 9.3 ✅ | `narrate_learning_map` + doğrulama | Sahte sağlayıcıyla şema / id kümesi testleri; locale testi. `tests/modules/test_learning_map_narration.py`; henüz `run_report`'a bağlı değil (9.2) |
 | 9.4 | Sayfa: graf + liste + adım kartı | Tarayıcıda; axe 0 ihlal; 320 px'te taşma yok |
 | 9.5 | Gerçek konularla kalibrasyon | 3 konuda eşik ve `max_nodes` elle değerlendirilir, karar buraya yazılır |
 
