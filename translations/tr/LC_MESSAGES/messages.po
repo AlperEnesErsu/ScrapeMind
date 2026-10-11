@@ -4455,6 +4455,15 @@ msgstr "Araştırma Ayarları"
 msgid "Workspace Settings"
 msgstr "Çalışma Alanı Ayarları"
 
+msgid "Only a superuser can grant or revoke superuser status."
+msgstr ""
+"Süper kullanıcı yetkisini yalnızca bir süper kullanıcı verebilir veya "
+"kaldırabilir."
+
+#, python-format
+msgid "You cannot grant or revoke permissions you do not hold: %(codes)s"
+msgstr "Sahip olmadığınız izinleri veremez veya geri alamazsınız: %(codes)s"
+
 msgid "Please log in to access this page."
 msgstr "Bu sayfaya erişmek için lütfen giriş yapın."
 
