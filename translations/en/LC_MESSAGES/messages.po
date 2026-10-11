@@ -4425,6 +4425,9 @@ msgstr "Only a superuser can grant or revoke superuser status."
 msgid "You cannot grant or revoke permissions you do not hold: %(codes)s"
 msgstr "You cannot grant or revoke permissions you do not hold: %(codes)s"
 
+msgid "Please log in to access this page."
+msgstr "Please log in to access this page."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

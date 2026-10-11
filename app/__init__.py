@@ -1,5 +1,6 @@
 import structlog
 from flask import Flask, has_request_context
+from flask_babel import lazy_gettext
 
 from app.config import get_config
 from app.extensions import babel, csrf, db, limiter, login_manager, mail, migrate, oauth
@@ -89,6 +90,23 @@ def _ensure_translations_compiled() -> None:
         logger.warning("translations_compile_failed", exc_info=True)
 
 
+_MIN_SECRET_LENGTH = 32
+# Values that appear in this repository or its docs. Anything published here
+# is public, so it cannot sign a production session.
+_PUBLIC_SECRETS = frozenset(
+    {"change-me-in-production", "ci-secret", "test-secret-key", "dev", "secret", "changeme"}
+)
+
+
+def _secret_weakness(value: str) -> str | None:
+    """Why `value` cannot be a production secret, or None if it can."""
+    if value.strip().lower() in _PUBLIC_SECRETS:
+        return "is a placeholder published in this repository"
+    if len(value) < _MIN_SECRET_LENGTH:
+        return f"is shorter than {_MIN_SECRET_LENGTH} characters"
+    return None
+
+
 def _validate_production_config(app: Flask) -> None:
     """Fail fast in production if security-critical config is empty.
 
@@ -111,6 +129,24 @@ def _validate_production_config(app: Flask) -> None:
             "Production start-up aborted — missing required config: "
             f"{', '.join(missing)}. Set them in the environment before launching."
         )
+
+    # A non-empty key is not the same as a secret one. `.env.example` ships
+    # `change-me-in-production` in a public repository, so a deployment that
+    # copied it signs sessions with a key anyone can read -- and the empty
+    # check above passes it. Length catches the hand-typed rest; DEPLOYMENT.md
+    # already tells operators to use `secrets.token_hex(32)` (64 chars).
+    # JWT_SECRET_KEY may stay empty (it falls back to SECRET_KEY), but a set
+    # one is held to the same rule.
+    for name in ("SECRET_KEY", "JWT_SECRET_KEY"):
+        value = str(app.config.get(name) or "")
+        if name == "JWT_SECRET_KEY" and not value:
+            continue
+        weakness = _secret_weakness(value)
+        if weakness:
+            raise RuntimeError(
+                f"Production start-up aborted — {name} {weakness}. Generate one with "
+                'python -c "import secrets; print(secrets.token_hex(32))"'
+            )
 
     # In-memory rate limiting is per *process*, and production runs gunicorn
     # with four workers plus separate worker and beat containers. Every limit
@@ -338,6 +374,9 @@ def _init_extensions(app: Flask) -> None:
 
     mail.init_app(app)
     login_manager.login_view = "auth.login"
+    # Flask-Login's default is a plain English string, shown as-is to a
+    # Turkish interface; lazy so it resolves in the visitor's locale.
+    login_manager.login_message = lazy_gettext("Please log in to access this page.")
     login_manager.login_message_category = "warning"
 
     from app.core.i18n.utils import init_babel
