@@ -63,7 +63,7 @@
       <div class="dropdown">
         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
                 aria-label="{{ _('Change language') }}">
-          {{ (g.locale or 'tr') | upper }}
+          {{ current_locale | upper }}
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           {% for lang in ['tr', 'en'] %}
