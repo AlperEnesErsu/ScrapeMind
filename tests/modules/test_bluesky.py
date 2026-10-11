@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from app.core.auth.strategies.local import LocalAuthStrategy
 from app.core.models.user import User
+from app.extensions import db
 from app.modules.scrape.models import Paper, UserBluesky
 from app.modules.scrape.ratelimit import SourceThrottledError
 from app.modules.scrape.service import (
@@ -350,7 +351,7 @@ def test_bluesky_routes_lifecycle(auth_client, monkeypatch):
     )
     assert r.status_code == 200
 
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     accounts = list_user_bluesky(user)
     assert len(accounts) == 1
     acc_id = accounts[0].id

@@ -429,7 +429,7 @@ def test_acting_on_another_users_group_is_404(logged_in, db, a_user, other_user,
         == 404
     )
 
-    assert AuthorGroup.query.get(group.id).name == "Not yours"
+    assert db.session.get(AuthorGroup, group.id).name == "Not yours"
 
 
 def test_group_routes_require_login(client):

@@ -118,7 +118,7 @@ def test_delete_identifier_ok(db, clean):
     ident, _ = add_identifier(clean, "email", "drop@ex.com")
     ok, err = delete_identifier(clean, ident.id)
     assert ok is True
-    assert UserIdentifier.query.get(ident.id) is None
+    assert db.session.get(UserIdentifier, ident.id) is None
 
 
 def test_list_filter_by_type(db, clean):

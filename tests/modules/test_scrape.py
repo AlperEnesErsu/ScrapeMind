@@ -645,7 +645,7 @@ def test_upsert_paper_enriches_empty_abstract(db, clean):
     )
     assert p1.id == p2.id
     assert Paper.query.count() == 1
-    assert Paper.query.get(p1.id).abstract == "Now with an abstract."
+    assert db.session.get(Paper, p1.id).abstract == "Now with an abstract."
 
 
 def test_upsert_paper_does_not_overwrite_populated_abstract(db, clean):
@@ -674,7 +674,7 @@ def test_upsert_paper_does_not_overwrite_populated_abstract(db, clean):
         }
     )
     assert p1.id == p2.id
-    assert Paper.query.get(p1.id).abstract == "Original abstract."
+    assert db.session.get(Paper, p1.id).abstract == "Original abstract."
 
 
 def test_upsert_paper_no_enrichment_needed_is_a_clean_no_op(db, clean):
@@ -695,7 +695,7 @@ def test_upsert_paper_no_enrichment_needed_is_a_clean_no_op(db, clean):
     p2 = upsert_paper(dict(payload))
     assert p1.id == p2.id
     assert Paper.query.count() == 1
-    assert Paper.query.get(p1.id).updated_at == first_updated_at
+    assert db.session.get(Paper, p1.id).updated_at == first_updated_at
 
 
 def test_upsert_paper_refreshes_cited_by_count(db, clean):
@@ -727,7 +727,7 @@ def test_upsert_paper_refreshes_cited_by_count(db, clean):
         }
     )
     assert p1.id == p2.id
-    assert Paper.query.get(p1.id).cited_by_count == 41
+    assert db.session.get(Paper, p1.id).cited_by_count == 41
 
 
 def test_upsert_paper_survives_concurrent_insert_race(db, clean, monkeypatch):

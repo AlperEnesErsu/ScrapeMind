@@ -14,6 +14,7 @@ from sqlalchemy import text
 from app.core.models.settings import SystemSettings
 from app.core.models.user import User
 from app.core.settings.service import get_system_setting
+from app.extensions import db
 
 
 @pytest.fixture
@@ -77,7 +78,7 @@ def test_post_persists_max_user_channels_as_int(client, admin, db):
     r = client.post("/settings/system", data=_valid_payload(max_user_channels="25"))
     assert r.status_code == 302
 
-    row = SystemSettings.query.get("max_user_channels")
+    row = db.session.get(SystemSettings, "max_user_channels")
     assert row is not None
     assert row.value == 25
     assert isinstance(row.value, int)
@@ -98,7 +99,7 @@ def test_out_of_range_values_rejected(client, admin, bad_value):
     r = client.post("/settings/system", data=_valid_payload(max_user_channels=bad_value))
     # Validation failure re-renders the form (200), it does not redirect.
     assert r.status_code == 200
-    assert SystemSettings.query.get("max_user_channels") is None
+    assert db.session.get(SystemSettings, "max_user_channels") is None
 
 
 def test_non_admin_gets_403(auth_client):

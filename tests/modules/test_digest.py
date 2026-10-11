@@ -14,6 +14,7 @@ from sqlalchemy import text
 
 from app.core.auth.strategies.local import LocalAuthStrategy
 from app.core.models.user import User
+from app.extensions import db
 from app.modules.scrape import ai_service
 from app.modules.scrape.models import UserDigest
 from app.modules.scrape.service import link_user_paper, list_user_papers_in_window, upsert_paper
@@ -531,7 +532,7 @@ def _set_digest_pref(user_id, cadence):
 
     # Fetch a fresh user so the settings relationship reflects any row a prior
     # call inserted (in production each call is its own request).
-    u = User.query.get(user_id)
+    u = db.session.get(User, user_id)
     update_preferences(u, u.locale or "tr", u.timezone or "UTC", cadence)
 
 
