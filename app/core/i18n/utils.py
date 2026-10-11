@@ -77,3 +77,19 @@ def init_babel(app, babel: Babel) -> None:
     unset, leaving that button empty and nameless to a screen reader.
     """
     babel.init_app(app, locale_selector=select_locale)
+
+    @app.context_processor
+    def inject_current_locale() -> dict:
+        """`current_locale` for templates, resolved before the template runs.
+
+        Templates used to read `g.locale`, which `select_locale` fills only
+        when Flask-Babel first resolves the locale -- lazily, on the first
+        `_()`. `<html lang>` is the second line of base.html, rendered before
+        any `_()`, so it always printed the fallback: an English page went out
+        as `lang="tr"`, and a screen reader read it with Turkish
+        pronunciation. Calling `get_locale()` here runs the selector up front.
+        """
+        from flask_babel import get_locale
+
+        locale = get_locale()
+        return {"current_locale": str(locale) if locale else "tr"}
