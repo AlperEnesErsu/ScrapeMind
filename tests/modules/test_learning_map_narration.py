@@ -136,17 +136,18 @@ def test_happy_path_returns_cards_keyed_by_id(llm):
 def test_works_on_a_real_learning_map_graph(llm):
     """End to end with 9.1's output: whatever the edge record carries, only
     from/to reach the prompt."""
+    # Citation flow (9.1b): B's works cite A's, C's cite B's, D's cite A's.
     works = []
-    for i in range(12):
-        works.append({"title": f"W{i}", "categories": ["T", "A", "B"]})
-    for i in range(12):
-        works.append({"title": f"X{i}", "categories": ["T", "A", "C"]})
-    for i in range(10):
-        works.append({"title": f"Y{i}", "categories": ["T", "D"]})
-    for i in range(10):
-        works.append({"title": f"Z{i}", "categories": ["T", "E"]})
-    for i in range(10):
-        works.append({"title": f"Q{i}", "categories": [f"rare{i}"]})
+    for concept, cites in (("A", None), ("B", "A"), ("C", "B"), ("D", "A")):
+        for i in range(10):
+            works.append(
+                {
+                    "external_id": f"W{concept}{i}",
+                    "title": f"{concept} work {i}",
+                    "categories": [concept],
+                    "referenced_works": [f"W{cites}{i}"] if cites else [],
+                }
+            )
     graph = learning_map_graph(works, min_support=8)
     assert not graph["insufficient"]
     ids = [n["id"] for n in graph["nodes"]]
@@ -155,7 +156,8 @@ def test_works_on_a_real_learning_map_graph(llm):
     out = _narrate(graph)
 
     assert set(out["nodes"]) == set(ids)
-    assert "p_a_given_b" not in llm["calls"][0]["user_msg"]
+    assert "A → B" in llm["calls"][0]["user_msg"]
+    assert "reverse_flow" not in llm["calls"][0]["user_msg"]
 
 
 def test_prompt_carries_topic_arrows_and_titles(llm):
