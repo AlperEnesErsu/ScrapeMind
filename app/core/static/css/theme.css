@@ -322,6 +322,22 @@ code {
   --bs-btn-hover-border-color: var(--success);
 }
 
+/* Bootstrap's own outline info is cyan #0dcaf0 -- 1.9:1 on this ground, the
+   failure axe reported on the paper detail page's "Reading" note filter. The
+   only outline variant left unmapped; test_design_system checks none is. */
+.btn-outline-info {
+  --bs-btn-color: var(--info);
+  --bs-btn-border-color: var(--info);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: var(--info);
+  --bs-btn-hover-border-color: var(--info);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: #17445F;
+  --bs-btn-active-border-color: #17445F;
+  --bs-btn-disabled-color: var(--neutral-400);
+  --bs-btn-disabled-border-color: var(--neutral-200);
+}
+
 .btn-info {
   --bs-btn-bg: var(--info);
   --bs-btn-border-color: var(--info);
@@ -875,9 +891,13 @@ table code {
   margin-top: 16px;
 }
 
+/* minmax(0, 1fr), not 1fr: a bare 1fr floors the column at its content's
+   min-content width, so a typeset formula in the abstract widened the whole
+   column and pushed the page 54px sideways at 280px. The wide layout above
+   already had the zero floor; the stacked one had lost it. */
 @media (max-width: 991.98px) {
   .paper-detail__body {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1154,8 +1174,14 @@ a.timeline-event__title:hover {
  * Paper detail — mode toggle + AI panels
  * ============================================================ */
 
+/* Five tabs with icons and labels are ~460px on one line; inline-flex with no
+   wrap pushed the page sideways by 182px at 280px (WCAG 1.4.10). It wraps
+   instead of scrolling inside itself, so every mode stays visible -- a hidden
+   overflowing tab is a mode nobody finds. */
 .mode-toggle {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: 2px;
   background: var(--bs-tertiary-bg);
   padding: 3px;

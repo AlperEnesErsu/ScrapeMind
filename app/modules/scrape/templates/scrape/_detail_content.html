@@ -4,31 +4,31 @@
     <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='original') }}"
        hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='original') }}"
        hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
-       class="mode-toggle__btn{% if mode == 'original' %} mode-toggle__btn--active{% endif %}">
+       class="mode-toggle__btn{% if mode == 'original' %} mode-toggle__btn--active{% endif %}"{% if mode == 'original' %} aria-current="page"{% endif %}>
       <i class="bi bi-file-text me-1"></i>{{ _('Original') }}
     </a>
     <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='tr') }}"
        hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='tr') }}"
        hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
-       class="mode-toggle__btn{% if mode == 'tr' %} mode-toggle__btn--active{% endif %}">
+       class="mode-toggle__btn{% if mode == 'tr' %} mode-toggle__btn--active{% endif %}"{% if mode == 'tr' %} aria-current="page"{% endif %}>
       <i class="bi bi-translate me-1"></i>{{ _('Turkish') }}
     </a>
     <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='ai') }}"
        hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='ai') }}"
        hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
-       class="mode-toggle__btn{% if mode == 'ai' %} mode-toggle__btn--active{% endif %}">
+       class="mode-toggle__btn{% if mode == 'ai' %} mode-toggle__btn--active{% endif %}"{% if mode == 'ai' %} aria-current="page"{% endif %}>
       <i class="bi bi-stars text-info me-1"></i>{{ _('AI analysis') }}
     </a>
     <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='chat') }}"
        hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='chat') }}"
        hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
-       class="mode-toggle__btn{% if mode == 'chat' %} mode-toggle__btn--active{% endif %}">
+       class="mode-toggle__btn{% if mode == 'chat' %} mode-toggle__btn--active{% endif %}"{% if mode == 'chat' %} aria-current="page"{% endif %}>
       <i class="bi bi-chat-dots-fill text-primary me-1"></i>{{ _('Ask Paper') }}
     </a>
     <a href="{{ url_for('scrape.detail', user_paper_id=r.id, mode='graph') }}"
        hx-get="{{ url_for('scrape.detail', user_paper_id=r.id, mode='graph') }}"
        hx-target="#paper-detail-content" hx-swap="outerHTML" hx-push-url="true"
-       class="mode-toggle__btn{% if mode == 'graph' %} mode-toggle__btn--active{% endif %}">
+       class="mode-toggle__btn{% if mode == 'graph' %} mode-toggle__btn--active{% endif %}"{% if mode == 'graph' %} aria-current="page"{% endif %}>
       <i class="bi bi-diagram-3-fill text-warning me-1"></i>{{ _('Citation graph') }}
     </a>
   </div>

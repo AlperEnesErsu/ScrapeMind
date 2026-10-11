@@ -41,7 +41,7 @@
     <textarea name="body" class="form-control form-control-sm note-add__body"
               rows="3" placeholder="{{ _('New note — Cmd+Enter to save') }}"
               data-submit-on-mod-enter></textarea>
-    <div class="note-add__foot d-flex align-items-center gap-1 mt-2">
+    <div class="note-add__foot d-flex flex-wrap align-items-center gap-1 mt-2">
       <input type="radio" class="btn-check" id="tag-{{ r.id }}-none" name="tag" value="" checked>
       <label for="tag-{{ r.id }}-none" class="btn btn-sm note-tag-btn">{{ _('No tag') }}</label>
 
