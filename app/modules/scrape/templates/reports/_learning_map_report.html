@@ -65,8 +65,8 @@
      "application/json"> block: test_csp_readiness forbids every <script>
      without src, and an attribute needs no exception to that rule. The
      attribute is single-quoted on purpose: `tojson` escapes < > & and ' to
-     \u-sequences (a concept named "</script>" or "x' onmouseover=" stays
-     inside the value) but leaves " alone, which is valid JSON in a
+     \u-sequences (a concept named "</script>", or one carrying a quote and
+     an attribute of its own, stays inside the value) but leaves " alone, which is valid JSON in a
      single-quoted attribute and would end a double-quoted one.
 
      The canvas is aria-hidden: it says nothing a screen reader can use,

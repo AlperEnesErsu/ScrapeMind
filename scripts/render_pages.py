@@ -227,6 +227,20 @@ def main() -> int:
     pages = dict(PAGES)
     pages["report-learning-map"] = f"/papers/reports/{_ensure_a_learning_map(app, int(user_id))}"
 
+    # Module blueprints serve their own static files (`/papers/static/...`).
+    # Left as absolute paths they 404 under file://, so a page's own script
+    # never runs and the audit sees only its no-JavaScript state -- for the
+    # learning map, a hidden step card that was never measured.
+    blueprint_statics: list[tuple[str, str]] = []
+    with app.test_request_context():
+        from flask import url_for
+
+        for name, blueprint in app.blueprints.items():
+            if blueprint.has_static_folder and blueprint.static_folder:
+                served = url_for(f"{name}.static", filename="")
+                local = os.path.relpath(blueprint.static_folder, out).replace(os.sep, "/") + "/"
+                blueprint_statics.append((served, local))
+
     written = 0
     with app.test_client() as client:
         with client.session_transaction() as session:
@@ -240,6 +254,9 @@ def main() -> int:
             html = response.get_data(as_text=True)
             html = html.replace('href="/static/', f'href="{static_prefix}')
             html = html.replace('src="/static/', f'src="{static_prefix}')
+            for served, local in blueprint_statics:
+                html = html.replace(f'href="{served}', f'href="{local}')
+                html = html.replace(f'src="{served}', f'src="{local}')
             (out / f"{name}.html").write_text(html, encoding="utf-8")
             written += 1
             print(f"  {name:<10} {url:<20} {len(html):>7} bytes")

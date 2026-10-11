@@ -299,8 +299,43 @@ oku" demek olmadığını söylüyor (§8). Yetersiz grafikte liste yerine `reas
 göre bir açıklama + "daha geniş anahtar kelime / daha uzun aralık" önerisi.
 Sayfa `scripts/render_pages.py`'nin denetim listesinde
 (`report-learning-map`, sentetik anlatılı bir rapor): axe 0 ihlal, 280/320/414
-px'te taşma yok. **9.4'e kalan:** canvas (`aria-hidden`), adım kartı,
-önceki/sonraki.
+px'te taşma yok.
+
+**9.4'te inen kısım:** listenin üstünde "Adım adım" bloğu — canvas + adım
+kartı. **Aşamalı geliştirme:** blok `hidden` basılır, `static/js/learning_map.js`
+açar; JS'siz sayfa yalnızca listedir.
+
+- **Veri:** `learning_map.learning_map_canvas(graph, steps)` (saf) listenin
+  basıldığı `steps`'ten kurulur — düğüm başına `id, label, role, layer, order`,
+  ok başına `from, to, flow`; hiç ok kalmazsa `None` ve canvas da vis de
+  yüklenmez. Sayfaya **tek tırnaklı `data-lm-graph` özniteliğinde `tojson`**
+  ile gider: `<script type="application/json">` `test_csp_readiness`'in
+  "src'siz `<script>` yok" kuralına takılır; ayrı bir JSON uç noktası ikinci
+  bir sahiplik denetimi demek. `tojson` `< > & '`'yi kaçırır, yani `</script>`
+  ya da tırnak içeren bir kavram adı öznitelikten çıkamaz (testli).
+- **Canvas:** vis-network `hierarchical`, `LR`, seviye = `layer`, fizik kapalı,
+  tekerlek sayfayı kaydırmaya devam eder (`zoomView: false`). Rol renkleri
+  `.lm-role--*` ile aynı `--cat-*` token'larından `getComputedStyle` ile okunur;
+  rol adı her düğüm etiketinin ikinci satırında ve ipucunda da yazar. Seçili
+  düğüm **ters** çizilir (mürekkep dolgu, kalın kenar) — ton değil biçim.
+  Kap `aria-hidden`; vis'in odaklanabilir çerçevesi sekme sırasından çıkarılır
+  (axe `aria-hidden-focus`).
+- **Adım kartı:** bir `<li>`'nin kendi çocuklarının kopyası, yani listede
+  olmayan hiçbir şeyi söyleyemez. Önceki/Sonraki gerçek `<button>`'lar,
+  "Adım n / N" `aria-live="polite"`; düğüme ya da liste öğesine tıklama aynı
+  `select()`'e gider; seçili öğe `aria-current="step"` + marka kenar çizgisi.
+  Uçtaki düğme devre dışı kalınca odak diğerine geçer; düğmelerde ←/→ da çalışır.
+  `prefers-reduced-motion`'da animasyon yok.
+- **vis yükleyici ortak:** SRI'lı URL'ler `citation_graph.js`'ten
+  `static/js/vis_loader.js`'e taşındı (`window.ScrapeMindVis.load()`); atıf
+  grafiği de onu kullanıyor.
+- **Denetim:** `render_pages.py` artık modül blueprint'lerinin statik
+  yollarını da göreli yapıyor — önceden `/papers/static/...` `file://`'da 404
+  veriyordu ve denetim yalnızca JS'siz hâli görüyordu. Kart ve canvas açıkken
+  axe 0 ihlal, 280/320/414 px'te taşma yok. CI'ın `ui-audit` işi uygulamanın
+  JS dosyalarını `node --check`'ten geçiriyor.
+- **Bilinçli eksik:** dar ekranda harita küçülerek sığar ve etiketler küçük
+  kalır (yakınlaştırma kapalı); orada asıl yol kart + liste.
 
 ## 7. Aşamalar
 
@@ -310,7 +345,7 @@ px'te taşma yok. **9.4'e kalan:** canvas (`aria-hidden`), adım kartı,
 | 9.1b ✅ | Oklar atıf akışından; `PaperPayload.referenced_works`; açgözlü döngü kırma | 50 test (25'i rastgele külliyat) + 6 adaptör testi, %99 kapsam; canlı: GNN 12, CRISPR 14 ok |
 | 9.2 ✅ | `run_report` dalı + `stats.graph` + anlatı bağlantısı; form seçeneği; erişilebilir sıralı liste | `kind` `VALID_KINDS` + `_RUNNABLE_KINDS`'ta; anlatısız `partial` harita; anlatı sahibinin locale'inde. `tests/modules/test_learning_map_report.py` (31 test); sayfa axe denetiminde |
 | 9.3 ✅ | `narrate_learning_map` + doğrulama | Sahte sağlayıcıyla şema / id kümesi testleri; locale testi. `tests/modules/test_learning_map_narration.py`; 9.2 ile `run_report`'a bağlandı |
-| 9.4 | Sayfa: graf (canvas, `aria-hidden`) + adım kartı, 9.2'nin listesinin üstüne | Tarayıcıda; axe 0 ihlal; 320 px'te taşma yok |
+| 9.4 ✅ | Sayfa: graf (canvas, `aria-hidden`) + adım kartı, 9.2'nin listesinin üstüne | `learning_map_canvas` + `learning_map.js` + ortak `vis_loader.js`; `data-lm-graph` özniteliği (§6). 10 yeni test (kaçış, gizli kart, ok yoksa canvas yok, `node --check`); kart açıkken axe 0 ihlal, 280/320/414 px taşma yok |
 | 9.5 | Gerçek konularla kalibrasyon | 3 konuda eşik ve `max_nodes` elle değerlendirilir, karar buraya yazılır |
 
 9.1 tek başına değerli ve risksiz: hiçbir yere bağlanmadan test edilebilir.

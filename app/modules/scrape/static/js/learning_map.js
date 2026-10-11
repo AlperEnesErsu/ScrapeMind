@@ -222,6 +222,12 @@
       },
     });
 
+    // vis-network makes its frame focusable. Inside an aria-hidden container
+    // that is a tab stop a screen reader cannot name (axe: aria-hidden-focus);
+    // the buttons and the list are the keyboard path, so take it out of the
+    // tab order. Not `inert`, which would also stop pointer clicks.
+    canvasEl.querySelectorAll('[tabindex]').forEach((el) => el.setAttribute('tabindex', '-1'));
+
     const fit = () => network.fit({ animation: reduceMotion ? false : { duration: 300 } });
     network.once('afterDrawing', () => network.fit({ animation: false }));
     network.on('resize', fit);
