@@ -4418,6 +4418,9 @@ msgstr "Research Settings"
 msgid "Workspace Settings"
 msgstr "Workspace Settings"
 
+msgid "Please log in to access this page."
+msgstr "Please log in to access this page."
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

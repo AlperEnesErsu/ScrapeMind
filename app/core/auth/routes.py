@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+import structlog
 from flask import flash, redirect, render_template, request, session, url_for
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
@@ -32,6 +33,8 @@ from app.core.sessions.service import (
 )
 from app.core.ui.splash import arm_splash
 from app.extensions import db, limiter
+
+logger = structlog.get_logger()
 
 PENDING_2FA_KEY = "pending_2fa_user_id"
 PENDING_2FA_REMEMBER_KEY = "pending_2fa_remember"
@@ -226,11 +229,7 @@ def forgot_password():
             token = make_password_reset_token(user)
             reset_url = url_for("auth.reset_password_view", token=token, _external=True)
             log_action("user.password_reset_requested", entity_type="user", entity_id=user.id)
-            from app.core.email.service import send_password_reset
-
-            sent, dev_url = send_password_reset(user, reset_url)
-            if not sent and dev_url and current_app_is_debug():
-                flash(_("Dev mode: reset link → %(url)s", url=dev_url), "info")
+            _deliver_reset_link(user, reset_url)
         flash(_("If that email exists, a reset link has been sent."), "success")
         return redirect(url_for("auth.login"))
     return render_template("auth/forgot.html", form=form)
@@ -250,6 +249,37 @@ def reset_password_view(token: str):
         flash(_("Password reset. You can sign in now."), "success")
         return redirect(url_for("auth.login"))
     return render_template("auth/reset.html", form=form)
+
+
+def _deliver_reset_link(user: User, reset_url: str) -> None:
+    """Send the reset email without making the request wait on SMTP.
+
+    The flash text is identical for known and unknown addresses; a synchronous
+    SMTP round-trip only on the known branch made the *response time* answer
+    the question the text refuses to (31 ms vs 2 ms locally, far more against
+    a real mail server). The send goes to a worker instead.
+
+    Dev mode keeps the synchronous path: with MAIL_SUPPRESS_SEND the link is
+    shown in a flash, which needs the answer inside this request. If the broker
+    cannot take the job, sending inline is better than losing the email.
+    """
+    from flask import current_app
+
+    from app.core.email.service import send_password_reset
+
+    if current_app.config.get("MAIL_SUPPRESS_SEND"):
+        sent, dev_url = send_password_reset(user, reset_url)
+        if not sent and dev_url and current_app_is_debug():
+            flash(_("Dev mode: reset link → %(url)s", url=dev_url), "info")
+        return
+
+    from app.tasks.core_tasks import send_password_reset_email
+
+    try:
+        send_password_reset_email.delay(user.id, reset_url)
+    except Exception:  # noqa: BLE001 - broker down: deliver inline rather than drop
+        logger.warning("password_reset_enqueue_failed", user_id=user.id, exc_info=True)
+        send_password_reset(user, reset_url)
 
 
 def current_app_is_debug() -> bool:
