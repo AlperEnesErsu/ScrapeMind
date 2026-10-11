@@ -66,6 +66,11 @@ _session = requests.Session()
 # or a pathological number of words.
 _MAX_ABSTRACT_CHARS = 20_000
 
+# Same reasoning for `referenced_works`: a real work cites tens, a review a
+# few hundred. A list longer than this is not a bibliography worth trusting,
+# and the learning map walks every reference of every work in a report.
+_MAX_REFERENCES = 500
+
 # OpenAlex caps a page at 200 results.
 _MAX_PER_PAGE = 200
 
@@ -169,6 +174,28 @@ def _cited_by_count(item: dict) -> int | None:
         return None
 
 
+def _referenced_works(item: dict) -> tuple[str, ...]:
+    """The works this one cites, as bare ids ("W123") like `external_id`.
+
+    Untrusted remote JSON: a non-list, non-string entries and blanks are
+    skipped, duplicates collapse (first occurrence wins, order kept), and the
+    result is capped at `_MAX_REFERENCES`.
+    """
+    raw = item.get("referenced_works")
+    if not isinstance(raw, list):
+        return ()
+    seen: dict[str, None] = {}
+    for ref in raw:
+        if not isinstance(ref, str):
+            continue
+        work_id = ref.strip().rsplit("/", 1)[-1]
+        if work_id:
+            seen.setdefault(work_id, None)
+            if len(seen) >= _MAX_REFERENCES:
+                break
+    return tuple(seen)
+
+
 def _to_payload(item: dict) -> PaperPayload | None:
     raw_id = item.get("id") or ""
     # "https://openalex.org/W2741809807" -> "W2741809807"
@@ -234,6 +261,7 @@ def _to_payload(item: dict) -> PaperPayload | None:
         oa_status=oa_status,
         oa_license=oa_license,
         oa_url=oa_url,
+        referenced_works=_referenced_works(item),
     )
 
 
