@@ -108,8 +108,13 @@ düşüyorlar.
 
 ### Tarayıcı denetimi (CI'da, ayrı iş olarak)
 
-`ui-audit` işi on üç sayfayı (makale detayı dahil) basıp axe-core (WCAG 2.2 A/AA) ve 280/320/414px
-reflow kontrolünden geçirir. Yerelde de aynısını koşabilirsin:
+`ui-audit` işi yirmi bir sayfayı basıp axe-core (WCAG 2.2 A/AA) ve 280/320/414px
+reflow kontrolünden geçirir: panel, keşfet, kütüphane, kütüphane araması, görevler,
+kullanıcılar, denetim kaydı, profil, üç çalışma alanı sekmesi, öğrenme haritası
+raporu ve makale detayı — detayın **beş modunun her biri** (özgün, Türkçe, AI
+analizi, makaleye sor, atıf grafiği) dolu hâliyle, ayrıca henüz üretilmemiş
+(AI analizi, makaleye sor) ve model yapılandırılmamış (AI analizi, makaleye sor)
+durumlarıyla. Yerelde de aynısını koşabilirsin:
 
 ```bash
 npm ci && npx playwright install chromium
@@ -137,6 +142,23 @@ için CI o durumu hiç basmadı; `render_pages.py` artık görülmüş bir kart 
   renklerini değil.
 - **Yeni bir kart durumu eklerken örnek veriye de ekle** — denetimin göremediği durum
   denetlenmemiş durumdur.
+
+Makale detayı bunun ikinci örneği: yalnızca varsayılan modu denetleniyordu ve
+"Makaleye sor" formunun gönder düğmesi, adı olmayan bir ikon olarak (ekran okuyucu
+yalnızca "düğme" der) bu yüzden hayatta kaldı. AI modları bir model bir kez yanıt
+verene kadar kendi içeriklerini göstermez; `render_pages.py` hiçbir model çağırmaz,
+modelin bırakacağı satırları (çeviri, analiz, iki sohbet mesajı) doğrudan yazar ve
+"model yapılandırılmış" durumunu yer tutucu bir anahtarla basar. Atıf grafiği
+verisini sayfa yüklendikten sonra kendi uç noktasından çeker; `file://` altında bu
+adres boşa düşeceği için uç nokta test client'ıyla çağrılır (yalnızca ağ yarısı —
+OpenAlex — fikstürle değiştirilir) ve yanıt `data:` URL olarak sayfaya gömülür.
+Denetim, grafik yüklenip spinner kalkana kadar bekler. Bir düğüme tıklayınca açılan
+ayrıntı kartı hâlâ denetim dışında: tıklama gerektiren her durum gibi.
+
+Taşma bulgusundaki "widest" ipucu yalnızca **görünen** sağ kenarı sayar: kırpılmış
+öğeler (`.visually-hidden`, KaTeX'in MathML kopyası) ve kaydırılan/kırpan bir kabın
+içinde kalan kısım elenir. Eskiden 1px'e kırpılmış MathML'i suçlu diye gösteriyordu.
+Geçti/kaldı kararı bundan etkilenmez.
 
 ### Bilinen muafiyet
 

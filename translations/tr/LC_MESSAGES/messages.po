@@ -4593,6 +4593,15 @@ msgstr "Sonraki adım"
 msgid "Also in these works, but not connected to the path: %(names)s"
 msgstr "Bu çalışmalarda geçen ama yola bağlanmayan kavramlar: %(names)s"
 
+msgid "Your question about this paper"
+msgstr "Bu makaleyle ilgili sorunuz"
+
+msgid "Send question"
+msgstr "Soruyu gönder"
+
+msgid "Filter nodes"
+msgstr "Düğümleri süz"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

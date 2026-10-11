@@ -58,6 +58,20 @@ async function auditPage(browser, file) {
 
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: "load" });
+  // The citation graph draws after load: it fetches vis-network, then its
+  // data. Auditing at "load" would measure the spinner, not the graph users
+  // see. Bounded, and a load that fails still ends the wait (the page shows
+  // its empty overlay instead), so this never hangs the audit.
+  await page
+    .waitForFunction(
+      () => {
+        const spinner = document.getElementById("cg-spinner");
+        return !spinner || spinner.classList.contains("d-none");
+      },
+      null,
+      { timeout: 20000 }
+    )
+    .catch(() => console.log(`  ~ ${name}: citation graph still loading after 20s; audited as is`));
 
   // Accessibility, at the desktop width the app is mostly used at.
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -89,12 +103,35 @@ async function auditPage(browser, file) {
       return doc.scrollWidth - doc.clientWidth;
     });
     if (overflow > 1) {
+      // A hint only -- pass/fail is decided above. It names the element whose
+      // *visible* right edge reaches furthest past the viewport, which is not
+      // the same as the furthest bounding box: KaTeX's MathML copy and every
+      // .visually-hidden span are clipped to nothing yet keep a full-width
+      // box, and the old hint named them while the real culprit went unnamed.
       const widest = await page.evaluate((vw) => {
+        const visibleRight = (el) => {
+          let right = el.getBoundingClientRect().right;
+          for (let a = el; a && a !== document.documentElement; a = a.parentElement) {
+            const cs = getComputedStyle(a);
+            // Clipped away entirely (sr-only, .katex-mathml) or by a shape:
+            // nothing of it can be what the user scrolls sideways to see.
+            if (cs.clip !== "auto" && cs.clip !== "" && /absolute|fixed/.test(cs.position)) return null;
+            if (cs.clipPath && cs.clipPath !== "none") return null;
+            // An ancestor that clips or scrolls its overflow contains it; only
+            // the part inside that ancestor can reach the page's edge.
+            if (a !== el && a !== document.body && cs.overflowX !== "visible") {
+              right = Math.min(right, a.getBoundingClientRect().right);
+            }
+          }
+          return right;
+        };
         let worst = null;
-        for (const el of document.querySelectorAll("*")) {
+        for (const el of document.querySelectorAll("body *")) {
           const r = el.getBoundingClientRect();
-          if (r.right > vw + 1 && (!worst || r.right > worst.right)) {
-            worst = { right: r.right, tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 40) };
+          if (r.right <= vw + 1 || (r.width === 0 && r.height === 0)) continue;
+          const right = visibleRight(el);
+          if (right !== null && right > vw + 1 && (!worst || right > worst.right)) {
+            worst = { right, tag: el.tagName.toLowerCase(), cls: String(el.className).slice(0, 40) };
           }
         }
         return worst;

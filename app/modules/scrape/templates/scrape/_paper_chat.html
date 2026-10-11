@@ -28,7 +28,7 @@
         {% endfor %}
         <div id="chat-loading" class="chat-message chat-message--assistant htmx-indicator">
           <div class="spinner-border spinner-border-sm text-secondary" role="status">
-            <span class="visually-hidden">Loading...</span>
+            <span class="visually-hidden">{{ _('Loading…') }}</span>
           </div>
           <span class="ms-2 small text-muted">{{ _('Thinking...') }}</span>
         </div>
@@ -61,10 +61,15 @@
             hx-indicator="#chat-loading"
             data-reset-on-success>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <textarea name="message" placeholder="{{ _('Ask a question...') }}" required autofocus
+        {# A real label, not only the placeholder: the placeholder vanishes
+           on the first keystroke, and the send button was an icon with no
+           name at all -- a screen reader announced it as "button". #}
+        <label for="chat-question" class="visually-hidden">{{ _('Your question about this paper') }}</label>
+        <textarea id="chat-question" name="message" placeholder="{{ _('Ask a question...') }}" required autofocus
                   data-submit-on-enter></textarea>
-        <button type="submit" class="btn btn-primary btn-sm px-3">
-          <i class="bi bi-send-fill"></i>
+        <button type="submit" class="btn btn-primary btn-sm px-3"
+                aria-label="{{ _('Send question') }}" title="{{ _('Send question') }}">
+          <i class="bi bi-send-fill" aria-hidden="true"></i>
         </button>
       </form>
     </div>
