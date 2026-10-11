@@ -2282,7 +2282,8 @@ def reports():
 @scrape_bp.route("/reports/new", methods=["POST"])
 @login_required
 def report_create():
-    """Validate + queue a new "topic" report.
+    """Validate + queue a new "topic" or "learning_map" report (the form's
+    `kind`; `create_report` validates both the same way).
 
     `create_report` never raises — a rejected request (bad year range, no
     keywords, the daily cap) comes back as `(None, message)`, same contract
@@ -2304,7 +2305,9 @@ def report_create():
     except (TypeError, ValueError):
         years = None
 
-    report, error = create_report(current_user, "topic", {"keywords": keywords, "years": years})
+    report, error = create_report(
+        current_user, form.kind.data or "topic", {"keywords": keywords, "years": years}
+    )
     if report is None:
         flash(_(error), "danger")
         return redirect(url_for("scrape.reports"))
@@ -2345,7 +2348,14 @@ def report_detail(report_id: int):
     report = get_report(current_user, report_id)
     if report is None:
         abort(404)
-    return render_template("reports/detail.html", report=report)
+    steps: list[dict] = []
+    if report.kind == "learning_map":
+        from app.modules.scrape.learning_map import learning_map_steps
+
+        steps = learning_map_steps(
+            (report.stats or {}).get("graph"), (report.sections or {}).get("narration")
+        )
+    return render_template("reports/detail.html", report=report, learning_map_steps=steps)
 
 
 @scrape_bp.route("/reports/<int:report_id>/status", methods=["GET"])

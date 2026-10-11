@@ -1,7 +1,8 @@
 # Faz 9 — Öğrenme haritası (konu → kavram grafiği)
 
 > **Durum:** 9.1 yazıldı (#127); 9.1b ile oklar **atıf akışından** geliyor (§3.2,
-> §3.5). Sıradaki: 9.2. 11 Ekim 2026.
+> §3.5); 9.3 anlatı (#128); 9.2 ile `learning_map` uçtan uca bir rapor türü ve
+> sayfası erişilebilir sıralı liste (§5, §6). Sıradaki: 9.4 (canvas). 11 Ekim 2026.
 > Dal başlangıcı: `main` (#118–#123 merge'lenmiş). Migration head'i: `a7c3e9d1f2b4`.
 
 Kod yazmadan önce [SCRAPING.md](SCRAPING.md) §11 (etik sınırlar), Faz 6'nın rapor
@@ -241,6 +242,32 @@ yalnızca `insufficient` iken dolu: `"too_few_concepts"` ya da
 `"learning_map"` (12 karakter) sığıyor, migration gerekmiyor. Faz 6'nın
 `_RUNNABLE_KINDS` kademeli açılışı tam olarak bunun için var.
 
+**Uygulanan hâli (9.2)** — `report_service._run_learning_map`:
+
+```json
+stats    = {"graph": <learning_map_graph çıktısı, yukarıdaki şema>,
+            "query": "a OR b", "since_year": 2022, "until_year": 2026}
+sections = {"narration": {"nodes": {node_id: {"label", "explain", "check_question"}}}}
+           // anlatı yoksa {}
+```
+
+- OpenAlex'e tek harcama `works_in_range` hasadı (`_fetch_works`); konu
+  raporunun `_build_stats` agregaları ve map/reduce **yok**. Çalışmalar konu
+  raporu gibi `upsert_paper`'dan geçer (anahtar makale bağlanabilir bir satıra
+  denk gelsin), kullanıcıya bağlanmaz.
+- `library_dois`: sahibinin **gizlenmemiş** kütüphanesinden, yalnızca bu
+  hasatta geçen DOI'ler — tek sorgu, `IN` listesi kütüphaneyle değil hasatla
+  sınırlı.
+- Anlatı `force_locale(recipient_locale(sahip))` içinde. `recipient_locale`
+  `app/core/i18n/utils.py`'ye taşındı; `report_tasks`'ın bildirimi de onu
+  kullanıyor.
+- `status="partial"`: hasat kısıtlandıysa, grafik `insufficient` ise (çağrı
+  yapılmaz), AI kapalıysa (çağrı yapılmaz) ya da anlatı `None` döndüyse. Harita
+  her durumda saklanır. `item_count` = hasattaki çalışma sayısı. Beklenmeyen
+  hata konu raporundaki gibi `error` + yeniden fırlatma.
+- Başlık sorgudan: "Öğrenme haritası: <anahtar kelimeler>" (`root` canlıda hiç
+  çıkmadı, §3.5).
+
 ## 6. Arayüz
 
 - **Oluşturma:** rapor formunda üçüncü seçenek. Girdi konu raporuyla aynı
@@ -256,15 +283,34 @@ yalnızca `insufficient` iken dolu: `"too_few_concepts"` ya da
   paletinden; rol rengin yanında metin olarak da yazılır (renk tek başına
   taşımaz).
 
+**9.2'de inen kısım:** oluşturma formu (`ReportForm.kind`, radyo grubu
+`fieldset`/`legend` ile, her seçeneğin bir cümlelik açıklaması
+`aria-describedby`) ve **sıralı liste** —
+`reports/_learning_map_report.html`, JS'siz, inline script/style'sız. Liste
+`learning_map.learning_map_steps(graph, narration)`'dan basılır (saf fonksiyon;
+etiket = anlatı etiketi, yoksa OpenAlex adı; "üzerine kurulu olduğu" = gelen
+okların etiketleri, okuma sırasında; anahtar makale linki yalnızca http(s) ya
+da DOI). Her `<li>`: `id="lm-step-<order>"`, `data-node-id`, `data-order` —
+9.4'ün canvas'ı bu işaretlemeyi değiştirmeden bağlanır. Rol rozetleri
+`theme.css`'te `.lm-role--{prerequisite,core,method,current}` (mavi, çivit,
+deniz mavisi, yeşil); canvas aynı dört aileyi kullanmalı. Sayfa bir cümleyle
+okların AI değil atıf hesabı olduğunu ve "üzerine kurulu"nun her zaman "önce
+oku" demek olmadığını söylüyor (§8). Yetersiz grafikte liste yerine `reason`'a
+göre bir açıklama + "daha geniş anahtar kelime / daha uzun aralık" önerisi.
+Sayfa `scripts/render_pages.py`'nin denetim listesinde
+(`report-learning-map`, sentetik anlatılı bir rapor): axe 0 ihlal, 280/320/414
+px'te taşma yok. **9.4'e kalan:** canvas (`aria-hidden`), adım kartı,
+önceki/sonraki.
+
 ## 7. Aşamalar
 
 | | İş | Bitti sayılır |
 |---|---|---|
 | 9.1 ✅ | `learning_map_graph(payloads)` — saf fonksiyon, IO yok (#127) | 42 test, %97 kapsam. Canlı ölçüm §3.5 |
 | 9.1b ✅ | Oklar atıf akışından; `PaperPayload.referenced_works`; açgözlü döngü kırma | 50 test (25'i rastgele külliyat) + 6 adaptör testi, %99 kapsam; canlı: GNN 12, CRISPR 14 ok |
-| 9.2 | `run_report` dalı + `stats.graph`, LLM'siz | `kind` `VALID_KINDS` + `_RUNNABLE_KINDS`'ta; anlatısız `partial` harita |
-| 9.3 ✅ | `narrate_learning_map` + doğrulama | Sahte sağlayıcıyla şema / id kümesi testleri; locale testi. `tests/modules/test_learning_map_narration.py`; henüz `run_report`'a bağlı değil (9.2) |
-| 9.4 | Sayfa: graf + liste + adım kartı | Tarayıcıda; axe 0 ihlal; 320 px'te taşma yok |
+| 9.2 ✅ | `run_report` dalı + `stats.graph` + anlatı bağlantısı; form seçeneği; erişilebilir sıralı liste | `kind` `VALID_KINDS` + `_RUNNABLE_KINDS`'ta; anlatısız `partial` harita; anlatı sahibinin locale'inde. `tests/modules/test_learning_map_report.py` (31 test); sayfa axe denetiminde |
+| 9.3 ✅ | `narrate_learning_map` + doğrulama | Sahte sağlayıcıyla şema / id kümesi testleri; locale testi. `tests/modules/test_learning_map_narration.py`; 9.2 ile `run_report`'a bağlandı |
+| 9.4 | Sayfa: graf (canvas, `aria-hidden`) + adım kartı, 9.2'nin listesinin üstüne | Tarayıcıda; axe 0 ihlal; 320 px'te taşma yok |
 | 9.5 | Gerçek konularla kalibrasyon | 3 konuda eşik ve `max_nodes` elle değerlendirilir, karar buraya yazılır |
 
 9.1 tek başına değerli ve risksiz: hiçbir yere bağlanmadan test edilebilir.

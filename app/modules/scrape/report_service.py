@@ -18,7 +18,11 @@ group report's keyword-overlap stat. Two moving parts live here:
     OpenAlex query; `kind="author_group"` fans out per member instead (one
     `openalex_source.works_by_author` call each — see `_run_author_group`),
     isolating a single member's failure the same way `service.scrape_for_user`
-    isolates a single source's.
+    isolates a single source's. `kind="learning_map"` (Faz 9.2,
+    docs/PHASE9.md) takes the same query as "topic" but spends only the works
+    harvest — no aggregates, no map/reduce — and turns it into a concept
+    graph (`learning_map.learning_map_graph`) plus at most one narration call
+    (`ai_service.narrate_learning_map`); see `_run_learning_map`.
 
 Statistics (`Report.stats`) are computed with **no LLM call** — every number
 comes from `openalex_source.aggregate_works`/`works_in_range`/`works_by_author`
@@ -53,13 +57,24 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
+from flask_babel import force_locale
 from flask_babel import gettext as _
 from flask_babel import lazy_gettext as _l
 
+from app.core.i18n.utils import recipient_locale
 from app.extensions import db
 from app.modules.academic.service import list_user_keywords
 from app.modules.scrape import ai_service
-from app.modules.scrape.models import AuthorGroup, Journal, Paper, Report, UserAuthor
+from app.modules.scrape.doi import normalize_doi
+from app.modules.scrape.learning_map import learning_map_graph
+from app.modules.scrape.models import (
+    AuthorGroup,
+    Journal,
+    Paper,
+    Report,
+    UserAuthor,
+    UserPaper,
+)
 from app.modules.scrape.ratelimit import SourceThrottledError
 from app.modules.scrape.service import (
     GROUP_NOT_FOUND_MESSAGE,
@@ -85,13 +100,19 @@ REPORT_MIN_YEARS = 1
 REPORT_MAX_YEARS = 10
 
 #: `Report.kind` values accepted at creation time.
-VALID_KINDS = frozenset({"topic", "author_group"})
+VALID_KINDS = frozenset({"topic", "author_group", "learning_map"})
+
+#: Kinds whose request is "keywords + a year span" — same validation, same
+#: `_topic_query_and_range`. A learning map is a topic report's harvest read
+#: a different way, not a different question.
+_QUERY_KINDS = frozenset({"topic", "learning_map"})
 
 #: Of `VALID_KINDS`, the ones `run_report` actually knows how to execute.
 #: Kept as its own set (rather than just checking `VALID_KINDS`) so a future
-#: third kind can be accepted by `create_report` — sit in `pending` — before
-#: its generator exists, same staged rollout "author_group" itself had.
-_RUNNABLE_KINDS = frozenset({"topic", "author_group"})
+#: kind can be accepted by `create_report` — sit in `pending` — before its
+#: generator exists, same staged rollout "author_group" and "learning_map"
+#: had.
+_RUNNABLE_KINDS = frozenset({"topic", "author_group", "learning_map"})
 
 #: Rows kept per dimension in `stats["top_*"]` (topic) and in the group-level
 #: `stats["shared_*"]`/`stats["coauthorship"]`/`stats["keyword_overlap"]`
@@ -169,6 +190,17 @@ def _report_title(params: dict) -> str:
     return title[:255]
 
 
+def _learning_map_title(params: dict) -> str:
+    """A learning map's title, `Learning map: <keywords>`. Taken from the
+    query, not from the graph's OpenAlex `root` topic: live runs
+    (docs/PHASE9.md §3.5) found no root at all, because the query words
+    appear in almost no topic name. Translated once, at creation, in the
+    requester's own request locale."""
+    keywords = _clean_keywords(params.get("keywords"))
+    title = _("Learning map: %(topic)s", topic=", ".join(keywords) or "?")
+    return title[:255]
+
+
 def _owned_group_for_report(user, group_id: Any) -> AuthorGroup | None:
     """Resolve `group_id` to an `AuthorGroup` this `user` owns, or `None`.
 
@@ -205,7 +237,8 @@ def create_report(user, kind: str, params: dict) -> tuple[Report | None, str | N
     Never raises — returns `(row, None)` on success or `(None, message)` on
     a rejected request, same shape as `service.follow_author`. Validates
     (in order): `kind` is recognised, kind-specific params (a keyword for
-    "topic"; an owned, non-empty group for "author_group"), the requested
+    "topic" and "learning_map"; an owned, non-empty group for
+    "author_group"), the requested
     year span is within `[REPORT_MIN_YEARS, REPORT_MAX_YEARS]`, and the user
     hasn't hit `MAX_REPORTS_PER_DAY` in the trailing 24 hours (counted across
     every kind — the expense a report costs doesn't depend on which kind it
@@ -224,7 +257,7 @@ def create_report(user, kind: str, params: dict) -> tuple[Report | None, str | N
     params = dict(params or {})
     group: AuthorGroup | None = None
 
-    if kind == "topic":
+    if kind in _QUERY_KINDS:
         keywords = _clean_keywords(params.get("keywords"))
         if not keywords:
             return None, REPORT_KEYWORDS_REQUIRED_MESSAGE
@@ -269,11 +302,12 @@ def create_report(user, kind: str, params: dict) -> tuple[Report | None, str | N
         logger.info("report_daily_cap_reached", user_id=user.id, count=recent_count)
         return None, REPORT_DAILY_CAP_MESSAGE
 
-    title = (
-        _report_title(params)
-        if kind == "topic"
-        else _author_group_report_title(group.name, params["years"])
-    )
+    if kind == "topic":
+        title = _report_title(params)
+    elif kind == "learning_map":
+        title = _learning_map_title(params)
+    else:
+        title = _author_group_report_title(group.name, params["years"])
     report = Report(
         user_id=user.id,
         kind=kind,
@@ -1000,17 +1034,97 @@ def _run_author_group(
 
 
 # ----------------------------------------------------------------------------
+# run_report — learning_map (Faz 9.2)
+# ----------------------------------------------------------------------------
+
+
+def _library_dois(user, payloads: list) -> list[str]:
+    """Normalised DOIs of this harvest that `user` already has in their
+    library (non-dismissed `UserPaper` rows) — what lets
+    `learning_map_graph` prefer, and mark, a key work the reader already
+    owns (docs/PHASE9.md §3.4).
+
+    One query, bounded by the harvest rather than the library: the only
+    DOIs that can matter are the ones in `payloads` (≤ `REPORT_MAX_WORKS`),
+    so the `IN` list is those, not every paper the user ever saved.
+    `Paper.doi` is normalised on write (`service.upsert_paper`), so the
+    harvest side is normalised the same way before comparing.
+    """
+    wanted = {d for d in (normalize_doi(p.doi) for p in payloads) if d}
+    if not wanted:
+        return []
+    rows = (
+        db.session.query(Paper.doi)
+        .join(UserPaper, UserPaper.paper_id == Paper.id)
+        .filter(
+            UserPaper.user_id == user.id,
+            UserPaper.dismissed_at.is_(None),
+            Paper.doi.in_(wanted),
+        )
+        .distinct()
+        .all()
+    )
+    return sorted(doi for (doi,) in rows if doi)
+
+
+def _run_learning_map(report: Report, params: dict) -> tuple[dict, dict, list[Paper], bool]:
+    """Fetch + compute everything `run_report`'s "learning_map" branch needs.
+
+    Same query and year span as "topic" (`_topic_query_and_range`), and the
+    same `_fetch_works` harvest — but nothing else from OpenAlex: no
+    `_build_stats` aggregates (the map reads the payloads it already has;
+    docs/PHASE9.md §3.3 computes growth from their years for exactly this
+    reason) and no map/reduce. The works are upserted like "topic" does, so
+    a key work's DOI resolves to a row the rest of the app can link to.
+
+    The narration is one `ai_service.narrate_learning_map` call, wrapped in
+    `force_locale(recipient_locale(owner))`: it writes in the *active*
+    locale, and a worker has none of its own — without this an English
+    reader would get Turkish cards (CLAUDE.md, "Arka planda `_()`").
+
+    Returns `(stats, sections, papers, partial)`. `partial` is True — the map
+    is still stored and shown — when the harvest was throttled, the graph is
+    `insufficient` (nothing to narrate; no call is made), AI is disabled (no
+    call either; the map renders with OpenAlex names, docs/PHASE9.md §2), or
+    the narration came back `None`.
+    """
+    query, since_year, until_year = _topic_query_and_range(params)
+    throttled = [False]
+    payloads = _fetch_works(query, since_year, until_year, throttled)
+    papers = [upsert_paper(payload) for payload in payloads]
+
+    graph = learning_map_graph(payloads, library_dois=_library_dois(report.user, payloads))
+    stats = {
+        "graph": graph,
+        "query": query,
+        "since_year": since_year,
+        "until_year": until_year,
+    }
+
+    narration = None
+    if not graph["insufficient"] and ai_service.is_ai_enabled(report.user):
+        with force_locale(recipient_locale(report.user)):
+            narration = ai_service.narrate_learning_map(graph, topic=query, user=report.user)
+
+    sections = {"narration": narration} if narration else {}
+    partial = throttled[0] or narration is None
+    return stats, sections, papers, partial
+
+
+# ----------------------------------------------------------------------------
 # run_report — orchestration
 # ----------------------------------------------------------------------------
 
 
 def run_report(report: Report) -> dict:
     """Execute a `pending`/`running` report end to end and persist the
-    result onto `report`. Both `VALID_KINDS` are runnable today: "topic"
-    pools one OpenAlex query, "author_group" fans out one `works_by_author`
-    call per group member (see `_run_author_group`). `_RUNNABLE_KINDS` is
+    result onto `report`. All three `VALID_KINDS` are runnable today:
+    "topic" pools one OpenAlex query, "author_group" fans out one
+    `works_by_author` call per group member (see `_run_author_group`), and
+    "learning_map" reads the topic harvest as a concept graph (see
+    `_run_learning_map`). `_RUNNABLE_KINDS` is
     kept as a separate set from `VALID_KINDS` anyway (see its docstring) so
-    a future third kind can be accepted by `create_report` — sit in
+    a future kind can be accepted by `create_report` — sit in
     `pending` — before its generator exists here, same staged rollout
     "author_group" itself had; any such kind is rejected immediately with
     `status="error"` rather than silently producing an empty report.
@@ -1065,6 +1179,9 @@ def run_report(report: Report) -> dict:
             chunk_summaries, map_failed = _map_phase(payloads, user=report.user)
             sections = ai_service.synthesize_report(chunk_summaries, stats, user=report.user)
             sections_failed = sections is None
+        elif report.kind == "learning_map":
+            stats, sections, papers, extra_partial = _run_learning_map(report, params)
+            throttled, map_failed, sections_failed = [False], False, False
         else:  # "author_group" — the only other member of _RUNNABLE_KINDS
             (
                 stats,

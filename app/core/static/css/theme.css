@@ -1859,3 +1859,15 @@ code {
   white-space: pre-wrap !important;
   word-break: break-word !important;
 }
+
+/* Learning map roles (Faz 9.2, docs/PHASE9.md §6). A role is categorical,
+   so its colour comes from the CVD-safe palette -- and the badge always
+   writes the role as well: colour never carries it alone. The canvas (9.4)
+   must use the same four families. Green is "current" because the topic
+   report's fastest-growing badges are already green. */
+.lm-role--prerequisite { background: var(--cat-blue-tint);   color: var(--cat-blue-ink); }
+.lm-role--core         { background: var(--cat-indigo-tint); color: var(--cat-indigo-ink); }
+.lm-role--method       { background: var(--cat-teal-tint);   color: var(--cat-teal-ink); }
+.lm-role--current      { background: var(--cat-green-tint);  color: var(--cat-green-ink); }
+/* A long concept name or paper title is one unbroken token at 280px. */
+.lm-step { overflow-wrap: anywhere; }

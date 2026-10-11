@@ -5,6 +5,22 @@ from flask_login import current_user
 SUPPORTED_LOCALES = ["tr", "en"]
 
 
+def recipient_locale(user) -> str:
+    """The language background work should address `user` in.
+
+    Outside a request there is no browser to ask, so a worker that writes
+    something a person will read -- a notification, a report's narration --
+    wraps that in `force_locale(recipient_locale(user))`: the *recipient's*
+    stored preference, not whoever happens to run the worker. A stored locale
+    we do not ship (or no user at all) falls back to the configured default,
+    the same answer `select_locale` gives when there is no request.
+    """
+    locale = getattr(user, "locale", None)
+    if locale in SUPPORTED_LOCALES:
+        return locale
+    return current_app.config.get("BABEL_DEFAULT_LOCALE", "tr")
+
+
 def select_locale() -> str:
     # 0. No request at all — Celery beat, a worker, a CLI command, a script.
     #

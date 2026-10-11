@@ -13,6 +13,24 @@
       <h6 class="mb-3">{{ _('New report') }}</h6>
       <form method="post" action="{{ url_for('scrape.report_create') }}" novalidate>
         {{ form.csrf_token }}
+        {# A fieldset + legend so a screen reader announces the group's
+           question with each option, not two bare radio labels. #}
+        <fieldset class="mb-3">
+          <legend class="form-label fs-6 mb-1">{{ form.kind.label.text }}</legend>
+          {% for option in form.kind %}
+            <div class="form-check">
+              {{ option(class="form-check-input", aria_describedby="report-kind-help-" ~ option.data) }}
+              {{ option.label(class="form-check-label") }}
+              <div class="form-text mt-0" id="report-kind-help-{{ option.data }}">
+                {% if option.data == 'learning_map' %}
+                  {{ _("The topic's concepts in reading order: which ones build on which, computed from the citations between its papers.") }}
+                {% else %}
+                  {{ _('A year-by-year narrative of the topic plus the numbers behind it.') }}
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </fieldset>
         <div class="mb-2">
           {{ form.keywords.label(class="form-label") }}
           {{ form.keywords(class="form-control", placeholder=_('e.g. machine learning, retrieval augmented generation')) }}
@@ -52,7 +70,7 @@
                 <span class="badge rounded-pill bg-danger-subtle text-danger-emphasis" data-testid="report-status-error">{{ _('Failed') }}</span>
               {% endif %}
               <span class="badge bg-light text-body-secondary border">
-                {% if r.kind == 'author_group' %}{{ _('Author group') }}{% else %}{{ _('Topic') }}{% endif %}
+                {% if r.kind == 'author_group' %}{{ _('Author group') }}{% elif r.kind == 'learning_map' %}{{ _('Learning map') }}{% else %}{{ _('Topic') }}{% endif %}
               </span>
               <span class="small text-muted">{{ r.created_at | datetimeformat('dd.MM.yyyy HH:mm') }}</span>
               {% if r.item_count %}
