@@ -1,0 +1,103 @@
+{# "learning_map" report (Faz 9.2, docs/PHASE9.md).
+
+   This ordered list IS the map's accessible representation (§6): 9.4 draws
+   a canvas on top of it, aria-hidden, and hooks into the stable ids and
+   data attributes on each <li> -- so change those only together with the
+   canvas script. Server-rendered, no script, no inline style (CSP).
+
+   `learning_map_steps` (learning_map.learning_map_steps, built in the
+   route) is the graph + narration flattened in reading order. Concept
+   names come from OpenAlex and labels/explanations from the LLM: both are
+   untrusted text, autoescape stays on (no |safe), and the only href drawn
+   is `key_work_href`, which that function already scheme-checked. #}
+{% set stats = report.stats or {} %}
+{% set graph = stats.graph or {} %}
+{% set narrated = (report.sections or {}).narration %}
+{% set role_labels = {
+  'prerequisite': _('Prerequisite'),
+  'core': _('Core'),
+  'method': _('Method'),
+  'current': _('Current'),
+} %}
+
+<div class="card card-body mb-3">
+  <h5 class="mb-1">{{ stats.query or report.title }}</h5>
+  <div class="small text-muted mb-2" data-testid="lm-counts">
+    {{ _('%(works)s works, %(citations)s citations between them', works=graph.work_count or 0, citations=graph.citation_count or 0) }}
+    {% if stats.since_year and stats.until_year %}· {{ stats.since_year }}–{{ stats.until_year }}{% endif %}
+  </div>
+  <p class="small mb-0">
+    {{ _('“Builds on” is computed from these citations, not written by AI: a concept builds on another when its papers cite that one’s papers far more than the other way round. That usually means reading the other first helps, but not always.') }}
+  </p>
+</div>
+
+{% if graph.insufficient or not learning_map_steps %}
+  <div class="alert alert-info" data-testid="lm-insufficient" data-reason="{{ graph.reason or '' }}">
+    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+    {% if graph.reason == 'too_few_concepts' %}
+      {{ _('Not enough data for a map yet: too few concepts appear often enough in the papers found.') }}
+    {% elif graph.reason == 'no_citation_flow' %}
+      {{ _('Not enough data for a map yet: the papers found rarely cite each other, so no concept can be shown to build on another.') }}
+    {% else %}
+      {{ _('Not enough data for a map yet.') }}
+    {% endif %}
+    {{ _('Try broader keywords or a longer time range.') }}
+  </div>
+{% else %}
+  {% if not narrated %}
+    <div class="alert alert-warning" data-testid="lm-no-narration">
+      <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+      {{ _('Explanations could not be generated, so concepts are shown with their OpenAlex names. The order and the “builds on” links are not affected.') }}
+    </div>
+  {% elif report.status == 'partial' %}
+    <div class="alert alert-warning" data-testid="lm-incomplete">
+      <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+      {{ _('Not every paper could be fetched, so this map may be missing concepts.') }}
+    </div>
+  {% endif %}
+
+  <h5 class="mb-2">{{ _('Reading order') }}</h5>
+  <ol class="ps-4 mb-3" data-testid="lm-steps">
+    {% for step in learning_map_steps %}
+      <li class="lm-step mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}"
+          id="lm-step-{{ step.order }}" data-node-id="{{ step.id }}" data-order="{{ step.order }}">
+        <div class="d-flex flex-wrap align-items-baseline gap-2">
+          <span class="fw-semibold">{{ step.label }}</span>
+          <span class="badge lm-role--{{ step.role }}">{{ role_labels.get(step.role, step.role) }}</span>
+          <span class="small text-muted">{{ _('%(n)s papers', n=step.count or 0) }}</span>
+        </div>
+        {% if step.label != step.name %}
+          <div class="small text-muted">{{ _('OpenAlex topic: %(name)s', name=step.name) }}</div>
+        {% endif %}
+        {% if step.parents %}
+          <div class="small mt-1">
+            <span class="fw-medium">{{ _('Builds on:') }}</span> {{ step.parents | join(', ') }}
+          </div>
+        {% endif %}
+        {% if step.explain %}
+          <p class="mb-1 mt-2">{{ step.explain }}</p>
+        {% endif %}
+        {% if step.check_question %}
+          <p class="small mb-1">
+            <span class="fw-medium">{{ _('Check yourself:') }}</span> {{ step.check_question }}
+          </p>
+        {% endif %}
+        {% if step.key_work and step.key_work.title %}
+          <div class="small mt-1">
+            <span class="fw-medium">{{ _('Key paper:') }}</span>
+            {% if step.key_work_href %}
+              <a href="{{ step.key_work_href }}" target="_blank" rel="noopener noreferrer">{{ step.key_work.title }}</a>
+            {% else %}
+              {{ step.key_work.title }}
+            {% endif %}
+            {% if step.key_work.in_library %}
+              <span class="badge bg-success-subtle text-success-emphasis ms-1" data-testid="lm-in-library">
+                <i class="bi bi-bookmark-check me-1" aria-hidden="true"></i>{{ _('In your library') }}
+              </span>
+            {% endif %}
+          </div>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+{% endif %}

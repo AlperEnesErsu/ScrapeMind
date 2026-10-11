@@ -7,7 +7,7 @@
     <h4 class="mb-1">{{ report.title }}</h4>
     <div class="small text-muted">
       {{ _('Created') }}: {{ report.created_at | datetimeformat('dd.MM.yyyy HH:mm') }}
-      · {% if report.kind == 'author_group' %}{{ _('Author group') }}{% else %}{{ _('Topic') }}{% endif %}
+      · {% if report.kind == 'author_group' %}{{ _('Author group') }}{% elif report.kind == 'learning_map' %}{{ _('Learning map') }}{% else %}{{ _('Topic') }}{% endif %}
       {% if report.item_count %}
         · {{ _('%(n)s items', n=report.item_count) }}
       {% endif %}
@@ -44,7 +44,10 @@
   {# LLM/API output is untrusted content — autoescape stays on everywhere
      below (no |safe), and every href is checked for an http(s) scheme
      before it is drawn. #}
-  {% if report.status == 'partial' or not report.sections %}
+  {# A learning map says why it is partial itself (too little data, no
+     narration, an incomplete harvest) — the generic notice below would
+     call a map "the numeric summary" and blame the AI for a thin topic. #}
+  {% if report.kind != 'learning_map' and (report.status == 'partial' or not report.sections) %}
     <div class="alert alert-warning" data-testid="report-partial-notice">
       <i class="bi bi-exclamation-triangle me-1"></i>
       {{ _('The AI summary could not be fully generated — the numeric summary below is still accurate.') }}
@@ -53,6 +56,8 @@
 
   {% if report.kind == 'author_group' %}
     {% include 'reports/_group_report.html' %}
+  {% elif report.kind == 'learning_map' %}
+    {% include 'reports/_learning_map_report.html' %}
   {% else %}
     {% include 'reports/_topic_report.html' %}
   {% endif %}

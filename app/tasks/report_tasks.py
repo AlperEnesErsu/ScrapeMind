@@ -20,7 +20,7 @@ from flask import current_app
 from flask_babel import force_locale
 from flask_babel import gettext as _
 
-from app.core.i18n.utils import SUPPORTED_LOCALES
+from app.core.i18n.utils import recipient_locale
 from app.tasks import celery_app
 
 logger = structlog.get_logger()
@@ -102,13 +102,11 @@ def generate(self, report_id: int) -> dict:
 
         # Notification must speak the recipient's language, not the worker's
         # — this is a per-recipient send with no request-scoped locale to
-        # inherit, same reasoning as `digest_tasks.run_for_user`. Fall back
-        # to the app default when the stored locale isn't one we ship.
-        locale = (
-            user.locale
-            if user.locale in SUPPORTED_LOCALES
-            else current_app.config.get("BABEL_DEFAULT_LOCALE", "tr")
-        )
+        # inherit, same reasoning as `digest_tasks.run_for_user`.
+        # `recipient_locale` falls back to the app default when the stored
+        # locale isn't one we ship; `run_report` uses the same helper for a
+        # learning map's narration.
+        locale = recipient_locale(user)
         # `.rstrip("/")` so the joined path never doubles a slash; built from
         # config rather than a hardcoded host — `digest_tasks` once shipped a
         # localhost link to production and this must not repeat that.

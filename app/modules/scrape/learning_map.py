@@ -41,6 +41,10 @@ set, which is plenty at 12 nodes and always drops the weakest evidence.
 
 Then the transitive reduction: A->B, B->C and A->C keeps only the first two,
 so the map reads as a tree-like path rather than a hairball.
+
+`learning_map_steps` (9.2) is the other direction: a stored graph plus its
+narration, flattened into the ordered reading list the report page prints.
+Pure as well, so the page's one piece of logic is tested without a request.
 """
 
 from __future__ import annotations
@@ -447,3 +451,90 @@ def learning_map_graph(
     result["insufficient"] = False
     result["reason"] = None
     return result
+
+
+def _http_url(value: Any) -> str | None:
+    text = _text(value)
+    if text and text.lower().startswith(("http://", "https://")):
+        return text
+    return None
+
+
+def learning_map_steps(graph: Any, narration: Any = None) -> list[dict]:
+    """The map as an ordered reading list -- what the report page prints.
+
+    This list is the map's accessible form (docs/PHASE9.md §6): a canvas says
+    nothing to a screen reader, so everything the drawing shows is here too,
+    as text. `graph` is a stored `learning_map_graph` result and `narration`
+    the stored `ai_service.narrate_learning_map` result (or None). Both come
+    back from a JSON column, so neither is trusted to have the right shape.
+
+    One step per node, in `order`::
+
+        {"id", "order", "name", "label", "role", "count", "parents",
+         "explain", "check_question", "key_work", "key_work_href"}
+
+    `label` is the narrated label, falling back to the OpenAlex `name`.
+    `parents` are the labels of the concepts this one builds on (edges
+    pointing at it), in reading order -- the arrows, written out.
+    `key_work_href` is the key work's own http(s) URL or its DOI link, else
+    None: a stored value never becomes an href without a scheme check.
+    """
+    if not isinstance(graph, dict) or graph.get("insufficient"):
+        return []
+    raw_nodes = graph.get("nodes")
+    raw_edges = graph.get("edges")
+    nodes = [
+        n
+        for n in (raw_nodes if isinstance(raw_nodes, list) else [])
+        if isinstance(n, dict) and _text(n.get("id"))
+    ]
+    raw_cards = narration.get("nodes") if isinstance(narration, dict) else None
+    cards: dict = raw_cards if isinstance(raw_cards, dict) else {}
+
+    def card(node_id: str) -> dict:
+        found = cards.get(node_id)
+        return found if isinstance(found, dict) else {}
+
+    nodes.sort(key=lambda n: n["order"] if isinstance(n.get("order"), int) else 0)
+    position = {n["id"]: i for i, n in enumerate(nodes)}
+    label = {
+        n["id"]: _text(card(n["id"]).get("label")) or _text(n.get("name")) or n["id"] for n in nodes
+    }
+
+    parents: dict[str, list[str]] = {n["id"]: [] for n in nodes}
+    for edge in raw_edges if isinstance(raw_edges, list) else []:
+        if not isinstance(edge, dict):
+            continue
+        src, dst = _text(edge.get("from")), _text(edge.get("to"))
+        if src is None or dst is None:
+            continue
+        if src in position and dst in parents and src != dst and src not in parents[dst]:
+            parents[dst].append(src)
+
+    steps = []
+    for n in nodes:
+        node_id = n["id"]
+        key_work = n["key_work"] if isinstance(n.get("key_work"), dict) else None
+        href = None
+        if key_work:
+            href = _http_url(key_work.get("url"))
+            doi = normalize_doi(key_work.get("doi"))
+            if href is None and doi:
+                href = f"https://doi.org/{doi}"
+        steps.append(
+            {
+                "id": node_id,
+                "order": n.get("order"),
+                "name": _text(n.get("name")) or node_id,
+                "label": label[node_id],
+                "role": n.get("role"),
+                "count": n.get("count"),
+                "parents": [label[p] for p in sorted(parents[node_id], key=position.__getitem__)],
+                "explain": _text(card(node_id).get("explain")) or "",
+                "check_question": _text(card(node_id).get("check_question")) or "",
+                "key_work": key_work,
+                "key_work_href": href,
+            }
+        )
+    return steps

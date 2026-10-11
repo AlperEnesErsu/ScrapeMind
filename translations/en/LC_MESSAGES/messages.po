@@ -4428,6 +4428,103 @@ msgstr "You cannot grant or revoke permissions you do not hold: %(codes)s"
 msgid "Please log in to access this page."
 msgstr "Please log in to access this page."
 
+#, python-format
+msgid "Learning map: %(topic)s"
+msgstr "Learning map: %(topic)s"
+
+msgid "Report type"
+msgstr "Report type"
+
+msgid "Topic report"
+msgstr "Topic report"
+
+msgid "Learning map"
+msgstr "Learning map"
+
+msgid ""
+"The topic's concepts in reading order: which ones build on which, "
+"computed from the citations between its papers."
+msgstr ""
+"The topic's concepts in reading order: which ones build on which, "
+"computed from the citations between its papers."
+
+msgid "A year-by-year narrative of the topic plus the numbers behind it."
+msgstr "A year-by-year narrative of the topic plus the numbers behind it."
+
+msgid "Prerequisite"
+msgstr "Prerequisite"
+
+msgid "Core"
+msgstr "Core"
+
+msgid "Current"
+msgstr "Current"
+
+#, python-format
+msgid "%(works)s works, %(citations)s citations between them"
+msgstr "%(works)s works, %(citations)s citations between them"
+
+msgid ""
+"“Builds on” is computed from these citations, not written by AI: a "
+"concept builds on another when its papers cite that one’s papers far more"
+" than the other way round. That usually means reading the other first "
+"helps, but not always."
+msgstr ""
+"“Builds on” is computed from these citations, not written by AI: a "
+"concept builds on another when its papers cite that one’s papers far more"
+" than the other way round. That usually means reading the other first "
+"helps, but not always."
+
+msgid ""
+"Not enough data for a map yet: too few concepts appear often enough in "
+"the papers found."
+msgstr ""
+"Not enough data for a map yet: too few concepts appear often enough in "
+"the papers found."
+
+msgid ""
+"Not enough data for a map yet: the papers found rarely cite each other, "
+"so no concept can be shown to build on another."
+msgstr ""
+"Not enough data for a map yet: the papers found rarely cite each other, "
+"so no concept can be shown to build on another."
+
+msgid "Not enough data for a map yet."
+msgstr "Not enough data for a map yet."
+
+msgid "Try broader keywords or a longer time range."
+msgstr "Try broader keywords or a longer time range."
+
+msgid ""
+"Explanations could not be generated, so concepts are shown with their "
+"OpenAlex names. The order and the “builds on” links are not affected."
+msgstr ""
+"Explanations could not be generated, so concepts are shown with their "
+"OpenAlex names. The order and the “builds on” links are not affected."
+
+msgid "Not every paper could be fetched, so this map may be missing concepts."
+msgstr "Not every paper could be fetched, so this map may be missing concepts."
+
+msgid "Reading order"
+msgstr "Reading order"
+
+#, python-format
+msgid "%(n)s papers"
+msgstr "%(n)s papers"
+
+#, python-format
+msgid "OpenAlex topic: %(name)s"
+msgstr "OpenAlex topic: %(name)s"
+
+msgid "Builds on:"
+msgstr "Builds on:"
+
+msgid "Check yourself:"
+msgstr "Check yourself:"
+
+msgid "Key paper:"
+msgstr "Key paper:"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

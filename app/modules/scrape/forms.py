@@ -3,6 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import (
     BooleanField,
     PasswordField,
+    RadioField,
     SelectField,
     StringField,
     SubmitField,
@@ -153,15 +154,15 @@ class UserBlueskyForm(FlaskForm):
 
 
 class ReportForm(FlaskForm):
-    """Request a new "topic" retrospective report (Faz 6) — see
+    """Request a new keyword-driven report — see
     app/modules/scrape/report_service.py:create_report.
 
-    Only the "topic" kind is requestable from this form. `create_report`
-    also accepts an "author_group" kind, but there is no UI yet to manage
-    `AuthorGroup`s themselves (group CRUD lives in `service.py` and is
-    covered by tests/modules/test_author_groups.py, with no route in front
-    of it) — so a group picker here would have nothing to list. The route
-    always passes kind="topic".
+    `kind` picks between the two kinds that take keywords + a year span:
+    "topic" (Faz 6 retrospective) and "learning_map" (Faz 9.2, a topic's
+    concepts in the order they build on each other). Both validate the same
+    way in `create_report`. The third kind, "author_group", is not offered
+    here: it is requested from the group itself, in the authors tab
+    (`routes.submit_group_report`), where the group id is already known.
 
     `keywords` is free-text, comma-separated, rather than a multi-select
     against the user's keyword dictionary: `create_report` only needs a
@@ -176,6 +177,17 @@ class ReportForm(FlaskForm):
     and needs no extra "custom" input to wire up.
     """
 
+    kind = RadioField(
+        _l("Report type"),
+        choices=[
+            ("topic", _l("Topic report")),
+            ("learning_map", _l("Learning map")),
+        ],
+        # No DataRequired: RadioField already rejects a value outside
+        # `choices`, and a POST without the field (an older cached form)
+        # keeps the default rather than failing.
+        default="topic",
+    )
     keywords = StringField(
         _l("Keywords (comma-separated)"),
         validators=[DataRequired(), Length(max=512)],
