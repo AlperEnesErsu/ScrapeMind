@@ -9,21 +9,35 @@ and explains nodes on top of it and has no way to add or remove an edge; this
 is Faz 6's "numbers first, narrative second" applied to the one place where
 a fluent wrong answer would be hardest to notice.
 
-How an arrow is decided (§3.2): subsumption (Sanderson & Croft, 1999). With
-`works(X)` the set of works carrying concept X,
+How an arrow is decided (Faz 9.1b, docs/PHASE9.md §3.2): citation flow inside
+the harvested corpus. Every work has an `external_id` and the ids of the works
+it cites (`referenced_works`). For node concepts A != B,
 
-    P(A|B) = |works(A) ∩ works(B)| / |works(B)|
+    flow(A -> B) = #{(w, r) : w cites r, r in the corpus, r != w,
+                              B in concepts(w), A in concepts(r)}
 
-and A -> B ("A subsumes B", read A first) when
+"B's works cite A's works": B builds on A, so A is read first. A candidate
+arrow A -> B needs
 
-    P(A|B) >= threshold   and   P(B|A) < 1   and   P(A|B) > P(B|A).
+    flow(A -> B) >= min_flow   and   flow(A -> B) >= ratio * flow(B -> A).
 
-The last clause is not in the paper. It makes the relation antisymmetric
-(two concepts that each mostly contain the other get no arrow rather than
-two), and because P(A|B) > P(B|A) is the same statement as
-|works(A)| > |works(B)|, every arrow points from a more frequent concept to a
-strictly less frequent one. Support strictly decreases along every path, so
-the graph is acyclic by construction -- there is no cycle check to get wrong.
+The second clause makes the relation directional: two concepts that cite each
+other about equally get no arrow rather than one picked by noise.
+
+Why not subsumption any more. 9.1 drew A -> B when A's works contained B's
+(Sanderson & Croft, 1999). Run against live OpenAlex data (§3.5), it drew one
+arrow for "graph neural networks" and none for "CRISPR gene editing":
+OpenAlex `topics` -- what `categories` holds -- are flat sibling clusters,
+none contains another. Citation flow on the same topics drew 16 and 18 arrows
+that read like a learning path. The node set did not change; only the edges.
+
+Why acyclicity is now enforced, not given. Subsumption pointed every arrow
+from a more frequent concept to a strictly rarer one, so it could not cycle.
+Citation flow has no such order: the pairwise ratio rule happily admits
+A -> B -> C -> A. The candidates are therefore added greedily, strongest
+first (flow desc, reverse flow asc, then names for determinism), and an edge
+that would close a cycle is dropped -- an approximate minimum feedback arc
+set, which is plenty at 12 nodes and always drops the weakest evidence.
 
 Then the transitive reduction: A->B, B->C and A->C keeps only the first two,
 so the map reads as a tree-like path rather than a hairball.
@@ -39,11 +53,15 @@ from typing import Any
 
 from app.modules.scrape.doi import normalize_doi
 
-#: A concept must appear in this many works to become a node. Below it,
-#: P(A|B) is computed over a handful of works and says little.
+#: A concept must appear in this many works to become a node. Below it, its
+#: citation counts are a handful of pairs and say little.
 DEFAULT_MIN_SUPPORT = 8
-#: P(A|B) at or above which A is taken to subsume B.
-DEFAULT_THRESHOLD = 0.8
+#: Citation pairs (citing work, cited work) from B to A needed before A -> B
+#: is drawn at all.
+DEFAULT_MIN_FLOW = 5
+#: How many times the flow must outweigh the reverse flow. Mutual citation is
+#: not an order.
+DEFAULT_RATIO = 2.0
 #: Nodes kept, most frequent first. A 680 px map and a short path through it.
 DEFAULT_MAX_NODES = 12
 #: Fewer nodes than this and the result is reported as insufficient instead
@@ -58,16 +76,22 @@ ROLE_CORE = "core"
 ROLE_METHOD = "method"
 ROLE_CURRENT = "current"
 
+#: Why `insufficient` is True, so the page can say it instead of a blank map.
+REASON_TOO_FEW_CONCEPTS = "too_few_concepts"
+REASON_NO_CITATION_FLOW = "no_citation_flow"
+
 
 @dataclass(frozen=True)
 class _Work:
     index: int
+    work_id: str | None
     title: str
     year: int | None
     cited_by: int
     doi: str | None
     url: str | None
     concepts: frozenset[str]
+    references: tuple[str, ...]
 
 
 @dataclass
@@ -91,6 +115,10 @@ def _field(payload: Any, name: str) -> Any:
     return getattr(payload, name, None)
 
 
+def _text(value: Any) -> str | None:
+    return (value.strip() or None) if isinstance(value, str) else None
+
+
 def _works(payloads: Iterable[Any]) -> list[_Work]:
     out: list[_Work] = []
     for payload in payloads:
@@ -102,34 +130,88 @@ def _works(payloads: Iterable[Any]) -> list[_Work]:
         if not concepts:
             continue
         cited = _field(payload, "cited_by_count")
+        refs = _field(payload, "referenced_works") or ()
         out.append(
             _Work(
                 index=len(out),
+                work_id=_text(_field(payload, "external_id")),
                 title=(_field(payload, "title") or "").strip(),
                 year=_year(_field(payload, "published_at")),
                 cited_by=cited if isinstance(cited, int) and cited >= 0 else 0,
                 doi=normalize_doi(_field(payload, "doi")),
                 url=_field(payload, "url"),
                 concepts=concepts,
+                # A dict payload may repeat a reference; a citation is one
+                # pair however often it is listed.
+                references=tuple(
+                    dict.fromkeys(r for r in (_text(x) for x in refs) if r is not None)
+                ),
             )
         )
     return out
 
 
-def _subsumption_edges(nodes: list[_Node], threshold: float) -> dict[str, set[str]]:
-    """A -> B for every pair the module docstring's rule admits."""
-    children: dict[str, set[str]] = {n.name: set() for n in nodes}
-    for a in nodes:
-        for b in nodes:
-            if a is b:
-                continue
-            shared = len(a.works & b.works)
-            if not shared:
-                continue
-            a_given_b = shared / len(b.works)
-            b_given_a = shared / len(a.works)
-            if a_given_b >= threshold and b_given_a < 1 and a_given_b > b_given_a:
-                children[a.name].add(b.name)
+def _citation_pairs(works: list[_Work]) -> list[tuple[_Work, _Work]]:
+    """(citing, cited) for every reference that lands inside the corpus.
+
+    Two payloads with the same id (the same work harvested twice) are both
+    cited; the result does not depend on which came first. A work never
+    counts as citing itself.
+    """
+    by_id: dict[str, list[_Work]] = {}
+    for work in works:
+        if work.work_id is not None:
+            by_id.setdefault(work.work_id, []).append(work)
+    return [
+        (citing, cited)
+        for citing in works
+        for ref in citing.references
+        for cited in by_id.get(ref, ())
+        if cited.work_id != citing.work_id
+    ]
+
+
+def _flow(pairs: list[tuple[_Work, _Work]], names: set[str]) -> dict[tuple[str, str], int]:
+    """flow[(A, B)]: pairs where a B-work cites an A-work, A != B."""
+    flow: dict[tuple[str, str], int] = {}
+    for citing, cited in pairs:
+        for b in citing.concepts & names:
+            for a in cited.concepts & names:
+                if a != b:
+                    flow[(a, b)] = flow.get((a, b), 0) + 1
+    return flow
+
+
+def _reaches(children: dict[str, set[str]], start: str, target: str) -> bool:
+    seen: set[str] = set()
+    stack = [start]
+    while stack:
+        node = stack.pop()
+        if node == target:
+            return True
+        if node not in seen:
+            seen.add(node)
+            stack.extend(children[node])
+    return False
+
+
+def _citation_edges(
+    names: list[str], flow: dict[tuple[str, str], int], min_flow: int, ratio: float
+) -> dict[str, set[str]]:
+    """The module docstring's rule, made acyclic greedily, strongest first."""
+    candidates = sorted(
+        (
+            (f, flow.get((b, a), 0), a, b)
+            for (a, b), f in flow.items()
+            if f >= min_flow and f >= ratio * flow.get((b, a), 0)
+        ),
+        key=lambda c: (-c[0], c[1], c[2], c[3]),
+    )
+    children: dict[str, set[str]] = {n: set() for n in names}
+    for _, _, a, b in candidates:
+        # A -> B closes a cycle exactly when B already reaches A.
+        if not _reaches(children, b, a):
+            children[a].add(b)
     return children
 
 
@@ -225,32 +307,46 @@ def learning_map_graph(
     *,
     library_dois: Iterable[str] = (),
     min_support: int = DEFAULT_MIN_SUPPORT,
-    threshold: float = DEFAULT_THRESHOLD,
+    min_flow: int = DEFAULT_MIN_FLOW,
+    ratio: float = DEFAULT_RATIO,
     max_nodes: int = DEFAULT_MAX_NODES,
 ) -> dict:
     """The learning map for the works a topic report harvested.
 
     `payloads` are `PaperPayload`s (or dicts with the same keys): `categories`
-    are the concepts -- OpenAlex topics for `works_in_range` -- and `title`,
-    `published_at`, `cited_by_count`, `doi`, `url` are read when present.
-    `library_dois` marks key works the user already has.
+    are the concepts -- OpenAlex topics for `works_in_range` -- and
+    `external_id` + `referenced_works` give the citations the arrows are
+    counted from. `title`, `published_at`, `cited_by_count`, `doi`, `url` are
+    read when present. `library_dois` marks key works the user already has.
 
     Deterministic: the same input gives the same output, node and edge order
-    included, so a stored map can be compared and tested.
+    included, in whatever order the payloads arrive, so a stored map can be
+    compared and tested.
 
-    Returns `{"root", "nodes", "edges", "insufficient", "params", "work_count"}`.
-    With fewer than `MIN_NODES` concepts left, `nodes` and `edges` are empty
-    and `insufficient` is True.
+    Returns `{"root", "nodes", "edges", "insufficient", "reason", "params",
+    "work_count", "citation_count"}`. `citation_count` is the number of
+    citations that stay inside the corpus. With fewer than `MIN_NODES`
+    concepts (`reason="too_few_concepts"`) or no arrow at all
+    (`reason="no_citation_flow"`) -- a map without arrows is not a path --
+    `nodes` and `edges` are empty and `insufficient` is True.
     """
-    params = {"min_support": min_support, "threshold": threshold, "max_nodes": max_nodes}
+    params = {
+        "min_flow": min_flow,
+        "ratio": ratio,
+        "min_support": min_support,
+        "max_nodes": max_nodes,
+    }
     works = _works(payloads)
+    pairs = _citation_pairs(works)
     result: dict[str, Any] = {
         "root": None,
         "nodes": [],
         "edges": [],
         "insufficient": True,
+        "reason": REASON_TOO_FEW_CONCEPTS,
         "params": params,
         "work_count": len(works),
+        "citation_count": len(pairs),
     }
     if not works:
         return result
@@ -279,8 +375,13 @@ def learning_map_graph(
     if len(nodes) < MIN_NODES:
         return result
 
-    by_name = {n.name: n for n in nodes}
-    children = _transitive_reduction(_subsumption_edges(nodes, threshold))
+    names = [n.name for n in nodes]
+    flow = _flow(pairs, set(names))
+    children = _transitive_reduction(_citation_edges(names, flow, min_flow, ratio))
+    if not any(children.values()):
+        result["reason"] = REASON_NO_CITATION_FLOW
+        return result
+
     layers = _layers(children)
     in_degree = {n.name: 0 for n in nodes}
     for kids in children.values():
@@ -306,11 +407,10 @@ def learning_map_graph(
     growth_cut = _top_quartile_cut(known_growth) if known_growth else None
 
     def role(name: str) -> str:
-        # Structural, not chronological: a parentless concept that subsumes
-        # something on the map is what that something builds on. An earlier
-        # rule ("parentless and oldest median year") missed exactly these:
-        # the broadest concept appears in every year, so its median sits in
-        # the middle of the range.
+        # Structural, not chronological: a parentless concept that something
+        # on the map builds on. An earlier rule ("parentless and oldest
+        # median year") missed exactly these: the broadest concept appears in
+        # every year, so its median sits in the middle of the range.
         if in_degree[name] == 0 and children[name]:
             return ROLE_PREREQUISITE
         g = growth[name]
@@ -338,12 +438,12 @@ def learning_map_graph(
         {
             "from": parent,
             "to": kid,
-            "p_a_given_b": round(
-                len(by_name[parent].works & by_name[kid].works) / len(by_name[kid].works), 4
-            ),
+            "flow": flow.get((parent, kid), 0),
+            "reverse_flow": flow.get((kid, parent), 0),
         }
         for parent in sorted(children)
         for kid in sorted(children[parent])
     ]
     result["insufficient"] = False
+    result["reason"] = None
     return result
