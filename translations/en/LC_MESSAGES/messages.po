@@ -4552,6 +4552,15 @@ msgstr "Next step"
 msgid "Also in these works, but not connected to the path: %(names)s"
 msgstr "Also in these works, but not connected to the path: %(names)s"
 
+msgid "Your question about this paper"
+msgstr "Your question about this paper"
+
+msgid "Send question"
+msgstr "Send question"
+
+msgid "Filter nodes"
+msgstr "Filter nodes"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

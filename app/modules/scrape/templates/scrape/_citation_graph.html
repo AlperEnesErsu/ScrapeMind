@@ -23,13 +23,14 @@
 
     {# Controls #}
     <div class="d-flex align-items-center gap-2">
-      <div class="btn-group btn-group-sm" role="group" aria-label="Filter nodes">
+      <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('Filter nodes') }}">
         <button type="button" class="btn btn-outline-secondary active" id="cg-filter-all">{{ _('All') }}</button>
         <button type="button" class="btn btn-outline-secondary" id="cg-filter-refs">{{ _('References') }}</button>
         <button type="button" class="btn btn-outline-secondary" id="cg-filter-cits">{{ _('Citations') }}</button>
       </div>
-      <button type="button" class="btn btn-sm btn-outline-secondary" id="cg-fit-btn" title="{{ _('Reset view') }}">
-        <i class="bi bi-arrows-fullscreen"></i>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="cg-fit-btn"
+              aria-label="{{ _('Reset view') }}" title="{{ _('Reset view') }}">
+        <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
       </button>
     </div>
   </div>
