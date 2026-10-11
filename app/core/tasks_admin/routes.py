@@ -29,13 +29,30 @@ _TRIGGERS = {
 }
 
 
-def _safe_inspect(method: str) -> dict:
+#: Seconds a broadcast waits for replies. Paid once (the ping) when no worker
+#: is listening; with workers, `limit` lets each call return on the last reply.
+INSPECT_TIMEOUT = 1.0
+
+_PANELS = ("active", "scheduled", "reserved", "registered", "stats")
+
+
+def _safe_inspect(method: str, workers: list[str] | None = None) -> dict:
     """Call Celery inspect.<method>() defensively.
 
     Returns {} if no workers are online (typical in dev when worker isn't
     started) or if the broker is unreachable. Never raises.
+
+    A broadcast waits out its whole timeout unless it knows how many replies
+    to expect. Given the workers that answered the ping, the call is addressed
+    to them with `limit=len(workers)` and returns as soon as they have all
+    replied.
     """
-    inspect = celery_app.control.inspect(timeout=1)
+    if workers:
+        inspect = celery_app.control.inspect(
+            timeout=INSPECT_TIMEOUT, destination=workers, limit=len(workers)
+        )
+    else:
+        inspect = celery_app.control.inspect(timeout=INSPECT_TIMEOUT)
     try:
         result = getattr(inspect, method)()
     except Exception:  # noqa: BLE001 — broker down, eager mode, etc.
@@ -44,15 +61,30 @@ def _safe_inspect(method: str) -> dict:
     return result or {}
 
 
+def _inspect_panels() -> dict[str, dict]:
+    """Every panel's inspect result, at the cost of one timeout at most.
+
+    The page used to run five broadcasts in a row, each waiting its full
+    second: five seconds on every open, and the same five seconds with no
+    worker at all -- the usual dev state. One ping finds who is listening;
+    nobody answering means every panel would be empty, so none is asked.
+    """
+    workers = sorted(_safe_inspect("ping"))
+    if not workers:
+        return {panel: {} for panel in _PANELS}
+    return {panel: _safe_inspect(panel, workers) for panel in _PANELS}
+
+
 @tasks_admin_bp.route("/")
 @login_required
 @permission_required("tasks.view")
 def overview():
-    active = _safe_inspect("active")
-    scheduled = _safe_inspect("scheduled")
-    reserved = _safe_inspect("reserved")
-    registered = _safe_inspect("registered")
-    stats = _safe_inspect("stats")
+    panels = _inspect_panels()
+    active = panels["active"]
+    scheduled = panels["scheduled"]
+    reserved = panels["reserved"]
+    registered = panels["registered"]
+    stats = panels["stats"]
 
     workers = sorted(set(active) | set(scheduled) | set(reserved) | set(registered) | set(stats))
 
