@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}ScrapeMind{% endblock %}</title>
+  {# Pages name themselves; the product name is added here once. About twenty
+     templates set a bare title ("Profil", "Patent Takibi") while others typed
+     the suffix by hand, so tabs and history read inconsistently. A title that
+     already carries it is left alone. #}
+  {%- set page_title = self.title() | trim %}
+  <title>{% if not page_title %}ScrapeMind{% elif 'ScrapeMind' in page_title %}{{ page_title }}{% else %}{{ page_title }} — ScrapeMind{% endif %}</title>
+  {# Kept so child templates can keep overriding `title`. #}
+  {%- if false %}{% block title %}{% endblock %}{% endif %}
   <meta name="csrf-token" content="{{ csrf_token() }}">
   {# htmx evaluates `hx-on`, `js:` values and trigger filters with `new Function`,
      which a `script-src` without 'unsafe-eval' blocks. None are used; turning

@@ -59,6 +59,7 @@ def generate(self, report_id: int) -> dict:
     """
     from app.core.models.notification import add_notification
     from app.core.models.user import User
+    from app.extensions import db
     from app.modules.scrape.models import Report
     from app.modules.scrape.report_service import get_report, run_report
     from app.modules.scrape.service import acquire_user_lock, release_user_lock
@@ -69,7 +70,7 @@ def generate(self, report_id: int) -> dict:
     # call the contracted lookup at all. Deleted-user rows and (defensively)
     # any row `get_report` then refuses to hand back under that user both
     # collapse into the same "nothing to do" outcome.
-    row = Report.query.get(report_id)
+    row = db.session.get(Report, report_id)
     if row is None:
         logger.warning("report_generate_row_missing", report_id=report_id)
         return {"reason": "report_missing"}

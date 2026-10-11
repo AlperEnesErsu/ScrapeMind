@@ -29,17 +29,3 @@ def permission_required(permission_code: str):
         return wrapped
 
     return decorator
-
-
-def login_required_json(f):
-    """Like @login_required but returns 401 JSON for API/HTMX callers."""
-
-    @wraps(f)
-    def wrapped(*args, **kwargs):
-        if not current_user.is_authenticated:
-            from flask import jsonify
-
-            return jsonify({"error": "Authentication required"}), 401
-        return f(*args, **kwargs)
-
-    return wrapped
