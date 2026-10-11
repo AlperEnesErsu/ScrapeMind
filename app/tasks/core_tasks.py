@@ -50,6 +50,25 @@ def purge_audit_logs() -> dict:
     return {"deleted": deleted}
 
 
+@celery_app.task(name="core.send_password_reset")
+def send_password_reset_email(user_id: int, reset_url: str) -> bool:
+    """Deliver a reset link outside the request that asked for it.
+
+    `/auth/forgot` answers the same text for known and unknown addresses, but
+    it used to talk to SMTP only for known ones -- so the response time said
+    what the text did not. Queueing makes both branches cost about the same.
+    """
+    from app.core.email.service import send_password_reset
+    from app.core.models.user import User
+    from app.extensions import db
+
+    user = db.session.get(User, user_id)
+    if user is None or user.deleted_at is not None:
+        return False
+    sent, _dev_url = send_password_reset(user, reset_url)
+    return sent
+
+
 @celery_app.task(name="core.purge_revoked_tokens")
 def purge_revoked_tokens() -> dict:
     """Drop denylist rows whose token has expired anyway — past `exp` the

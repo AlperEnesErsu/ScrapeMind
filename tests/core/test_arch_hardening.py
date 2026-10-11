@@ -86,8 +86,45 @@ def test_production_config_ok_when_set(monkeypatch):
     monkeypatch.setenv("FLASK_ENV", "production")
     # Should not raise.
     _validate_production_config(
-        _FakeApp({"SECRET_KEY": "s3cr3t", "SQLALCHEMY_DATABASE_URI": "postgresql://x/y"})
+        _FakeApp({"SECRET_KEY": _STRONG, "SQLALCHEMY_DATABASE_URI": "postgresql://x/y"})
     )
+
+
+_STRONG = "9f2c" * 16  # 64 chars, the shape secrets.token_hex(32) produces
+
+
+@pytest.mark.parametrize(
+    "key, reason",
+    [
+        # The value .env.example publishes -- non-empty, so it used to pass.
+        ("change-me-in-production", "placeholder"),
+        ("CHANGE-ME-IN-PRODUCTION", "placeholder"),
+        ("ci-secret", "placeholder"),
+        ("hunter2-but-longer", "shorter than 32"),
+    ],
+)
+def test_production_config_rejects_public_or_short_secret(monkeypatch, key, reason):
+    from app import _validate_production_config
+
+    monkeypatch.setenv("FLASK_ENV", "production")
+    with pytest.raises(RuntimeError) as exc:
+        _validate_production_config(
+            _FakeApp({"SECRET_KEY": key, "SQLALCHEMY_DATABASE_URI": "postgresql://x/y"})
+        )
+    assert "SECRET_KEY" in str(exc.value)
+    assert reason in str(exc.value)
+
+
+def test_production_config_allows_empty_jwt_secret_but_not_a_weak_one(monkeypatch):
+    from app import _validate_production_config
+
+    monkeypatch.setenv("FLASK_ENV", "production")
+    base = {"SECRET_KEY": _STRONG, "SQLALCHEMY_DATABASE_URI": "postgresql://x/y"}
+    # Empty falls back to SECRET_KEY -- allowed.
+    _validate_production_config(_FakeApp({**base, "JWT_SECRET_KEY": ""}))
+    with pytest.raises(RuntimeError) as exc:
+        _validate_production_config(_FakeApp({**base, "JWT_SECRET_KEY": "short"}))
+    assert "JWT_SECRET_KEY" in str(exc.value)
 
 
 def test_non_production_config_skips_validation(monkeypatch):

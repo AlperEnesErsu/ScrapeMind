@@ -75,6 +75,13 @@ MIN_USEFUL_CHARS = 500
 #: enough that a mis-typed URL pointing at a dataset cannot exhaust the worker.
 MAX_FETCH_BYTES = 12 * 1024 * 1024
 
+#: Pages read from one PDF. The bytes cap above bounds the download, not the
+#: work: a few megabytes of crafted objects can still make text extraction run
+#: long or allocate heavily (pypdf PYSEC-2026-4153..4160). An article that runs
+#: past this is a thesis or a proceedings volume, and the first pages are the
+#: ones a summary or an embedding would use anyway.
+MAX_PDF_PAGES = 120
+
 
 class FullTextError(RuntimeError):
     """Fetching or extracting failed in a way the caller should record."""
@@ -121,7 +128,9 @@ def _extract_pdf(payload: bytes) -> str:
             raise FullTextError(f"encrypted PDF: {exc}") from exc
 
     parts = []
-    for page in reader.pages:
+    for index, page in enumerate(reader.pages):
+        if index >= MAX_PDF_PAGES:
+            break
         try:
             parts.append(page.extract_text() or "")
         except Exception:
