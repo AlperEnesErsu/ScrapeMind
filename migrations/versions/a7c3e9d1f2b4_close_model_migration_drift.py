@@ -13,6 +13,14 @@ models were right and the database was not:
 - seven `created_at` / `updated_at` columns the models (BaseModel) declare
   NOT NULL were created nullable. Backfilled from the row's other timestamp,
   then constrained.
+- three of those -- `updated_at` on paper_notes, paper_analyses and
+  paper_translations -- also had no server default. BaseModel relies on
+  `server_default=now()` for the first insert (its `onupdate` only fires on
+  UPDATE), so every row those tables gained in a migrated database was
+  written with `updated_at = NULL`: the unordered ORDER BY the BaseModel
+  comment says the default exists to prevent. The NOT NULL constraint is
+  what surfaced it -- 22 tests failed against the migrated schema. The
+  default is added with the constraint.
 - three indexes the models ask for and no migration created:
   `saved_searches.deleted_at`, `saved_search_notifications.deleted_at`
   (BaseModel's soft-delete filter) and `user_papers.read_later` (the
@@ -42,6 +50,15 @@ _NOT_NULL = (
     ("saved_search_notifications", "updated_at"),
 )
 
+#: Columns created without the server default BaseModel declares.
+_MISSING_DEFAULT = frozenset(
+    {
+        ("paper_analyses", "updated_at"),
+        ("paper_notes", "updated_at"),
+        ("paper_translations", "updated_at"),
+    }
+)
+
 _INDEXES = (
     ("ix_saved_searches_deleted_at", "saved_searches", "deleted_at"),
     ("ix_saved_search_notifications_deleted_at", "saved_search_notifications", "deleted_at"),
@@ -58,9 +75,16 @@ def upgrade():
                 f"WHERE {column} IS NULL"
             )
         )
-        op.alter_column(
-            table, column, existing_type=sa.DateTime(timezone=True), nullable=False
-        )
+        if (table, column) in _MISSING_DEFAULT:
+            op.alter_column(
+                table,
+                column,
+                existing_type=sa.DateTime(timezone=True),
+                server_default=sa.func.now(),
+                nullable=False,
+            )
+        else:
+            op.alter_column(table, column, existing_type=sa.DateTime(timezone=True), nullable=False)
     for name, table, column in _INDEXES:
         op.create_index(name, table, [column])
 
@@ -69,4 +93,13 @@ def downgrade():
     for name, table, _column in reversed(_INDEXES):
         op.drop_index(name, table_name=table)
     for table, column in reversed(_NOT_NULL):
-        op.alter_column(table, column, existing_type=sa.DateTime(timezone=True), nullable=True)
+        if (table, column) in _MISSING_DEFAULT:
+            op.alter_column(
+                table,
+                column,
+                existing_type=sa.DateTime(timezone=True),
+                server_default=None,
+                nullable=True,
+            )
+        else:
+            op.alter_column(table, column, existing_type=sa.DateTime(timezone=True), nullable=True)
