@@ -3,7 +3,7 @@
   {{ _('Abstract') }}
 </p>
 {% if r.paper.abstract %}
-  <p class="abstract-text">{{ r.paper.abstract }}</p>
+  <p class="abstract-text"{% if not r.paper.kind %} data-math{% endif %}>{{ r.paper.abstract }}</p>
 {% else %}
   <p class="small text-muted fst-italic">{{ _('No abstract available.') }}</p>
 {% endif %}

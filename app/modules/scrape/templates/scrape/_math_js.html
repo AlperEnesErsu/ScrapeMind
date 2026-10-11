@@ -1,0 +1,9 @@
+{# KaTeX + auto-render, then our math.js, which typesets every [data-math]
+   element on load and after each HTMX swap. `defer` keeps the three in order
+   without blocking the page; the text is readable as TeX until they run, and
+   stays that way if they never do. #}
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+        integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+<script defer src="{{ url_for('scrape.static', filename='js/math.js') }}"></script>

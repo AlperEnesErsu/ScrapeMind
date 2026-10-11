@@ -223,29 +223,35 @@ def _register_oauth_providers(app: Flask) -> list[str]:
 
 #: Every script this app loads: its own static files (core and module
 #: blueprints alike are same-origin), Bootstrap from base.html, and vis-data +
-#: vis-network, which the citation graph loads on demand. Adding a CDN script
-#: means adding its package@version path here -- the report-only log will say
-#: so first.
+#: vis-network, which the citation graph loads on demand, and KaTeX + its
+#: auto-render extension on the pages that show abstracts (scrape/_math_js.html).
+#: Adding a CDN script means adding its package@version path here -- the
+#: report-only log will say so first.
 SCRIPT_SRC = (
     "script-src 'self' "
     "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/ "
     "https://cdn.jsdelivr.net/npm/vis-data@7.1.9/ "
-    "https://cdn.jsdelivr.net/npm/vis-network@9.1.9/"
+    "https://cdn.jsdelivr.net/npm/vis-network@9.1.9/ "
+    "https://cdn.jsdelivr.net/npm/katex@0.16.11/"
 )
 
 #: Every stylesheet: theme.css, the IBM Plex stylesheet theme.css @imports from
 #: Google Fonts (one exact path; the font files it points at are governed by
 #: font-src, which is not set), Bootstrap and its icon font from base.html, and
-#: vis-network's own stylesheet. No 'unsafe-inline' -- the templates carry no
-#: style attributes (test_csp_readiness.py), htmx's injected indicator <style>
-#: is switched off in base.html, and the citation graph uses vis-network's
-#: "peer" build, because the "standalone" one injects <style> as it loads.
-#: Setting element.style from JavaScript is not governed by style-src.
+#: vis-network's own stylesheet, and KaTeX's (whose woff2 files come from the
+#: same katex@ path, again under the unset font-src). No 'unsafe-inline' -- the
+#: templates carry no style attributes (test_csp_readiness.py), htmx's injected
+#: indicator <style> is switched off in base.html, and the citation graph uses
+#: vis-network's "peer" build, because the "standalone" one injects <style> as
+#: it loads. Setting element.style from JavaScript is not governed by
+#: style-src, which is why KaTeX's rendered output needs no exception: it builds
+#: its nodes with createElement and sets their sizes through the CSSOM.
 STYLE_SRC = (
     "style-src 'self' "
     "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/ "
     "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/ "
     "https://cdn.jsdelivr.net/npm/vis-network@9.1.9/ "
+    "https://cdn.jsdelivr.net/npm/katex@0.16.11/ "
     "https://fonts.googleapis.com/css2"
 )
 

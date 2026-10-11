@@ -11,14 +11,14 @@
       <i class="bi bi-translate me-1"></i>{{ _('Translated title') }}
     </p>
     {% if translation.title_translated %}
-      <p class="paper-detail__title-tr mb-3">{{ translation.title_translated }}</p>
+      <p class="paper-detail__title-tr mb-3"{% if not r.paper.kind %} data-math{% endif %}>{{ translation.title_translated }}</p>
     {% endif %}
 
     <p class="small text-muted text-uppercase fw-medium mb-2 tracking-wide">
       {{ _('Translated abstract') }}
     </p>
     {% if translation.abstract_translated %}
-      <p class="abstract-text">{{ translation.abstract_translated }}</p>
+      <p class="abstract-text"{% if not r.paper.kind %} data-math{% endif %}>{{ translation.abstract_translated }}</p>
     {% else %}
       <p class="small text-muted fst-italic">{{ _('No abstract to translate.') }}</p>
     {% endif %}
