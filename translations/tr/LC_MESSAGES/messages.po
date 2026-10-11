@@ -4455,6 +4455,9 @@ msgstr "Araştırma Ayarları"
 msgid "Workspace Settings"
 msgstr "Çalışma Alanı Ayarları"
 
+msgid "Please log in to access this page."
+msgstr "Bu sayfaya erişmek için lütfen giriş yapın."
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

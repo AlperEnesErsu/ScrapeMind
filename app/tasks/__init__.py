@@ -67,6 +67,9 @@ TASK_ROUTES = {
     # pool, and that's exactly the shape this work has.
     "core.purge_audit_logs": {"queue": "io"},
     "core.purge_revoked_tokens": {"queue": "io"},
+    # A reset email is one SMTP round-trip, queued so /auth/forgot answers
+    # known and unknown addresses in the same time.
+    "core.send_password_reset": {"queue": "io"},
     "scrape.purge_scan_runs": {"queue": "io"},
     # On-demand only (no fan-out parent, no BEAT_SCHEDULE entry): one paid
     # LLM map/reduce batch per run, same pool as the digest/link-for-user

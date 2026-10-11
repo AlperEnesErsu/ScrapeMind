@@ -1,5 +1,6 @@
 import structlog
 from flask import Flask, has_request_context
+from flask_babel import lazy_gettext
 
 from app.config import get_config
 from app.extensions import babel, csrf, db, limiter, login_manager, mail, migrate, oauth
@@ -338,6 +339,9 @@ def _init_extensions(app: Flask) -> None:
 
     mail.init_app(app)
     login_manager.login_view = "auth.login"
+    # Flask-Login's default is a plain English string, shown as-is to a
+    # Turkish interface; lazy so it resolves in the visitor's locale.
+    login_manager.login_message = lazy_gettext("Please log in to access this page.")
     login_manager.login_message_category = "warning"
 
     from app.core.i18n.utils import init_babel
