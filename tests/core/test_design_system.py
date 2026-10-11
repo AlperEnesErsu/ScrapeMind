@@ -246,3 +246,27 @@ def test_brand_and_danger_stay_separable_by_form_not_hue():
     assert (
         contrast(tokens["--danger"], tokens["--neutral-50"]) >= 4.5
     ), "--danger must clear AA on the page ground"
+
+
+def test_every_outline_variant_in_use_is_repointed():
+    """A Bootstrap button variant keeps its compiled-in colour until theme.css
+    re-points it; the `.text-*` mapping does not reach buttons.
+
+    `.btn-outline-info` was the one left behind: Bootstrap's cyan at 1.9:1 on
+    this ground, on the paper detail page's note filter, the collection share
+    button and the "For you" page -- found by axe, not by this suite. A variant
+    used in a template must be declared in theme.css, or it renders in stock
+    colours.
+    """
+    css = _css()
+    used: dict[str, set[str]] = {}
+    for path in APP.rglob("*.html"):
+        for variant in re.findall(r"\bbtn-outline-([a-z]+)\b", path.read_text(encoding="utf-8")):
+            used.setdefault(variant, set()).add(path.name)
+    assert used, "no outline buttons found -- did the template layout change?"
+    missing = {
+        variant: sorted(files)
+        for variant, files in used.items()
+        if f".btn-outline-{variant} {{" not in css
+    }
+    assert missing == {}, f"outline variants rendering in Bootstrap's colours: {missing}"

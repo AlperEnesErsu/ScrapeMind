@@ -74,7 +74,7 @@ def _ensure_a_paper(app, user_id: int) -> None:
             _add_fixture_paper(user_id, "ui-audit-fixture-seen", seen=True)
 
 
-def _add_fixture_paper(user_id: int, external_id: str, *, seen: bool = False) -> None:
+def _add_fixture_paper(user_id: int, external_id: str, *, seen: bool = False) -> int:
     from datetime import UTC, datetime
 
     from app.modules.scrape.models import Paper, UserPaper
@@ -107,14 +107,40 @@ def _add_fixture_paper(user_id: int, external_id: str, *, seen: bool = False) ->
         )
         db.session.add(paper)
         db.session.flush()
-    db.session.add(
-        UserPaper(
-            user_id=user_id,
-            paper_id=paper.id,
-            seen_at=datetime.now(UTC) if seen else None,
-        )
+    link = UserPaper(
+        user_id=user_id,
+        paper_id=paper.id,
+        seen_at=datetime.now(UTC) if seen else None,
     )
+    db.session.add(link)
     db.session.commit()
+    return link.id
+
+
+def _ensure_a_detail_paper(app, user_id: int) -> int:
+    """The user-paper id of a fixture paper for the detail page.
+
+    Its own row rather than whichever paper the library happens to hold: the
+    detail page was never audited, and when it was, its mode toggle pushed the
+    page 182px sideways at 280px and its note filter carried Bootstrap's cyan
+    at 1.9:1. Same long title, DOI and inline TeX as the card fixture, so the
+    title, the KaTeX output and the identifier row are measured here too.
+    """
+    from app.modules.scrape.models import Paper, UserPaper
+
+    with app.app_context():
+        link = (
+            UserPaper.query.join(Paper, Paper.id == UserPaper.paper_id)
+            .filter(
+                UserPaper.user_id == user_id,
+                Paper.source == "manual",
+                Paper.external_id == "ui-audit-fixture-detail",
+            )
+            .first()
+        )
+        if link is not None:
+            return link.id
+        return _add_fixture_paper(user_id, "ui-audit-fixture-detail", seen=True)
 
 
 #: Title of the synthetic learning-map report, which is also how it is found
@@ -233,6 +259,7 @@ def main() -> int:
     # Its id is only known once the row exists, so it joins the list here.
     pages = dict(PAGES)
     pages["report-learning-map"] = f"/papers/reports/{_ensure_a_learning_map(app, int(user_id))}"
+    pages["paper-detail"] = f"/papers/{_ensure_a_detail_paper(app, int(user_id))}"
     # Module blueprints serve their own static files (`/papers/static/...`).
     # Left as absolute paths they 404 under file://, so a page's own script
     # never runs and the audit sees only its no-JavaScript state -- for the

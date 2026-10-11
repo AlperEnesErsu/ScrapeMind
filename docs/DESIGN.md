@@ -49,6 +49,13 @@ sadece kahverengiler döndü. Yani **renk bu sorunu çözemiyor.**
 `test_brand_and_danger_stay_separable_by_form_not_hue` bu varyantların
 kalktığını fark eder.
 
+Şablonda kullanılan **her** `btn-outline-*` varyantı `theme.css`'te yeniden
+tanımlı olmalı: buton renkleri bileşen değişkenlerinden okunur, `.text-*`
+eşlemesi onlara ulaşmaz. `btn-outline-info` uzun süre Bootstrap'ın camgöbeği
+rengiyle (#0dcaf0, zeminde 1.9:1) kaldı — makale detayının not filtresinde,
+koleksiyon paylaş butonunda ve "Senin için"de. Artık `--info`'ya bağlı ve
+`test_every_outline_variant_in_use_is_repointed` tanımsız bir varyantı yakalar.
+
 ## Tipografi
 
 IBM Plex Sans (arayüz) + IBM Plex Mono (DOI, crontab, görev adı). Plex teknik
@@ -92,7 +99,7 @@ körlüğünde hayatta kalmasını sağlayan şey.
 
 ### Otomatik (her koşuda)
 
-`tests/core/test_design_system.py` — 7 test, tarayıcı gerektirmez, CI'da
+`tests/core/test_design_system.py` — 8 test, tarayıcı gerektirmez, CI'da
 kendiliğinden çalışır. Renk çifti kontrolü artık **dosyada tanımlı her**
 `-tint`/`-ink` ve `X`/`X-bg` çiftini denetliyor, akılda kalan iki aileyi değil:
 `--paper-note` tam olarak o yüzden 3.71:1'de gözden kaçmıştı. Her biri bu repoda **en az bir kez gerçekleşmiş** bir
@@ -101,7 +108,7 @@ düşüyorlar.
 
 ### Tarayıcı denetimi (CI'da, ayrı iş olarak)
 
-`ui-audit` işi on bir sayfayı basıp axe-core (WCAG 2.2 A/AA) ve 280/320/414px
+`ui-audit` işi on üç sayfayı (makale detayı dahil) basıp axe-core (WCAG 2.2 A/AA) ve 280/320/414px
 reflow kontrolünden geçirir. Yerelde de aynısını koşabilirsin:
 
 ```bash
