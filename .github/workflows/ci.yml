@@ -140,6 +140,12 @@ jobs:
       - name: Migration check (empty DB → upgrade)
         run: flask db upgrade
 
+      - name: Models match the migrated schema
+        # Tests build their schema with create_all(), so they test the models'
+        # schema, not the one `flask db upgrade` produces. This fails when the
+        # two disagree -- 40+ differences had accumulated before it existed.
+        run: flask db check
+
       - name: Tests
         # --timeout=60 forces hangs to fail loudly (pytest-timeout).
         # --timeout-method=thread also catches hangs inside blocking syscalls

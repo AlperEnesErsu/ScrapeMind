@@ -71,6 +71,7 @@ STEPS: list[tuple[str, list[str]]] = [
     ("black", ["black", "--check", "app/", "tests/", "scripts/"]),
     ("mypy", ["python", "scripts/mypy_ratchet.py"]),
     ("migrations", ["flask", "db", "upgrade"]),
+    ("schema-drift", ["flask", "db", "check"]),
     (
         "pytest",
         [

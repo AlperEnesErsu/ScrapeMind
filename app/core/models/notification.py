@@ -9,8 +9,9 @@ class Notification(db.Model):
     id = db.Column(db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True)
     user_id = db.Column(
         db.BigInteger().with_variant(db.Integer, "sqlite"),
-        db.ForeignKey("users.id"),
+        db.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     title = db.Column(db.String(255), nullable=False)
     message = db.Column(db.Text, nullable=False)
