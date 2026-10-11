@@ -106,5 +106,8 @@
   </div>
 </div>
 
-{# Runs on every insertion, including an HTMX swap; see the file header. #}
+{# Runs on every insertion, including an HTMX swap; see the file header.
+   The loader first: htmx re-creates swapped scripts with async=false, so
+   they still run in this order. #}
+<script src="{{ url_for('scrape.static', filename='js/vis_loader.js') }}"></script>
 <script src="{{ url_for('scrape.static', filename='js/citation_graph.js') }}"></script>

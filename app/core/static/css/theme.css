@@ -1871,3 +1871,26 @@ code {
 .lm-role--current      { background: var(--cat-green-tint);  color: var(--cat-green-ink); }
 /* A long concept name or paper title is one unbroken token at 280px. */
 .lm-step { overflow-wrap: anywhere; }
+
+/* The map canvas and the step list once learning_map.js is running (9.4).
+   The canvas reads its four role colours from the --cat-* tokens above. Full
+   width, fixed height: vis-network draws into whatever box it is given, and
+   a box wider than the column is what scrolls a page sideways at 320px. */
+.lm-canvas { width: 100%; height: 360px; background: var(--neutral-50); }
+.lm-canvas--pointer { cursor: pointer; }
+@media (max-width: 575.98px) {
+  .lm-canvas { height: 280px; }
+}
+/* The current step: a brand rule on the leading edge plus a tinted ground --
+   a heavy, unmistakable mark rather than a shade, as the canvas's inverted
+   node is. Padding on every item, not just the current one, so selecting a
+   step does not shift the text. */
+.lm-steps--interactive > .lm-step {
+  cursor: pointer;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 4px solid transparent;
+}
+.lm-steps--interactive > .lm-step[aria-current="step"] {
+  border-inline-start-color: var(--brand-600);
+  background: var(--brand-50);
+}

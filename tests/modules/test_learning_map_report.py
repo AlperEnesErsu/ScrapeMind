@@ -20,7 +20,13 @@ No network and no LLM: `openalex_source.works_in_range` and
 
 from __future__ import annotations
 
+import json
+import re
+import shutil
+import subprocess
 from datetime import UTC, datetime
+from html.parser import HTMLParser
+from pathlib import Path
 
 import pytest
 from flask_babel import get_locale
@@ -31,7 +37,11 @@ import app.tasks.report_tasks as report_tasks_module
 from app.core.auth.strategies.local import LocalAuthStrategy
 from app.core.models.user import User
 from app.modules.scrape import ai_service, report_service
-from app.modules.scrape.learning_map import learning_map_graph, learning_map_steps
+from app.modules.scrape.learning_map import (
+    learning_map_canvas,
+    learning_map_graph,
+    learning_map_steps,
+)
 from app.modules.scrape.models import Paper, Report, UserPaper
 from app.modules.scrape.ratelimit import SourceThrottledError
 from app.modules.scrape.sources import openalex_source as oa
@@ -615,3 +625,146 @@ def test_another_users_learning_map_is_404(auth_client, db):
         db.session.delete(foreign)
         db.session.delete(other)
         db.session.commit()
+
+
+# ----------------------------------------------------------------------------
+# Faz 9.4 -- the canvas and the step card on top of the list
+# ----------------------------------------------------------------------------
+
+STATIC_JS = Path(__file__).resolve().parents[2] / "app" / "modules" / "scrape" / "static" / "js"
+
+
+def _explorer_graph(body: str) -> dict | None:
+    """The `data-lm-graph` attribute as the browser would decode it."""
+
+    class _Finder(HTMLParser):
+        found: dict | None = None
+
+        def handle_starttag(self, tag, attrs):
+            values = dict(attrs)
+            if values.get("id") == "lm-explorer" and "data-lm-graph" in values:
+                self.found = json.loads(values["data-lm-graph"])
+
+    finder = _Finder()
+    finder.feed(body)
+    return finder.found
+
+
+def test_canvas_data_mirrors_the_steps():
+    graph = _graph()
+    steps = learning_map_steps(graph, _narration(graph))
+
+    canvas = learning_map_canvas(graph, steps)
+
+    assert [n["id"] for n in canvas["nodes"]] == [s["id"] for s in steps]
+    by_id = {n["id"]: n for n in canvas["nodes"]}
+    assert by_id["Message passing"]["label"] == "Plain Message passing"
+    assert set(by_id["GCN"]) == {"id", "label", "role", "layer", "order"}
+    layers = {n["id"]: n["layer"] for n in graph["nodes"]}
+    assert all(n["layer"] == layers[n["id"]] for n in canvas["nodes"])
+    assert {(e["from"], e["to"]) for e in canvas["edges"]} == {
+        (e["from"], e["to"]) for e in graph["edges"]
+    }
+    assert all(set(e) == {"from", "to", "flow"} for e in canvas["edges"])
+
+
+def test_canvas_drops_dangling_and_malformed_edges():
+    graph = _graph()
+    graph["edges"] = [
+        *graph["edges"],
+        {"from": "Graph theory", "to": "Nowhere", "flow": 9},
+        {"from": "GCN", "to": "GCN", "flow": 9},
+        "junk",
+        {"from": None, "to": "GCN"},
+    ]
+
+    canvas = learning_map_canvas(graph, learning_map_steps(graph))
+
+    ids = {n["id"] for n in canvas["nodes"]}
+    assert len(canvas["edges"]) == len(graph["edges"]) - 4
+    assert all(
+        e["from"] in ids and e["to"] in ids and e["from"] != e["to"] for e in canvas["edges"]
+    )
+
+
+def test_no_canvas_without_steps_or_arrows():
+    graph = _graph()
+    assert learning_map_canvas(graph, []) is None
+    assert learning_map_canvas(None, learning_map_steps(graph)) is None
+    graph["edges"] = []
+    assert learning_map_canvas(graph, learning_map_steps(graph)) is None
+
+
+def test_detail_carries_the_canvas_and_a_hidden_step_card(auth_client, db):
+    client, uid = auth_client
+    graph = _graph()
+    narration = _narration(graph)
+    row = _make_report(uid, stats=_stats(graph), sections={"narration": narration})
+
+    body = client.get(f"/papers/reports/{row.id}?lang=en").get_data(as_text=True)
+
+    # Progressive enhancement: the block ships hidden, the list is intact.
+    assert re.search(r'<section[^>]*id="lm-explorer"[^>]*\shidden[\s>]', body)
+    assert 'data-testid="lm-steps"' in body
+    assert re.search(r'id="lm-canvas"[^>]*aria-hidden="true"', body)
+    assert re.search(r'<button type="button"[^>]*id="lm-prev"', body)
+    assert re.search(r'<button type="button"[^>]*id="lm-next"', body)
+    assert 'data-msg-step="Step {n} of {total}"' in body
+    assert 'data-role-prerequisite="Prerequisite"' in body
+    expected = learning_map_canvas(graph, learning_map_steps(graph, narration))
+    assert _explorer_graph(body) == expected
+    assert body.index("js/vis_loader.js") < body.index("js/learning_map.js")
+
+
+def test_canvas_data_cannot_break_out_of_its_attribute(auth_client, db):
+    client, uid = auth_client
+    graph = _graph()
+    evil = "</script><img src=x onerror=alert(1)> 'single' \"double\" & co"
+    narration = _narration(graph)
+    narration["nodes"]["GCN"]["label"] = evil
+    row = _make_report(uid, stats=_stats(graph), sections={"narration": narration})
+
+    body = client.get(f"/papers/reports/{row.id}?lang=en").get_data(as_text=True)
+
+    attribute = re.search(r"data-lm-graph='([^']*)'", body).group(1)
+    assert "<" not in attribute and ">" not in attribute and "& co" not in attribute
+    assert "<img src=x" not in body
+    labels = {n["id"]: n["label"] for n in _explorer_graph(body)["nodes"]}
+    assert labels["GCN"] == evil
+
+
+def test_detail_without_arrows_keeps_the_card_but_draws_no_canvas(auth_client, db):
+    client, uid = auth_client
+    graph = _graph()
+    graph["edges"] = []
+    row = _make_report(uid, stats=_stats(graph), sections={})
+
+    body = client.get(f"/papers/reports/{row.id}?lang=en").get_data(as_text=True)
+
+    assert 'id="lm-explorer"' in body
+    assert "data-lm-graph" not in body
+    assert 'id="lm-canvas"' not in body
+    assert "js/vis_loader.js" not in body
+    assert "js/learning_map.js" in body
+
+
+def test_insufficient_map_has_no_explorer_and_no_scripts(auth_client, db):
+    client, uid = auth_client
+    graph = {"nodes": [], "edges": [], "insufficient": True, "reason": "too_few_concepts"}
+    row = _make_report(uid, status="partial", stats=_stats(graph), sections={})
+
+    body = client.get(f"/papers/reports/{row.id}?lang=en").get_data(as_text=True)
+
+    assert 'id="lm-explorer"' not in body
+    assert "js/learning_map.js" not in body
+    assert "js/vis_loader.js" not in body
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is not installed")
+@pytest.mark.parametrize("name", ["learning_map.js", "vis_loader.js", "citation_graph.js"])
+def test_page_scripts_parse(name):
+    """A syntax error in a static script fails nowhere else in this suite."""
+    result = subprocess.run(
+        ["node", "--check", str(STATIC_JS / name)], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr

@@ -2,8 +2,9 @@
 
    This ordered list IS the map's accessible representation (§6): 9.4 draws
    a canvas on top of it, aria-hidden, and hooks into the stable ids and
-   data attributes on each <li> -- so change those only together with the
-   canvas script. Server-rendered, no script, no inline style (CSP).
+   data attributes on each <li> -- so change those only together with
+   static/js/learning_map.js. Server-rendered, no inline script or style
+   (CSP); the script only adds to a page that is complete without it.
 
    `learning_map_steps` (learning_map.learning_map_steps, built in the
    route) is the graph + narration flattened in reading order. Concept
@@ -56,6 +57,52 @@
     </div>
   {% endif %}
 
+  {# Faz 9.4: the map and the step card. Progressive enhancement -- the
+     whole block ships `hidden` and learning_map.js unhides it, so without
+     JavaScript the page is exactly the list below.
+
+     The canvas data rides in a data attribute, not a <script type=
+     "application/json"> block: test_csp_readiness forbids every <script>
+     without src, and an attribute needs no exception to that rule. The
+     attribute is single-quoted on purpose: `tojson` escapes < > & and ' to
+     \u-sequences (a concept named "</script>", or one carrying a quote and
+     an attribute of its own, stays inside the value) but leaves " alone, which is valid JSON in a
+     single-quoted attribute and would end a double-quoted one.
+
+     The canvas is aria-hidden: it says nothing a screen reader can use,
+     and the list is the accessible form (docs/PHASE9.md §6). The card is
+     not -- it is real navigation, built from the list items' own content. #}
+  <section class="lm-explorer mb-3" id="lm-explorer" data-testid="lm-explorer" hidden
+           aria-labelledby="lm-explorer-heading"
+           {% if learning_map_canvas %}data-lm-graph='{{ learning_map_canvas | tojson }}'{% endif %}
+           data-msg-step="{{ _('Step %(n)s of %(total)s', n='{n}', total='{total}') }}"
+           data-role-prerequisite="{{ role_labels.prerequisite }}"
+           data-role-core="{{ role_labels.core }}"
+           data-role-method="{{ role_labels.method }}"
+           data-role-current="{{ role_labels.current }}">
+    <h5 class="mb-2" id="lm-explorer-heading">{{ _('Step by step') }}</h5>
+    {% if learning_map_canvas %}
+      <p class="small text-muted mb-2">{{ _('Arrows point from a concept to the ones that build on it. Pick a concept on the map or in the list to open it here.') }}</p>
+      <div class="lm-canvas border rounded-3 mb-2" id="lm-canvas" data-testid="lm-canvas" aria-hidden="true"></div>
+    {% endif %}
+    <div class="card" id="lm-step-card" data-testid="lm-step-card">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+          <p class="small text-muted mb-0" id="lm-step-position" aria-live="polite"></p>
+          <div class="d-flex flex-wrap gap-2" role="group" aria-label="{{ _('Step navigation') }}">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="lm-prev">
+              <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>{{ _('Previous step') }}
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="lm-next">
+              {{ _('Next step') }}<i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+        <div class="lm-step" id="lm-step-body"></div>
+      </div>
+    </div>
+  </section>
+
   <h5 class="mb-2">{{ _('Reading order') }}</h5>
   <ol class="ps-4 mb-3" data-testid="lm-steps">
     {% for step in learning_map_steps %}
@@ -100,4 +147,11 @@
       </li>
     {% endfor %}
   </ol>
+
+  {# vis-network only when there is a canvas to draw; the loader goes first
+     (htmx and the parser both keep external scripts in order). #}
+  {% if learning_map_canvas %}
+    <script src="{{ url_for('scrape.static', filename='js/vis_loader.js') }}"></script>
+  {% endif %}
+  <script src="{{ url_for('scrape.static', filename='js/learning_map.js') }}"></script>
 {% endif %}

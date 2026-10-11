@@ -28,6 +28,9 @@ def test_detail_mode_graph_renders_template(app, db, auth_client):
     html = resp.data.decode("utf-8")
     assert "citation-graph-wrapper" in html
     assert "cg-network-container" in html
+    # The shared SRI'd loader (Faz 9.4) must run before the graph script.
+    assert "js/vis_loader.js" in html
+    assert html.index("js/vis_loader.js") < html.index("js/citation_graph.js")
 
 
 def test_citation_graph_json_endpoint(app, db, auth_client, monkeypatch):

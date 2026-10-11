@@ -55,6 +55,12 @@ jobs:
           pip install -r requirements.txt
           npm ci
 
+      - name: Page scripts parse
+        # The app's own static JavaScript has no build step and pytest runs
+        # without Node, so a syntax error would otherwise first show up as a
+        # dead page in a browser. Minified vendor files are skipped.
+        run: git ls-files 'app/*.js' | grep -v '\.min\.js$' | xargs -n1 node --check
+
       - name: Install Chromium
         run: npx playwright install chromium --with-deps
 

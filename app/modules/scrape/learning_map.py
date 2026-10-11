@@ -45,6 +45,8 @@ so the map reads as a tree-like path rather than a hairball.
 `learning_map_steps` (9.2) is the other direction: a stored graph plus its
 narration, flattened into the ordered reading list the report page prints.
 Pure as well, so the page's one piece of logic is tested without a request.
+`learning_map_canvas` (9.4) trims the same graph down to what the canvas on
+that page draws.
 """
 
 from __future__ import annotations
@@ -538,3 +540,49 @@ def learning_map_steps(graph: Any, narration: Any = None) -> list[dict]:
             }
         )
     return steps
+
+
+def learning_map_canvas(graph: Any, steps: list[dict]) -> dict | None:
+    """What the page's canvas (9.4) draws, or None when there is nothing to draw.
+
+    Built from the same `steps` the list prints, so the drawing cannot show a
+    concept the accessible list leaves out, and its labels match the list's
+    word for word. Only what the canvas needs: per node `id`, `label`,
+    `role`, `layer`, `order`; per edge `from`, `to`, `flow`. Explanations and
+    questions stay out -- the step card copies them from the list items.
+
+    None when there are no steps or no arrow survives: a map without arrows
+    is a row of boxes and says less than the list it would sit on top of.
+    """
+    if not steps or not isinstance(graph, dict):
+        return None
+    raw_nodes = graph.get("nodes")
+    layers = {
+        n["id"]: n["layer"]
+        for n in (raw_nodes if isinstance(raw_nodes, list) else [])
+        if isinstance(n, dict) and isinstance(n.get("id"), str) and isinstance(n.get("layer"), int)
+    }
+    ids = {s["id"] for s in steps}
+    nodes = [
+        {
+            "id": s["id"],
+            "label": s["label"],
+            "role": s["role"] if isinstance(s.get("role"), str) else None,
+            "layer": layers.get(s["id"], 0),
+            "order": s["order"] if isinstance(s.get("order"), int) else i,
+        }
+        for i, s in enumerate(steps)
+    ]
+    edges = []
+    raw_edges = graph.get("edges")
+    for edge in raw_edges if isinstance(raw_edges, list) else []:
+        if not isinstance(edge, dict):
+            continue
+        src, dst = _text(edge.get("from")), _text(edge.get("to"))
+        if src is None or dst is None or src == dst or src not in ids or dst not in ids:
+            continue
+        flow = edge.get("flow")
+        edges.append({"from": src, "to": dst, "flow": flow if isinstance(flow, int) else 0})
+    if not edges:
+        return None
+    return {"nodes": nodes, "edges": edges}

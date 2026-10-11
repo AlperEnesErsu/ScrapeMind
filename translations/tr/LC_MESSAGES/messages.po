@@ -4566,6 +4566,29 @@ msgstr "Kendinizi sınayın:"
 msgid "Key paper:"
 msgstr "Anahtar makale:"
 
+msgid "Step by step"
+msgstr "Adım adım"
+
+#, python-format
+msgid "Step %(n)s of %(total)s"
+msgstr "Adım %(n)s / %(total)s"
+
+msgid ""
+"Arrows point from a concept to the ones that build on it. Pick a concept "
+"on the map or in the list to open it here."
+msgstr ""
+"Oklar bir kavramdan onun üzerine kurulu kavramlara doğru gider. Burada "
+"açmak için haritada ya da listede bir kavram seç."
+
+msgid "Step navigation"
+msgstr "Adımlar arasında gezinme"
+
+msgid "Previous step"
+msgstr "Önceki adım"
+
+msgid "Next step"
+msgstr "Sonraki adım"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 
