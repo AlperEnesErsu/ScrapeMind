@@ -47,9 +47,7 @@ def test_every_cdn_url_loaded_from_javascript_has_integrity_beside_it():
             following = text[match.end() : match.end() + 200]
             if not re.match(r"['\"],?\s*\n?\s*integrity:\s*['\"]sha384-", following):
                 missing.append(f"{path.relative_to(ROOT)}: {match.group(0)}")
-    assert not missing, "CDN URL in JS without an integrity hash next to it:\n" + "\n".join(
-        missing
-    )
+    assert not missing, "CDN URL in JS without an integrity hash next to it:\n" + "\n".join(missing)
 
 
 def test_template_hashes_are_well_formed():
