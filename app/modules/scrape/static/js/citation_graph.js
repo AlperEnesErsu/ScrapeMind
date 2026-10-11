@@ -18,16 +18,29 @@
   // 'unsafe-inline' blocks. Peer ships the CSS as a file and takes vis-data as
   // a separate script; both must stay in SCRIPT_SRC / STYLE_SRC in
   // app/__init__.py at these exact versions.
-  const VIS_CSS = 'https://cdn.jsdelivr.net/npm/vis-network@9.1.9/styles/vis-network.min.css';
+  // Each file is pinned by `integrity`: the CSP allows these CDN paths, so
+  // without it a changed file on the CDN would run with this site's privileges.
+  const VIS_CSS = {
+    href: 'https://cdn.jsdelivr.net/npm/vis-network@9.1.9/styles/vis-network.min.css',
+    integrity: 'sha384-dyJxWiQJAf9QvdWzvgaFgxG2+qGBlxRcGINxMWNJBYZ7731QjuquKfhX2OUkb22J',
+  };
   const VIS_SCRIPTS = [
-    'https://cdn.jsdelivr.net/npm/vis-data@7.1.9/peer/umd/vis-data.min.js',
-    'https://cdn.jsdelivr.net/npm/vis-network@9.1.9/peer/umd/vis-network.min.js',
+    {
+      src: 'https://cdn.jsdelivr.net/npm/vis-data@7.1.9/peer/umd/vis-data.min.js',
+      integrity: 'sha384-pwdzkDObTMVncQuVOyJQ9QEfF1uUiMptCqZjqFTUmVY8Nki5FiQBKIkJrvuE1uRo',
+    },
+    {
+      src: 'https://cdn.jsdelivr.net/npm/vis-network@9.1.9/peer/umd/vis-network.min.js',
+      integrity: 'sha384-+WLSahiHaIxvAupfGxl7zuTh3TF5cciRUfv2qmyH0zELr0VzIUpeBrb3CmRCf8Jh',
+    },
   ];
 
-  function loadScript(src) {
+  function loadScript(asset) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = src;
+      script.src = asset.src;
+      script.integrity = asset.integrity;
+      script.crossOrigin = 'anonymous';
       script.addEventListener('load', resolve);
       script.addEventListener('error', reject);
       document.head.appendChild(script);
@@ -39,14 +52,16 @@
       onReady();
       return;
     }
-    if (!document.querySelector(`link[href="${VIS_CSS}"]`)) {
+    if (!document.querySelector(`link[href="${VIS_CSS.href}"]`)) {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = VIS_CSS;
+      link.href = VIS_CSS.href;
+      link.integrity = VIS_CSS.integrity;
+      link.crossOrigin = 'anonymous';
       document.head.appendChild(link);
     }
     // In order: vis-network's peer build reads vis-data from the `vis` global.
-    VIS_SCRIPTS.reduce((chain, src) => chain.then(() => loadScript(src)), Promise.resolve())
+    VIS_SCRIPTS.reduce((chain, asset) => chain.then(() => loadScript(asset)), Promise.resolve())
       .then(onReady, onFail);
   }
 
