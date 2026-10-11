@@ -768,3 +768,53 @@ def test_page_scripts_parse(name):
         ["node", "--check", str(STATIC_JS / name)], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_unconnected_concepts_are_named_under_the_list(app):
+    """9.5: concepts no arrow touches leave the map but are announced."""
+    from flask import render_template
+
+    from app.modules.scrape.learning_map import learning_map_canvas, learning_map_steps
+
+    graph = {
+        "insufficient": False,
+        "reason": None,
+        "work_count": 10,
+        "citation_count": 5,
+        "unconnected": ["Protein Structure and Dynamics"],
+        "nodes": [
+            {
+                "id": n,
+                "name": n,
+                "count": 5,
+                "layer": i,
+                "order": i,
+                "role": "core",
+                "key_work": None,
+            }
+            for i, n in enumerate(["A", "B", "C", "D"])
+        ],
+        "edges": [
+            {"from": a, "to": b, "flow": 6, "reverse_flow": 0} for a, b in ("AB", "BC", "CD")
+        ],
+    }
+
+    class _Report:
+        title = "t"
+        stats = {"graph": graph, "query": "q"}
+        sections = {}
+        status = "partial"
+
+    steps = learning_map_steps(graph, None)
+    with app.test_request_context():
+        html = render_template(
+            "reports/_learning_map_report.html",
+            report=_Report(),
+            stats=_Report.stats,
+            graph=graph,
+            learning_map_steps=steps,
+            learning_map_canvas=learning_map_canvas(graph, steps),
+            narrated=False,
+        )
+    assert 'data-testid="lm-unconnected"' in html
+    assert "Protein Structure and Dynamics" in html

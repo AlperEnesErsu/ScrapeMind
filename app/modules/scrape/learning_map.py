@@ -353,6 +353,7 @@ def learning_map_graph(
         "params": params,
         "work_count": len(works),
         "citation_count": len(pairs),
+        "unconnected": [],
     }
     if not works:
         return result
@@ -384,9 +385,22 @@ def learning_map_graph(
     names = [n.name for n in nodes]
     flow = _flow(pairs, set(names))
     children = _transitive_reduction(_citation_edges(names, flow, min_flow, ratio))
-    if not any(children.values()):
+
+    # A concept no arrow touches is not a step on a path. Measured on live
+    # data (9.5): a "large language models" harvest brought "Protein
+    # Structure and Dynamics" along, unconnected -- and as a layer-0 node it
+    # sorted to the front of the reading order, ahead of the concepts the
+    # map is actually about. Such concepts leave the map but are reported,
+    # so nothing is silently dropped.
+    connected = {p for p, kids in children.items() if kids} | {
+        k for kids in children.values() for k in kids
+    }
+    result["unconnected"] = [n.name for n in nodes if n.name not in connected]
+    if len(connected) < MIN_NODES:
         result["reason"] = REASON_NO_CITATION_FLOW
         return result
+    nodes = [n for n in nodes if n.name in connected]
+    children = {name: kids for name, kids in children.items() if name in connected}
 
     layers = _layers(children)
     in_degree = {n.name: 0 for n in nodes}

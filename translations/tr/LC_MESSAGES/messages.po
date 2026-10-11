@@ -4589,6 +4589,10 @@ msgstr "Önceki adım"
 msgid "Next step"
 msgstr "Sonraki adım"
 
+#, python-format
+msgid "Also in these works, but not connected to the path: %(names)s"
+msgstr "Bu çalışmalarda geçen ama yola bağlanmayan kavramlar: %(names)s"
+
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
 

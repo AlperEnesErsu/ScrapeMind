@@ -140,10 +140,14 @@ def test_edges_carry_the_counts_that_justify_them():
 
 def test_mutual_citation_draws_no_arrow():
     # 6 one way, 4 the other: 6 < 2 * 4. Neither builds on the other.
-    graph = _abcd([("B", "A", 6), ("A", "B", 4), ("D", "C", 10)])
+    graph = _abcd(
+        [("B", "A", 6), ("A", "B", 4), ("D", "C", 10), ("F", "E", 10)], extra_groups=("E", "F")
+    )
     assert not graph["insufficient"]
     assert not {("A", "B"), ("B", "A")} & _edges(graph)
     assert ("C", "D") in _edges(graph)
+    # No arrow touches A or B, so they are not steps on the map.
+    assert graph["unconnected"] == ["A", "B"]
 
 
 def test_ratio_is_the_bar_for_direction():
@@ -168,8 +172,8 @@ def test_min_flow_is_the_bar_for_existence():
 def test_a_cycle_in_the_flow_loses_its_weakest_edge():
     # A -> B (10), B -> C (8), C -> A (6): every pair passes the ratio rule on
     # its own. Strongest first, C -> A is the one that would close the loop.
-    graph = _abcd([("B", "A", 10), ("C", "B", 8), ("A", "C", 6)])
-    assert _edges(graph) == {("A", "B"), ("B", "C")}
+    graph = _abcd([("B", "A", 10), ("C", "B", 8), ("A", "C", 6), ("D", "C", 10)])
+    assert _edges(graph) == {("A", "B"), ("B", "C"), ("C", "D")}
     layer = {n["name"]: n["layer"] for n in graph["nodes"]}
     assert layer["A"] < layer["B"] < layer["C"]
 
@@ -273,14 +277,13 @@ def test_min_support_and_max_nodes_bound_the_map():
     corpus = _gnn().group("Tiny", 5).cite("Tiny", "GCN", 5)
     assert "Tiny" not in {n["name"] for n in learning_map_graph(corpus.works)["nodes"]}
     assert "Tiny" in {n["name"] for n in learning_map_graph(corpus.works, min_support=5)["nodes"]}
-    # Five concepts tie at 10 works; the cap keeps the first four by name.
+    # The cap applies before arrows are drawn. At 4, Message passing is cut;
+    # GAT built only on it, so GAT is left unconnected and three connected
+    # concepts are not enough for a map.
     capped = learning_map_graph(_gnn().works, max_nodes=4)
-    assert {n["name"] for n in capped["nodes"]} == {
-        "Drug discovery",
-        "GAT",
-        "GCN",
-        "Graph theory",
-    }
+    assert capped["insufficient"] and capped["reason"] == "no_citation_flow"
+    assert capped["unconnected"] == ["GAT"]
+    assert len(learning_map_graph(_gnn().works, max_nodes=5)["nodes"]) == 5
 
 
 def test_params_are_recorded():
@@ -317,10 +320,13 @@ def test_roles():
     assert _node(graph, "Drug discovery")["growth"] == 1.0
 
 
-def test_a_parentless_concept_with_nothing_under_it_is_not_a_prerequisite():
+def test_a_concept_no_arrow_touches_leaves_the_map_but_is_reported():
+    # Measured on live data (9.5): an unconnected off-topic concept sat at
+    # layer 0 and led the reading order. It is not a step on the path.
     graph = learning_map_graph(_gnn().group("Benchmarks", 9, year=2016).works)
-    benchmarks = _node(graph, "Benchmarks")
-    assert benchmarks["layer"] == 0 and benchmarks["role"] != ROLE_PREREQUISITE
+    assert "Benchmarks" not in {n["name"] for n in graph["nodes"]}
+    assert graph["unconnected"] == ["Benchmarks"]
+    assert [n["order"] for n in graph["nodes"]] == list(range(len(graph["nodes"])))
 
 
 def test_a_single_year_corpus_has_no_growth_and_string_dates_are_read():
