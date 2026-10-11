@@ -166,7 +166,9 @@ class UserSource(BaseModel):
 
     __tablename__ = "user_sources"
 
-    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.BigInteger, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     source_name = db.Column(db.String(64), nullable=False)
     enabled = db.Column(db.Boolean, nullable=False, default=True)
 
@@ -190,7 +192,9 @@ class UserFeed(BaseModel):
 
     __tablename__ = "user_feeds"
 
-    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.BigInteger, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     url = db.Column(db.String(512), nullable=False)
     label = db.Column(db.String(128), nullable=True)
     active = db.Column(db.Boolean, nullable=False, default=True)
@@ -222,7 +226,9 @@ class UserChannel(BaseModel):
 
     __tablename__ = "user_channels"
 
-    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.BigInteger, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     channel_id = db.Column(db.String(64), nullable=False)  # the UC... id
     title = db.Column(db.String(200), nullable=True)
     url = db.Column(db.String(512), nullable=False)  # canonical channel URL
@@ -316,7 +322,9 @@ class ScanRun(BaseModel):
 
     __tablename__ = "scan_runs"
 
-    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.BigInteger, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     # "scrape" | "feeds" | "channels" | "patents" | "authors". String(16) with
     # no constraint, so a new kind needs no migration — but
     # `scan_status_context` and `library/_timeline.html` branch on it, so they
@@ -466,7 +474,10 @@ class PaperChatMessage(BaseModel):
     __tablename__ = "paper_chat_messages"
 
     user_paper_id = db.Column(
-        db.BigInteger, db.ForeignKey("user_papers.id"), nullable=False, index=True
+        db.BigInteger,
+        db.ForeignKey("user_papers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     role = db.Column(db.String(16), nullable=False)  # "user" veya "assistant"
     content = db.Column(db.Text, nullable=False)
@@ -559,7 +570,9 @@ class UserDigest(BaseModel):
 
     __tablename__ = "user_digests"
 
-    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.BigInteger, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     period = db.Column(db.String(16), nullable=False)  # "daily" | "weekly"
     period_start = db.Column(db.DateTime(timezone=True), nullable=False)
     period_end = db.Column(db.DateTime(timezone=True), nullable=False)
@@ -712,13 +725,11 @@ class SavedSearchNotification(BaseModel):
         db.BigInteger().with_variant(db.Integer, "sqlite"),
         db.ForeignKey("saved_searches.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     paper_id = db.Column(
         db.BigInteger().with_variant(db.Integer, "sqlite"),
         db.ForeignKey("papers.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
     saved_search = db.relationship(
@@ -729,6 +740,11 @@ class SavedSearchNotification(BaseModel):
         # The uniqueness *is* the guarantee: two concurrent runs cannot both
         # announce the same paper, whatever the application logic does.
         db.UniqueConstraint("saved_search_id", "paper_id", name="uq_saved_search_notification"),
+        # Named as migration e7b204c9f83a created them. `index=True` would ask
+        # for `ix_..._saved_search_id` / `ix_..._paper_id`, which no database
+        # has, and `flask db check` would report a drop + create on each.
+        db.Index("ix_saved_search_notifications_search", "saved_search_id"),
+        db.Index("ix_saved_search_notifications_paper", "paper_id"),
     )
 
 
@@ -803,7 +819,9 @@ class Report(BaseModel):
 
     __tablename__ = "reports"
 
-    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.BigInteger, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     # "topic" | "author_group" — see class docstring for why this isn't an enum.
     kind = db.Column(db.String(16), nullable=False)
     title = db.Column(db.String(255), nullable=False)
@@ -844,7 +862,9 @@ class AuthorGroup(BaseModel):
 
     __tablename__ = "author_groups"
 
-    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    user_id = db.Column(
+        db.BigInteger, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text, nullable=True)
 
@@ -873,9 +893,14 @@ class AuthorGroupMember(BaseModel):
     __tablename__ = "author_group_members"
 
     group_id = db.Column(
-        db.BigInteger, db.ForeignKey("author_groups.id"), nullable=False, index=True
+        db.BigInteger,
+        db.ForeignKey("author_groups.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
-    user_author_id = db.Column(db.BigInteger, db.ForeignKey("user_authors.id"), nullable=False)
+    user_author_id = db.Column(
+        db.BigInteger, db.ForeignKey("user_authors.id", ondelete="CASCADE"), nullable=False
+    )
 
     user_author = db.relationship("UserAuthor")
 
