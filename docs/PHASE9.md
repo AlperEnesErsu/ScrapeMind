@@ -1,6 +1,7 @@
 # Faz 9 — Öğrenme haritası (konu → kavram grafiği)
 
-> **Durum:** 9.1 yazıldı (#127); **girdi kaynağı açık karar** (§3.5). 11 Ekim 2026.
+> **Durum:** 9.1 yazıldı (#127); 9.1b ile oklar **atıf akışından** geliyor (§3.2,
+> §3.5). Sıradaki: 9.2. 11 Ekim 2026.
 > Dal başlangıcı: `main` (#118–#123 merge'lenmiş). Migration head'i: `a7c3e9d1f2b4`.
 
 Kod yazmadan önce [SCRAPING.md](SCRAPING.md) §11 (etik sınırlar), Faz 6'nın rapor
@@ -48,7 +49,9 @@ kartlar boş açıklamayla. Tıpkı Faz 6'daki gibi `status="partial"`.
 
 Girdi: konu raporuyla aynı sorgu, `works_in_range` (≤ `REPORT_MAX_WORKS` = 400
 çalışma). Her çalışmanın 1–3 OpenAlex `topic`'i var (`openalex_source` bunları
-zaten `categories`'e yazıyor).
+zaten `categories`'e yazıyor) ve atıfladığı çalışmaların id'leri
+(`PaperPayload.referenced_works`, 9.1b; aynı yanıtta geliyor, ek istek yok,
+`papers`'a yazılmıyor).
 
 ### 3.1 Düğümler
 
@@ -57,22 +60,34 @@ En az `min_support` (öneri: 8) çalışmada geçen topic'ler. En sık **12**'si
 Sorgunun kendisiyle özdeş topic (her çalışmada geçen) düğüm değil, haritanın
 başlığıdır.
 
-### 3.2 Oklar: subsumption
+### 3.2 Oklar: külliyat içi atıf akışı (9.1b)
 
-Klasik ve açıklanabilir bir yöntem (Sanderson & Croft, 1999): A kavramı B'yi
-**kapsıyorsa** A daha geneldir ve ondan önce gelir.
+> 9.1 okları subsumption ile çiziyordu (A, B'yi kapsıyorsa A önce). Canlı ölçüm
+> (§3.5) OpenAlex topic'lerinin birbirini kapsamadığını gösterdi; kod kaldırıldı.
+
+B'nin çalışmaları A'nın çalışmalarını atıflıyorsa B, A'nın **üzerine kurulu**,
+yani önce A okunur. Yalnızca külliyatın içinde kalan atıflar sayılır:
 
 ```
-A → B   ⇔   P(A | B) ≥ 0.8   ve   P(B | A) < 1
+akış(A→B) = #{(w, r) : w r'yi atıflıyor, r külliyatta, r ≠ w,
+                       B ∈ kavramlar(w), A ∈ kavramlar(r)}
+
+A → B   ⇔   akış(A→B) ≥ 5   ve   akış(A→B) ≥ 2 · akış(B→A)
 ```
 
-`P(A | B)` = B'nin geçtiği çalışmaların yüzde kaçında A da geçiyor. Eşik
-yapılandırılabilir. İki ek kural grafiği okunur tutar:
+Bir çalışmanın kendini atıflaması ve bir kavramın kendine akışı sayılmaz.
+Külliyat dışına giden atıf yok sayılır. `min_flow` (5) ve `ratio` (2.0)
+yapılandırılabilir. Üç ek kural grafiği okunur tutar:
 
+- **Döngü kırma (açgözlü):** ikili "2 kat" kuralı A→B, B→C, C→A'yı engellemez.
+  Adaylar güçlüden zayıfa sıralanır (akış ↓, ters akış ↑, sonra adlar) ve
+  döngü kapatacak ok eklenmez. Böylece her zaman **en zayıf kanıt** düşer
+  (yaklaşık minimum geri besleme kümesi; 12 düğümde yeterli).
 - **Geçişli indirgeme:** A→B, B→C ve A→C varsa A→C silinir. Harita bir ağaç
   gibi okunur, kıl yumağı gibi değil.
-- **Döngü yok:** eşitlik durumunda (karşılıklı kapsama) ok çizilmez; iki kavram
-  aynı katmana düşer.
+- **Oksuz harita yol değildir:** düğüm sayısı yetse bile hiç ok kalmazsa sonuç
+  `insufficient`, `reason="no_citation_flow"` (düğüm azsa `"too_few_concepts"`).
+  Arayüz nedeni söyleyebilir.
 
 ### 3.3 Katman ve rol
 
@@ -125,11 +140,34 @@ Bunlar bir öğrenme yoluna benziyor. Bedeli:
   doğrudan bir ön koşul iddiası. Arayüz okları "bunun üzerine kurulu" diye
   adlandırabilir.
 
-**Karar bekliyor:** 9.2'den önce okların kaynağı seçilmeli: (a) atıf akışı,
-(b) LLM'in özetlerden çıkardığı kavramlar üzerinde subsumption (sayılar yine
-hesaplanır ama etiketler LLM'den gelir; çalışma başına çağrı = pahalı), ya da
-(c) ikisinin birleşimi. 9.1'in grafik iskeleti (katman, rol, sıra, anahtar
-makale, `insufficient`) her durumda kullanılır; değişen yalnızca kenar kümesi.
+**Karar (11 Ekim 2026): (a) atıf akışı.** Alternatifler (b) LLM'in özetlerden
+çıkardığı kavramlar üzerinde subsumption (çalışma başına çağrı = pahalı; oklar
+yine dolaylı bir "kapsama" iddiası) ve (c) ikisinin birleşimiydi. 9.1'in
+iskeleti (katman, rol, sıra, anahtar makale, `insufficient`) aynen kaldı;
+değişen yalnızca kenar kümesi. Subsumption kodu silindi, ölü kod tutulmuyor.
+
+**9.1b uygulandıktan sonra aynı ölçüm** (`works_in_range`, 2015–2025, 400
+çalışma, varsayılanlar `min_flow=5`, `ratio=2.0`):
+
+| Konu | Atıflı çalışma | Külliyat içi atıf | Aday ok | Döngüden düşen | İndirgeme sonrası |
+|---|---|---|---|---|---|
+| graph neural networks | 388 / 400 | 840 | 17 | 0 | **12** |
+| CRISPR gene editing | 400 / 400 | 674 | 16 | 0 | **14** |
+
+Örnek oklar: "Domain Adaptation and Few-Shot Learning → Advanced Neural Network
+Applications" (46'ya 23), "Neural Networks and Applications → Advanced Graph
+Neural Networks" (39'a 12), "CRISPR and Genetic Engineering → Nanoparticle-Based
+Drug Delivery" (34'e 12), "Genomics and Chromatin Dynamics → RNA regulation and
+disease" (23'e 7), "CAR-T cell therapy research → Cancer Immunotherapy and
+Biomarkers" (20'ye 10).
+
+Varsayılanlar değiştirilmedi: `min_flow=3`'te GNN'de 24 aday çıkıyor ve ikisi
+döngü kırmayla düşüyor (gürültü işareti); `min_flow=8`'de 10/10 ok kalıyor
+ama ikinci sıradaki kavram bağları kayboluyor. 5 ikisinin arası. Eşiklerin
+asıl kalibrasyonu 9.5'te.
+
+Gözlem: iki konuda da `root` çıkmadı. Sorgu kelimesi topic'lerin %95'inde
+geçmiyor; harita başlığı 9.2'de sorgunun kendisinden alınmalı.
 
 ### 3.4 Anahtar makale
 
@@ -186,11 +224,18 @@ kullanılmaz; lisansı izin verse bile, çünkü kartın işi özet değil yönl
 Yeni tablo **yok**. `Report.stats`'e `graph` anahtarı:
 
 ```json
-{"graph": {"nodes": [{"id", "name", "count", "layer", "role",
-                      "median_year", "key_work": {"title", "doi", "url", "in_library"}}],
-           "edges": [{"from", "to", "p_a_given_b"}],
-           "params": {"min_support": 8, "threshold": 0.8, "max_nodes": 12}}}
+{"graph": {"root", "insufficient", "reason", "work_count", "citation_count",
+           "nodes": [{"id", "name", "count", "layer", "order", "role", "median_year",
+                      "growth", "key_work": {"title", "doi", "url", "cited_by_count",
+                                             "in_library"}}],
+           "edges": [{"from", "to", "flow", "reverse_flow"}],
+           "params": {"min_flow": 5, "ratio": 2.0, "min_support": 8, "max_nodes": 12}}}
 ```
+
+`flow` okun kanıtı (B'nin A'yı atıflayan çalışma çiftleri), `reverse_flow`
+karşı yön; ikisi birlikte arayüzde "46'ya 23" diye gösterilebilir. `reason`
+yalnızca `insufficient` iken dolu: `"too_few_concepts"` ya da
+`"no_citation_flow"`. `citation_count` külliyat içinde kalan atıf sayısı.
 
 `Report.sections`'a LLM çıktısı. `kind` sütunu `String(16)`;
 `"learning_map"` (12 karakter) sığıyor, migration gerekmiyor. Faz 6'nın
@@ -216,6 +261,7 @@ Yeni tablo **yok**. `Report.stats`'e `graph` anahtarı:
 | | İş | Bitti sayılır |
 |---|---|---|
 | 9.1 ✅ | `learning_map_graph(payloads)` — saf fonksiyon, IO yok (#127) | 42 test, %97 kapsam. Canlı ölçüm §3.5 |
+| 9.1b ✅ | Oklar atıf akışından; `PaperPayload.referenced_works`; açgözlü döngü kırma | 50 test (25'i rastgele külliyat) + 6 adaptör testi, %99 kapsam; canlı: GNN 12, CRISPR 14 ok |
 | 9.2 | `run_report` dalı + `stats.graph`, LLM'siz | `kind` `VALID_KINDS` + `_RUNNABLE_KINDS`'ta; anlatısız `partial` harita |
 | 9.3 ✅ | `narrate_learning_map` + doğrulama | Sahte sağlayıcıyla şema / id kümesi testleri; locale testi. `tests/modules/test_learning_map_narration.py`; henüz `run_report`'a bağlı değil (9.2) |
 | 9.4 | Sayfa: graf + liste + adım kartı | Tarayıcıda; axe 0 ihlal; 320 px'te taşma yok |
@@ -228,12 +274,14 @@ Yeni tablo **yok**. `Report.stats`'e `graph` anahtarı:
 - **Topic tanecikliği.** OpenAlex topic'leri (~4.500) bazı alanlarda kaba olabilir:
   "Graph neural networks" sorgusunda düğümlerin yarısı aynı topic'e düşebilir. Plan
   B: çalışmaların `keywords` alanı (daha ince) aynı hesapla. 9.5'te karar.
-- **Küçük külliyat.** 400'den az çalışmada `P(A|B)` gürültülü. `min_support`
-  düğüm sayısını düşürür; 4'ten az düğüm kalırsa harita yerine "bu konu için
-  yeterli veri yok" denir. Yanlış bir harita göstermekten iyidir.
-- **Sıra ≠ pedagoji.** Subsumption "daha genel"i bulur, "önce öğrenilmeli"yi değil.
-  Çoğu zaman örtüşüyor, her zaman değil. Arayüz okları "önce bunu oku" diye değil
-  **"bunu kapsar"** diye adlandırmalı ve bu sınır sayfada bir cümleyle söylenmeli.
+- **Küçük külliyat.** Az çalışmada külliyat içi atıf da az kalır (400'de
+  ~700–850). `min_support` düğüm sayısını düşürür; 4'ten az düğüm ya da hiç ok
+  kalmazsa harita yerine "bu konu için yeterli veri yok" denir (`reason`).
+  Yanlış bir harita göstermekten iyidir.
+- **Sıra ≠ pedagoji.** Atıf akışı "B, A'nın üzerine kurulu"yu bulur, "önce
+  öğrenilmeli"yi değil; çoğu zaman örtüşüyor, her zaman değil. Arayüz okları
+  "önce bunu oku" diye değil **"bunun üzerine kurulu"** diye adlandırmalı ve bu
+  sınır sayfada bir cümleyle söylenmeli.
 - **Maliyet.** Rapor başına bir LLM çağrısı (Faz 6'nın map/reduce'undan ucuz).
 
 ## 9. Kapsam dışı (bilinçli)

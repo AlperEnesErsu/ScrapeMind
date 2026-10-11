@@ -51,6 +51,12 @@ class PaperPayload:
     oa_status: str | None = None
     oa_license: str | None = None
     oa_url: str | None = None
+    # Bare OpenAlex ids of the works this one cites ("W123"), for the
+    # learning map's citation flow (Faz 9.1b, docs/PHASE9.md §3.5). Only
+    # OpenAlex fills it; defaulted for the same reason `issn_l` is. Not part
+    # of `as_dict()`: `papers` has no column for it and the map reads it from
+    # the payloads a report harvested, never from a stored row.
+    referenced_works: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         """Light, structural validation only — no normalising, no coercing.

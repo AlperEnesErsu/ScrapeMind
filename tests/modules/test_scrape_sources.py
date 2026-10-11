@@ -642,6 +642,69 @@ def test_openalex_garbage_citation_count_is_dropped():
     assert oa._to_payload({**_OA_ITEM, "cited_by_count": "many"}).cited_by_count is None
 
 
+# --- References (Faz 9.1b: the learning map's citation flow) ---
+
+
+def test_openalex_references_become_bare_ids_in_order():
+    item = {
+        **_OA_ITEM,
+        "referenced_works": [
+            "https://openalex.org/W3",
+            "https://openalex.org/W1",
+            "https://openalex.org/W3",
+            "W2",
+        ],
+    }
+    assert oa._to_payload(item).referenced_works == ("W3", "W1", "W2")
+
+
+def test_openalex_missing_references_are_empty():
+    assert oa._to_payload(_OA_ITEM).referenced_works == ()
+    assert oa._to_payload({**_OA_ITEM, "referenced_works": None}).referenced_works == ()
+
+
+def test_openalex_malformed_references_are_skipped_not_fatal():
+    """Untrusted remote JSON: a non-list is ignored whole, non-strings and
+    blanks one by one."""
+    assert oa._to_payload({**_OA_ITEM, "referenced_works": "W1"}).referenced_works == ()
+    item = {
+        **_OA_ITEM,
+        "referenced_works": [None, 7, {"id": "W9"}, "", "  ", "https://openalex.org/", "W5"],
+    }
+    assert oa._to_payload(item).referenced_works == ("W5",)
+
+
+def test_openalex_references_are_capped():
+    refs = [f"https://openalex.org/W{i}" for i in range(oa._MAX_REFERENCES + 50)]
+    out = oa._to_payload({**_OA_ITEM, "referenced_works": refs}).referenced_works
+    assert len(out) == oa._MAX_REFERENCES
+    assert out[0] == "W0"
+
+
+def test_openalex_references_stay_out_of_the_row():
+    """`papers` has no column for them -- `Paper(**as_dict())` must not see
+    the key."""
+    item = {**_OA_ITEM, "referenced_works": ["https://openalex.org/W1"]}
+    assert "referenced_works" not in oa._to_payload(item).as_dict()
+
+
+def test_openalex_works_in_range_carries_references(monkeypatch):
+    """`works_in_range` sends no `select`, so the field arrives with the rest
+    of the work -- the map needs no extra request."""
+    seen = {}
+
+    def fake_get(url, params=None, **kw):
+        seen.update(params or {})
+        item = {**_OA_ITEM, "referenced_works": ["https://openalex.org/W7"]}
+        return _fake_response(json_data={"results": [item], "meta": {}})
+
+    monkeypatch.setattr(oa, "openalex_slot", lambda: True)
+    monkeypatch.setattr(oa._session, "get", fake_get)
+    out = oa.works_in_range("x", since_year=2020, until_year=2021, max_results=1)
+    assert out[0].referenced_works == ("W7",)
+    assert "select" not in seen
+
+
 def test_openalex_search_empty_query_makes_no_http_call(monkeypatch):
     calls = []
     monkeypatch.setattr(oa._session, "get", lambda *a, **k: calls.append(1))
