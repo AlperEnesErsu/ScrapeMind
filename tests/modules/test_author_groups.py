@@ -203,13 +203,13 @@ def test_rename_of_another_users_group_fails(app, db, a_user, other_user):
     renamed, error = service.rename_author_group(other_user, group.id, "Stolen")
     assert renamed is None
     assert str(error) == str(service.GROUP_NOT_FOUND_MESSAGE)
-    assert AuthorGroup.query.get(group.id).name == "Mine"
+    assert db.session.get(AuthorGroup, group.id).name == "Mine"
 
 
 def test_delete_of_another_users_group_fails(app, db, a_user, other_user):
     group, _ = service.create_author_group(a_user, "Mine")
     assert service.delete_author_group(other_user, group.id) is False
-    assert AuthorGroup.query.get(group.id) is not None
+    assert db.session.get(AuthorGroup, group.id) is not None
 
 
 def test_add_member_to_another_users_group_fails(app, db, a_user, other_user, monkeypatch):
@@ -236,10 +236,10 @@ def test_remove_member_scoped_to_owned_group(app, db, a_user, other_user, monkey
     member, _ = service.add_group_member(a_user, group.id, author.id)
 
     assert service.remove_group_member(other_user, group.id, member.id) is False
-    assert AuthorGroupMember.query.get(member.id) is not None
+    assert db.session.get(AuthorGroupMember, member.id) is not None
 
     assert service.remove_group_member(a_user, group.id, member.id) is True
-    assert AuthorGroupMember.query.get(member.id) is None
+    assert db.session.get(AuthorGroupMember, member.id) is None
 
 
 # ----------------------------------------------------------------------------
@@ -311,8 +311,8 @@ def test_deleting_a_group_drops_membership_but_keeps_the_author(app, db, a_user,
 
     assert service.delete_author_group(a_user, group.id) is True
 
-    assert AuthorGroupMember.query.get(member_id) is None
-    assert UserAuthor.query.get(author_id) is not None
+    assert db.session.get(AuthorGroupMember, member_id) is None
+    assert db.session.get(UserAuthor, author_id) is not None
 
 
 # ----------------------------------------------------------------------------

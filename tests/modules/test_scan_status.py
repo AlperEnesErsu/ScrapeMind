@@ -22,6 +22,7 @@ from sqlalchemy import text
 
 from app.core.auth.strategies.local import LocalAuthStrategy
 from app.core.models.user import User
+from app.extensions import db
 from app.modules.academic.service import add_user_keyword
 from app.modules.scrape.models import ScanRun
 from app.modules.scrape.service import (
@@ -437,7 +438,7 @@ def test_scan_status_endpoint_polls_only_while_running(auth_client, db):
 
     db.session.query(ScanRun).filter_by(user_id=uid).delete()
     db.session.commit()
-    _ = User.query.get(uid)  # keep the session attached for teardown
+    _ = db.session.get(User, uid)  # keep the session attached for teardown
 
 
 def test_for_you_shows_a_real_next_scan(auth_client, monkeypatch):
@@ -550,7 +551,7 @@ def test_dashboard_renders_exactly_one_scrape_control(auth_client, db):
     from app.modules.academic.service import add_user_keyword
 
     client, uid = auth_client
-    add_user_keyword(User.query.get(uid), "quantum")
+    add_user_keyword(db.session.get(User, uid), "quantum")
 
     body = client.get("/").get_data(as_text=True)
     assert body.count('id="scraper-widget"') == 1
@@ -585,7 +586,7 @@ def test_scraper_widget_shows_the_users_effective_sources(auth_client, monkeypat
     r = client.get("/papers/")
     assert "arxiv" in r.get_data(as_text=True)
 
-    set_user_source(User.query.get(uid), "arxiv", False)
+    set_user_source(db.session.get(User, uid), "arxiv", False)
     body = client.get("/papers/").get_data(as_text=True)
     assert 'class="badge source-badge source-arxiv' not in body
 
@@ -601,7 +602,7 @@ def test_home_page_shows_video_in_channels_feeds_section(auth_client, db):
     from app.core.models.user import User
 
     client, uid = auth_client
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     add_user_keyword(user, "quantum")
 
     academic = upsert_paper(_payload("2401.11111"))
@@ -628,7 +629,7 @@ def test_home_page_does_not_duplicate_a_video_already_in_top_five(auth_client, d
     from app.core.models.user import User
 
     client, uid = auth_client
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     add_user_keyword(user, "quantum")
 
     video = upsert_paper(_video_payload("vid-home-2"))

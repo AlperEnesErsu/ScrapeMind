@@ -373,7 +373,7 @@ def test_dashboard_interest_add_and_remove(auth_client, clean_papers):
     from app.core.models.user import User
     from app.modules.academic.service import list_user_keywords
 
-    user = User.query.get(uid)
+    user = _db.session.get(User, uid)
 
     client.post("/interests/add", data={"value": "graph neural networks"}, follow_redirects=False)
     kws = list_user_keywords(user)
@@ -421,7 +421,7 @@ def test_toggle_source_mutes_and_persists(auth_client, clean_papers):
     from app.core.models.user import User
     from app.modules.scrape.service import list_user_source_prefs
 
-    user = User.query.get(uid)
+    user = _db.session.get(User, uid)
 
     # Mute arxiv via HTMX toggle → get the sources-card partial back
     r = client.post(
@@ -448,7 +448,7 @@ def test_toggle_source_works_for_rss_feed_source(auth_client, clean_papers):
     from app.core.models.user import User
     from app.modules.scrape.service import list_user_source_prefs
 
-    user = User.query.get(uid)
+    user = _db.session.get(User, uid)
     r = client.post(
         "/sources/toggle",
         data={"source_name": "openai_blog", "enabled": "false"},
@@ -491,7 +491,7 @@ def test_sources_card_suggests_feed_for_matching_interest(auth_client, clean_pap
     client, uid = auth_client
     from app.core.models.user import User
 
-    user = User.query.get(uid)
+    user = _db.session.get(User, uid)
     client.post("/interests/add", data={"value": "yapay zeka"}, follow_redirects=False)
 
     from app.modules.scrape import ai_service
@@ -587,7 +587,7 @@ def test_feed_add_remove_toggle_cycle_over_http(auth_client, clean_papers, monke
     from app.core.models.user import User
     from app.modules.scrape.service import list_user_feeds
 
-    user = User.query.get(uid)
+    user = _db.session.get(User, uid)
     feeds = list_user_feeds(user)
     assert len(feeds) == 1
     feed_id = feeds[0].id
@@ -674,7 +674,7 @@ def test_feed_toggle_swaps_only_the_feed_list(auth_client, clean_papers, monkeyp
         data={"url": "https://blog.example.test/feed.xml", "label": ""},
         headers={"HX-Request": "true"},
     )
-    feed_id = list_user_feeds(User.query.get(uid))[0].id
+    feed_id = list_user_feeds(_db.session.get(User, uid))[0].id
 
     def _boom(user):
         raise AssertionError("a feed toggle must not trigger topic classification")
@@ -701,7 +701,7 @@ def test_feed_list_filter_chips(auth_client, clean_papers, monkeypatch):
             data={"url": f"https://blog.example.test/{i}.xml", "label": f"Feed {i}"},
             headers={"HX-Request": "true"},
         )
-    feeds = list_user_feeds(User.query.get(uid))
+    feeds = list_user_feeds(_db.session.get(User, uid))
     assert len(feeds) == 2
     client.post(f"/papers/profile/feeds/{feeds[0].id}/toggle", headers={"HX-Request": "true"})
 
@@ -783,7 +783,7 @@ def test_channel_add_remove_toggle_cycle_over_http(auth_client, clean_papers, mo
     from app.core.models.user import User
     from app.modules.scrape.service import list_user_channels
 
-    user = User.query.get(uid)
+    user = _db.session.get(User, uid)
     channels = list_user_channels(user)
     assert len(channels) == 1
     channel_id = channels[0].id
@@ -843,7 +843,7 @@ def test_channel_toggle_swaps_only_the_channel_list(auth_client, clean_papers, m
         data={"url": "@examplechannel", "label": ""},
         headers={"HX-Request": "true"},
     )
-    channel_id = list_user_channels(User.query.get(uid))[0].id
+    channel_id = list_user_channels(_db.session.get(User, uid))[0].id
 
     def _boom(user):
         raise AssertionError("a channel toggle must not trigger topic classification")
@@ -872,7 +872,7 @@ def test_channel_list_filter_chips(auth_client, clean_papers, monkeypatch):
             data={"url": f"@channel{i}", "label": f"Channel {i}"},
             headers={"HX-Request": "true"},
         )
-    channels = list_user_channels(User.query.get(uid))
+    channels = list_user_channels(_db.session.get(User, uid))
     assert len(channels) == 2
     client.post(f"/papers/profile/channels/{channels[0].id}/toggle", headers={"HX-Request": "true"})
 

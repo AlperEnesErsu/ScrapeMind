@@ -238,7 +238,7 @@ def test_page_add_remove_toggle_cycle_over_http(auth_client, db, monkeypatch):
 
     from app.core.models.user import User
 
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     pages = list_user_pages(user)
     assert len(pages) == 1
     page_id = pages[0].id
@@ -271,7 +271,7 @@ def test_page_list_filter_chips(auth_client, db, monkeypatch):
     from app.core.models.user import User
     from app.modules.scrape.service import add_user_page, toggle_user_page
 
-    user = User.query.get(uid)
+    user = db.session.get(User, uid)
     p1, _ = add_user_page(user, "https://news1.example.test/blog", label="Active Page")
     p2, _ = add_user_page(user, "https://news2.example.test/blog", label="Paused Page")
     toggle_user_page(user, p2.id)

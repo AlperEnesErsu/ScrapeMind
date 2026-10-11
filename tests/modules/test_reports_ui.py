@@ -182,7 +182,7 @@ def test_deleting_another_users_report_is_404(auth_client, db):
     try:
         resp = client.post(f"/papers/reports/{foreign.id}/delete")
         assert resp.status_code == 404
-        assert Report.query.get(foreign.id) is not None
+        assert db.session.get(Report, foreign.id) is not None
     finally:
         db.session.delete(foreign)
         db.session.commit()
@@ -284,7 +284,7 @@ def test_delete_removes_own_report(auth_client, db):
 
     resp = client.post(f"/papers/reports/{report_id}/delete")
     assert resp.status_code in (301, 302)
-    assert Report.query.get(report_id) is None
+    assert db.session.get(Report, report_id) is None
 
 
 def test_delete_htmx_redirects_to_the_list(auth_client, db):
@@ -294,4 +294,4 @@ def test_delete_htmx_redirects_to_the_list(auth_client, db):
     resp = client.post(f"/papers/reports/{row.id}/delete", headers={"HX-Request": "true"})
     assert resp.status_code == 200
     assert resp.headers.get("HX-Redirect") == "/papers/reports"
-    assert Report.query.get(row.id) is None
+    assert db.session.get(Report, row.id) is None

@@ -504,6 +504,7 @@ def _register_blueprints(app: Flask) -> None:
     from app.core.audit.routes import audit_bp
     from app.core.auth import auth_bp
     from app.core.csp_report import csp_report_bp
+    from app.core.favicon import favicon_bp
     from app.core.menu.routes import menu_bp
     from app.core.rbac.routes import rbac_bp
     from app.core.search.routes import search_bp
@@ -540,6 +541,8 @@ def _register_blueprints(app: Flask) -> None:
     # takes no action beyond logging and is rate limited instead.
     app.register_blueprint(csp_report_bp)
     csrf.exempt(csp_report_bp)
+
+    app.register_blueprint(favicon_bp)
 
 
 def _register_error_handlers(app: Flask) -> None:
