@@ -102,7 +102,9 @@ def run(app=None) -> None:
         if not User.query.filter_by(username="admin").first():
             admin = User(
                 username="admin",
-                email="admin@scrapemind.local",
+                # `.local` is a special-use name the Email() validator rejects, so the
+                # seeded admin could never request a password reset.
+                email="admin@example.com",
                 full_name="Admin",
                 is_superuser=True,
                 password_hash=LocalAuthStrategy.hash_password("admin1234"),

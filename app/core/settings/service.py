@@ -7,12 +7,12 @@ from app.extensions import db
 
 
 def get_system_setting(key: str, default: Any = None) -> Any:
-    row = SystemSettings.query.get(key)
+    row = db.session.get(SystemSettings, key)
     return row.value if row else default
 
 
 def set_system_setting(key: str, value: Any, updated_by_id: int | None = None) -> None:
-    row = SystemSettings.query.get(key)
+    row = db.session.get(SystemSettings, key)
     if row:
         row.value = value
         row.updated_by = updated_by_id

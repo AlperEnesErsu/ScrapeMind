@@ -87,7 +87,6 @@ scrapemind/
 │   ├── core/                    # 🧱 BASE — sonraki projelerde değişmeyecek
 │   │   ├── __init__.py
 │   │   ├── base_model.py        # BaseModel (id, created_at, updated_at, deleted_at)
-│   │   ├── soft_delete.py       # SoftDeleteQuery mixin
 │   │   ├── models/
 │   │   │   ├── user.py
 │   │   │   ├── role.py
