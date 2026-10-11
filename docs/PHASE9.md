@@ -346,7 +346,7 @@ açar; JS'siz sayfa yalnızca listedir.
 | 9.2 ✅ | `run_report` dalı + `stats.graph` + anlatı bağlantısı; form seçeneği; erişilebilir sıralı liste | `kind` `VALID_KINDS` + `_RUNNABLE_KINDS`'ta; anlatısız `partial` harita; anlatı sahibinin locale'inde. `tests/modules/test_learning_map_report.py` (31 test); sayfa axe denetiminde |
 | 9.3 ✅ | `narrate_learning_map` + doğrulama | Sahte sağlayıcıyla şema / id kümesi testleri; locale testi. `tests/modules/test_learning_map_narration.py`; 9.2 ile `run_report`'a bağlandı |
 | 9.4 ✅ | Sayfa: graf (canvas, `aria-hidden`) + adım kartı, 9.2'nin listesinin üstüne | `learning_map_canvas` + `learning_map.js` + ortak `vis_loader.js`; `data-lm-graph` özniteliği (§6). 10 yeni test (kaçış, gizli kart, ok yoksa canvas yok, `node --check`); kart açıkken axe 0 ihlal, 280/320/414 px taşma yok |
-| 9.5 | Gerçek konularla kalibrasyon | 3 konuda eşik ve `max_nodes` elle değerlendirilir, karar buraya yazılır |
+| 9.5 🟡 | Gerçek konularla kalibrasyon | **İlk karar (11 Ekim 2026):** hiçbir okun dokunmadığı kavramlar haritadan ve okuma sırasından çıkar, `graph.unconnected`'da raporlanır ve sayfada tek satırla adlandırılır. Ölçüm: "large language models" haritasının başına 0. katmandan gelen 3 konu dışı biyoloji kavramı düşüyordu (Protein Structure…); düzeltmeden sonra LLM 9 / CRISPR 9 / GNN 11 düğüm, üçü de yeterli. **Açık:** `min_flow`/`ratio` varsayılanları korunuyor; anahtar makale seçimi OpenAlex'in birleşik kayıtlarına açık (CRISPR'da 4224 atıflı ilgisiz bir kayıt) |
 
 9.1 tek başına değerli ve risksiz: hiçbir yere bağlanmadan test edilebilir.
 

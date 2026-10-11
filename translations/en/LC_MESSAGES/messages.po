@@ -4548,6 +4548,10 @@ msgstr "Previous step"
 msgid "Next step"
 msgstr "Next step"
 
+#, python-format
+msgid "Also in these works, but not connected to the path: %(names)s"
+msgstr "Also in these works, but not connected to the path: %(names)s"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

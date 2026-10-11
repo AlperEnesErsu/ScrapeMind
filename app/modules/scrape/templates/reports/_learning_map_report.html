@@ -148,6 +148,14 @@
     {% endfor %}
   </ol>
 
+  {% if graph.unconnected %}
+    {# Concepts the harvest brought along that no arrow connects: not steps
+       on the path, but named so nothing leaves the map unannounced. #}
+    <p class="small text-muted" data-testid="lm-unconnected">
+      {{ _('Also in these works, but not connected to the path: %(names)s', names=graph.unconnected | join(', ')) }}
+    </p>
+  {% endif %}
+
   {# vis-network only when there is a canvas to draw; the loader goes first
      (htmx and the parser both keep external scripts in order). #}
   {% if learning_map_canvas %}
