@@ -95,6 +95,26 @@ def test_unreadable_pdf_is_an_error_not_a_crash():
         fulltext._extract_pdf(b"%PDF-1.4 truncated garbage")
 
 
+def test_pdf_extraction_stops_at_the_page_cap(monkeypatch):
+    """A crafted PDF can be cheap to download and expensive to read; only the
+    first MAX_PDF_PAGES pages are ever handed to the extractor."""
+    import io
+
+    from pypdf import PageObject, PdfWriter
+
+    writer = PdfWriter()
+    for _ in range(5):
+        writer.add_blank_page(width=72, height=72)
+    buf = io.BytesIO()
+    writer.write(buf)
+
+    read = []
+    monkeypatch.setattr(PageObject, "extract_text", lambda self, *a, **k: read.append(1) or "x")
+    monkeypatch.setattr(fulltext, "MAX_PDF_PAGES", 2)
+    assert fulltext._extract_pdf(buf.getvalue()) == "x\nx"
+    assert len(read) == 2
+
+
 # --------------------------------------------------------------------------
 # The fetch path
 # --------------------------------------------------------------------------
