@@ -11,6 +11,7 @@ from app.core.rbac.service import (
     list_permissions_by_module,
     list_roles,
     permission_codes,
+    role_permission_codes,
     soft_delete_role,
     ungrantable_codes,
     update_role,
@@ -123,7 +124,7 @@ def role_delete(role_id: int):
     if role.name == "admin":
         flash(_("The admin role cannot be deleted."), "danger")
         return redirect(url_for("rbac.role_list"))
-    if _refuse_ungrantable({p.code for p in role.permissions}):
+    if _refuse_ungrantable(role_permission_codes([role.id])):
         return redirect(url_for("rbac.role_list"))
     soft_delete_role(role)
     log_action("role.delete", entity_type="role", entity_id=role.id, changes={"name": role.name})
