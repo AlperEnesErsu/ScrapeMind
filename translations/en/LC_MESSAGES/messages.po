@@ -4418,6 +4418,13 @@ msgstr "Research Settings"
 msgid "Workspace Settings"
 msgstr "Workspace Settings"
 
+msgid "Only a superuser can grant or revoke superuser status."
+msgstr "Only a superuser can grant or revoke superuser status."
+
+#, python-format
+msgid "You cannot grant or revoke permissions you do not hold: %(codes)s"
+msgstr "You cannot grant or revoke permissions you do not hold: %(codes)s"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

@@ -30,7 +30,8 @@
         <label class="form-check-label" for="is_active">{{ form.is_active.label.text }}</label>
       </div>
       <div class="form-check">
-        {{ form.is_superuser(class="form-check-input") }}
+        {# Only a superuser may grant it; the server refuses anyone else. #}
+        {{ form.is_superuser(class="form-check-input", disabled=not current_user.is_superuser) }}
         <label class="form-check-label" for="is_superuser">{{ form.is_superuser.label.text }}</label>
       </div>
     </div>

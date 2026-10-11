@@ -62,6 +62,46 @@ def user_has_permission(user: User, permission_code: str) -> bool:
     return permission_code in get_user_permissions(user)
 
 
+def ungrantable_codes(actor: User, codes) -> list[str]:
+    """The permission codes in `codes` that `actor` may not grant or revoke.
+
+    `users.manage` and `roles.manage` exist so the work can be delegated to a
+    role that is not a superuser. Without this check a delegate could hand
+    any permission to anyone -- themselves included -- and "may manage
+    users" became "is a superuser". The rule: you can grant or take away only
+    what you could use yourself.
+
+    A superuser can use every permission (the bypass in
+    `permission_required`), so nothing is out of their reach. This does not
+    add a second bypass; it asks the same question that one answers.
+    """
+    if actor.is_superuser:
+        return []
+    return sorted(set(codes) - get_user_permissions(actor))
+
+
+def role_permission_codes(role_ids) -> set[str]:
+    """Every permission code carried by the given (live) roles."""
+    if not role_ids:
+        return set()
+    rows = (
+        db.session.query(Permission.code)
+        .join(role_permissions, role_permissions.c.permission_id == Permission.id)
+        .join(Role, Role.id == role_permissions.c.role_id)
+        .filter(Role.id.in_(list(role_ids)), Role.deleted_at.is_(None))
+        .distinct()
+        .all()
+    )
+    return {code for (code,) in rows}
+
+
+def permission_codes(permission_ids) -> set[str]:
+    if not permission_ids:
+        return set()
+    rows = db.session.query(Permission.code).filter(Permission.id.in_(list(permission_ids))).all()
+    return {code for (code,) in rows}
+
+
 def list_roles() -> list[Role]:
     return Role.query.filter(Role.deleted_at.is_(None)).order_by(Role.name).all()
 
