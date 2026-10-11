@@ -400,3 +400,20 @@ def test_accepts_paper_payloads_as_works_in_range_returns_them():
 def test_result_is_json_serialisable_for_report_stats():
     graph = learning_map_graph(_gnn().works)
     assert json.loads(json.dumps(graph)) == graph
+
+
+def test_key_work_is_the_one_the_corpus_cites_not_the_globally_inflated_one():
+    # 9.5: a work OpenAlex credits with thousands of citations (a merged-record
+    # artefact in the CRISPR measurement) loses to the work the other papers
+    # on the topic actually cite.
+    corpus = _gnn()
+    gcn = corpus.groups["GCN"]
+    gcn[0]["cited_by_count"] = 50_000  # nobody in the corpus cites it
+    gcn[1]["cited_by_count"] = 40
+    for citing in corpus.groups["GAT"][:6]:
+        citing["referenced_works"].append(gcn[1]["external_id"])
+
+    key = _node(learning_map_graph(corpus.works), "GCN")["key_work"]
+    assert key["title"] == gcn[1]["title"]
+    assert key["corpus_citations"] >= 6
+    assert key["cited_by_count"] == 40
