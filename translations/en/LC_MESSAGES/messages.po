@@ -4525,6 +4525,29 @@ msgstr "Check yourself:"
 msgid "Key paper:"
 msgstr "Key paper:"
 
+msgid "Step by step"
+msgstr "Step by step"
+
+#, python-format
+msgid "Step %(n)s of %(total)s"
+msgstr "Step %(n)s of %(total)s"
+
+msgid ""
+"Arrows point from a concept to the ones that build on it. Pick a concept "
+"on the map or in the list to open it here."
+msgstr ""
+"Arrows point from a concept to the ones that build on it. Pick a concept "
+"on the map or in the list to open it here."
+
+msgid "Step navigation"
+msgstr "Step navigation"
+
+msgid "Previous step"
+msgstr "Previous step"
+
+msgid "Next step"
+msgstr "Next step"
+
 #~ msgid "Username or Email"
 #~ msgstr "Username"
 

@@ -2349,13 +2349,19 @@ def report_detail(report_id: int):
     if report is None:
         abort(404)
     steps: list[dict] = []
+    canvas: dict | None = None
     if report.kind == "learning_map":
-        from app.modules.scrape.learning_map import learning_map_steps
+        from app.modules.scrape.learning_map import learning_map_canvas, learning_map_steps
 
-        steps = learning_map_steps(
-            (report.stats or {}).get("graph"), (report.sections or {}).get("narration")
-        )
-    return render_template("reports/detail.html", report=report, learning_map_steps=steps)
+        graph = (report.stats or {}).get("graph")
+        steps = learning_map_steps(graph, (report.sections or {}).get("narration"))
+        canvas = learning_map_canvas(graph, steps)
+    return render_template(
+        "reports/detail.html",
+        report=report,
+        learning_map_steps=steps,
+        learning_map_canvas=canvas,
+    )
 
 
 @scrape_bp.route("/reports/<int:report_id>/status", methods=["GET"])
