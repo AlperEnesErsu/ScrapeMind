@@ -283,17 +283,34 @@ def _rounded(value: float | None) -> float | None:
     return None if value is None else round(value, 4)
 
 
-def _key_work(node: _Node, works: list[_Work], library_dois: frozenset[str]) -> dict | None:
+def _key_work(
+    node: _Node,
+    works: list[_Work],
+    library_dois: frozenset[str],
+    corpus_citations: dict[int, int],
+) -> dict | None:
+    """The one work to read for this concept.
+
+    In the user's library first; then the work the corpus itself cites most;
+    OpenAlex's global `cited_by_count` only breaks ties. Global counts alone
+    picked, for "CRISPR gene editing", a 2019 cannabis genome-editing paper
+    OpenAlex credits with 4,224 citations -- a merged-record artefact. A
+    count of references *from the other works on the topic* cannot be
+    inflated that way, and it is the same signal the arrows come from. With
+    no references at all every corpus count is 0 and the order is the
+    global one, as before.
+
+    The tie-break reads the work itself, never its position in the input,
+    so shuffled payloads pick the same key work.
+    """
     candidates = [works[i] for i in node.works]
     if not candidates:
         return None
-    # In the library first, then most cited. The tie-break reads the work
-    # itself, never its position in the input, so shuffled payloads pick the
-    # same key work.
     best = min(
         candidates,
         key=lambda w: (
             not (w.doi is not None and w.doi in library_dois),
+            -corpus_citations.get(w.index, 0),
             -w.cited_by,
             w.title,
             w.doi or "",
@@ -304,6 +321,7 @@ def _key_work(node: _Node, works: list[_Work], library_dois: frozenset[str]) -> 
         "doi": best.doi,
         "url": best.url,
         "cited_by_count": best.cited_by,
+        "corpus_citations": corpus_citations.get(best.index, 0),
         "in_library": bool(best.doi and best.doi in library_dois),
     }
 
@@ -344,6 +362,9 @@ def learning_map_graph(
     }
     works = _works(payloads)
     pairs = _citation_pairs(works)
+    corpus_citations: dict[int, int] = {}
+    for _citing, cited in pairs:
+        corpus_citations[cited.index] = corpus_citations.get(cited.index, 0) + 1
     result: dict[str, Any] = {
         "root": None,
         "nodes": [],
@@ -450,7 +471,7 @@ def learning_map_graph(
             "role": role(n.name),
             "median_year": median_year[n.name],
             "growth": _rounded(growth[n.name]),
-            "key_work": _key_work(n, works, library),
+            "key_work": _key_work(n, works, library, corpus_citations),
         }
         for position, n in enumerate(ordered)
     ]

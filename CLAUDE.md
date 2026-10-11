@@ -24,7 +24,8 @@ vaat ediyordu, doğru değil.)
 - `docs/PHASE7.md` — Faz 7 planı (kayıtlı arama + uyarı, Zotero, #58)
 - `docs/PHASE8.md` — Faz 8, Patent Takibi (USPTO tam metni, 3 haftalık pencere)
 - `docs/PRELAUNCH.md` — canlı öncesi tarama; **açık maddeler burada**
-- `docs/PHASE9.md` — Faz 9 tasarımı, öğrenme haritası (konu → kavram grafiği); kod yok
+- `docs/PHASE9.md` — Faz 9, öğrenme haritası: konu → kavram grafiği, oklar külliyat içi
+  atıf akışından (LLM ok çizmez). 9.1–9.5 main'de (#127–#134); kalan: gerçek LLM ile anlatı denemesi
 
 ## Veritabanı (yerel geliştirme)
 - **Postgres artık ScrapeMind'in kendisinin, Redis hâlâ paylaşımlı.** Postgres: `scrapemind-db-1`, **5433**, `pgvector/pgvector:pg17`, kullanıcı/şifre `scrapemind`, volume `scrapemind_pg_data`. Ayağa kaldır:
