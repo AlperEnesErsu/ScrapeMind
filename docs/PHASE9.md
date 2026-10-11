@@ -1,6 +1,6 @@
 # Faz 9 — Öğrenme haritası (konu → kavram grafiği)
 
-> **Durum:** tasarım, kod yok. 11 Ekim 2026.
+> **Durum:** 9.1 yazıldı (#127); **girdi kaynağı açık karar** (§3.5). 11 Ekim 2026.
 > Dal başlangıcı: `main` (#118–#123 merge'lenmiş). Migration head'i: `a7c3e9d1f2b4`.
 
 Kod yazmadan önce [SCRAPING.md](SCRAPING.md) §11 (etik sınırlar), Faz 6'nın rapor
@@ -78,12 +78,58 @@ yapılandırılabilir. İki ek kural grafiği okunur tutar:
 
 - **Katman** = DAG'daki en uzun yol derinliği. Soldan sağa yerleşim bundan.
 - **Rol**, sayılardan:
-  - *ön koşul*: giriş derecesi 0 ve medyan yayın yılı en eski çeyrekte;
+  - *ön koşul*: giriş derecesi 0 ve haritada en az bir kavramı kapsıyor. (İlk
+    taslak "giriş derecesi 0 ve medyan yılı en eski çeyrekte" diyordu; 9.1'in
+    testleri bunun tam hedeflediği kavramı kaçırdığını gösterdi: en genel kavram
+    her yılda geçtiği için medyanı aralığın ortasına düşüyor.)
   - *güncel*: aralığın ikinci yarısındaki payı ilk yarıya göre en çok artan
     çeyrekte. Tanım Faz 6'nın `_growing_topics`'iyle aynı, ama o fonksiyon iki
     ek `aggregate_works` çağrısı yapıyor; burada zaten elde olan payload'ların
     yıllarından hesaplanır, ek istek yok;
   - *yöntem / çekirdek*: kalanlar, çıkış derecesine göre.
+
+### 3.5 Canlı ölçüm: OpenAlex etiketleri yetmiyor (11 Ekim 2026)
+
+9.1 yazıldıktan sonra fonksiyon gerçek veriyle koşuldu: konu başına 400 çalışma
+(`cited_by_count` sıralı), "graph neural networks" ve "CRISPR gene editing".
+
+| Girdi (`categories`) | Ok sayısı | Gözlem |
+|---|---|---|
+| `topics` (şu anki) | 1 / 0 | Topic'ler kardeş kümeler; birbirini kapsamıyor |
+| `keywords` | 0 / 0 | Düz etiketler |
+| `concepts` (skor ≥ 0.3) | 10 / 5 | Hiyerarşi çıkıyor ama yalnızca apaçık oklar: "Computer science → Artificial intelligence", "Biology → Genetics" |
+| `concepts`, %30–50 üstü bağlam sayılınca | 0 / 1 | Genel kavramlar çıkınca orta seviye birbirini kapsamıyor |
+
+**Sonuç:** subsumption doğru çalışıyor, ama OpenAlex etiketleri "önce bu" sinyali
+taşımıyor. Kapsama ya yok ya da öğretici değil. `concepts` ayrıca OpenAlex'te
+kullanımdan kalkmış durumda.
+
+**Denenen alternatif — atıf akışı.** B'nin çalışmaları A'nın çalışmalarını
+(külliyat içinde) tersine göre çok daha fazla atıflıyorsa, B A'nın üzerine
+kuruludur: `A → B ⇔ akış(A→B) ≥ 5 ve akış(A→B) ≥ 2·akış(B→A)`. Aynı 400 çalışma,
+düğümler yine düz `topics`:
+
+| Konu | Külliyat içi atıf | Ok | Örnekler |
+|---|---|---|---|
+| graph neural networks | 864 | 16 | Neural networks → Advanced GNN (39'a 12); Domain adaptation → XAI |
+| CRISPR gene editing | 691 | 18 | CRISPR → Nanoparticle drug delivery (34'e 12); CAR-T → Cancer immunotherapy (20'ye 10); Genomics & chromatin → RNA regulation (23'e 7) |
+
+Bunlar bir öğrenme yoluna benziyor. Bedeli:
+
+- **Döngü mümkün.** İkili "2 kat" kuralı A→B, B→C, C→A'yı engellemez.
+  Subsumption'ın yapı gereği döngüsüzlüğü burada yok. En zayıf oku atan bir adım
+  gerekir (ağırlıklı geri besleme kümesi; 12 düğümde açgözlü çözüm yeterli).
+- **Veri.** `works_in_range` `referenced_works`'ü de istemeli (aynı istek, ek alan).
+  Külliyat içi atıf sayısı küçük konularda düşük kalabilir; o zaman `insufficient`.
+- **Anlam.** "B, A'ya dayanıyor" subsumption'ın "A, B'yi kapsıyor"undan daha
+  doğrudan bir ön koşul iddiası. Arayüz okları "bunun üzerine kurulu" diye
+  adlandırabilir.
+
+**Karar bekliyor:** 9.2'den önce okların kaynağı seçilmeli: (a) atıf akışı,
+(b) LLM'in özetlerden çıkardığı kavramlar üzerinde subsumption (sayılar yine
+hesaplanır ama etiketler LLM'den gelir; çalışma başına çağrı = pahalı), ya da
+(c) ikisinin birleşimi. 9.1'in grafik iskeleti (katman, rol, sıra, anahtar
+makale, `insufficient`) her durumda kullanılır; değişen yalnızca kenar kümesi.
 
 ### 3.4 Anahtar makale
 
@@ -146,7 +192,7 @@ Yeni tablo **yok**. `Report.stats`'e `graph` anahtarı:
 
 | | İş | Bitti sayılır |
 |---|---|---|
-| 9.1 | `learning_map_graph(payloads)` — saf fonksiyon, IO yok | Sabit girdilerle deterministik; subsumption, geçişli indirgeme, döngüsüzlük testleri |
+| 9.1 ✅ | `learning_map_graph(payloads)` — saf fonksiyon, IO yok (#127) | 42 test, %97 kapsam. Canlı ölçüm §3.5 |
 | 9.2 | `run_report` dalı + `stats.graph`, LLM'siz | `kind` `VALID_KINDS` + `_RUNNABLE_KINDS`'ta; anlatısız `partial` harita |
 | 9.3 | `narrate_learning_map` + doğrulama | Sahte sağlayıcıyla şema / id kümesi testleri; locale testi |
 | 9.4 | Sayfa: graf + liste + adım kartı | Tarayıcıda; axe 0 ihlal; 320 px'te taşma yok |
