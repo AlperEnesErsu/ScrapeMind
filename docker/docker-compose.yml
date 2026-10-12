@@ -3,6 +3,11 @@ version: "3.9"
 services:
   db:
     image: pgvector/pgvector:pg17
+    # Come back with Docker Desktop. Without it a restarted Docker left the
+    # database and Redis down while other projects' containers (restart:
+    # always) came up -- and every test then failed with OperationalError.
+    # Only infrastructure: web/worker are started by hand in development.
+    restart: unless-stopped
     environment:
       POSTGRES_USER: scrapemind
       POSTGRES_PASSWORD: scrapemind
@@ -22,6 +27,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
     healthcheck:
