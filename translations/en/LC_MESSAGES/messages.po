@@ -1693,11 +1693,6 @@ msgstr "Asking Claude…"
 msgid "AI is not configured"
 msgstr "AI is not configured"
 
-#: app/modules/scrape/templates/scrape/_ai_disabled.html:7
-#, python-format
-msgid "Set %(var)s in your .env to unlock paper analysis and Turkish translation."
-msgstr "Set %(var)s in your .env to unlock paper analysis and Turkish translation."
-
 #: app/modules/scrape/templates/scrape/_ai_disabled.html:10
 msgid "Until then the original abstract is the only view."
 msgstr "Until then the original abstract is the only view."
@@ -3700,13 +3695,6 @@ msgstr "Sent to Zotero: %(done)d of %(total)d. %(failed)d failed."
 msgid "Added to Read Later."
 msgstr "Added to Read Later."
 
-msgid ""
-"Ask Claude about this paper's methodology, findings, or how it relates to"
-" your work. The conversation history is saved."
-msgstr ""
-"Ask Claude about this paper's methodology, findings, or how it relates to"
-" your work. The conversation history is saved."
-
 msgid "Ask Paper"
 msgstr "Ask Paper"
 
@@ -3727,13 +3715,6 @@ msgstr "Change language"
 
 msgid "Citations"
 msgstr "Citations"
-
-msgid ""
-"Claude AI is not configured. Please set ANTHROPIC_API_KEY in your "
-"config/env to enable RAG chat."
-msgstr ""
-"Claude AI is not configured. Please set ANTHROPIC_API_KEY in your "
-"config/env to enable RAG chat."
 
 msgid ""
 "Claude did not return a response. Please check your credentials or try "
@@ -4560,6 +4541,20 @@ msgstr "Send question"
 
 msgid "Filter nodes"
 msgstr "Filter nodes"
+
+msgid ""
+"Add your own API key in the AI settings, or ask an administrator to "
+"configure one for the whole site."
+msgstr ""
+"Add your own API key in the AI settings, or ask an administrator to "
+"configure one for the whole site."
+
+msgid ""
+"Ask about this paper's methodology, findings, or how it relates to your "
+"work. The conversation history is saved."
+msgstr ""
+"Ask about this paper's methodology, findings, or how it relates to your "
+"work. The conversation history is saved."
 
 #~ msgid "Username or Email"
 #~ msgstr "Username"
