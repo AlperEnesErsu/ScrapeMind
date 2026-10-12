@@ -1701,13 +1701,6 @@ msgstr "Claude'a soruluyor…"
 msgid "AI is not configured"
 msgstr "AI yapılandırılmadı"
 
-#: app/modules/scrape/templates/scrape/_ai_disabled.html:7
-#, python-format
-msgid "Set %(var)s in your .env to unlock paper analysis and Turkish translation."
-msgstr ""
-"Makale analizi ve Türkçe çeviriyi açmak için .env dosyanda %(var)s "
-"değerini ayarla."
-
 #: app/modules/scrape/templates/scrape/_ai_disabled.html:10
 msgid "Until then the original abstract is the only view."
 msgstr "O zamana kadar yalnızca orijinal özet görüntülenir."
@@ -3730,13 +3723,6 @@ msgstr ""
 msgid "Added to Read Later."
 msgstr "Sonra okunacaklara eklendi."
 
-msgid ""
-"Ask Claude about this paper's methodology, findings, or how it relates to"
-" your work. The conversation history is saved."
-msgstr ""
-"Bu makalenin yöntemini, bulgularını ya da senin çalışmanla ilişkisini "
-"Claude'a sor. Konuşma geçmişi saklanır."
-
 msgid "Ask Paper"
 msgstr "Makaleye Sor"
 
@@ -3757,13 +3743,6 @@ msgstr "Dili değiştir"
 
 msgid "Citations"
 msgstr "Atıflar"
-
-msgid ""
-"Claude AI is not configured. Please set ANTHROPIC_API_KEY in your "
-"config/env to enable RAG chat."
-msgstr ""
-"Claude AI yapılandırılmamış. Sohbeti açmak için config/env dosyanda "
-"ANTHROPIC_API_KEY tanımla."
 
 msgid ""
 "Claude did not return a response. Please check your credentials or try "
@@ -4601,6 +4580,20 @@ msgstr "Soruyu gönder"
 
 msgid "Filter nodes"
 msgstr "Düğümleri süz"
+
+msgid ""
+"Add your own API key in the AI settings, or ask an administrator to "
+"configure one for the whole site."
+msgstr ""
+"AI ayarlarından kendi API anahtarınızı ekleyin ya da bir yöneticiden tüm "
+"site için yapılandırmasını isteyin."
+
+msgid ""
+"Ask about this paper's methodology, findings, or how it relates to your "
+"work. The conversation history is saved."
+msgstr ""
+"Bu makalenin yöntemi, bulguları ya da sizin çalışmanızla ilişkisi "
+"hakkında soru sorun. Konuşma geçmişi kaydedilir."
 
 #~ msgid "Username or Email"
 #~ msgstr "Kullanıcı Adı"
