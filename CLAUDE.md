@@ -289,6 +289,12 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
   koda da ulaşır. `scrape.ai.*` modüllerini doğrudan içe aktarma (döngüsel import);
   her zaman `ai_service` üzerinden gir. Yeni özellik fonksiyonunda altyapı adlarına
   çıplak değil `ai_service.` ile eriş.
+- **`scrape.routes` bir cephe; handler'lar `scrape/views/*.py`'de.** `routes.py` blueprint'i
+  (`scrape_bp`) ve ortak yardımcıyı tutar, alttaki import'larla `views/*` modüllerini yükler;
+  onlar handler'larını `scrape_bp`'ye kaydeder ve yardımcıları çağrı anında `routes.<ad>`
+  ile okur (testlerde `monkeypatch.setattr("app.modules.scrape.routes.X", ...)` çalışır).
+  Endpoint adları (`scrape.<fonksiyon>`) ve URL'ler değişmedi; `tests/modules/test_scrape_url_map.py`
+  bunu sabitler. `views/*` modüllerini doğrudan içe aktarma.
 
 ## Açık Kaynak Kuralları
 - Bu repo **halka açık** — commit/PR/dokümantasyona gizli bilgi (şifre, API key, gerçek e-posta) yazma
