@@ -67,7 +67,7 @@ app/modules/
   ├── academic/    → kimlikler (ORCID/Scopus/WoS), Keyword sözlüğü (+ TR→EN çeviri kolonları)
   ├── patent/      → Patent Takibi (Faz 8): uspto.py · parser.py · ingest.py · search.py
                      embedding.py · explain.py — kendi tabloları, `papers`'a yazmaz
-  └── scrape/      → sources/ (adaptörler) · service/ (orkestrasyon paketi: scraping · papers · feeds · scan_runs · …) · ai_service.py (LLM)
+  └── scrape/      → sources/ (adaptörler) · service/ (orkestrasyon paketi: scraping · papers · feeds · scan_runs · …) · ai_service.py (LLM altyapısı + cephe) · ai/ (analysis · reports · topics · patents · learning_narration)
                      net_guard.py (SSRF) · ratelimit.py (Redis bütçe) · doi.py · forms.py
 app/tasks/         → core_tasks, scrape_tasks, feed_tasks, digest_tasks, channel_tasks,
                      patent_bulk_tasks (haftalık USPTO yükleme, purge, istem-1 embedding),
@@ -282,6 +282,13 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
   Örn. `enabled_sources` → `service.source_prefs`, `fetch_feed_conditional` → `service.feeds`,
   `patent_sources` → `service.patents`. Yanlış yeri yamalamak hata vermez, sessizce
   gerçek ağ çağrısı yapar.
+
+- **`scrape.ai_service` bir cephe; özellik kodu `scrape/ai/*.py`'de.** Bu modüller ortak
+  altyapıyı ve birbirlerini çağrı anında `ai_service.<ad>` ile okur, bu yüzden testlerde
+  `monkeypatch.setattr(ai_service, "_call_llm", ...)` (ya da herhangi bir ad) taşınmış
+  koda da ulaşır. `scrape.ai.*` modüllerini doğrudan içe aktarma (döngüsel import);
+  her zaman `ai_service` üzerinden gir. Yeni özellik fonksiyonunda altyapı adlarına
+  çıplak değil `ai_service.` ile eriş.
 
 ## Açık Kaynak Kuralları
 - Bu repo **halka açık** — commit/PR/dokümantasyona gizli bilgi (şifre, API key, gerçek e-posta) yazma
