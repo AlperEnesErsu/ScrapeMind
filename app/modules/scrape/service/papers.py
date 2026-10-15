@@ -212,6 +212,35 @@ def link_user_paper(
     return link, True
 
 
+def link_user_papers(user: User, items: list[tuple[Paper, str | None]]) -> int:
+    """Link many papers to `user` at once; returns how many links were created.
+
+    Same semantics as calling `link_user_paper` per item (idempotent, the first
+    `matched_keyword` for a paper wins), but with one lookup of the already-linked
+    ids and one commit instead of a SELECT and a COMMIT per paper.
+    """
+    if not items:
+        return 0
+    ids = {paper.id for paper, _ in items}
+    already = {
+        row[0]
+        for row in db.session.query(UserPaper.paper_id).filter(
+            UserPaper.user_id == user.id, UserPaper.paper_id.in_(ids)
+        )
+    }
+    new_links: dict[int, UserPaper] = {}
+    for paper, matched_keyword in items:
+        if paper.id in already or paper.id in new_links:
+            continue
+        new_links[paper.id] = UserPaper(
+            user_id=user.id, paper_id=paper.id, matched_keyword=matched_keyword
+        )
+    if new_links:
+        db.session.add_all(new_links.values())
+        db.session.commit()
+    return len(new_links)
+
+
 def add_paper_from_url(user: User, url: str) -> tuple[UserPaper, bool]:
     """Manually add a paper from a public web URL using net_guard + web_reach.
     Returns (UserPaper link, created boolean). Raises ValueError on validation/net_guard error.
