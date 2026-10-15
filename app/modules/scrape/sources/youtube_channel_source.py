@@ -37,7 +37,7 @@ import structlog
 
 from app.modules.scrape.fetcher import USER_AGENT as _USER_AGENT
 from app.modules.scrape.fetcher import cfg as _cfg
-from app.modules.scrape.fetcher import read_capped
+from app.modules.scrape.fetcher import get_with_redirects, read_capped
 from app.modules.scrape.net_guard import is_public_http_url
 from app.modules.scrape.ratelimit import youtube_channel_slot
 from app.modules.scrape.sources.payload import PaperPayload
@@ -158,7 +158,11 @@ def _resolve_channel_id_from_page(url: str) -> tuple[str | None, str | None]:
     headers = {"User-Agent": _USER_AGENT}
     timeout = (_CONNECT_TIMEOUT, int(_cfg("FEED_FETCH_TIMEOUT", 15)))
     try:
-        resp = requests.get(url, headers=headers, timeout=timeout, stream=True)
+        # Every redirect hop goes back through the SSRF guard (fetcher.get_with_redirects):
+        # a bare requests.get would follow a public URL's 302 to 169.254.169.254 unchecked.
+        resp, _final_url, hop_status = get_with_redirects(
+            url, headers, timeout, allow_private=allow_private
+        )
     except requests.Timeout:
         logger.warning("youtube_channel_resolve_timeout", url=url)
         return None, _CHANNEL_ERROR
@@ -167,6 +171,9 @@ def _resolve_channel_id_from_page(url: str) -> tuple[str | None, str | None]:
         return None, _CHANNEL_ERROR
     except Exception:  # noqa: BLE001 — a bad page must not blow up resolution
         logger.exception("youtube_channel_resolve_failed", url=url)
+        return None, _CHANNEL_ERROR
+    if resp is None:
+        logger.warning("youtube_channel_resolve_blocked", url=url, reason=hop_status)
         return None, _CHANNEL_ERROR
 
     try:
@@ -390,9 +397,14 @@ def _fetch_caption_body(url: str) -> bytes | None:
     headers = {"User-Agent": _USER_AGENT}
     timeout = (_CONNECT_TIMEOUT, int(_cfg("FEED_FETCH_TIMEOUT", 15)))
     try:
-        resp = requests.get(url, headers=headers, timeout=timeout, stream=True)
+        resp, _final_url, hop_status = get_with_redirects(
+            url, headers, timeout, allow_private=allow_private
+        )
     except requests.RequestException:
         logger.warning("youtube_transcript_caption_fetch_error")
+        return None
+    if resp is None:
+        logger.warning("youtube_transcript_caption_url_blocked", reason=hop_status)
         return None
 
     try:
@@ -534,9 +546,7 @@ def fetch_transcript(video_id: str, *, languages: tuple[str, ...] = ("tr", "en")
 # ---------------------------------------------------------------------------
 
 
-def search_for_keywords(
-    keywords: list[str], *, max_results: int = 25
-) -> list[PaperPayload]:  # noqa: ARG001
+def search_for_keywords(keywords: list[str], *, max_results: int = 25) -> list[PaperPayload]:  # noqa: ARG001
     """No-op — same precedent as `rss_source.search_for_keywords`.
 
     Channels are subscription-based (a per-user `UserChannel` list added in
