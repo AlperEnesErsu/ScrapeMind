@@ -546,7 +546,9 @@ def fetch_transcript(video_id: str, *, languages: tuple[str, ...] = ("tr", "en")
 # ---------------------------------------------------------------------------
 
 
-def search_for_keywords(keywords: list[str], *, max_results: int = 25) -> list[PaperPayload]:  # noqa: ARG001
+def search_for_keywords(
+    keywords: list[str], *, max_results: int = 25
+) -> list[PaperPayload]:  # noqa: ARG001
     """No-op — same precedent as `rss_source.search_for_keywords`.
 
     Channels are subscription-based (a per-user `UserChannel` list added in
