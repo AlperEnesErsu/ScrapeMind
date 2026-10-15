@@ -20,6 +20,7 @@ from app.modules.scrape import ai_service
 from app.modules.scrape.models import Paper, UserPaper
 from app.modules.scrape.service import (
     link_relevant_feed_items,
+    link_user_paper,
     list_user_source_prefs,
     set_user_source,
     upsert_paper,
@@ -372,6 +373,37 @@ def test_link_relevant_feed_items_links_above_threshold_only(app, db, clean_user
         linked_ids = {up.paper_id for up in UserPaper.query.filter_by(user_id=clean_user.id).all()}
         assert p1.id in linked_ids
         assert p2.id not in linked_ids
+
+
+def test_link_relevant_feed_items_never_rescores_already_linked_papers(
+    app, db, clean_user, monkeypatch
+):
+    """Both the curated-feed query (NOT EXISTS) and the `extra_candidates` path
+    must leave out papers this user is already linked to."""
+    with app.app_context():
+        add_user_keyword(clean_user, "transformers")
+        linked_curated = upsert_paper(_news_payload("n1", title="Already linked curated"))
+        fresh_curated = upsert_paper(_news_payload("n2", title="Fresh curated"))
+        linked_extra = upsert_paper(_news_payload("n3", source="user_feed", title="Linked extra"))
+        fresh_extra = upsert_paper(_news_payload("n4", source="user_feed", title="Fresh extra"))
+        link_user_paper(clean_user, linked_curated, matched_keyword=None)
+        link_user_paper(clean_user, linked_extra, matched_keyword=None)
+
+        scored: list[int] = []
+
+        def _fake_score(user, papers):
+            scored.extend(p.id for p in papers)
+            return []
+
+        monkeypatch.setattr(ai_service, "score_feed_relevance", _fake_score)
+        link_relevant_feed_items(
+            clean_user, threshold=60, extra_candidates=[linked_extra, fresh_extra]
+        )
+
+        assert fresh_curated.id in scored
+        assert fresh_extra.id in scored
+        assert linked_curated.id not in scored
+        assert linked_extra.id not in scored
 
 
 def test_link_relevant_feed_items_skips_when_all_feeds_muted(app, db, clean_user, monkeypatch):
