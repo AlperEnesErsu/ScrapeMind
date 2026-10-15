@@ -225,7 +225,7 @@ ScrapeMind/
 │   │   ├── academic/            # kimlikler (ORCID/Scopus/WoS) + Keyword sözlüğü
 │   │   └── scrape/              # 🔍 veri toplama
 │   │       ├── sources/         # adaptörler: arxiv, semantic_scholar, pubmed, rss
-│   │       ├── service.py       # orkestrasyon, kilit, ScanRun, kaynak tercihleri
+│   │       ├── service/         # orkestrasyon paketi: kilit, ScanRun, kaynak tercihleri, abonelikler
 │   │       ├── ai_service.py    # çok sağlayıcılı LLM: analiz, çeviri, digest, konu
 │   │       ├── net_guard.py     # SSRF koruması (kullanıcı URL'leri)
 │   │       └── ratelimit.py     # Redis tabanlı, dağıtım geneli API bütçesi

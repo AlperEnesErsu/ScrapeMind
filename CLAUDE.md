@@ -67,7 +67,7 @@ app/modules/
   ├── academic/    → kimlikler (ORCID/Scopus/WoS), Keyword sözlüğü (+ TR→EN çeviri kolonları)
   ├── patent/      → Patent Takibi (Faz 8): uspto.py · parser.py · ingest.py · search.py
                      embedding.py · explain.py — kendi tabloları, `papers`'a yazmaz
-  └── scrape/      → sources/ (adaptörler) · service.py (orkestrasyon) · ai_service.py (LLM)
+  └── scrape/      → sources/ (adaptörler) · service/ (orkestrasyon paketi: scraping · papers · feeds · scan_runs · …) · ai_service.py (LLM)
                      net_guard.py (SSRF) · ratelimit.py (Redis bütçe) · doi.py · forms.py
 app/tasks/         → core_tasks, scrape_tasks, feed_tasks, digest_tasks, channel_tasks,
                      patent_bulk_tasks (haftalık USPTO yükleme, purge, istem-1 embedding),
@@ -275,6 +275,13 @@ Gerekçeler: `docs/HANDOVER.md §5` · Faz 5 detayı: `docs/PHASE5.md`
   dil başına cache yok — feed'de N+1 olmasın diye bilinçli
 - **Yeni Celery task modülü `app/tasks/__init__.py`'deki import satırına eklenmezse**
   worker task'ı hiç görmez, hata da vermez. `TASK_ROUTES` girdisi de gerekir
+
+- **`scrape.service` bir paket; testte monkeypatch edilen isim, onu *kullanan* alt modülde
+  yamalanmalı.** `app.modules.scrape.service.X` gevşek bir yeniden dışa aktarımdır:
+  yalnızca rotaların çağrı anında `from ...service import X` ile aldığı yerleri etkiler.
+  Örn. `enabled_sources` → `service.source_prefs`, `fetch_feed_conditional` → `service.feeds`,
+  `patent_sources` → `service.patents`. Yanlış yeri yamalamak hata vermez, sessizce
+  gerçek ağ çağrısı yapar.
 
 ## Açık Kaynak Kuralları
 - Bu repo **halka açık** — commit/PR/dokümantasyona gizli bilgi (şifre, API key, gerçek e-posta) yazma

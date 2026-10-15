@@ -308,7 +308,7 @@ def test_create_group_shows_a_message_on_blank_name(logged_in, db, a_user):
 
 
 def test_group_cap_shows_a_message(logged_in, db, a_user, monkeypatch):
-    monkeypatch.setattr(service, "MAX_AUTHOR_GROUPS", 1)
+    monkeypatch.setattr(service.author_groups, "MAX_AUTHOR_GROUPS", 1)
     resp = logged_in.post(
         "/papers/profile/authors/groups/create", data={"name": "First", "description": ""}
     )
@@ -325,7 +325,7 @@ def test_group_cap_shows_a_message(logged_in, db, a_user, monkeypatch):
 
 
 def test_member_cap_shows_a_message(logged_in, db, a_user, monkeypatch):
-    monkeypatch.setattr(service, "MAX_GROUP_MEMBERS", 1)
+    monkeypatch.setattr(service.author_groups, "MAX_GROUP_MEMBERS", 1)
     group, _ = service.create_author_group(a_user, "Small group")
 
     monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json("A", _AUTHOR_ID)))

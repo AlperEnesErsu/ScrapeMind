@@ -134,7 +134,7 @@ def test_scrape_persists_and_links(db, clean, monkeypatch):
 
     # Stub the source registry: one fake source, two results
     monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources",
+        "app.modules.scrape.service.source_prefs.enabled_sources",
         _fake_sources(
             [
                 _payload("2401.10001", title="On transformer architectures for vision"),
@@ -165,7 +165,7 @@ def test_scrape_run_idempotent(db, clean, monkeypatch):
     db.session.commit()
 
     monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources",
+        "app.modules.scrape.service.source_prefs.enabled_sources",
         _fake_sources([_payload("2401.55555", title="An RL paper")]),
     )
 
@@ -195,7 +195,7 @@ def test_scrape_isolates_failing_source(db, clean, monkeypatch):
         search_for_keywords=lambda keywords, *, max_results=25: [_payload("2401.88888")],
     )
     monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources",
+        "app.modules.scrape.service.source_prefs.enabled_sources",
         lambda: {"broken": broken, "healthy": healthy},
     )
 
@@ -224,7 +224,7 @@ def test_scrape_retries_once_on_transient_connection_error(db, clean, monkeypatc
     still lands normally — no -1 sentinel."""
     from app.modules.scrape import service
 
-    monkeypatch.setattr(service, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
+    monkeypatch.setattr(service.scraping, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
     _kw(db, clean, "rl")
 
     calls = {"n": 0}
@@ -236,7 +236,9 @@ def test_scrape_retries_once_on_transient_connection_error(db, clean, monkeypatc
         return [_payload("2401.66601")]
 
     flaky = SimpleNamespace(SOURCE_NAME="flaky", search_for_keywords=_flaky)
-    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"flaky": flaky})
+    monkeypatch.setattr(
+        "app.modules.scrape.service.source_prefs.enabled_sources", lambda: {"flaky": flaky}
+    )
 
     result = scrape_for_user(clean)
     assert calls["n"] == 2
@@ -248,7 +250,7 @@ def test_scrape_retries_once_on_transient_timeout(db, clean, monkeypatch):
     """Same contract as the ConnectionError case, for Timeout."""
     from app.modules.scrape import service
 
-    monkeypatch.setattr(service, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
+    monkeypatch.setattr(service.scraping, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
     _kw(db, clean, "rl")
 
     calls = {"n": 0}
@@ -260,7 +262,9 @@ def test_scrape_retries_once_on_transient_timeout(db, clean, monkeypatch):
         return [_payload("2401.66602")]
 
     flaky = SimpleNamespace(SOURCE_NAME="flaky", search_for_keywords=_flaky)
-    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"flaky": flaky})
+    monkeypatch.setattr(
+        "app.modules.scrape.service.source_prefs.enabled_sources", lambda: {"flaky": flaky}
+    )
 
     result = scrape_for_user(clean)
     assert calls["n"] == 2
@@ -273,7 +277,7 @@ def test_scrape_does_not_retry_http_error(db, clean, monkeypatch):
     same as before this retry existed."""
     from app.modules.scrape import service
 
-    monkeypatch.setattr(service, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
+    monkeypatch.setattr(service.scraping, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
     _kw(db, clean, "rl")
 
     calls = {"n": 0}
@@ -283,7 +287,9 @@ def test_scrape_does_not_retry_http_error(db, clean, monkeypatch):
         raise requests.exceptions.HTTPError("404 not found")
 
     broken = SimpleNamespace(SOURCE_NAME="broken", search_for_keywords=_boom)
-    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"broken": broken})
+    monkeypatch.setattr(
+        "app.modules.scrape.service.source_prefs.enabled_sources", lambda: {"broken": broken}
+    )
 
     result = scrape_for_user(clean)
     assert calls["n"] == 1
@@ -296,7 +302,7 @@ def test_scrape_does_not_retry_throttled_source(db, clean, monkeypatch):
     unchanged."""
     from app.modules.scrape import service
 
-    monkeypatch.setattr(service, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
+    monkeypatch.setattr(service.scraping, "TRANSIENT_RETRY_DELAY_SECONDS", 0)
     _kw(db, clean, "rl")
 
     calls = {"n": 0}
@@ -307,7 +313,7 @@ def test_scrape_does_not_retry_throttled_source(db, clean, monkeypatch):
 
     throttled = SimpleNamespace(SOURCE_NAME="throttled", search_for_keywords=_throttled)
     monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources", lambda: {"throttled": throttled}
+        "app.modules.scrape.service.source_prefs.enabled_sources", lambda: {"throttled": throttled}
     )
 
     result = scrape_for_user(clean)
@@ -326,7 +332,7 @@ def test_celery_task_through_eager(db, clean, monkeypatch):
     db.session.commit()
 
     monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources",
+        "app.modules.scrape.service.source_prefs.enabled_sources",
         _fake_sources([_payload("2401.77777")]),
     )
     result = run_for_user.delay(clean.id).get()
@@ -451,7 +457,9 @@ def test_user_enabled_sources_defaults_to_all(db, clean, monkeypatch):
 
     a = SimpleNamespace(SOURCE_NAME="a")
     b = SimpleNamespace(SOURCE_NAME="b")
-    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"a": a, "b": b})
+    monkeypatch.setattr(
+        "app.modules.scrape.service.source_prefs.enabled_sources", lambda: {"a": a, "b": b}
+    )
     assert set(user_enabled_sources(clean).keys()) == {"a", "b"}
 
 
@@ -464,7 +472,9 @@ def test_set_user_source_mutes_and_reenables(db, clean, monkeypatch):
 
     a = SimpleNamespace(SOURCE_NAME="a")
     b = SimpleNamespace(SOURCE_NAME="b")
-    monkeypatch.setattr("app.modules.scrape.service.enabled_sources", lambda: {"a": a, "b": b})
+    monkeypatch.setattr(
+        "app.modules.scrape.service.source_prefs.enabled_sources", lambda: {"a": a, "b": b}
+    )
 
     # Mute "b"
     set_user_source(clean, "b", False)
@@ -499,7 +509,7 @@ def test_scrape_respects_muted_source(db, clean, monkeypatch):
         search_for_keywords=lambda keywords, *, max_results=25: [_payload("2401.99992")],
     )
     monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources",
+        "app.modules.scrape.service.source_prefs.enabled_sources",
         lambda: {"healthy": healthy, "muted": muted},
     )
 
@@ -815,7 +825,7 @@ def test_add_user_feed_discards_validators_from_the_validation_fetch(db, clean, 
         title="Fake Feed",
     )
     monkeypatch.setattr(
-        "app.modules.scrape.service.fetch_feed_conditional",
+        "app.modules.scrape.service.feeds.fetch_feed_conditional",
         lambda feed_dict: fake_res,
     )
     feed, err = add_user_feed(clean, "https://example.com/feed.xml")

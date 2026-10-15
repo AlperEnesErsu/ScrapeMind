@@ -150,7 +150,7 @@ def test_delete_of_unknown_group_returns_false(app, db, a_user):
 
 
 def test_group_cap_is_enforced(app, db, a_user, monkeypatch):
-    monkeypatch.setattr(service, "MAX_AUTHOR_GROUPS", 1)
+    monkeypatch.setattr(service.author_groups, "MAX_AUTHOR_GROUPS", 1)
     row, error = service.create_author_group(a_user, "First")
     assert error is None
 
@@ -175,7 +175,7 @@ def test_rename_to_an_existing_name_is_rejected(app, db, a_user):
 
 
 def test_member_cap_is_enforced(app, db, a_user, monkeypatch):
-    monkeypatch.setattr(service, "MAX_GROUP_MEMBERS", 1)
+    monkeypatch.setattr(service.author_groups, "MAX_GROUP_MEMBERS", 1)
     group, _ = service.create_author_group(a_user, "Small group")
     author1 = _follow(a_user, monkeypatch, author_id="A1", name="First")
     author2 = _follow(a_user, monkeypatch, author_id="A2", name="Second")

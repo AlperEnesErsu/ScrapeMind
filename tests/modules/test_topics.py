@@ -349,7 +349,7 @@ def _serve_feed(monkeypatch, result: FeedFetchResult):
     service imports it at module level.
     """
     monkeypatch.setattr(
-        "app.modules.scrape.service.fetch_feed_conditional", lambda feed, **kw: result
+        "app.modules.scrape.service.feeds.fetch_feed_conditional", lambda feed, **kw: result
     )
 
 
@@ -385,7 +385,7 @@ def test_add_user_feed_rejects_invalid_url(app, db, clean_user, monkeypatch):
     def _boom(*a, **k):
         raise AssertionError("must not fetch for an unparseable URL")
 
-    monkeypatch.setattr("app.modules.scrape.service.fetch_feed_conditional", _boom)
+    monkeypatch.setattr("app.modules.scrape.service.feeds.fetch_feed_conditional", _boom)
     with app.app_context():
         feed, err = add_user_feed(clean_user, "   ")
         assert feed is None
@@ -441,7 +441,7 @@ def test_add_user_feed_rejects_private_host(app, db, clean_user, monkeypatch):
     def _boom(*a, **k):
         raise AssertionError("must not fetch a blocked address")
 
-    monkeypatch.setattr("app.modules.scrape.service.fetch_feed_conditional", _boom)
+    monkeypatch.setattr("app.modules.scrape.service.feeds.fetch_feed_conditional", _boom)
     monkeypatch.setitem(app.config, "FEED_ALLOW_PRIVATE_HOSTS", False)
     with app.app_context():
         for url in (

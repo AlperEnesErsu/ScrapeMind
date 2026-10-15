@@ -90,6 +90,13 @@ def logged_in(client, a_user):
 # ----------------------------------------------------------------------------
 
 
+def _patch_patent_sources(monkeypatch, fake):
+    """The route reads `patent_sources` through the `service` facade while
+    `search_patents_live` reads it from `service.patents`; stub both."""
+    monkeypatch.setattr("app.modules.scrape.service.patent_sources", fake)
+    monkeypatch.setattr("app.modules.scrape.service.patents.patent_sources", fake)
+
+
 def test_terms_drop_stopwords_and_prefer_long_words():
     terms = _prior_art_terms("A system for detecting bearing wear with vibration sensors")
     assert "for" not in terms and "with" not in terms
@@ -122,7 +129,7 @@ def test_live_search_does_not_write_papers(app, db, monkeypatch):
     """The whole reason this is a separate function from
     `scrape_patents_for_user`."""
     monkeypatch.setattr(
-        service, "patent_sources", lambda user=None: {"epo_ops": _FakeSource([_payload()])}
+        service.patents, "patent_sources", lambda user=None: {"epo_ops": _FakeSource([_payload()])}
     )
 
     before = Paper.query.count()
@@ -138,7 +145,7 @@ def test_live_search_reports_a_failing_source_with_the_sentinel(app, db, monkeyp
     """-1 is the same sentinel the scan paths use, so the page can say "EPO
     was unreachable" instead of quietly showing a shorter list."""
     monkeypatch.setattr(
-        service,
+        service.patents,
         "patent_sources",
         lambda user=None: {
             "epo_ops": _FakeSource(error=RuntimeError("boom")),
@@ -156,7 +163,7 @@ def test_live_search_sorts_newest_first(app, db, monkeypatch):
     new = _payload(external_id="EP2")
     object.__setattr__(new, "published_at", datetime(2025, 6, 1, tzinfo=UTC))
     monkeypatch.setattr(
-        service, "patent_sources", lambda user=None: {"epo_ops": _FakeSource([old, new])}
+        service.patents, "patent_sources", lambda user=None: {"epo_ops": _FakeSource([old, new])}
     )
 
     results, _ = service.search_patents_live(["x"])
@@ -167,7 +174,7 @@ def test_live_search_with_no_terms_calls_nothing(app, db, monkeypatch):
     def boom(user=None):
         raise AssertionError("should not have resolved sources")
 
-    monkeypatch.setattr(service, "patent_sources", boom)
+    monkeypatch.setattr(service.patents, "patent_sources", boom)
     assert service.search_patents_live(["  "]) == ([], {})
 
 
@@ -185,17 +192,14 @@ def test_page_requires_login(client):
 def test_page_explains_itself_when_no_source_is_available(logged_in, monkeypatch):
     """Without keys or the admin opt-in there is nothing to search. Saying so
     beats an empty box that silently finds nothing."""
-    monkeypatch.setattr("app.modules.scrape.service.patent_sources", lambda user=None: {})
+    monkeypatch.setattr("app.modules.scrape.service.patents.patent_sources", lambda user=None: {})
 
     body = logged_in.get("/papers/patents").get_data(as_text=True)
     assert "No patent source is available" in body or "kullanılabilir patent kaynağı yok" in body
 
 
 def test_search_renders_results_without_persisting(logged_in, db, monkeypatch):
-    monkeypatch.setattr(
-        "app.modules.scrape.service.patent_sources",
-        lambda user=None: {"epo_ops": _FakeSource([_payload()])},
-    )
+    _patch_patent_sources(monkeypatch, lambda user=None: {"epo_ops": _FakeSource([_payload()])})
     before = Paper.query.count()
 
     resp = logged_in.post(
@@ -210,10 +214,7 @@ def test_search_renders_results_without_persisting(logged_in, db, monkeypatch):
 def test_assessment_is_skipped_when_not_requested(logged_in, monkeypatch):
     called = []
 
-    monkeypatch.setattr(
-        "app.modules.scrape.service.patent_sources",
-        lambda user=None: {"epo_ops": _FakeSource([_payload()])},
-    )
+    _patch_patent_sources(monkeypatch, lambda user=None: {"epo_ops": _FakeSource([_payload()])})
     monkeypatch.setattr(
         "app.modules.scrape.ai_service.analyze_novelty",
         lambda *a, **k: called.append(1),
@@ -226,10 +227,7 @@ def test_assessment_is_skipped_when_not_requested(logged_in, monkeypatch):
 def test_failing_assessment_does_not_cost_the_user_their_results(logged_in, monkeypatch):
     """The patent list is the half with evidentiary value; the LLM output is a
     reading aid over it."""
-    monkeypatch.setattr(
-        "app.modules.scrape.service.patent_sources",
-        lambda user=None: {"epo_ops": _FakeSource([_payload()])},
-    )
+    _patch_patent_sources(monkeypatch, lambda user=None: {"epo_ops": _FakeSource([_payload()])})
     monkeypatch.setattr("app.modules.scrape.ai_service.is_ai_enabled", lambda user=None: True)
 
     def boom(*args, **kwargs):
@@ -246,10 +244,7 @@ def test_failing_assessment_does_not_cost_the_user_their_results(logged_in, monk
 
 
 def test_short_idea_is_rejected(logged_in, monkeypatch):
-    monkeypatch.setattr(
-        "app.modules.scrape.service.patent_sources",
-        lambda user=None: {"epo_ops": _FakeSource([_payload()])},
-    )
+    _patch_patent_sources(monkeypatch, lambda user=None: {"epo_ops": _FakeSource([_payload()])})
     resp = logged_in.post("/papers/patents", data={"idea": "hi"})
     assert resp.status_code == 200
     # Rendered the form again rather than searching.

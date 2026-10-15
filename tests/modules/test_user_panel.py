@@ -548,7 +548,7 @@ def test_ai_tab_renders_topics_and_empty_feed_state(auth_client, clean_papers):
 def _stub_feed_fetch(monkeypatch, result):
     """`add_user_feed` validates by fetching once — stub that fetch."""
     monkeypatch.setattr(
-        "app.modules.scrape.service.fetch_feed_conditional", lambda feed, **kw: result
+        "app.modules.scrape.service.feeds.fetch_feed_conditional", lambda feed, **kw: result
     )
 
 
@@ -625,7 +625,7 @@ def test_feed_add_rejects_invalid_url_over_http(auth_client, clean_papers, monke
     def _boom(*a, **k):
         raise AssertionError("must not fetch for an unparseable URL")
 
-    monkeypatch.setattr("app.modules.scrape.service.fetch_feed_conditional", _boom)
+    monkeypatch.setattr("app.modules.scrape.service.feeds.fetch_feed_conditional", _boom)
 
     r = client.post(
         "/papers/profile/feeds/add",
