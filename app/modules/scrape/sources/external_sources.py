@@ -26,6 +26,7 @@ from urllib.parse import quote
 import requests
 import structlog
 
+from app.modules.scrape.fetcher import fetch_budget, get_with_redirects, read_capped
 from app.modules.scrape.net_guard import is_public_http_url
 from app.modules.scrape.ratelimit import (
     SourceThrottledError,
@@ -200,15 +201,27 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
         except Exception as e:  # noqa: BLE001
             logger.warning("web_reach_jina_reader_failed", url=clean_query, error=str(e))
 
-        # Direct fetch fallback with HTML stripping
+        # Direct fetch fallback with HTML stripping. Through the shared fetcher:
+        # every redirect hop is re-checked by the SSRF guard (a bare requests.get
+        # followed a public URL's redirect to a private address unchecked) and the
+        # body is capped.
         try:
-            resp = requests.get(clean_query, headers=headers, timeout=15)
-            if resp.status_code != 200 or not resp.text:
-                logger.warning(
-                    "web_reach_http_error", status_code=resp.status_code, url=clean_query
-                )
+            timeout, max_bytes, _ = fetch_budget()
+            resp, _final_url, hop_status = get_with_redirects(
+                clean_query, headers, timeout, allow_private=allow_private
+            )
+            if resp is None:
+                logger.warning("web_reach_blocked", url=clean_query, reason=hop_status)
                 return []
-            content = resp.text
+            try:
+                status_code = resp.status_code
+                raw = read_capped(resp, max_bytes) if status_code == 200 else None
+            finally:
+                resp.close()
+            if status_code != 200 or not raw:
+                logger.warning("web_reach_http_error", status_code=status_code, url=clean_query)
+                return []
+            content = raw.decode(resp.encoding or "utf-8", errors="replace")
             match = re.search(r"<title>(.*?)</title>", content, re.IGNORECASE)
             # An empty <title></title> tag must not win over the fallback —
             # PaperPayload rejects an empty title.
