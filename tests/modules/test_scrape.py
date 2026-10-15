@@ -25,6 +25,7 @@ from app.modules.scrape.service import (
     list_user_papers_in_window,
     scrape_for_user,
     upsert_paper,
+    upsert_paper_status,
 )
 from app.modules.scrape.sources.payload import PaperPayload
 
@@ -106,6 +107,15 @@ def clean(db):
 def test_upsert_paper_is_idempotent(db, clean):
     p1 = upsert_paper(_payload("2401.00001"))
     p2 = upsert_paper(_payload("2401.00001"))
+    assert p1.id == p2.id
+    assert Paper.query.count() == 1
+
+
+def test_upsert_paper_status_reports_whether_the_row_was_created(db, clean):
+    p1, created1 = upsert_paper_status(_payload("2401.00003"))
+    p2, created2 = upsert_paper_status(_payload("2401.00003"))
+    assert created1 is True
+    assert created2 is False
     assert p1.id == p2.id
     assert Paper.query.count() == 1
 
