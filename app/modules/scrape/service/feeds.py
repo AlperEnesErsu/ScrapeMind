@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 import structlog
 from flask import current_app
 from flask_babel import lazy_gettext as _l
-from sqlalchemy import desc
+from sqlalchemy import desc, exists
 
 from app.core.models.user import User
 from app.extensions import db
@@ -82,17 +82,16 @@ def link_relevant_feed_items(
     prefs = list_user_source_prefs(user)
     active_feed_keys = {k for k in feed_keys if prefs.get(k, True)}
 
-    already_linked = {
-        row[0]
-        for row in db.session.query(UserPaper.paper_id).filter(UserPaper.user_id == user.id).all()
-    }
-
     candidates: list[Paper] = []
     seen_ids: set[int] = set()
     if active_feed_keys:
-        query = Paper.query.filter(Paper.kind == "news", Paper.source.in_(active_feed_keys))
-        if already_linked:
-            query = query.filter(~Paper.id.in_(already_linked))
+        # NOT EXISTS in the database rather than shipping every id this user is
+        # already linked to into Python and back as a growing `NOT IN (...)` list.
+        query = Paper.query.filter(
+            Paper.kind == "news",
+            Paper.source.in_(active_feed_keys),
+            ~exists().where(UserPaper.user_id == user.id, UserPaper.paper_id == Paper.id),
+        )
         for paper in (
             query.order_by(desc(Paper.published_at), desc(Paper.created_at))
             .limit(FEED_LINK_CANDIDATE_LIMIT)
@@ -101,7 +100,18 @@ def link_relevant_feed_items(
             candidates.append(paper)
             seen_ids.add(paper.id)
 
-    for paper in extra_candidates or []:
+    extra = [p for p in (extra_candidates or []) if p.id not in seen_ids]
+    already_linked = (
+        {
+            row[0]
+            for row in db.session.query(UserPaper.paper_id).filter(
+                UserPaper.user_id == user.id, UserPaper.paper_id.in_([p.id for p in extra])
+            )
+        }
+        if extra
+        else set()
+    )
+    for paper in extra:
         if paper.id in already_linked or paper.id in seen_ids:
             continue
         candidates.append(paper)
