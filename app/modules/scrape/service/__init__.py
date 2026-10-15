@@ -133,6 +133,7 @@ from app.modules.scrape.service.papers import (  # noqa: F401
     add_paper_from_url,
     link_user_paper,
     upsert_paper,
+    upsert_paper_status,
 )
 from app.modules.scrape.service.patents import (  # noqa: F401
     patent_sources,

@@ -10,10 +10,9 @@ from sqlalchemy import desc
 from app.core.models.user import User
 from app.extensions import db
 from app.modules.scrape.models import (
-    Paper,
     UserChannel,
 )
-from app.modules.scrape.service.papers import link_user_paper, upsert_paper
+from app.modules.scrape.service.papers import link_user_paper, upsert_paper_status
 
 logger = structlog.get_logger()
 
@@ -220,15 +219,9 @@ def ingest_user_channels(user: User) -> tuple[dict, list[int]]:
 
         newest_published_at = ch.last_video_at
         for payload in payloads:
-            existed = (
-                Paper.query.filter_by(
-                    source=payload.source, external_id=payload.external_id
-                ).first()
-                is not None
-            )
-            paper = upsert_paper(payload)
+            paper, created = upsert_paper_status(payload)
             link_user_paper(user, paper, matched_keyword=None)
-            if not existed:
+            if created:
                 new_paper_ids.append(paper.id)
             if payload.published_at and (
                 newest_published_at is None or payload.published_at > newest_published_at

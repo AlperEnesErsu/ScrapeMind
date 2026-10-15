@@ -17,7 +17,7 @@ from app.modules.scrape.models import (
     UserPaper,
 )
 from app.modules.scrape.net_guard import is_public_http_url
-from app.modules.scrape.service.papers import link_user_paper, upsert_paper
+from app.modules.scrape.service.papers import link_user_paper, upsert_paper_status
 from app.modules.scrape.service.source_prefs import list_user_source_prefs
 from app.modules.scrape.sources.rss_source import fetch_feed_conditional
 
@@ -321,15 +321,9 @@ def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
 
         hits += len(result.payloads)
         for payload in result.payloads:
-            existed = (
-                Paper.query.filter_by(
-                    source=payload.source, external_id=payload.external_id
-                ).first()
-                is not None
-            )
-            paper = upsert_paper(payload)
+            paper, created = upsert_paper_status(payload)
             touched.append(paper)
-            if not existed:
+            if created:
                 new += 1
 
         # Validators are stored only after the upserts land. If the loop above

@@ -115,8 +115,12 @@ def _enrich(paper: Paper, data: dict) -> bool:
     return changed
 
 
-def upsert_paper(payload: PaperPayload | dict) -> Paper:
-    """Insert a paper if we haven't seen it before; otherwise return the
+def upsert_paper_status(payload: PaperPayload | dict) -> tuple[Paper, bool]:
+    """Like `upsert_paper`, but also reports whether this call created the row
+    (`False` when it already existed or another worker won the insert race), so
+    ingest loops can count new items without a separate existence query.
+
+    Insert a paper if we haven't seen it before; otherwise return the
     existing row, enriched with anything new the payload can fill in.
 
     Resolution order: normalized DOI, then `(source, external_id)`. The DOI
@@ -169,7 +173,7 @@ def upsert_paper(payload: PaperPayload | dict) -> Paper:
     if existing is not None:
         if _enrich(existing, data):
             db.session.commit()
-        return existing
+        return existing, False
 
     from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -178,7 +182,7 @@ def upsert_paper(payload: PaperPayload | dict) -> Paper:
         .values(**data)
         .on_conflict_do_nothing(index_elements=["source", "external_id"])
     )
-    db.session.execute(stmt)
+    inserted = db.session.execute(stmt).rowcount == 1
     db.session.commit()
 
     paper = Paper.query.filter_by(source=data["source"], external_id=data["external_id"]).first()
@@ -186,7 +190,13 @@ def upsert_paper(payload: PaperPayload | dict) -> Paper:
         raise RuntimeError("upsert_paper: insert conflicted but no row was found")
     if _enrich(paper, data):
         db.session.commit()
-    return paper
+    return paper, inserted
+
+
+def upsert_paper(payload: PaperPayload | dict) -> Paper:
+    """Insert a paper if we haven't seen it before, else enrich and return the
+    existing row. See `upsert_paper_status` for the resolution rules."""
+    return upsert_paper_status(payload)[0]
 
 
 def link_user_paper(

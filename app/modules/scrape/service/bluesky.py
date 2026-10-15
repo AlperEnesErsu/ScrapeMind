@@ -13,7 +13,7 @@ from app.modules.scrape.models import (
     Paper,
     UserBluesky,
 )
-from app.modules.scrape.service.papers import upsert_paper
+from app.modules.scrape.service.papers import upsert_paper_status
 
 logger = structlog.get_logger()
 
@@ -127,15 +127,9 @@ def ingest_user_bluesky(user: User) -> tuple[dict, list[Paper]]:
         hits += len(payloads)
         max_published_at = a.last_post_at
         for payload in payloads:
-            existed = (
-                Paper.query.filter_by(
-                    source=payload.source, external_id=payload.external_id
-                ).first()
-                is not None
-            )
-            paper = upsert_paper(payload)
+            paper, created = upsert_paper_status(payload)
             touched.append(paper)
-            if not existed:
+            if created:
                 new += 1
             if payload.published_at and (
                 max_published_at is None or payload.published_at > max_published_at
