@@ -5,12 +5,18 @@ from __future__ import annotations
 import structlog
 from flask import current_app
 from flask_babel import lazy_gettext as _l
-from sqlalchemy import desc
 
 from app.core.models.user import User
 from app.extensions import db
 from app.modules.scrape.models import (
     UserChannel,
+)
+from app.modules.scrape.service._owned import (
+    count_owned,
+    get_owned,
+    list_owned,
+    remove_owned,
+    toggle_owned,
 )
 from app.modules.scrape.service.papers import link_user_paper, upsert_paper_status
 
@@ -52,17 +58,17 @@ def max_user_channels() -> int:
 
 
 def list_user_channels(user: User) -> list[UserChannel]:
-    return UserChannel.query.filter_by(user_id=user.id).order_by(desc(UserChannel.created_at)).all()
+    return list_owned(UserChannel, user)
 
 
 def get_user_channel(user: User, channel_pk: int) -> UserChannel | None:
     """Fetch a UserChannel only if it belongs to this user — same ownership
     guard as get_user_feed/get_note_for_user."""
-    return UserChannel.query.filter_by(id=channel_pk, user_id=user.id).first()
+    return get_owned(UserChannel, user, channel_pk)
 
 
 def count_user_channels(user: User) -> int:
-    return UserChannel.query.filter_by(user_id=user.id).count()
+    return count_owned(UserChannel, user)
 
 
 def add_user_channel(
@@ -125,23 +131,13 @@ def add_user_channel(
 
 
 def remove_user_channel(user: User, channel_pk: int) -> bool:
-    row = get_user_channel(user, channel_pk)
-    if row is None:
-        return False
-    db.session.delete(row)
-    db.session.commit()
-    return True
+    return remove_owned(UserChannel, user, channel_pk)
 
 
 def toggle_user_channel(user: User, channel_pk: int) -> bool | None:
     """Flip a channel's active flag. Returns the new value, or None if the
     channel doesn't exist / isn't owned by this user (caller should 404)."""
-    row = get_user_channel(user, channel_pk)
-    if row is None:
-        return None
-    row.active = not row.active
-    db.session.commit()
-    return row.active
+    return toggle_owned(UserChannel, user, channel_pk)
 
 
 def ingest_user_channels(user: User) -> tuple[dict, list[int]]:
