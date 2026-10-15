@@ -82,7 +82,7 @@ Her adım tek başına test-yeşil ve shippable (Faz 4'ün commit disiplini koru
 
 ### 5.1 — Kimlik gerektiren kaynak altyapısı
 
-Bugün `effective_source_prefs` ([service.py](../app/modules/scrape/service.py))
+Bugün `effective_source_prefs` ([service/source_prefs.py](../app/modules/scrape/service/source_prefs.py))
 `category == "academic"` olan her kaynağı **satır yoksa açık** kabul ediyor. Anahtarı
 olmayan bir kaynak bu modelde her kullanıcı için her gece `-1` sentinel'i ve kalıcı
 `status="partial"` üretir. Faz 5'in tüm kaynakları anahtar gerektirdiği için bu ilk sırada.

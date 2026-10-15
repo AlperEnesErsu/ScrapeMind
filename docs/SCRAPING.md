@@ -28,7 +28,7 @@ Beat (schedule.py)
    └───────────────────────────────────┘
 ```
 
-`service.scrape_for_user` ([service.py:600](../app/modules/scrape/service.py#L600)) adım adım:
+`service.scrape_for_user` ([service/scraping.py](../app/modules/scrape/service/scraping.py)) adım adım:
 
 1. `list_user_keywords(user)` — anahtar kelime yoksa `reason="no_keywords"` ile çıkar.
 2. `user_enabled_sources(user)` — aktif kaynak yoksa `reason="no_sources"` ile çıkar.

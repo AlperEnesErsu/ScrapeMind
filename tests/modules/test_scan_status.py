@@ -126,10 +126,12 @@ def _stub_source(monkeypatch, payloads=None, *, boom=False):
             raise RuntimeError("source exploded")
         return payloads or []
 
-    monkeypatch.setattr(
-        "app.modules.scrape.service.user_enabled_sources",
-        lambda user: {"fake": SimpleNamespace(search_for_keywords=_search)},
-    )
+    sources = {"fake": SimpleNamespace(search_for_keywords=_search)}
+    # Both the scan itself and its duration estimate look the sources up.
+    for module in ("scraping", "scan_runs"):
+        monkeypatch.setattr(
+            f"app.modules.scrape.service.{module}.user_enabled_sources", lambda user: sources
+        )
 
 
 # ----------------------------------------------------------------------------
@@ -183,10 +185,11 @@ def test_scan_run_marks_skipped_without_keywords(app, db, clean_user):
 
 def test_scan_run_records_error_and_reraises(app, db, clean_user, monkeypatch):
     with app.app_context():
-        monkeypatch.setattr(
-            "app.modules.scrape.service.user_enabled_sources",
-            lambda user: (_ for _ in ()).throw(RuntimeError("boom")),
-        )
+        for module in ("scraping", "scan_runs"):
+            monkeypatch.setattr(
+                f"app.modules.scrape.service.{module}.user_enabled_sources",
+                lambda user: (_ for _ in ()).throw(RuntimeError("boom")),
+            )
         add_user_keyword(clean_user, "quantum")
         with pytest.raises(RuntimeError):
             with record_scan_run(clean_user.id, "scrape") as run:
@@ -355,7 +358,7 @@ def test_a_held_lock_alone_does_not_claim_a_scan_is_running(app, db, clean_user,
     TTL even when no worker existed — which is exactly what made it untrusted.
     Only a real ScanRun row counts."""
     monkeypatch.setattr(
-        "app.modules.scrape.service._lock_client",
+        "app.modules.scrape.service.locks._lock_client",
         lambda: SimpleNamespace(exists=lambda key: 1),
     )
     with app.app_context():

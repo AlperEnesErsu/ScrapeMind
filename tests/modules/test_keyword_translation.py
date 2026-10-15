@@ -350,7 +350,7 @@ def test_scrape_queries_the_english_term_and_attributes_it_back(db, clean_user, 
         return [_payload("2401.55555", title="Deep learning for heart failure prognosis")]
 
     monkeypatch.setattr(
-        "app.modules.scrape.service.enabled_sources",
+        "app.modules.scrape.service.source_prefs.enabled_sources",
         lambda: {"arxiv": SimpleNamespace(SOURCE_NAME="arxiv", search_for_keywords=_search)},
     )
 

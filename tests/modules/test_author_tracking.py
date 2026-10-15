@@ -373,7 +373,7 @@ def test_a_name_clash_is_disambiguated(app, db, a_user, monkeypatch):
 
 
 def test_cap_is_enforced(app, db, a_user, monkeypatch):
-    monkeypatch.setattr(service, "MAX_USER_AUTHORS", 1)
+    monkeypatch.setattr(service.authors, "MAX_USER_AUTHORS", 1)
     monkeypatch.setattr(oa._session, "get", lambda *a, **k: _Resp(_author_json()))
     service.follow_author(a_user, _ORCID)
 
@@ -463,7 +463,7 @@ def test_second_run_asks_only_for_newer_works(app, db, a_user, monkeypatch, clea
         seen["since"] = since
         return []
 
-    monkeypatch.setattr(service, "list_user_authors", lambda user: [row])
+    monkeypatch.setattr(service.authors, "list_user_authors", lambda user: [row])
     monkeypatch.setattr(oa, "works_by_author", fake_works)
 
     service.ingest_user_authors(a_user)
@@ -477,7 +477,7 @@ def test_a_failing_author_uses_the_sentinel(app, db, a_user, monkeypatch, clean_
     def boom(*args, **kwargs):
         raise requests.ConnectionError("down")
 
-    monkeypatch.setattr(service, "list_user_authors", lambda user: [row])
+    monkeypatch.setattr(service.authors, "list_user_authors", lambda user: [row])
     monkeypatch.setattr(oa, "works_by_author", boom)
 
     result = service.ingest_user_authors(a_user)
