@@ -52,7 +52,7 @@ that page draws.
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from statistics import median
 from typing import Any
@@ -379,27 +379,7 @@ def learning_map_graph(
     if not works:
         return result
 
-    by_concept: dict[str, _Node] = {}
-    for work in works:
-        for concept in work.concepts:
-            by_concept.setdefault(concept, _Node(concept)).works.add(work.index)
-
-    root_cut = ROOT_SHARE * len(works)
-    roots = sorted(
-        (n for n in by_concept.values() if len(n.works) >= root_cut),
-        key=lambda n: (-len(n.works), n.name),
-    )
-    result["root"] = roots[0].name if roots else None
-    root_names = {n.name for n in roots}
-
-    nodes = sorted(
-        (
-            n
-            for n in by_concept.values()
-            if n.name not in root_names and len(n.works) >= min_support
-        ),
-        key=lambda n: (-len(n.works), n.name),
-    )[:max_nodes]
+    result["root"], nodes = _root_and_candidates(works, min_support, max_nodes)
     if len(nodes) < MIN_NODES:
         return result
 
@@ -429,35 +409,8 @@ def learning_map_graph(
         for kid in kids:
             in_degree[kid] += 1
 
-    years = [w.year for w in works if w.year is not None]
-    mid = (min(years) + (max(years) - min(years)) // 2) if years else None
-    median_year = {
-        n.name: (
-            median(y for y in (works[i].year for i in n.works) if y is not None)
-            if any(works[i].year is not None for i in n.works)
-            else None
-        )
-        for n in nodes
-    }
-    growth = {
-        n.name: (_growth(n, works, mid) if mid is not None and max(years) > min(years) else None)
-        for n in nodes
-    }
-
-    known_growth = [g for g in growth.values() if g is not None]
-    growth_cut = _top_quartile_cut(known_growth) if known_growth else None
-
-    def role(name: str) -> str:
-        # Structural, not chronological: a parentless concept that something
-        # on the map builds on. An earlier rule ("parentless and oldest
-        # median year") missed exactly these: the broadest concept appears in
-        # every year, so its median sits in the middle of the range.
-        if in_degree[name] == 0 and children[name]:
-            return ROLE_PREREQUISITE
-        g = growth[name]
-        if growth_cut is not None and g is not None and g > 0 and g >= growth_cut:
-            return ROLE_CURRENT
-        return ROLE_CORE if children[name] else ROLE_METHOD
+    median_year, growth = _temporal_stats(nodes, works)
+    role = _role_of(children, in_degree, growth)
 
     library = frozenset(d for d in (normalize_doi(x) for x in library_dois) if d)
     ordered = sorted(nodes, key=lambda n: (layers[n.name], -len(n.works), n.name))
@@ -488,6 +441,72 @@ def learning_map_graph(
     result["insufficient"] = False
     result["reason"] = None
     return result
+
+
+def _root_and_candidates(
+    works: list, min_support: int, max_nodes: int
+) -> tuple[str | None, list[_Node]]:
+    """Group works by concept; the broadest concepts (in at least `ROOT_SHARE`
+    of the works) are the root, the rest with enough support are candidates."""
+    by_concept: dict[str, _Node] = {}
+    for work in works:
+        for concept in work.concepts:
+            by_concept.setdefault(concept, _Node(concept)).works.add(work.index)
+
+    root_cut = ROOT_SHARE * len(works)
+    roots = sorted(
+        (n for n in by_concept.values() if len(n.works) >= root_cut),
+        key=lambda n: (-len(n.works), n.name),
+    )
+    root_names = {n.name for n in roots}
+    nodes = sorted(
+        (
+            n
+            for n in by_concept.values()
+            if n.name not in root_names and len(n.works) >= min_support
+        ),
+        key=lambda n: (-len(n.works), n.name),
+    )[:max_nodes]
+    return (roots[0].name if roots else None), nodes
+
+
+def _temporal_stats(nodes: list[_Node], works: list) -> tuple[dict, dict]:
+    """Per node: median publication year, and growth (second half vs first half
+    of the harvested year range; None when the range is a single year)."""
+    years = [w.year for w in works if w.year is not None]
+    mid = (min(years) + (max(years) - min(years)) // 2) if years else None
+    median_year = {
+        n.name: (
+            median(y for y in (works[i].year for i in n.works) if y is not None)
+            if any(works[i].year is not None for i in n.works)
+            else None
+        )
+        for n in nodes
+    }
+    growth = {
+        n.name: (_growth(n, works, mid) if mid is not None and max(years) > min(years) else None)
+        for n in nodes
+    }
+    return median_year, growth
+
+
+def _role_of(children: dict, in_degree: dict, growth: dict) -> Callable[[str], str]:
+    known_growth = [g for g in growth.values() if g is not None]
+    growth_cut = _top_quartile_cut(known_growth) if known_growth else None
+
+    def role(name: str) -> str:
+        # Structural, not chronological: a parentless concept that something
+        # on the map builds on. An earlier rule ("parentless and oldest
+        # median year") missed exactly these: the broadest concept appears in
+        # every year, so its median sits in the middle of the range.
+        if in_degree[name] == 0 and children[name]:
+            return ROLE_PREREQUISITE
+        g = growth[name]
+        if growth_cut is not None and g is not None and g > 0 and g >= growth_cut:
+            return ROLE_CURRENT
+        return ROLE_CORE if children[name] else ROLE_METHOD
+
+    return role
 
 
 def _http_url(value: Any) -> str | None:

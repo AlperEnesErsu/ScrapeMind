@@ -17,50 +17,64 @@ def index():
 
         return redirect(url_for("dashboard.admin_overview"))
 
-    from datetime import UTC, datetime, timedelta
+    from app.modules.academic.service import list_user_identifiers, list_user_keywords
+    from app.modules.scrape.service import list_user_papers
 
+    for_you = list_user_papers(current_user, limit=10)
+    user_keywords = list_user_keywords(current_user)
+
+    # Profile summary strip
+    identifiers = list_user_identifiers(current_user)
+    user_stats, steps = _user_stats_and_onboarding(user_keywords)
+
+    return render_template(
+        "dashboard/for_you.html",
+        for_you=for_you,
+        highlighted_media=_highlighted_media(for_you),
+        has_interests=bool(user_keywords),
+        user_keywords=user_keywords,
+        user_keyword_values={kw.value for kw in user_keywords},
+        user_stats=user_stats,
+        **steps,
+        weekly_insights=_weekly_insights(),
+        top_keywords=_trending_keywords(),
+        identifiers=identifiers,
+        verified_identifier_count=sum(1 for i in identifiers if i.is_verified),
+        latest_digest=_latest_digest(),
+        # Real scan history + the next scheduled run for this user. Replaces the
+        # old max(UserPaper.created_at) proxy, which reported "last update" as the
+        # last time a paper happened to be linked — stale after any scan that
+        # legitimately found nothing new.
+        **_scan_context(),
+        # Source selection — interest-aware suggested/other grouping (Faz 3).
+        **_sources_context(),
+    )
+
+
+def _highlighted_media(for_you):
+    """Videos/news from the user's own YouTube channels and RSS feeds get
+    buried by the daily-volume academic sources in `for_you` (it orders by
+    published_at across every kind). Surface them in their own section instead
+    of competing for the same top-5 slots. Excludes ids already in
+    `for_you[:5]` so a video that does make the top five isn't rendered twice."""
+    from app.modules.scrape.service import list_user_papers
+
+    top_ids = {r.id for r in for_you[:5]}
+    return [
+        r
+        for r in list_user_papers(current_user, limit=5 + len(top_ids), kinds=("video", "news"))
+        if r.id not in top_ids
+    ][:5]
+
+
+def _trending_keywords():
+    """The most followed research interests across all users (recommendations)."""
     from sqlalchemy import func
 
     from app.extensions import db
     from app.modules.academic.models import Keyword, UserKeyword
-    from app.modules.academic.service import list_user_identifiers, list_user_keywords
-    from app.modules.scrape.models import PaperNote, UserPaper
-    from app.modules.scrape.service import count_all_notes, count_user_papers, list_user_papers
 
-    for_you = list_user_papers(current_user, limit=10)
-    # Videos/news from the user's own YouTube channels and RSS feeds get
-    # buried by the daily-volume academic sources in `for_you` above (it
-    # orders by published_at across every kind). Surface them in their own
-    # section instead of competing for the same top-5 slots. Excludes ids
-    # already in `for_you[:5]` so a video that does make the top five isn't
-    # rendered twice on the page.
-    _for_you_top_ids = {r.id for r in for_you[:5]}
-    highlighted_media = [
-        r
-        for r in list_user_papers(
-            current_user, limit=5 + len(_for_you_top_ids), kinds=("video", "news")
-        )
-        if r.id not in _for_you_top_ids
-    ][:5]
-    user_keywords = list_user_keywords(current_user)
-    has_interests = bool(user_keywords)
-    user_keyword_values = {kw.value for kw in user_keywords}
-
-    # Source selection — interest-aware suggested/other grouping (Faz 3).
-    sources_ctx = _sources_context()
-
-    # Profile summary strip
-    identifiers = list_user_identifiers(current_user)
-    verified_identifier_count = sum(1 for i in identifiers if i.is_verified)
-
-    # Real scan history + the next scheduled run for this user. Replaces the
-    # old max(UserPaper.created_at) proxy, which reported "last update" as the
-    # last time a paper happened to be linked — stale after any scan that
-    # legitimately found nothing new.
-    scan_ctx = _scan_context()
-
-    # Query trending keywords for all users to show recommendations
-    top_keywords = (
+    return (
         db.session.query(Keyword.value, func.count(UserKeyword.user_id).label("count"))
         .join(UserKeyword, Keyword.id == UserKeyword.keyword_id)
         .group_by(Keyword.value)
@@ -69,20 +83,38 @@ def index():
         .all()
     )
 
+
+def _user_stats_and_onboarding(user_keywords):
+    """Library counters and the three onboarding steps derived from them."""
+    from app.modules.scrape.service import count_all_notes, count_user_papers
+
     user_stats = {
         "interests_count": len(user_keywords),
         "favorites_count": count_user_papers(current_user, view="favorites"),
         "read_later_count": count_user_papers(current_user, view="read_later"),
         "notes_count": count_all_notes(current_user),
     }
-
-    # Dynamic onboarding stepper logic
     step1_done = len(user_keywords) > 0
     step2_done = count_user_papers(current_user, view="all") > 0
     step3_done = user_stats["favorites_count"] > 0 or user_stats["notes_count"] > 0
-    onboarding_complete = step1_done and step2_done and step3_done
+    steps = {
+        "step1_done": step1_done,
+        "step2_done": step2_done,
+        "step3_done": step3_done,
+        "onboarding_complete": step1_done and step2_done and step3_done,
+    }
+    return user_stats, steps
 
-    # Weekly insights
+
+def _weekly_insights():
+    """Last 7 days: newly linked papers, notes written, the most active interest."""
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import func
+
+    from app.extensions import db
+    from app.modules.scrape.models import PaperNote, UserPaper
+
     seven_days_ago = datetime.now(UTC) - timedelta(days=7)
     recent_papers_count = UserPaper.query.filter(
         UserPaper.user_id == current_user.id, UserPaper.created_at >= seven_days_ago
@@ -92,15 +124,6 @@ def index():
         .filter(UserPaper.user_id == current_user.id, PaperNote.created_at >= seven_days_ago)
         .count()
     )
-
-    from app.modules.scrape.models import UserDigest
-
-    latest_digest = (
-        UserDigest.query.filter_by(user_id=current_user.id)
-        .order_by(UserDigest.created_at.desc())
-        .first()
-    )
-
     top_keyword_row = (
         db.session.query(UserPaper.matched_keyword, func.count(UserPaper.id).label("count"))
         .filter(
@@ -112,33 +135,20 @@ def index():
         .order_by(func.count(UserPaper.id).desc())
         .first()
     )
-    active_interest = top_keyword_row[0] if top_keyword_row else None
-
-    weekly_insights = {
+    return {
         "recent_papers_count": recent_papers_count,
         "recent_notes_count": recent_notes_count,
-        "active_interest": active_interest,
+        "active_interest": top_keyword_row[0] if top_keyword_row else None,
     }
 
-    return render_template(
-        "dashboard/for_you.html",
-        for_you=for_you,
-        highlighted_media=highlighted_media,
-        has_interests=has_interests,
-        user_keywords=user_keywords,
-        user_keyword_values=user_keyword_values,
-        user_stats=user_stats,
-        step1_done=step1_done,
-        step2_done=step2_done,
-        step3_done=step3_done,
-        onboarding_complete=onboarding_complete,
-        weekly_insights=weekly_insights,
-        top_keywords=top_keywords,
-        identifiers=identifiers,
-        verified_identifier_count=verified_identifier_count,
-        latest_digest=latest_digest,
-        **scan_ctx,
-        **sources_ctx,
+
+def _latest_digest():
+    from app.modules.scrape.models import UserDigest
+
+    return (
+        UserDigest.query.filter_by(user_id=current_user.id)
+        .order_by(UserDigest.created_at.desc())
+        .first()
     )
 
 
