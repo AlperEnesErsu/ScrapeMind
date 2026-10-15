@@ -11,7 +11,8 @@ import structlog
 from app.core.models.user import User
 from app.extensions import db
 from app.modules.academic.service import list_user_keywords
-from app.modules.scrape.service.papers import link_user_paper, upsert_paper
+from app.modules.scrape.models import Paper
+from app.modules.scrape.service.papers import link_user_papers, upsert_paper
 from app.modules.scrape.service.source_prefs import user_enabled_sources
 
 logger = structlog.get_logger()
@@ -228,13 +229,11 @@ def scrape_for_user(user: User, *, max_results: int = 25) -> dict:
             payloads = _hydrate_scopus_payloads(payloads)
         per_source[name] = len(payloads)
         hits += len(payloads)
+        found: list[tuple[Paper, str | None]] = []
         for payload in payloads:
             paper = upsert_paper(payload)
-            _, created = link_user_paper(
-                user, paper, matched_keyword=_match_keyword(paper.title, terms, alias)
-            )
-            if created:
-                linked += 1
+            found.append((paper, _match_keyword(paper.title, terms, alias)))
+        linked += link_user_papers(user, found)
     logger.info("scrape_done", user_id=user.id, hits=hits, linked=linked, sources=per_source)
     return {"hits": hits, "linked": linked, "sources": per_source}
 

@@ -132,6 +132,7 @@ from app.modules.scrape.service.papers import (  # noqa: F401
     _is_empty,
     add_paper_from_url,
     link_user_paper,
+    link_user_papers,
     upsert_paper,
     upsert_paper_status,
 )

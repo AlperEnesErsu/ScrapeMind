@@ -21,6 +21,7 @@ from app.modules.scrape.models import Paper, UserPaper
 from app.modules.scrape.ratelimit import SourceThrottledError
 from app.modules.scrape.service import (
     link_user_paper,
+    link_user_papers,
     list_user_papers,
     list_user_papers_in_window,
     scrape_for_user,
@@ -118,6 +119,24 @@ def test_upsert_paper_status_reports_whether_the_row_was_created(db, clean):
     assert created2 is False
     assert p1.id == p2.id
     assert Paper.query.count() == 1
+
+
+def test_link_user_papers_creates_only_missing_links_in_one_go(db, clean):
+    a = upsert_paper(_payload("2401.00010"))
+    b = upsert_paper(_payload("2401.00011"))
+    c = upsert_paper(_payload("2401.00012"))
+    link_user_paper(clean, a, matched_keyword="old")  # already linked
+
+    created = link_user_papers(
+        clean,
+        [(a, "x"), (b, "first"), (b, "second"), (c, None)],  # b appears twice
+    )
+
+    assert created == 2  # b and c only
+    links = {up.paper_id: up.matched_keyword for up in UserPaper.query.filter_by(user_id=clean.id)}
+    assert links == {a.id: "old", b.id: "first", c.id: None}  # first keyword wins, a untouched
+    assert link_user_papers(clean, [(a, "x"), (b, "y")]) == 0  # idempotent
+    assert link_user_papers(clean, []) == 0
 
 
 def test_link_user_paper_dedupes(db, clean):
