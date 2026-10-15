@@ -5,13 +5,19 @@ from __future__ import annotations
 import structlog
 from flask import current_app
 from flask_babel import lazy_gettext as _l
-from sqlalchemy import desc
 
 from app.core.models.user import User
 from app.extensions import db
 from app.modules.scrape.models import (
     Paper,
     UserBluesky,
+)
+from app.modules.scrape.service._owned import (
+    count_owned,
+    get_owned,
+    list_owned,
+    remove_owned,
+    toggle_owned,
 )
 from app.modules.scrape.service.papers import upsert_paper_status
 
@@ -23,16 +29,16 @@ BLUESKY_CAP_MESSAGE = _l("Bluesky account limit reached. Remove one before addin
 
 def list_user_bluesky(user: User) -> list[UserBluesky]:
     """Every Bluesky account this user tracks, newest first."""
-    return UserBluesky.query.filter_by(user_id=user.id).order_by(desc(UserBluesky.created_at)).all()
+    return list_owned(UserBluesky, user)
 
 
 def get_user_bluesky(user: User, bluesky_id: int) -> UserBluesky | None:
     """Read one Bluesky account row, asserting ownership."""
-    return UserBluesky.query.filter_by(id=bluesky_id, user_id=user.id).first()
+    return get_owned(UserBluesky, user, bluesky_id)
 
 
 def count_user_bluesky(user: User) -> int:
-    return UserBluesky.query.filter_by(user_id=user.id).count()
+    return count_owned(UserBluesky, user)
 
 
 def add_user_bluesky(user: User, handle_or_url: str) -> tuple[UserBluesky | None, str | None]:
@@ -84,22 +90,12 @@ def add_user_bluesky(user: User, handle_or_url: str) -> tuple[UserBluesky | None
 
 
 def remove_user_bluesky(user: User, bluesky_id: int) -> bool:
-    row = get_user_bluesky(user, bluesky_id)
-    if row is None:
-        return False
-    db.session.delete(row)
-    db.session.commit()
-    return True
+    return remove_owned(UserBluesky, user, bluesky_id)
 
 
 def toggle_user_bluesky(user: User, bluesky_id: int) -> bool | None:
     """Flip a Bluesky account's active flag. Returns the new value, or None if not found."""
-    row = get_user_bluesky(user, bluesky_id)
-    if row is None:
-        return None
-    row.active = not row.active
-    db.session.commit()
-    return row.active
+    return toggle_owned(UserBluesky, user, bluesky_id)
 
 
 def ingest_user_bluesky(user: User) -> tuple[dict, list[Paper]]:

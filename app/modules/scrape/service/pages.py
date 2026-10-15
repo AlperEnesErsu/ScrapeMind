@@ -7,7 +7,6 @@ from datetime import UTC, datetime
 import structlog
 from flask import current_app
 from flask_babel import lazy_gettext as _l
-from sqlalchemy import desc
 
 from app.core.models.user import User
 from app.extensions import db
@@ -16,6 +15,14 @@ from app.modules.scrape.models import (
     UserPage,
 )
 from app.modules.scrape.net_guard import is_public_http_url
+from app.modules.scrape.service._owned import (
+    clear_validators,
+    count_owned,
+    get_owned,
+    list_owned,
+    remove_owned,
+    toggle_owned,
+)
 from app.modules.scrape.service.feeds import _normalize_feed_url
 from app.modules.scrape.service.papers import upsert_paper_status
 
@@ -27,16 +34,16 @@ PAGE_CAP_MESSAGE = _l("Page limit reached. Remove one before adding another.")
 
 def list_user_pages(user: User) -> list[UserPage]:
     """Every custom web page this user tracks, in stable order (newest first)."""
-    return UserPage.query.filter_by(user_id=user.id).order_by(desc(UserPage.created_at)).all()
+    return list_owned(UserPage, user)
 
 
 def get_user_page(user: User, page_id: int) -> UserPage | None:
     """Read one page row, asserting ownership."""
-    return UserPage.query.filter_by(id=page_id, user_id=user.id).first()
+    return get_owned(UserPage, user, page_id)
 
 
 def count_user_pages(user: User) -> int:
-    return UserPage.query.filter_by(user_id=user.id).count()
+    return count_owned(UserPage, user)
 
 
 def add_user_page(
@@ -113,25 +120,12 @@ def add_user_page(
 
 
 def remove_user_page(user: User, page_id: int) -> bool:
-    row = get_user_page(user, page_id)
-    if row is None:
-        return False
-    db.session.delete(row)
-    db.session.commit()
-    return True
+    return remove_owned(UserPage, user, page_id)
 
 
 def toggle_user_page(user: User, page_id: int) -> bool | None:
     """Flip a page's active flag. Returns the new value, or None if not found."""
-    row = get_user_page(user, page_id)
-    if row is None:
-        return None
-    row.active = not row.active
-    if row.active:
-        row.etag = None
-        row.last_modified = None
-    db.session.commit()
-    return row.active
+    return toggle_owned(UserPage, user, page_id, on_resume=clear_validators)
 
 
 def ingest_user_pages(user: User) -> tuple[dict, list[Paper]]:

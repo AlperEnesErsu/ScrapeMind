@@ -17,6 +17,14 @@ from app.modules.scrape.models import (
     UserPaper,
 )
 from app.modules.scrape.net_guard import is_public_http_url
+from app.modules.scrape.service._owned import (
+    clear_validators,
+    count_owned,
+    get_owned,
+    list_owned,
+    remove_owned,
+    toggle_owned,
+)
 from app.modules.scrape.service.papers import link_user_paper, upsert_paper_status
 from app.modules.scrape.service.source_prefs import list_user_source_prefs
 from app.modules.scrape.sources.rss_source import fetch_feed_conditional
@@ -140,17 +148,17 @@ def _normalize_feed_url(raw: str | None) -> str | None:
 
 
 def list_user_feeds(user: User) -> list[UserFeed]:
-    return UserFeed.query.filter_by(user_id=user.id).order_by(desc(UserFeed.created_at)).all()
+    return list_owned(UserFeed, user)
 
 
 def get_user_feed(user: User, feed_id: int) -> UserFeed | None:
     """Fetch a UserFeed only if it belongs to this user — same ownership
     guard as get_note_for_user/get_user_paper."""
-    return UserFeed.query.filter_by(id=feed_id, user_id=user.id).first()
+    return get_owned(UserFeed, user, feed_id)
 
 
 def count_user_feeds(user: User) -> int:
-    return UserFeed.query.filter_by(user_id=user.id).count()
+    return count_owned(UserFeed, user)
 
 
 def add_user_feed(
@@ -233,12 +241,7 @@ def add_user_feed(
 
 
 def remove_user_feed(user: User, feed_id: int) -> bool:
-    row = get_user_feed(user, feed_id)
-    if row is None:
-        return False
-    db.session.delete(row)
-    db.session.commit()
-    return True
+    return remove_owned(UserFeed, user, feed_id)
 
 
 def toggle_user_feed(user: User, feed_id: int) -> bool | None:
@@ -250,15 +253,7 @@ def toggle_user_feed(user: User, feed_id: int) -> bool | None:
     past the whole gap. Pausing leaves them alone — they are about to be
     cleared on resume anyway, and a paused feed is never fetched.
     """
-    row = get_user_feed(user, feed_id)
-    if row is None:
-        return None
-    row.active = not row.active
-    if row.active:
-        row.etag = None
-        row.last_modified = None
-    db.session.commit()
-    return row.active
+    return toggle_owned(UserFeed, user, feed_id, on_resume=clear_validators)
 
 
 def ingest_user_feeds(user: User) -> tuple[dict, list[Paper]]:
