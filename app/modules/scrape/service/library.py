@@ -226,69 +226,14 @@ def search_user_papers_query(
     boundary, not a backlog: a paper that is free to read is not therefore free
     to store.
     """
-    from sqlalchemy.orm import joinedload, selectinload
-
-    query = (
-        UserPaper.query.filter(UserPaper.user_id == user.id, UserPaper.dismissed_at.is_(None))
-        .join(Paper)
-        .options(
-            selectinload(UserPaper.notes),
-            # Same N+1 guard as list_user_papers — this feeds
-            # scrape/_paper_card.html via library/search.html too.
-            joinedload(UserPaper.paper).joinedload(Paper.video_summary),
-            joinedload(UserPaper.paper).joinedload(Paper.journal),
-        )
-    )
+    query = _live_library_query(user)
 
     q = (q or "").strip()
     is_semantic_active = False
     if q and semantic:
-        from app.modules.scrape.embedding_service import (
-            current_embedding_model,
-            get_embedding,
-        )
-
-        query_vector = get_embedding(q, user=user)
-        if query_vector is not None:
-            is_semantic_active = True
-            like = _contains_pattern(q)
-            # Only vectors this query vector can be compared with.
-            comparable = db.and_(
-                Paper.embedding.is_not(None),
-                Paper.embedding_model == current_embedding_model(),
-            )
-            query = query.filter(
-                db.or_(
-                    db.and_(comparable, Paper.embedding.cosine_distance(query_vector) < 0.70),
-                    db.func.lower(Paper.title).like(like, escape="\\"),
-                    db.func.lower(Paper.abstract).like(like, escape="\\"),
-                    db.func.lower(UserPaper.matched_keyword).like(like, escape="\\"),
-                    db.func.lower(Paper.fulltext).like(like, escape="\\"),
-                )
-            ).order_by(
-                db.case(
-                    (comparable, Paper.embedding.cosine_distance(query_vector)),
-                    else_=1.0,
-                ).asc(),
-                desc(Paper.published_at),
-            )
-
+        query, is_semantic_active = _apply_semantic_search(query, q, user)
     if q and not is_semantic_active:
-        like = _contains_pattern(q)
-        query = query.filter(
-            db.or_(
-                db.func.lower(Paper.title).like(like, escape="\\"),
-                db.func.lower(Paper.abstract).like(like, escape="\\"),
-                db.func.lower(UserPaper.matched_keyword).like(like, escape="\\"),
-                db.func.lower(db.cast(Paper.authors, db.String)).like(like, escape="\\"),
-                # Full text. This function's docstring has promised it since
-                # Faz 7.0 and the query never did it -- which also meant a
-                # saved-search alert could not fire when OA full text arrived and
-                # put the term in the body, the case `e7b204c9f83a` says alerts
-                # exist for.
-                db.func.lower(Paper.fulltext).like(like, escape="\\"),
-            )
-        )
+        query = query.filter(db.or_(*_text_match(_contains_pattern(q), include_authors=True)))
     if source:
         query = query.filter(Paper.source == source)
     if quartile:
@@ -307,6 +252,70 @@ def search_user_papers_query(
         query = query.order_by(desc(Paper.published_at), desc(UserPaper.created_at))
 
     return query
+
+
+def _live_library_query(user: User):
+    """The user's non-dismissed papers, with the relations the paper card reads
+    eager-loaded (same N+1 guard as list_user_papers — this feeds
+    scrape/_paper_card.html via library/search.html too)."""
+    from sqlalchemy.orm import joinedload, selectinload
+
+    return (
+        UserPaper.query.filter(UserPaper.user_id == user.id, UserPaper.dismissed_at.is_(None))
+        .join(Paper)
+        .options(
+            selectinload(UserPaper.notes),
+            joinedload(UserPaper.paper).joinedload(Paper.video_summary),
+            joinedload(UserPaper.paper).joinedload(Paper.journal),
+        )
+    )
+
+
+def _text_match(like: str, *, include_authors: bool) -> list:
+    """Case-insensitive substring conditions over the searchable text columns.
+
+    Full text is included: this function's caller has promised it since Faz 7.0
+    and the query never did it -- which also meant a saved-search alert could
+    not fire when OA full text arrived and put the term in the body, the case
+    `e7b204c9f83a` says alerts exist for.
+    """
+    conditions = [
+        db.func.lower(Paper.title).like(like, escape="\\"),
+        db.func.lower(Paper.abstract).like(like, escape="\\"),
+        db.func.lower(UserPaper.matched_keyword).like(like, escape="\\"),
+    ]
+    if include_authors:
+        conditions.append(db.func.lower(db.cast(Paper.authors, db.String)).like(like, escape="\\"))
+    conditions.append(db.func.lower(Paper.fulltext).like(like, escape="\\"))
+    return conditions
+
+
+def _apply_semantic_search(query, q: str, user: User):
+    """Rank by pgvector cosine distance to `q` (keeping plain text matches as a
+    fallback). Returns (query, active); inactive when no query vector is available."""
+    from app.modules.scrape.embedding_service import current_embedding_model, get_embedding
+
+    query_vector = get_embedding(q, user=user)
+    if query_vector is None:
+        return query, False
+    # Only vectors this query vector can be compared with.
+    comparable = db.and_(
+        Paper.embedding.is_not(None),
+        Paper.embedding_model == current_embedding_model(),
+    )
+    query = query.filter(
+        db.or_(
+            db.and_(comparable, Paper.embedding.cosine_distance(query_vector) < 0.70),
+            *_text_match(_contains_pattern(q), include_authors=False),
+        )
+    ).order_by(
+        db.case(
+            (comparable, Paper.embedding.cosine_distance(query_vector)),
+            else_=1.0,
+        ).asc(),
+        desc(Paper.published_at),
+    )
+    return query, True
 
 
 def distinct_user_sources(user: User) -> list[str]:

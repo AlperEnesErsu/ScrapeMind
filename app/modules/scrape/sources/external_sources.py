@@ -157,133 +157,133 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
         if not ok:
             logger.warning("web_reach_blocked", url=clean_query)
             return []
-
-        jina_url = f"https://r.jina.ai/{clean_query}"
-        jina_headers = dict(headers)
-        if jina_key:
-            jina_headers["Authorization"] = f"Bearer {jina_key}"
-
-        try:
-            resp = requests.get(jina_url, headers=jina_headers, timeout=15)
-            if resp.status_code == 200 and resp.text:
-                content = resp.text
-                title = "Web Result"
-                for line in content.splitlines()[:10]:
-                    line_s = line.strip()
-                    # A reader that emits "Title:" (or "# ") with nothing after
-                    # it must not win over the "Web Result" fallback — an empty
-                    # title is invalid on the shared PaperPayload.
-                    if line_s.startswith("Title:"):
-                        title = line_s.replace("Title:", "").strip() or title
-                        break
-                    elif line_s.startswith("# "):
-                        title = line_s.replace("# ", "").strip() or title
-                        break
-
-                return [
-                    PaperPayload(
-                        source=WEB_SOURCE_NAME,
-                        external_id=_generate_external_id("web", clean_query),
-                        title=title,
-                        abstract=clean_reader_text(content),
-                        authors=["Web Reader"],
-                        url=clean_query,
-                        pdf_url=None,
-                        published_at=None,
-                        categories=["web"],
-                        kind="news",
-                    )
-                ]
-            else:
-                logger.warning(
-                    "web_reach_jina_reader_error", status_code=resp.status_code, url=clean_query
-                )
-        except Exception as e:  # noqa: BLE001
-            logger.warning("web_reach_jina_reader_failed", url=clean_query, error=str(e))
-
-        # Direct fetch fallback with HTML stripping. Through the shared fetcher:
-        # every redirect hop is re-checked by the SSRF guard (a bare requests.get
-        # followed a public URL's redirect to a private address unchecked) and the
-        # body is capped.
-        try:
-            timeout, max_bytes, _ = fetch_budget()
-            resp, _final_url, hop_status = get_with_redirects(
-                clean_query, headers, timeout, allow_private=allow_private
-            )
-            if resp is None:
-                logger.warning("web_reach_blocked", url=clean_query, reason=hop_status)
-                return []
-            try:
-                status_code = resp.status_code
-                raw = read_capped(resp, max_bytes) if status_code == 200 else None
-            finally:
-                resp.close()
-            if status_code != 200 or not raw:
-                logger.warning("web_reach_http_error", status_code=status_code, url=clean_query)
-                return []
-            content = raw.decode(resp.encoding or "utf-8", errors="replace")
-            match = re.search(r"<title>(.*?)</title>", content, re.IGNORECASE)
-            # An empty <title></title> tag must not win over the fallback —
-            # PaperPayload rejects an empty title.
-            title = (match.group(1).strip() if match else "") or "Web Result"
-            clean_abstract = _strip_html(content) or ""
-            return [
-                PaperPayload(
-                    source=WEB_SOURCE_NAME,
-                    external_id=_generate_external_id("web", clean_query),
-                    title=title,
-                    abstract=clean_reader_text(clean_abstract),
-                    authors=["Web Reader"],
-                    url=clean_query,
-                    pdf_url=None,
-                    published_at=None,
-                    categories=["web"],
-                    kind="news",
-                )
-            ]
-        except Exception as e:
-            logger.error("web_reach_direct_fetch_failed", url=clean_query, error=str(e))
-            return []
+        reader = _fetch_via_jina_reader(clean_query, headers, jina_key)
+        if reader is not None:
+            return [reader]
+        return _fetch_direct(clean_query, headers, allow_private)
 
     # Branch B: Search query (keywords) -> Jina Search (if API key present) or Google News RSS
     if jina_key:
-        jina_search_url = f"https://s.jina.ai/{quote(clean_query)}"
-        jina_headers = dict(headers)
-        jina_headers["Authorization"] = f"Bearer {jina_key}"
-        try:
-            resp = requests.get(jina_search_url, headers=jina_headers, timeout=15)
-            if resp.status_code == 200 and resp.text:
-                content = resp.text
-                return [
-                    PaperPayload(
-                        source=WEB_SOURCE_NAME,
-                        external_id=_generate_external_id("web", jina_search_url),
-                        title=f"Web Search: {clean_query}",
-                        abstract=clean_reader_text(content),
-                        authors=["Jina Search"],
-                        url=jina_search_url,
-                        pdf_url=None,
-                        published_at=None,
-                        categories=["web"],
-                        kind="news",
-                    )
-                ]
-            else:
-                logger.warning(
-                    "web_reach_jina_search_error",
-                    status_code=resp.status_code,
-                    query=clean_query,
-                )
-        except Exception as e:  # noqa: BLE001
-            logger.warning("web_reach_jina_search_failed", query=clean_query, error=str(e))
+        found = _jina_search(clean_query, headers, jina_key)
+        if found is not None:
+            return [found]
+    return _google_news_search(clean_query, headers, allow_private, max_results)
 
-    # Free web news search fallback via Google News RSS
+
+def _web_payload(
+    external_key: str,
+    title: str,
+    abstract: str | None,
+    url: str,
+    authors: list[str],
+    published_at: datetime.datetime | None = None,
+) -> PaperPayload:
+    return PaperPayload(
+        source=WEB_SOURCE_NAME,
+        external_id=_generate_external_id("web", external_key),
+        title=title,
+        abstract=abstract,
+        authors=authors,
+        url=url,
+        pdf_url=None,
+        published_at=published_at,
+        categories=["web"],
+        kind="news",
+    )
+
+
+def _reader_title(content: str) -> str:
+    """Title from a Jina Reader response ("Title:" or a "# " heading in the
+    first lines). A reader that emits "Title:" (or "# ") with nothing after it
+    must not win over the "Web Result" fallback -- an empty title is invalid on
+    the shared PaperPayload."""
+    for line in content.splitlines()[:10]:
+        line_s = line.strip()
+        if line_s.startswith("Title:"):
+            return line_s.replace("Title:", "").strip() or "Web Result"
+        if line_s.startswith("# "):
+            return line_s.replace("# ", "").strip() or "Web Result"
+    return "Web Result"
+
+
+def _fetch_via_jina_reader(url: str, headers: dict, jina_key: str | None) -> PaperPayload | None:
+    jina_headers = dict(headers)
+    if jina_key:
+        jina_headers["Authorization"] = f"Bearer {jina_key}"
+    try:
+        resp = requests.get(f"https://r.jina.ai/{url}", headers=jina_headers, timeout=15)
+        if resp.status_code == 200 and resp.text:
+            content = resp.text
+            return _web_payload(
+                url, _reader_title(content), clean_reader_text(content), url, ["Web Reader"]
+            )
+        logger.warning("web_reach_jina_reader_error", status_code=resp.status_code, url=url)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("web_reach_jina_reader_failed", url=url, error=str(e))
+    return None
+
+
+def _fetch_direct(url: str, headers: dict, allow_private: bool) -> list[PaperPayload]:
+    """Direct fetch fallback with HTML stripping. Through the shared fetcher:
+    every redirect hop is re-checked by the SSRF guard (a bare requests.get
+    followed a public URL's redirect to a private address unchecked) and the
+    body is capped."""
+    try:
+        timeout, max_bytes, _ = fetch_budget()
+        resp, _final_url, hop_status = get_with_redirects(
+            url, headers, timeout, allow_private=allow_private
+        )
+        if resp is None:
+            logger.warning("web_reach_blocked", url=url, reason=hop_status)
+            return []
+        try:
+            status_code = resp.status_code
+            raw = read_capped(resp, max_bytes) if status_code == 200 else None
+        finally:
+            resp.close()
+        if status_code != 200 or not raw:
+            logger.warning("web_reach_http_error", status_code=status_code, url=url)
+            return []
+        content = raw.decode(resp.encoding or "utf-8", errors="replace")
+        match = re.search(r"<title>(.*?)</title>", content, re.IGNORECASE)
+        # An empty <title></title> tag must not win over the fallback —
+        # PaperPayload rejects an empty title.
+        title = (match.group(1).strip() if match else "") or "Web Result"
+        clean_abstract = _strip_html(content) or ""
+        return [_web_payload(url, title, clean_reader_text(clean_abstract), url, ["Web Reader"])]
+    except Exception as e:
+        logger.error("web_reach_direct_fetch_failed", url=url, error=str(e))
+        return []
+
+
+def _jina_search(query: str, headers: dict, jina_key: str) -> PaperPayload | None:
+    search_url = f"https://s.jina.ai/{quote(query)}"
+    jina_headers = dict(headers)
+    jina_headers["Authorization"] = f"Bearer {jina_key}"
+    try:
+        resp = requests.get(search_url, headers=jina_headers, timeout=15)
+        if resp.status_code == 200 and resp.text:
+            return _web_payload(
+                search_url,
+                f"Web Search: {query}",
+                clean_reader_text(resp.text),
+                search_url,
+                ["Jina Search"],
+            )
+        logger.warning("web_reach_jina_search_error", status_code=resp.status_code, query=query)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("web_reach_jina_search_failed", query=query, error=str(e))
+    return None
+
+
+def _google_news_search(
+    query: str, headers: dict, allow_private: bool, max_results: int
+) -> list[PaperPayload]:
+    """Free web news search fallback via Google News RSS."""
     try:
         import feedparser
 
-        rss_url = (
-            f"https://news.google.com/rss/search?q={quote(clean_query)}&hl=en-US&gl=US&ceid=US:en"
-        )
+        rss_url = f"https://news.google.com/rss/search?q={quote(query)}&hl=en-US&gl=US&ceid=US:en"
         ok, _err = is_public_http_url(rss_url, allow_private=allow_private)
         if not ok:
             return []
@@ -291,21 +291,17 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
         resp = requests.get(rss_url, headers=headers, timeout=15)
         if resp.status_code != 200 or not resp.content:
             logger.warning(
-                "web_reach_rss_search_http_error",
-                status_code=resp.status_code,
-                query=clean_query,
+                "web_reach_rss_search_http_error", status_code=resp.status_code, query=query
             )
             return []
 
-        parsed = feedparser.parse(resp.content)
         out: list[PaperPayload] = []
-        for entry in parsed.entries[:max_results]:
+        for entry in feedparser.parse(resp.content).entries[:max_results]:
             external_id = entry.get("id") or entry.get("link")
             title = (entry.get("title") or "").strip()
             link = entry.get("link")
             if not external_id or not title or not link:
                 continue
-
             pub_date = None
             parsed_pub = entry.get("published_parsed") or entry.get("updated_parsed")
             if parsed_pub:
@@ -313,26 +309,16 @@ def search_web(query: str, *, max_results: int = 10) -> list[PaperPayload]:
                     pub_date = datetime.datetime(*parsed_pub[:6], tzinfo=UTC)
                 except (TypeError, ValueError):
                     pub_date = None
-
             out.append(
-                PaperPayload(
-                    source=WEB_SOURCE_NAME,
-                    external_id=_generate_external_id("web", external_id),
-                    title=title,
-                    abstract=_strip_html(entry.get("summary")),
-                    authors=[],
-                    url=link,
-                    pdf_url=None,
-                    published_at=pub_date,
-                    categories=["web"],
-                    kind="news",
+                _web_payload(
+                    external_id, title, _strip_html(entry.get("summary")), link, [], pub_date
                 )
             )
         return out
     except SourceThrottledError:
         raise
     except Exception as e:
-        logger.error("web_reach_search_failed", query=clean_query, error=str(e))
+        logger.error("web_reach_search_failed", query=query, error=str(e))
         return []
 
 
