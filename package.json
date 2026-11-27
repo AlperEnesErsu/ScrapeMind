@@ -7,7 +7,8 @@
     "audit:ui": "node scripts/audit_ui.mjs ui-audit-pages"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.0",
     "axe-core": "4.10.2",
-    "playwright": "1.49.1"
+    "playwright": "1.55.0"
   }
 }

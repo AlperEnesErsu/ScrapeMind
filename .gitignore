@@ -48,3 +48,6 @@ data/patent_bulk/
 # them (scripts/compile_translations.py). Committed, they conflicted on
 # every branch that touched a translation.
 translations/*/LC_MESSAGES/*.mo
+
+# Playwright e2e run output (scripts/e2e.py)
+e2e/.artifacts/

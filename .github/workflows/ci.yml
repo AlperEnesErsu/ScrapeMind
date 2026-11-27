@@ -13,7 +13,10 @@ jobs:
     # are invisible to pytest -- every page in this app scrolled sideways at
     # 320px for months, and six carried controls a screen reader announced
     # with no name.
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: Playwright installs browsers only on the
+    # distributions it supports, and 1.55 refuses ubuntu-latest once that
+    # became 26.04. Move this with the Playwright pin in package.json.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     services:
