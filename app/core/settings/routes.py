@@ -581,15 +581,11 @@ def set_locale(lang: str):
         abort(400)
 
     if current_user.is_authenticated:
-        from app.core.models.settings import UserSettings
-
-        user_settings = current_user.settings
-        if user_settings is None:
-            user_settings = UserSettings(user_id=current_user.id, settings={})
-            db.session.add(user_settings)
-        settings_copy = dict(user_settings.settings or {})
-        settings_copy["locale"] = lang
-        user_settings.settings = settings_copy
+        # `users.locale`, the column the locale selector, the profile form,
+        # digest emails and the API read. This used to write
+        # `UserSettings.settings["locale"]`, which nothing reads, so the choice
+        # lasted only as long as the cookie below (tests/core/test_set_locale.py).
+        current_user.locale = lang
         db.session.commit()
 
     referrer = request.referrer or url_for("dashboard.index")
